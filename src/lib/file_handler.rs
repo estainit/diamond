@@ -8,8 +8,7 @@ use std::io:: Read;
 pub fn read(
     file_path: &String,
     _file_name: &String,
-    _clone_id: i8,
-    mut contents: &mut String) -> bool
+    _clone_id: i8) -> (bool, String)
 {
     /*
     if clone_id>0
@@ -20,11 +19,10 @@ pub fn read(
 
     file_path += file_name;
     */
-    let res: bool = read_(file_path, &mut contents);
-    return res;
+    return read_(file_path);
 }
 
-pub fn read_(_file_full_path: &String, mut contents: &mut String) -> bool {
+pub fn read_(_file_full_path: &String) -> (bool, String) {
 
     let file_full_path = "src/zzz.txt";
     // Open the file in read-only mode.
@@ -36,16 +34,14 @@ pub fn read_(_file_full_path: &String, mut contents: &mut String) -> bool {
             // Read all the file content into a variable (ignoring the result of the operation).
             file.read_to_string(&mut content).unwrap();
 
-            // println!("{}", content);
-
-            *contents = content;
+            // *contents = content.clone();
             // The file is automatically closed when is goes out of scope.
-            true
+            return (true, content);
         },
         // Error handling.
         Err(error) => {
             println!("Error opening file {}: {}", file_full_path, error);
-            false
+            return (false, "".to_string());
         },
     }
 }

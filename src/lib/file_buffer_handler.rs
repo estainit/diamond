@@ -7,11 +7,11 @@ use crate::lib::file_handler as file_handler;
 pub fn maybe_boot_dag_from_bundle() -> bool {
 
     let clone_id: i8 = 1;
-    let mut bundle = String::from("");
-    let status = read_dag_bundle_if_exist(clone_id, &mut bundle);
+    // let mut bundle = String::from("");
+    let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
     if !status || (bundle == "") { return false; };
-    println!("ressssssss {}", bundle);
+    println!("resss   s  s  sss {}", bundle);
 
 /*
 
@@ -53,16 +53,11 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 }
 
 // old name was readDAGBundleIfExist
-pub fn read_dag_bundle_if_exist(
-    clone_id: i8,
-    mut contents: &mut String) -> bool
+pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
-    let res = file_handler::read(
+    return file_handler::read(
         &CConsts::HD_FILES.to_string(),
         &"DAGBundle.txt".to_string(),
-        clone_id,
-        &mut contents);
-    return res;
-
+        clone_id);
 }
 
