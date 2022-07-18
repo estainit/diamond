@@ -1,5 +1,5 @@
 # diamond
-A new privacy-care & scalable Blockgraph and coins![image](https://user-images.githubusercontent.com/8258420/179621699-ad78a919-5ada-4411-8ca9-4a3208f1f37c.png)
+A new privacy-care & scalable Blockgraph and coins!
 
 These are the Diamond principles:
 -	We are still care very much about “Do not trust, Verify” slogan. Therefore, each full node must be able to verify and confirm each and every transaction. Also, any normal computer can become a full node.
@@ -12,4 +12,3 @@ These are the Diamond principles:
 -	The "commitments pool" and "Barats protocol" transforms Diamond Blockgraph into a real low cost, scalable and peer-to-peer network for interactions.
 -	
 -	The source codes, all kind of related information and generated information documents and all derived products and tools of the project are and will be under GPL.V2 license 
-![image](https://user-images.githubusercontent.com/8258420/179621846-1c008aeb-62ea-4737-a47c-16024ef72af7.png)
