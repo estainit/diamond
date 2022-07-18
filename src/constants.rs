@@ -1,3 +1,3 @@
 
-// pub const HD_FILES: String = String::from("");
-pub const HD_FILES: &str = "";
+
+pub const HD_FILES: &str = "/Users/silver/Documents/Diamond_files/";

@@ -6,25 +6,28 @@ use std::io:: Read;
 
 
 pub fn read(
-    file_path: &String,
-    _file_name: &String,
-    _clone_id: i8) -> (bool, String)
+    file_path: &mut String,
+    file_name: &String,
+    clone_id: i8) -> (bool, String)
 {
-    /*
-    if clone_id>0
-    file_path += QString::number(clone_id);
+    if clone_id > 0 {
+        file_path.push_str(&clone_id.to_string());
+    }
 
-    if (file_path != "")
-    file_path += "/";
+    if file_path != "" {
+        file_path.push_str("/");
+    }
 
-    file_path += file_name;
-    */
+    file_path.push_str(file_name);
+
     return read_(file_path);
 }
 
-pub fn read_(_file_full_path: &String) -> (bool, String) {
+pub fn read_(file_full_path: &String) -> (bool, String) {
 
-    let file_full_path = "src/zzz.txt";
+    println!("file_full_path: {}", file_full_path);
+
+    // let file_full_path = "src/zzz.txt";
     // Open the file in read-only mode.
     match File::open(file_full_path) {
         // The file is open (no error).
