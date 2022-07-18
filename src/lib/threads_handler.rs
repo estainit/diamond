@@ -6,6 +6,7 @@ use std::time::Duration;
 use crate::constants as CConsts;
 use crate::lib::dlog::dlog;
 use crate::lib::file_buffer_handler::maybe_boot_dag_from_bundle;
+use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::loop_import_coinbase_coins;
 
 // func name was launchImportUTXOsFromCoinbaseBlocks
 fn launch_import_utxos_from_coinbase_blocks()
@@ -13,8 +14,8 @@ fn launch_import_utxos_from_coinbase_blocks()
     dlog(
         &"Launching import UTXOs From Coinbase Blocks...".to_string(),
         CConsts::Modules::App,
-        CConsts::SecLevel::Info );
-    // CoinbaseUTXOHandler::loopImportCoinbaseUTXOs();
+        CConsts::SecLevel::Info);
+    loop_import_coinbase_coins();
 }
 
 
