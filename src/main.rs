@@ -8,7 +8,11 @@ mod config;
 mod lib;
 mod constants;
 
+use std::thread::sleep;
+use std::time::Duration;
 use lib::threads_handler::launch_threads;
+
+use crate::constants as CConsts;
 
 fn main() {
     //! # Diamond, the Community Maker Engine
@@ -22,11 +26,15 @@ fn main() {
     //!
 
     config::print_config();
-    lib::clog::log(&String::from("yessss"), &String::from("Gen"), &String::from("info"));
+    lib::dlog::dlog(
+        &String::from("yessss"),
+        CConsts::Modules::App,
+        CConsts::SecLevel::Info);
     // use Merkle crate, if exist
 
     println!("Hello, Diamond!");
 
     launch_threads();
 
+    sleep(Duration::from_secs(7));
 }

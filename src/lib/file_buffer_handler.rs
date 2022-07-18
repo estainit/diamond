@@ -14,7 +14,6 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
     println!("resss   s  s  sss {}", bundle);
 
 /*
-
     QJsonObject DAGBundle = CUtils::parseToJsonObj(bundle);
     QJsonArray blocks = DAGBundle.value("blocks").toArray();
     QJsonObject ballots = DAGBundle.value("ballots").toObject();
