@@ -1,8 +1,8 @@
 use std::thread;
-use std::thread::ThreadId;
 
 // coinbase_coins_handler
 
+use crate::lib::machine::machine_handler as machine_handler;
 
 //func old name was loopImportCoinbaseUTXOs
 pub fn loop_import_coinbase_coins()
@@ -10,6 +10,9 @@ pub fn loop_import_coinbase_coins()
     let mut thread_prefix = "import_coinbase_UTXOs_";
     let mut thread_code = thread::current().id();
     println!("thread id: {:?}", thread_code);
+    machine_handler::CMachine::should_loop_threads();
+    println!("machine_handler::CMachine::should_loop_threads(): {}", machine_handler::CMachine::should_loop_threads());
+
     /*
 
     while (CMachine::shouldLoopThreads())

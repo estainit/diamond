@@ -43,7 +43,7 @@ pub fn read_(file_full_path: &String) -> (bool, String) {
         },
         // Error handling.
         Err(error) => {
-            println!("Error opening file {}: {}", file_full_path, error);
+            // println!("Error opening file {}: {}", file_full_path, error);
             return (false, "".to_string());
         },
     }
