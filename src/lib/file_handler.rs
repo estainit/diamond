@@ -24,10 +24,6 @@ pub fn read(
 }
 
 pub fn read_(file_full_path: &String) -> (bool, String) {
-
-    println!("file_full_path: {}", file_full_path);
-
-    // let file_full_path = "src/zzz.txt";
     // Open the file in read-only mode.
     match File::open(file_full_path) {
         // The file is open (no error).
