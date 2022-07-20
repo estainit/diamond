@@ -5,7 +5,6 @@ use tokio::task;
 use tokio::time::{sleep, Duration};
 
 
-
 // use std::thread;
 // use std::thread::sleep;
 // use std::time::Duration;
@@ -14,16 +13,17 @@ use tokio::time::{sleep, Duration};
 
 mod config;
 mod lib;
-mod constants;
 mod tests;
 
 // use std::thread::sleep;
 // use std::time::Duration;
+
+// use crate::lib::constants as CConsts;
 use lib::threads_handler::launch_threads;
 use lib::machine::machine_handler as machine_handler;
-// use lib::utils::cutils::cutils as cutils;
+use lib::utils::cutils as cutils;
 
-use crate::tests::unit_tests::cutils::test_chunk_qstring_list;
+// use crate::tests::unit_tests::cutils::test_chunk_qstring_list;
 
 #[tokio::main]
 async fn main() {
@@ -36,12 +36,14 @@ async fn main() {
     //!
     //!
     //!
+    //!
+    //!
 
-    config::print_config();
+    // config::print_config();
 
     // use Merkle crate, if exist
 
-    let mut manual_clone_id: i8 = 0;
+    let manual_clone_id: i8 = 0;
     // CMachine::onAboutToQuit(&w);
 
     machine_handler::CMachine::init();
@@ -63,7 +65,6 @@ async fn main() {
 
     launch_threads().await;
 
-    sleep(Duration::from_secs(7)).await;
-
+    sleep(Duration::from_secs(5)).await;
 }
 

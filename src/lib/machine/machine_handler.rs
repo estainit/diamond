@@ -32,7 +32,7 @@ impl CMachine {
     // func name was parseArgs
     pub fn parse_args(args: Vec<String>, manual_clone_id: i8)
     {
-        println!("Env args: {:?}", args);
+        // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;    // FIXME: this value must be defined by command line
         let mut is_develop_mod: bool = false;

@@ -1,4 +1,4 @@
-use crate::constants as CConsts;
+use crate::lib::constants as CConsts;
 
 pub fn dlog (msg: &String, module: CConsts::Modules, level: CConsts::SecLevel) {
     let module = match module {
@@ -7,6 +7,8 @@ pub fn dlog (msg: &String, module: CConsts::Modules, level: CConsts::SecLevel) {
     };
     let level = match level {
         CConsts::SecLevel::Info => "Info",
+        CConsts::SecLevel::Warning => "Warning",
+        CConsts::SecLevel::Fatal => "Fatal",
         _ => "Gen"
     };
 
