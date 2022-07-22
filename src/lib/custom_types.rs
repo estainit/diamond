@@ -36,9 +36,11 @@ pub type TimeBySecT = u64;
  */
 
 /*
-pub type QHash<QString, f64>      doubleDicT; // custom dictionary
-pub type QHash<QString, float>       floatDicT; // custom dictionary
-pub type QHash<QString, CDocIndexT>  UI16DicT; // custom dictionary
+use std::collections::HashMap;
+
+pub type doubleDicT = HashMap<String, f64>      ; // custom dictionary
+pub type floatDicT = HashMap<String, f64>       floatDicT; // custom dictionary
+pub type UI16DicT = HashMap<String, CDocIndexT>  UI16DicT; // custom dictionary
 pub type QHash<QString, uint32_t>    UI32DicT; // custom dictionary
 pub type QHash<QString, uint64_t>    UI64DicT; // custom dictionary
 pub type QHash<QString, QString>     QSDicT; // custom dictionary

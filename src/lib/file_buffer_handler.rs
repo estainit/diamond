@@ -3,7 +3,7 @@ use crate::lib::constants as CConsts;
 use crate::lib::file_handler as file_handler;
 
 
-// old name was maybeBootDAGFromBundle
+//old_name_was maybeBootDAGFromBundle
 pub fn maybe_boot_dag_from_bundle() -> bool {
 
     let clone_id: i8 = 1;
@@ -51,7 +51,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
     return true;
 }
 
-// old name was readDAGBundleIfExist
+//old_name_was readDAGBundleIfExist
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     return file_handler::read(

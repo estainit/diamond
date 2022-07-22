@@ -6,4 +6,6 @@ pub mod threads_handler;
 pub mod file_buffer_handler;
 pub mod file_handler;
 pub mod utils;
+pub mod bech_32;
+pub mod ccrypto;
 pub mod custom_types;

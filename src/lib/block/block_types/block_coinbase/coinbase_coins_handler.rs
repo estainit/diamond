@@ -158,7 +158,7 @@ void CoinbaseUTXOHandler::importCoinbasedUTXOs(const QString &c_date)
 // TODO some uintteasts need
 //  every coinbased incomes will be spendable after 2 cycle and right after starting 3rd cycle
 
-// old name was calcCoinbasedOutputMaturationDate
+//old_name_was calcCoinbasedOutputMaturationDate
 #[allow(dead_code)]
 pub fn calc_coinbased_output_maturation_date(c_date_: CDateT) -> CDateT {
     let mut c_date = c_date_.clone();

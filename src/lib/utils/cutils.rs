@@ -6,7 +6,7 @@ use chrono::{DateTime, TimeZone};
 use crate::lib::constants as CConsts;
 use crate::lib::custom_types::CDateT;
 
-// old name was chunkQStringList
+//old_name_was chunkQStringList
 #[allow(dead_code)]
 pub fn chunk_to_vectors(values: Vec<String>, chunk_size: u64) -> Vec<Vec<String>>
 {
@@ -56,7 +56,7 @@ pub fn left_padding(inp_str: String, length: u8) -> String {
     return str;
 }
 
-// old name was convertFloatToString
+//old_name_was convertFloatToString
 #[allow(dead_code)]
 pub fn convert_float_to_string(num: f64, precision: u32) -> String {
     let mut num_per_10 = num.clone();
@@ -132,7 +132,7 @@ pub fn is_am_or_pm(minutes: u32) -> String {
     return "00:00:00".to_string();
 }
 
-// old name was getCoinbaseCycleNumber
+//old_name_was getCoinbaseCycleNumber
 #[allow(dead_code)]
 pub fn get_coinbase_cycle_number(c_date: CDateT) -> String {
     let minutes: u32;
@@ -162,7 +162,7 @@ pub fn get_cycle_by_minutes() -> u32 {
     return CConsts::TIME_GAIN as u32;
 }
 
-// old name was getNow
+//old_name_was getNow
 #[allow(dead_code)]
 pub fn get_now() -> String {
     Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
@@ -180,7 +180,7 @@ pub fn get_now_by_minutes() -> u32 {
     now_by_minutes
 }
 
-// old name was getCycleElapsedByMinutes
+//old_name_was getCycleElapsedByMinutes
 pub fn get_cycle_elapsed_by_minutes(c_date_: CDateT) -> u64 {
     let mut c_date = c_date_;
     if c_date == "".to_string() {
@@ -243,7 +243,7 @@ pub fn add_fff_zzzz_to_yyyymmdd(c_date: CDateT) -> CDateT {
     return out;
 }
 
-// old name was timeDiff
+//old_name_was timeDiff
 pub fn time_diff(from_t: CDateT, to_t: CDateT) -> TimeDiff {
     let mut res: TimeDiff = TimeDiff::constructor();
     let start_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(from_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
@@ -265,7 +265,7 @@ pub fn time_diff(from_t: CDateT, to_t: CDateT) -> TimeDiff {
     return res;
 }
 
-// old name was getACycleRange
+//old_name_was getACycleRange
 pub fn get_a_cycle_range(
     c_date_: CDateT,
     back_by_cycle: u8,
@@ -321,7 +321,7 @@ pub fn get_a_cycle_range(
 }
 
 
-// old name was convertMinutesToHHMM
+//old_name_was convertMinutesToHHMM
 pub fn convert_minutes_to_hhmm(minutes: u32) -> String {
     let h: u32 = minutes / 60;
     let mut h: String = h.to_string();
@@ -349,7 +349,7 @@ pub fn minutes_before(back_in_time_by_minutes: u64, c_date: CDateT) -> String {
     return dt.format("%Y-%m-%d %H:%M:%S").to_string();
 }
 
-// old name was minutesAfter
+//old_name_was minutesAfter
 pub fn minutes_after(forward_in_time_by_minutes: u64, c_date: CDateT) -> String {
     let mut since_epoch: i64;
     if c_date == "" {
@@ -369,7 +369,7 @@ pub fn get_coinbase_range(c_date: CDateT) -> TimeRange {
     return get_a_cycle_range(c_date, 0, 0);
 }
 
-// old name was getCoinbaseCycleStamp
+//old_name_was getCoinbaseCycleStamp
 pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
     let mut c_date = c_date_.clone();
     if c_date == "" {
@@ -384,13 +384,13 @@ pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
     return day[0].to_string() + " " + &right_padding(get_coinbase_cycle_number(c_date), 3);
 }
 
-// old name was getCbUTXOsDateRange
+//old_name_was getCbUTXOsDateRange
 #[allow(dead_code)]
 pub fn get_cb_utxos_date_range(c_date: CDateT) -> TimeRange {
     return get_a_cycle_range(c_date, CConsts::COINBASE_MATURATION_CYCLES, 0);
 }
 
-// old name was getCoinbaseInfo
+//old_name_was getCoinbaseInfo
 #[allow(dead_code)]
 pub fn get_coinbase_info(c_date: CDateT, cycle: String) -> (String, String, String, String, String) {
     if c_date != "" {
@@ -419,7 +419,7 @@ pub fn get_coinbase_info(c_date: CDateT, cycle: String) -> (String, String, Stri
     panic!("invalid input for get Coinbase Info");
 }
 
-// old name was getCoinbaseRangeByCycleStamp
+//old_name_was getCoinbaseRangeByCycleStamp
 #[allow(dead_code)]
 pub fn get_coinbase_range_by_cycle_stamp(cycle: String) -> TimeRange {
     let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
