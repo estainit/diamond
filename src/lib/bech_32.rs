@@ -8,12 +8,12 @@ use crate::lib::constants as CConsts;
 pub fn comen_is_valid(inp_str: &str) -> bool {
     match bech32::decode(inp_str) {
         Ok(res) => {
-            let (hrp, data, variant) = res;
+            let (hrp, _data, variant) = res;
             if hrp != CConsts::SOCIETY_NAME { return false; }
             if variant != Variant::Bech32 { return false; }
             // assert_eq!(Vec::<u8>::from_base32(&data).unwrap(), vec![0x00, 0x01, 0x02]);
         }
-        Err(e) => {
+        Err(_e) => {
             return false;
         }
     }

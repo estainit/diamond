@@ -9,6 +9,7 @@ pub enum SecLevel {
     Trace,
     Info,
     Warning,
+    Error,
     Fatal,
 }
 
@@ -28,3 +29,5 @@ pub const COINBASE_MATURATION_CYCLES: u8 = 2;
 //bech32 part
 pub const BECH32_ADDRESS_VER: &str = "0";
 pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
+
+pub const SIGN_MSG_LENGTH: u8 = 32;

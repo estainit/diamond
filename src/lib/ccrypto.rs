@@ -3,11 +3,24 @@ use rand_core::OsRng;
 use secp256k1::{Secp256k1, Message, SecretKey, PublicKey,
                 ecdsa::{Signature}};
 use secp256k1::hashes::sha256;
+// use rsa::{RsaPublicKey, pkcs8::DecodePublicKey};
+// use secp256k1::serde::de::Unexpected::Option;
+
+use rsa::{RsaPrivateKey, RsaPublicKey,
+          PaddingScheme, PublicKey as rsa_pub, pkcs1::LineEnding,
+          pkcs8::{EncodePrivateKey, DecodePrivateKey, EncodePublicKey, DecodePublicKey}};
+
+// use rsa::{PublicKey as rsa_pub, RsaPrivateKey, RsaPublicKey, PaddingScheme};
+
+// use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
+// use rsa::{RsaPublicKey, pkcs8::DecodePublicKey};
 
 use std::str::FromStr;
+// use der::Encode;
 
-use crate::lib::constants as CConsts;
+use crate::lib::constants as cconsts;
 use crate::lib::bech_32;
+use crate::lib::dlog::dlog;
 
 //old name was isValidBech32
 pub fn is_valid_bech32(inp_str: &str) -> bool
@@ -18,40 +31,38 @@ pub fn is_valid_bech32(inp_str: &str) -> bool
 //old_name_was bech32Encode
 pub fn bech32_encode(str: &str) -> String
 {
-    bech_32::comen_encode(str, CConsts::SOCIETY_NAME)
+    bech_32::comen_encode(str, cconsts::SOCIETY_NAME)
 }
 
+pub fn keccak256(msg: &String) -> String {
+    // use sha3;
+    use sha3::{Digest, Sha3_256};
+    assert_eq!(hex::encode(vec![1, 2, 3, 15, 16]), "0102030f10");
+
+    // create a SHA3-256 object
+    let mut hasher = Sha3_256::new();
+    // write input message
+    hasher.update(&msg);
+    // read hash digest
+    let result = hasher.finalize();
+    let encoded_str = hex::encode(result);
+    encoded_str
+}
+
+//old_name_was convertTitleToHash
+pub fn convert_title_to_hash(title: &String) -> String {
+    keccak256(title)
+}
+
+
+pub const PUBLIC_BEGIN: &str = "-----BEGIN PUBLIC KEY-----";
+pub const PUBLIC_END: &str = "-----END PUBLIC KEY-----";
+pub const PRIVATE_BEGIN: &str = "-----BEGIN PRIVATE KEY-----";
+pub const PRIVATE_END: &str = "-----END PRIVATE KEY-----";
+pub const RSA_PRIVATE_BEGIN: &str = "-----BEGIN RSA PRIVATE KEY-----";
+pub const RSA_PRIVATE_END: &str = "-----END RSA PRIVATE KEY-----";
 
 /*
-
-
-#include "ccrypto.h"
-
-InitCCrypto InitCCrypto::s_instance;
-void InitCCrypto::Iinit()
-{
-
-  //   ... Do some crypto stuff here ...
-
-  //   Clean up
-
-  //   Removes all digests and ciphers
-
-  CLog::log("InitCCrypto::IinitLog");
-  return;
-}
-
-const std::string CCrypto::PUBLIC_BEGIN = "-----BEGIN PUBLIC KEY-----";
-const std::string CCrypto::PUBLIC_END = "-----END PUBLIC KEY-----";
-const std::string CCrypto::PRIVATE_BEGIN = "-----BEGIN PRIVATE KEY-----";
-const std::string CCrypto::PRIVATE_END = "-----END PRIVATE KEY-----";
-const std::string CCrypto::RSA_PRIVATE_BEGIN = "-----BEGIN RSA PRIVATE KEY-----";
-const std::string CCrypto::RSA_PRIVATE_END = "-----END RSA PRIVATE KEY-----";
-
-QString CCrypto::convertTitleToHash(const QString &title)
-{
-  return keccak256(title);
-}
 
 using std::cout, std::endl;
 
@@ -225,47 +236,7 @@ QString CCrypto::getRandomNumber(int len)
   return res.midRef(0, len).toString();
 }
 
-QString CCrypto::keccak256(const uint64_t num)
-{
-  return keccak256(QString::number(num));
-}
 
-QString CCrypto::keccak256(const uint32_t num)
-{
-  return keccak256(QString::number(num));
-}
-
-QString CCrypto::keccak256(const int64_t num)
-{
-  return keccak256(QString::number(num));
-}
-
-QString CCrypto::keccak256(const int32_t num)
-{
-  return keccak256(QString::number(num));
-}
-
-QString CCrypto::keccak256(const QString &msg)
-{
-  std::string m = msg.toStdString();
-  //  using namespace CryptoPP;
-  CryptoPP::Keccak_256 hash;
-  std::string hashed;
-  CryptoPP::HexEncoder encoder(new CryptoPP::StringSink(hashed));
-  std::string digest;
-  hash.Update((const byte *)m.data(), m.size());
-  digest.resize(hash.DigestSize());
-  hash.Final((byte *)&digest[0]);
-  CryptoPP::StringSource(digest, true, new CryptoPP::Redirector(encoder));
-  std::transform(hashed.begin(), hashed.end(), hashed.begin(), [](unsigned char c)
-                 { return std::tolower(c); });
-  return QString::fromStdString(hashed);
-}
-
-QString CCrypto::keccak256Dbl(const QString &msg)
-{
-  return keccak256(keccak256(msg));
-}
 
 QString CCrypto::sha256Dbl(const QString &msg)
 {
@@ -337,10 +308,6 @@ std::tuple<bool, std::string> CCrypto::stripHeaderAndFooter(const std::string &s
 */
 
 
-
-
-
-
 // - - - - - - - - ECDSA key managements - - - - - - -
 
 //old_name_was ECDSAGenerateKeyPair
@@ -360,7 +327,7 @@ pub fn ecdsa_import_hex_private_key(private_key_string: &String) -> (bool, Secre
 //old_name_was ECDSAimportHexPublicKey
 pub fn ecdsa_import_hex_public_key(compact_point: &String) -> (bool, PublicKey)
 {
-    (true, PublicKey::from_str(&compact_point ).unwrap())
+    (true, PublicKey::from_str(&compact_point).unwrap())
 }
 
 //old_name_was ECDSAValidatePrivateKey
@@ -375,6 +342,13 @@ pub fn ecdsa_validate_public_key(hex_public_key: &String) -> bool {
     status
 }
 
+pub fn ecdsa_generate_pub_by_priv(hex_private_key: &String) -> String {
+    let secp = Secp256k1::new();
+    let (_, secret_key) = ecdsa_import_hex_private_key(hex_private_key);
+    let pk2 = PublicKey::from_secret_key(&secp, &secret_key);
+    let public_key_string2: String = pk2.to_string();
+    public_key_string2
+}
 
 // std::tuple<bool, std::string, std::string>
 //old_name_was ECDSAsignMessage
@@ -383,7 +357,7 @@ pub fn ecdsa_sign_message(private_key: &String, message: &String) -> (bool, Stri
     let message = Message::from_hashed_data::<sha256::Hash>(message.as_bytes());
     let secp = Secp256k1::new();
     let sig: Signature = secp.sign_ecdsa(&message, &regenerated_private_key);
-    if !private_status { return (false, "".to_string(), sig) };
+    if !private_status { return (false, "".to_string(), sig); };
     let signature_string: String = sig.to_string();
     return (true, signature_string, sig);
 }
@@ -464,44 +438,159 @@ bool CCrypto::VerifyMessage(const CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA25
  */
 
 //old_name_was nativeGenerateKeyPair
-pub fn native_generate_key_pair() -> (bool, String, String) {
-    let secp = Secp256k1::new();
-    let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
-    return (true, secret_key.display_secret().to_string(), public_key.to_string());
+pub fn rsa_generate_key_pair() -> (bool, String, String) {
+    let mut rng = rand::thread_rng();
+    let bits = 256;
+    let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
+    let public_key: RsaPublicKey = RsaPublicKey::from(&private_key);
+
+    // use rsa::{pkcs1::DecodeRsaPublicKey};
+
+    // use pkcs8::{EncodePrivateKey};
+
+    let private_pem = rsa_convert_prv_obj_to_pem_str(private_key);
+    // let private_pem = private_key.to_pkcs8_pem(rsa::pkcs1::LineEnding::CRLF).expect("Failed in private convert to pem");
+    // let private_pem = format!("{:?}", private_pem.to_string());
+    // println!("private_pem: {}", private_pem);
+
+    let public_pem: String = rsa_convert_pub_obj_to_pem_str(public_key);
+    // let mut public_pem:String = match public_key.to_public_key_pem(rsa::pkcs1::LineEnding::CRLF) {
+    //     Ok(the_pub)=>{
+    //         println!("Success generate pem pub key(RSA) {}", the_pub);
+    //         the_pub.clone()
+    //     },
+    //     Err(e)=>{
+    //         dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+    //         "".to_string()
+    //     },
+    // };
+
+    // let public_pem = public_key.to_public_key_pem(rsa::pkcs1::LineEnding::CRLF).expect("");
+    // let public_pem = format!("{:?}", public_pem);
+    // println!("public_pem: {}", public_pem);
+
+    (true, private_pem, public_pem)
+}
+
+
+//old_name_was read_PEM_private_key
+pub fn rsa_read_pem_prv_key(pem_prv_key: &String) -> RsaPrivateKey
+{
+    RsaPrivateKey::from_pkcs8_pem(pem_prv_key).unwrap()
 }
 
 //old_name_was isValidRSAPrivateKey
+pub fn rsa_is_valid_prv_key(pem_prv_key: &String) -> bool
+{
+    return match RsaPrivateKey::from_pkcs8_pem(pem_prv_key) {
+        Ok(_re_prv_key) => {
+            println!("is valid re_prv_key2(RSA) done", );
+            true
+        }
+        Err(e) => {
+            dlog(&format!("Failed in regenerate prv key from pem(RSA) {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            false
+        }
+    };
+}
 
+//old_name_was read_PEM_public_key
+pub fn rsa_read_pem_pub_key(pem_pub_key: &String) -> RsaPublicKey {
+    RsaPublicKey::from_public_key_pem(pem_pub_key).unwrap()
+}
+
+//old_name_was isValidRSAPublicKey
+pub fn rsa_is_valid_pub_key(pem_pub_key: &String) -> bool
+{
+    return match RsaPublicKey::from_public_key_pem(pem_pub_key) {
+        Ok(_re_public_key) => {
+            println!("is valid re_public_key2(RSA) done", );
+            true
+        }
+        Err(e) => {
+            dlog(&format!("Failed in regenerate pub key from pem(RSA) {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            false
+        }
+    };
+}
+
+pub fn rsa_convert_prv_obj_to_pem_str(private_key: RsaPrivateKey) -> String {
+    // use std::str;
+    let private_pem = private_key.to_pkcs8_pem(rsa::pkcs1::LineEnding::CRLF).expect("Failed in private convert to pem");
+    let private_pem = private_pem.to_string();
+    return private_pem;
+    // match private_pem.to_vec(){
+    //     Ok(prv_vec) => {
+    //         println!("Success generate pem pub key(RSA) {:?}", prv_vec);
+    //         let sparkle_heart = str::to_string(&prv_vec).unwrap();
+    //
+    //         // let stuff_str: String = prv_vec.into_iter().map(|i| i.to_string()).collect::<String>();
+    //         // let s = format!("{:?}", &prv_vec);
+    //         sparkle_heart.to_string().clone()
+    //     }
+    //     Err(e) => {
+    //         dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+    //         "".to_string()
+    //     }
+    // }
+
+}
+
+pub fn rsa_convert_pub_obj_to_pem_str(public_key: RsaPublicKey) -> String {
+    match public_key.to_public_key_pem(rsa::pkcs1::LineEnding::CRLF) {
+        Ok(the_pub) => {
+            the_pub.clone()
+        }
+        Err(e) => {
+            dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            "".to_string()
+        }
+    }
+}
+
+
+//old_name_was nativeSign
+pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
+    let prv_key: RsaPrivateKey = rsa_read_pem_prv_key(pem_prv_key);
+    let padding = PaddingScheme::new_pkcs1v15_sign(None);
+    // println!("------msg.as_bytes(): {:?}", msg[0..16].as_bytes());
+
+    match prv_key.sign(padding, msg[0..16].as_bytes()) {
+        Ok(sig_vec) => {
+            println!("succ signing: {}", hex::encode(&sig_vec).clone());
+            (true, hex::encode(sig_vec).clone().to_string())
+        },
+        Err(e) => {
+            dlog(&format!("Failed in RSA signing: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            (false, "".to_string())
+        }
+    }
+}
+
+
+//old_name_was nativeVerifySignature
+pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &String) -> bool {
+
+    let pub_key = rsa_read_pem_pub_key(&pem_pub_key);
+    let sig = &hex::decode(signature).unwrap()[..];
+    println!("succ signing22: {}", hex::encode(&sig).clone());
+
+    let msg = message[0..16].as_bytes();
+
+    let padding = PaddingScheme::new_pkcs1v15_sign(None);
+    match pub_key.verify(padding, msg, sig){
+        Ok(r)=>{
+            return true;
+        },
+        Err(e)=>{
+            dlog(&format!("Failed in verifying RSA signature {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            return false;
+        }
+    }
+
+    return true; // FIXME: implement it ASAP
+}
 /*
-pub fn is_valid_rsa_private_key(prv_key: &String)
-{
-auto [isValid, prv] = read_PEM_private_key(prv_key.toStdString());
-Q_UNUSED(prv);
-return isValid;
-}
-
-std::tuple<bool, CryptoPP::RSA::PublicKey> CCrypto::read_PEM_public_key(std::string RSA_PUB_KEY, const std::string &header, const std::string &footer)
-{
-  using namespace CryptoPP;
-  CryptoPP::RSA::PublicKey rsa;
-  try
-  {
-    auto [status, strPrivKey] = stripHeaderAndFooter(RSA_PUB_KEY, header, footer);
-    if (!status)
-      return {false, rsa};
-
-    ByteQueue t1, t2;
-    StringSource ss(strPrivKey, true,
-                    new CryptoPP::Redirector(t1));
-    CPEM_Base64Decode(t1, t2);
-    CPEM_LoadPublicKey(t2, rsa, true);
-    return {true, rsa};
-  }
-  catch (const CryptoPP::Exception &ex)
-  {
-    return {false, rsa};
-  }
-}
 
 void CCrypto::CPEM_LoadPublicKey(CryptoPP::BufferedTransformation &src, CryptoPP::X509PublicKey &key, bool subjectInfo)
 {
@@ -537,12 +626,6 @@ void CCrypto::CPEM_Base64Encode(CryptoPP::BufferedTransformation &source, Crypto
   encoder.MessageEnd();
 }
 
-bool CCrypto::isValidRSAPublicKey(const QString &pubKey)
-{
-  auto [isValid, publicKey] = read_PEM_public_key(pubKey.toStdString());
-  Q_UNUSED(publicKey);
-  return isValid;
-}
 
 
 void CCrypto::CPEM_LoadPrivateKey(CryptoPP::BufferedTransformation &src, CryptoPP::PKCS8PrivateKey &key, bool subjectInfo)
@@ -561,92 +644,13 @@ void CCrypto::CPEM_LoadPrivateKey(CryptoPP::BufferedTransformation &src, CryptoP
 #endif
 }
 
-std::tuple<bool, CryptoPP::RSA::PrivateKey> CCrypto::read_PEM_private_key(std::string rsa_priv_key, const std::string &header, const std::string &footer)
-{
-  using std::string, std::runtime_error;
-  using namespace CryptoPP;
-  CryptoPP::RSA::PrivateKey rsa;
-  try
-  {
-    auto [status, strPrivKey] = stripHeaderAndFooter(rsa_priv_key, header, footer);
-    if (!status)
-      return {false, rsa};
 
-    CryptoPP::ByteQueue t1, t2;
-    StringSource ss(strPrivKey, true,
-                    new CryptoPP::Redirector(t1));
-    CPEM_Base64Decode(t1, t2);
-    CPEM_LoadPrivateKey(t2, rsa, true);
-    return {true, rsa};
-  }
-  catch (const CryptoPP::Exception &ex)
-  {
-    std::cerr << ex.what() << endl;
-    return {false, rsa};
-  }
-}
 
-QString CCrypto::nativeSign(const QString &prvKey, const QString &msg)
-{
-  using namespace CryptoPP;
-  auto [isValid, privateKey] = read_PEM_private_key(prvKey.toStdString());
-  Q_UNUSED(isValid);
-  //  privateKey.BEREncode();
-
-  //  PKCS8PrivateKey
-  std::string message, signature;
-  message = msg.toStdString();
-  // Sign and Encode
-  //  RSASSA_PKCS1v15_SHA_Signer signer(privateKey);
-  RSASS<PKCS1v15, SHA256>::Signer signer(privateKey);
-  CryptoPP::AutoSeededRandomPool rng;
-
-  // Create signature space
-  size_t length = signer.MaxSignatureLength();
-  SecByteBlock signature2(length);
-
-  // Sign message
-  length = signer.SignMessage(
-      rng, (const byte *)message.c_str(),
-      message.length(), signature2);
-
-  // Resize now we know the true size of the signature
-  signature2.resize(length);
-
-  // base64-encode signature to pass to forge
-  std::string encoded;
-  CryptoPP::StringSource ss(
-      signature2.data(), signature2.size(), true,
-      new CryptoPP::Base64Encoder(
-          new CryptoPP::StringSink(encoded)));
-
-  return CUtils::removeNewLine(QString::fromStdString(encoded));
-};
-
-bool CCrypto::nativeVerifySignature(const QString &publicKeyStr, const QString &msg, const QString &sig)
-{
-
-  return true; // FIXME: implement it ASAP
-
-  //  https://github.com/digitalbazaar/forge/issues/117
-  using namespace CryptoPP;
-  std::string message = msg.toStdString();
-  std::string signature = sig.toStdString();
-  auto [isValid, publicKey] = read_PEM_public_key(publicKeyStr.toStdString());
-  if (!isValid)
-    return isValid;
-
-  RSASS<PKCS1v15, SHA256>::Verifier verifier(publicKey);
-  auto sss = (const byte *)signature.c_str();
-  bool result = verifier.VerifyMessage((const byte *)message.c_str(),
-                                       message.length(), sss, signature.size());
-  return result;
-}
 
 QString CCrypto::decryptStringWithPrivateKey(const QString &privateKeyStr, const QString &toDecrypt)
 {
   using namespace CryptoPP;
-  auto [isValid, privateKey] = read_PEM_private_key(privateKeyStr.toStdString());
+  auto [isValid, privateKey] = rsa_read_pem_prv_key(privateKeyStr.toStdString());
   Q_UNUSED(isValid);
   std::string cipher = (toDecrypt).toStdString();
   std::string recovered;

@@ -54,7 +54,7 @@ impl CMachine {
     }
 
     // func name was setCloneDev
-    pub fn set_clone_dev(clone_id: i8, is_develop_mod: bool) -> bool
+    pub fn set_clone_dev(clone_id: i8, _is_develop_mod: bool) -> bool
     {
         let singleton = CMachine::get_instance();
         let mut m_clone_id = singleton.m_clone_id.try_lock().unwrap();

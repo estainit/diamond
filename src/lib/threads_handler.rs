@@ -27,7 +27,7 @@ async fn launch_import_utxos_from_coinbase_blocks()
 
 // func name was launchThreadsBunch
 // default was only_lazy_loadings=false;
-pub async fn launch_threads_bunch(only_lazy_loadings: bool) {
+pub async fn launch_threads_bunch(_only_lazy_loadings: bool) {
     let mut asyncs = vec![];
 
     /*
