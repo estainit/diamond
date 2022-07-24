@@ -19,6 +19,7 @@ use std::str::FromStr;
 // use der::Encode;
 
 use crate::lib::constants as cconsts;
+use crate::lib::utils::cutils as cutils;
 use crate::lib::bech_32;
 use crate::lib::dlog::dlog;
 
@@ -533,7 +534,6 @@ pub fn rsa_convert_prv_obj_to_pem_str(private_key: RsaPrivateKey) -> String {
     //         "".to_string()
     //     }
     // }
-
 }
 
 pub fn rsa_convert_pub_obj_to_pem_str(public_key: RsaPublicKey) -> String {
@@ -559,7 +559,7 @@ pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
         Ok(sig_vec) => {
             println!("succ signing: {}", hex::encode(&sig_vec).clone());
             (true, hex::encode(sig_vec).clone().to_string())
-        },
+        }
         Err(e) => {
             dlog(&format!("Failed in RSA signing: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
             (false, "".to_string())
@@ -570,7 +570,6 @@ pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
 
 //old_name_was nativeVerifySignature
 pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &String) -> bool {
-
     let pub_key = rsa_read_pem_pub_key(&pem_pub_key);
     let sig = &hex::decode(signature).unwrap()[..];
     println!("succ signing22: {}", hex::encode(&sig).clone());
@@ -578,18 +577,67 @@ pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &
     let msg = message[0..16].as_bytes();
 
     let padding = PaddingScheme::new_pkcs1v15_sign(None);
-    match pub_key.verify(padding, msg, sig){
-        Ok(r)=>{
+    match pub_key.verify(padding, msg, sig) {
+        Ok(r) => {
             return true;
-        },
-        Err(e)=>{
+        }
+        Err(e) => {
             dlog(&format!("Failed in verifying RSA signature {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
             return false;
         }
     }
-
-    return true; // FIXME: implement it ASAP
 }
+
+//old_name_was encryptStringWithPublicKey
+pub fn rsa_encrypt_with_pub_key(pem_pub_key: &String, message: &String) -> (bool, String) {
+    let mut output: String = "".to_string();
+    for a_chunk in cutils::chunk_string(&message, 16) {
+        let (status, a_chunk_enc) = rsa_encrypt_with_pub_key_16(pem_pub_key, &a_chunk);
+        if !status { return (false, "".to_string()); }
+        output += &a_chunk_enc;
+    }
+    return (true, output);
+}
+
+//old_name_was encryptStringWithPublicKey
+pub fn rsa_encrypt_with_pub_key_16(pem_pub_key: &String, message: &String) -> (bool, String) {
+    // let msg = b"hello world";
+    let mut rng = rand::thread_rng();
+    let pub_key = rsa_read_pem_pub_key(&pem_pub_key);
+    let msg = message[..].as_bytes();
+    let padding = PaddingScheme::new_pkcs1v15_encrypt();
+    let enc_data = pub_key.encrypt(&mut rng, padding, &msg[..]).expect("failed to encrypt");
+    // assert_ne!(&msg[..], &enc_data[..]);
+    (true, hex::encode(enc_data).clone().to_string())
+}
+
+pub fn rsa_decrypt_with_prv_key(pem_prv_key: &String, cipher: &String) -> (bool, String) {
+    let mut output: String = "".to_string();
+    for a_chunk in cutils::chunk_string(&cipher, 16) {
+        let (status, a_chunk_dec) = rsa_decrypt_with_prv_key_16(pem_prv_key, &a_chunk);
+        if !status { return (false, "".to_string()); }
+        output += &a_chunk_dec;
+    }
+    return (true, output);
+}
+
+pub fn rsa_decrypt_with_prv_key_16(pem_prv_key: &String, cipher: &String) -> (bool, String) {
+    // FIXME: refactor it totalmente
+    let prv_key = rsa_read_pem_prv_key(&pem_prv_key);
+    let ciph = hex::decode(cipher).unwrap();
+    let padding = PaddingScheme::new_pkcs1v15_encrypt();
+    match prv_key.decrypt(padding, &ciph) {
+        Ok(dec_data) => {
+            let decoded = format!("{}", dec_data.into_iter().map(|i| char::from(i)).collect::<String>());
+            return (true, decoded.clone().to_string());
+        }
+        Err(e) => {
+            dlog(&format!("Failed in decrypt by RSA private key {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            return (false, "".to_string());
+        }
+    }
+}
+
 /*
 
 void CCrypto::CPEM_LoadPublicKey(CryptoPP::BufferedTransformation &src, CryptoPP::X509PublicKey &key, bool subjectInfo)
@@ -669,26 +717,5 @@ QString CCrypto::decryptStringWithPrivateKey(const QString &privateKeyStr, const
   return QString::fromStdString(recovered);
 };
 
-QString CCrypto::encryptStringWithPublicKey(const QString &publicKeyStr, const QString &toEncrypt)
-{
-  std::string plain = toEncrypt.toStdString();
-  std::string cipher = "";
-
-  using namespace CryptoPP;
-  auto [isValid, publicKey] = read_PEM_public_key(publicKeyStr.toStdString());
-  Q_UNUSED(isValid);
-  CryptoPP::AutoSeededRandomPool rng;
-
-  // Encryption
-  RSAES<OAEP<SHA1> >::Encryptor e(publicKey);
-
-  StringSource ss1(plain, true,
-                   new PK_EncryptorFilter(rng, e,
-                                          new CryptoPP::Base64Encoder(
-                                              new StringSink(cipher))) // PK_EncryptorFilter
-  );                                                                   // StringSource
-
-  return CUtils::removeNewLine(QString::fromStdString(cipher));
-};
 
  */

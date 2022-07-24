@@ -2,12 +2,12 @@
 use std::fmt::format;
 use chrono::Utc;
 use chrono::{DateTime, TimeZone};
+use substring::Substring;
 
 use crate::lib::constants as CConsts;
 use crate::lib::custom_types::CDateT;
 
 //old_name_was chunkQStringList
-#[allow(dead_code)]
 pub fn chunk_to_vectors(values: Vec<String>, chunk_size: u64) -> Vec<Vec<String>>
 {
     let mut out: Vec<Vec<String>> = vec![];
@@ -438,4 +438,19 @@ pub fn get_coinbase_range_by_cycle_stamp(cycle: String) -> TimeRange {
             cycle_dtl[0].to_string() + &" 00:00:01");
         return get_coinbase_range(c_date);
     }
+}
+
+//old_name_was chunkString
+pub fn chunk_string(str: &String, chunckSize: u16) -> Vec<String> {
+    let mut out: Vec<String> = vec![];
+    let mut i = 0;
+    while i < str.len() {
+        println!("hello");
+        let s: String = str.substring(i, i + chunckSize as usize).to_string();
+        out.push(s);
+        i = i + chunckSize as usize;
+    }
+
+    println!("subs: {:?}", out);
+    return out;
 }

@@ -63,4 +63,35 @@ pub mod chunk_string_list {
         assert_eq!(res.len(), 1);
         assert_eq!(res[0], vec!["a".to_string(), "b".to_string(), "c".to_string()]);
     }
+
+    #[test]
+    pub fn test_chunk_string_1_1(){
+        let chunks = cutils::chunk_string(&"a1".to_string(), 16);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], "a1");
+    }
+
+    #[test]
+    pub fn test_chunk_string_1_2(){
+        let chunks = cutils::chunk_string(&"a123456789bcdef0".to_string(), 16);
+        assert_eq!(chunks.len(), 1);
+        assert_eq!(chunks[0], "a123456789bcdef0");
+    }
+
+    #[test]
+    pub fn test_chunk_string_2(){
+        let chunks = cutils::chunk_string(&"a123456789bcdef0a123456789bcdef0".to_string(), 16);
+        assert_eq!(chunks.len(), 2);
+        assert_eq!(chunks[0], chunks[1]);
+        assert_eq!(chunks[0], "a123456789bcdef0");
+    }
+
+    #[test]
+    pub fn test_chunk_string_3(){
+        let chunks = cutils::chunk_string(&"a123456789bcdef0a123456789bcdef0a".to_string(), 16);
+        assert_eq!(chunks.len(), 3);
+        assert_eq!(chunks[0], chunks[1]);
+        assert_eq!(chunks[0], "a123456789bcdef0");
+        assert_eq!(chunks[2], "a");
+    }
 }

@@ -255,34 +255,42 @@ return true;
     #[test]
     pub fn test_autogen_rsa_key_pairs()
     {
-        let message: String = "Hi 12345678901234567890".to_string();
+        let message: String = "Hi 1234567890123".to_string();
         let _signature: String = "".to_string();
         let _cipher: String = "".to_string();
         let _recovered: String = "".to_string();
         let _is_verified: bool = false;
-        let (status, private_key, public_key) = ccrypto::rsa_generate_key_pair();
+        let (status, pem_prv_key, pem_pub_key) = ccrypto::rsa_generate_key_pair();
         assert!(status);
 
-        assert!(ccrypto::rsa_is_valid_prv_key(&private_key));
-        let regen_prv_key = ccrypto::rsa_read_pem_prv_key(&private_key);
+        assert!(ccrypto::rsa_is_valid_prv_key(&pem_prv_key));
+        let regen_prv_key = ccrypto::rsa_read_pem_prv_key(&pem_prv_key);
         let regen_pem_prv = ccrypto::rsa_convert_prv_obj_to_pem_str(regen_prv_key);
-        assert_eq!(regen_pem_prv, private_key);
+        assert_eq!(regen_pem_prv, pem_prv_key);
 
-        assert!(ccrypto::rsa_is_valid_pub_key(&public_key));
+        assert!(ccrypto::rsa_is_valid_pub_key(&pem_pub_key));
 
-        let regen_pub_key = ccrypto::rsa_read_pem_pub_key(&public_key);
+        let regen_pub_key = ccrypto::rsa_read_pem_pub_key(&pem_pub_key);
         let regen_pem_pub = ccrypto::rsa_convert_pub_obj_to_pem_str(regen_pub_key);
-        assert_eq!(regen_pem_pub, public_key);
+        assert_eq!(regen_pem_pub, pem_pub_key);
 
 
         // test signature & verification
         let (sign_status, signature) = ccrypto::rsa_sign(
-            &private_key,
+            &pem_prv_key,
             &message,
         );
         assert!(sign_status);
 
-        assert!(ccrypto::rsa_verify_signature(&public_key, &message, &signature));
+        assert!(ccrypto::rsa_verify_signature(&pem_pub_key, &message, &signature));
+
+        let (enc_status, enc_msg) = ccrypto::rsa_encrypt_with_pub_key(&pem_pub_key, &message);
+        assert!(enc_status);
+
+        let (dec_status, dec_msg) = ccrypto::rsa_decrypt_with_prv_key(&pem_prv_key, &enc_msg);
+        assert!(dec_status);
+
+        assert_eq!(dec_msg, message);
 
         /*
 

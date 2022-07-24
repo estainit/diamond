@@ -45,16 +45,28 @@ async fn main() {
     //!
     //!
 
+    // let resss = cutils::chunk_string(&"a123456789bcdef0a123456789bcdef0".to_string(), 16);
+    // println!("in main chunk_string: {:?}", resss.len());
+    // println!("in main chunk_string: {:?}", resss);
+
     let (status, pem_prv_key, pem_pub_key) = ccrypto::rsa_generate_key_pair();
     // println!("privk: {}", pem_prv_key);
-    let message = "The message to be signed".to_string();
+    let message = "The message01234".to_string();// to be signed and encrypt and decrypt
     let (sign_status, signature) = ccrypto::rsa_sign(
         &pem_prv_key,
         &message,
     );
     assert!(sign_status);
-    println!("in main signature: {}", signature);
     assert!(ccrypto::rsa_verify_signature(&pem_pub_key, &message, &signature));
+
+    let (enc_status, enc_msg) = ccrypto::rsa_encrypt_with_pub_key(&pem_pub_key, &message);
+    assert!(enc_status);
+    println!("in main enc_msg: {}", enc_msg);
+
+    let (dec_status, dec_msg) = ccrypto::rsa_decrypt_with_prv_key(&pem_prv_key, &enc_msg);
+    assert!(dec_status);
+    println!("in main dec_msg: {}", dec_msg);
+
 
     use rsa::{PublicKey, RsaPrivateKey, RsaPublicKey, PaddingScheme};
 
