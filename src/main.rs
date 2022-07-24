@@ -51,7 +51,7 @@ async fn main() {
 
     let (status, pem_prv_key, pem_pub_key) = ccrypto::rsa_generate_key_pair();
     // println!("privk: {}", pem_prv_key);
-    let message = "The message01234".to_string();// to be signed and encrypt and decrypt
+    let message = "The message to be signed and encrypt and decrypt".to_string();// to be signed and encrypt and decrypt
     let (sign_status, signature) = ccrypto::rsa_sign(
         &pem_prv_key,
         &message,

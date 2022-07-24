@@ -613,16 +613,15 @@ pub fn rsa_encrypt_with_pub_key_16(pem_pub_key: &String, message: &String) -> (b
 
 pub fn rsa_decrypt_with_prv_key(pem_prv_key: &String, cipher: &String) -> (bool, String) {
     let mut output: String = "".to_string();
-    for a_chunk in cutils::chunk_string(&cipher, 16) {
-        let (status, a_chunk_dec) = rsa_decrypt_with_prv_key_16(pem_prv_key, &a_chunk);
+    for a_chunk in cutils::chunk_string(&cipher, 64) {
+        let (status, a_chunk_dec) = rsa_decrypt_with_prv_key_64(pem_prv_key, &a_chunk);
         if !status { return (false, "".to_string()); }
         output += &a_chunk_dec;
     }
     return (true, output);
 }
 
-pub fn rsa_decrypt_with_prv_key_16(pem_prv_key: &String, cipher: &String) -> (bool, String) {
-    // FIXME: refactor it totalmente
+pub fn rsa_decrypt_with_prv_key_64(pem_prv_key: &String, cipher: &String) -> (bool, String) {
     let prv_key = rsa_read_pem_prv_key(&pem_prv_key);
     let ciph = hex::decode(cipher).unwrap();
     let padding = PaddingScheme::new_pkcs1v15_encrypt();
