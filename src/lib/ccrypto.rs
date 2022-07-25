@@ -1,22 +1,11 @@
 use rand_core::OsRng;
-// requires 'getrandom' feature
+use std::str::FromStr;
+use secp256k1::hashes::{sha256};
 use secp256k1::{Secp256k1, Message, SecretKey, PublicKey,
                 ecdsa::{Signature}};
-use secp256k1::hashes::{HashEngine, sha256};
-// use rsa::{RsaPublicKey, pkcs8::DecodePublicKey};
-// use secp256k1::serde::de::Unexpected::Option;
-
 use rsa::{RsaPrivateKey, RsaPublicKey,
           PaddingScheme, PublicKey as rsa_pub, //pkcs1::LineEnding,
           pkcs8::{EncodePrivateKey, DecodePrivateKey, EncodePublicKey, DecodePublicKey}};
-
-// use rsa::{PublicKey as rsa_pub, RsaPrivateKey, RsaPublicKey, PaddingScheme};
-
-// use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
-// use rsa::{RsaPublicKey, pkcs8::DecodePublicKey};
-
-use std::str::FromStr;
-// use der::Encode;
 
 use crate::lib::constants as cconsts;
 use crate::lib::utils::cutils as cutils;
@@ -63,7 +52,7 @@ pub const PRIVATE_END: &str = "-----END PRIVATE KEY-----";
 pub const RSA_PRIVATE_BEGIN: &str = "-----BEGIN RSA PRIVATE KEY-----";
 pub const RSA_PRIVATE_END: &str = "-----END RSA PRIVATE KEY-----";
 
-pub fn do_sha256(message: &String) -> String {
+pub fn do_sha256(_message: &String) -> String {
     "".to_string()
 }
 
@@ -76,7 +65,7 @@ pub fn b64_encode(message:&String)->String{
 
 pub fn b64_decode(message:&String)->String{
     let buf:Vec<u8> = decode(&message).unwrap();
-    let s = match str::from_utf8(&buf) {
+    match str::from_utf8(&buf) {
         Ok(v) => return v.to_string(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     };
@@ -551,7 +540,6 @@ pub fn rsa_convert_pub_obj_to_pem_str(public_key: RsaPublicKey) -> String {
     }
 }
 
-
 //old_name_was nativeSign
 pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
     let prv_key: RsaPrivateKey = rsa_read_pem_prv_key(pem_prv_key);
@@ -588,6 +576,17 @@ pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &
 }
 
 //old_name_was encryptStringWithPublicKey
+pub fn rsa_encrypt_with_pub_key_16(pub_key: &RsaPublicKey, message: &String) -> (bool, String) {
+    // let msg = b"hello world";
+    let mut rng = rand::thread_rng();
+    let msg = message[..].as_bytes();
+    let padding = PaddingScheme::new_pkcs1v15_encrypt();
+    let enc_data = pub_key.encrypt(&mut rng, padding, &msg[..]).expect("failed to encrypt");
+    // assert_ne!(&msg[..], &enc_data[..]);
+    (true, hex::encode(enc_data).clone().to_string())
+}
+
+//old_name_was encryptStringWithPublicKey
 pub fn rsa_encrypt_with_pub_key(pem_pub_key: &String, message: &String) -> (bool, String) {
     let mut output: String = "".to_string();
     let pub_key = rsa_read_pem_pub_key(&pem_pub_key);
@@ -597,17 +596,6 @@ pub fn rsa_encrypt_with_pub_key(pem_pub_key: &String, message: &String) -> (bool
         output += &a_chunk_enc;
     }
     return (true, output);
-}
-
-//old_name_was encryptStringWithPublicKey
-pub fn rsa_encrypt_with_pub_key_16(pub_key: &RsaPublicKey, message: &String) -> (bool, String) {
-    // let msg = b"hello world";
-    let mut rng = rand::thread_rng();
-    let msg = message[..].as_bytes();
-    let padding = PaddingScheme::new_pkcs1v15_encrypt();
-    let enc_data = pub_key.encrypt(&mut rng, padding, &msg[..]).expect("failed to encrypt");
-    // assert_ne!(&msg[..], &enc_data[..]);
-    (true, hex::encode(enc_data).clone().to_string())
 }
 
 pub fn rsa_decrypt_with_prv_key(pem_prv_key: &String, cipher: &String) -> (bool, String) {

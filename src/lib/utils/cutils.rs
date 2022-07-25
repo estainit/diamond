@@ -213,13 +213,14 @@ pub struct TimeDiff
     pub as_seconds: u64,
     pub seconds: u64,
 
+    // implement operator overloading
     // bool operator ==(const TimeDiff& obj);
     // bool operator !=(const TimeDiff& obj);
 }
 
 
 impl TimeDiff {
-    fn constructor() -> TimeDiff {
+    fn new() -> TimeDiff {
         let o: TimeDiff = TimeDiff {
             as_years: 0,
             years: 0,
@@ -245,7 +246,7 @@ pub fn add_fff_zzzz_to_yyyymmdd(c_date: CDateT) -> CDateT {
 
 //old_name_was timeDiff
 pub fn time_diff(from_t: CDateT, to_t: CDateT) -> TimeDiff {
-    let mut res: TimeDiff = TimeDiff::constructor();
+    let mut res: TimeDiff = TimeDiff::new();
     let start_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(from_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
     let end_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(to_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
     let gap_duration = end_t - start_t;
@@ -441,13 +442,13 @@ pub fn get_coinbase_range_by_cycle_stamp(cycle: String) -> TimeRange {
 }
 
 //old_name_was chunkString
-pub fn chunk_string(str: &String, chunckSize: u16) -> Vec<String> {
+pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
     let mut out: Vec<String> = vec![];
     let mut i = 0;
     while i < str.len() {
-        let s: String = str.substring(i, i + chunckSize as usize).to_string();
+        let s: String = str.substring(i, i + chunck_size as usize).to_string();
         out.push(s);
-        i = i + chunckSize as usize;
+        i = i + chunck_size as usize;
     }
     return out;
 }
