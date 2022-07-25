@@ -26,6 +26,7 @@ mod tests;
 // use lib::threads_handler::launch_threads;
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
+use crate::ccrypto::rsa_generate_key_pair;
 
 use crate::lib::ccrypto;
 
@@ -44,6 +45,20 @@ async fn main() {
     //!
     //!
     //!
+
+    use base64::{encode, decode};
+
+    {
+        let a = b"hello world";
+        let b = "aGVsbG8gd29ybGQ=";
+
+        assert_eq!(encode(a), b);
+        assert_eq!(a, &decode(b).unwrap()[..]);
+
+
+        // println!("encc: {}", encc);
+
+    }
 
 
 // config::print_config();

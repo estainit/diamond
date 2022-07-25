@@ -445,12 +445,9 @@ pub fn chunk_string(str: &String, chunckSize: u16) -> Vec<String> {
     let mut out: Vec<String> = vec![];
     let mut i = 0;
     while i < str.len() {
-        println!("hello");
         let s: String = str.substring(i, i + chunckSize as usize).to_string();
         out.push(s);
         i = i + chunckSize as usize;
     }
-
-    println!("subs: {:?}", out);
     return out;
 }

@@ -2,12 +2,12 @@ use rand_core::OsRng;
 // requires 'getrandom' feature
 use secp256k1::{Secp256k1, Message, SecretKey, PublicKey,
                 ecdsa::{Signature}};
-use secp256k1::hashes::sha256;
+use secp256k1::hashes::{HashEngine, sha256};
 // use rsa::{RsaPublicKey, pkcs8::DecodePublicKey};
 // use secp256k1::serde::de::Unexpected::Option;
 
 use rsa::{RsaPrivateKey, RsaPublicKey,
-          PaddingScheme, PublicKey as rsa_pub, pkcs1::LineEnding,
+          PaddingScheme, PublicKey as rsa_pub, //pkcs1::LineEnding,
           pkcs8::{EncodePrivateKey, DecodePrivateKey, EncodePublicKey, DecodePublicKey}};
 
 // use rsa::{PublicKey as rsa_pub, RsaPrivateKey, RsaPublicKey, PaddingScheme};
@@ -62,6 +62,25 @@ pub const PRIVATE_BEGIN: &str = "-----BEGIN PRIVATE KEY-----";
 pub const PRIVATE_END: &str = "-----END PRIVATE KEY-----";
 pub const RSA_PRIVATE_BEGIN: &str = "-----BEGIN RSA PRIVATE KEY-----";
 pub const RSA_PRIVATE_END: &str = "-----END RSA PRIVATE KEY-----";
+
+pub fn do_sha256(message: &String) -> String {
+    "".to_string()
+}
+
+use base64::{encode, decode};
+use std::str;
+
+pub fn b64_encode(message:&String)->String{
+ encode(message.as_bytes())
+}
+
+pub fn b64_decode(message:&String)->String{
+    let buf:Vec<u8> = decode(&message).unwrap();
+    let s = match str::from_utf8(&buf) {
+        Ok(v) => return v.to_string(),
+        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+    };
+}
 
 /*
 
@@ -244,21 +263,7 @@ QString CCrypto::sha256Dbl(const QString &msg)
   return sha256(sha256(msg));
 }
 
-QString CCrypto::sha256(const QString &msg)
-{
-  std::string m = msg.toStdString();
-  CryptoPP::SHA256 hash;
-  std::string hashed;
-  CryptoPP::HexEncoder encoder(new CryptoPP::StringSink(hashed));
-  std::string digest;
-  hash.Update((const byte *)m.data(), m.size());
-  digest.resize(hash.DigestSize());
-  hash.Final((byte *)&digest[0]);
-  CryptoPP::StringSource(digest, true, new CryptoPP::Redirector(encoder));
-  std::transform(hashed.begin(), hashed.end(), hashed.begin(), [](unsigned char c)
-                 { return std::tolower(c); });
-  return QString::fromStdString(hashed);
-}
+
 
 QString CCrypto::base64Encode(const QString &decoded)
 {
@@ -485,7 +490,6 @@ pub fn rsa_is_valid_prv_key(pem_prv_key: &String) -> bool
 {
     return match RsaPrivateKey::from_pkcs8_pem(pem_prv_key) {
         Ok(_re_prv_key) => {
-            println!("is valid re_prv_key2(RSA) done", );
             true
         }
         Err(e) => {
@@ -505,7 +509,6 @@ pub fn rsa_is_valid_pub_key(pem_pub_key: &String) -> bool
 {
     return match RsaPublicKey::from_public_key_pem(pem_pub_key) {
         Ok(_re_public_key) => {
-            println!("is valid re_public_key2(RSA) done", );
             true
         }
         Err(e) => {
@@ -557,7 +560,6 @@ pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
 
     match prv_key.sign(padding, msg[0..16].as_bytes()) {
         Ok(sig_vec) => {
-            println!("succ signing: {}", hex::encode(&sig_vec).clone());
             (true, hex::encode(sig_vec).clone().to_string())
         }
         Err(e) => {
@@ -572,10 +574,7 @@ pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
 pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &String) -> bool {
     let pub_key = rsa_read_pem_pub_key(&pem_pub_key);
     let sig = &hex::decode(signature).unwrap()[..];
-    println!("succ signing22: {}", hex::encode(&sig).clone());
-
     let msg = message[0..16].as_bytes();
-
     let padding = PaddingScheme::new_pkcs1v15_sign(None);
     match pub_key.verify(padding, msg, sig) {
         Ok(r) => {
