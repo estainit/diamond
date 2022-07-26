@@ -2,7 +2,6 @@
 #[allow(dead_code)]
 pub fn is_older_than(v1: String, v_ref: String) -> i8 {
     let v1_value: i64 = convert_ver_to_val(v1);
-    println!("v1_value {:?}", v1_value);
     let v_ref_value: i64 = convert_ver_to_val(v_ref);
     if (v1_value < 0) || (v_ref_value < 0) {
         return -1;
@@ -15,7 +14,6 @@ pub fn is_older_than(v1: String, v_ref: String) -> i8 {
 #[allow(dead_code)]
 pub fn convert_ver_to_val(version: String) -> i64 {
     let v_seg: Vec<&str> = version.split(".").collect();
-    println!("v_seg {:?}", v_seg);
     let mut version_segments: Vec<i64> = vec![];
     for a_seg in v_seg.iter()
     {

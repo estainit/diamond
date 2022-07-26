@@ -5,31 +5,7 @@ use chrono::{DateTime, TimeZone};
 use substring::Substring;
 
 use crate::lib::constants as CConsts;
-use crate::lib::custom_types::CDateT;
-
-//old_name_was chunkQStringList
-pub fn chunk_to_vectors(values: Vec<String>, chunk_size: u64) -> Vec<Vec<String>>
-{
-    let mut out: Vec<Vec<String>> = vec![];
-    let the_len = values.len() as u64;
-    let mut chunks_count: u64 = (the_len / chunk_size) as u64;
-    if (the_len % chunk_size) != 0 {
-        chunks_count += 1;
-    }
-
-
-    for i in 0..chunks_count {
-        let end_index: u64;
-        if ((i + 1) * chunk_size) < the_len {
-            end_index = (i + 1) * chunk_size;
-        } else {
-            end_index = the_len;
-        }
-        let a_chunk: Vec<String> = values[(i * chunk_size) as usize..end_index as usize].to_vec();
-        out.push(a_chunk);
-    }
-    return out;
-}
+use crate::lib::custom_types::{CDateT, VString, VVString};
 
 #[allow(dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
@@ -451,4 +427,79 @@ pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
         i = i + chunck_size as usize;
     }
     return out;
+}
+
+
+//old_name_was chunkStringList
+//old_name_was chunkQStringList
+
+//old_name_was chunkStringList
+pub fn chunk_to_vvstring(values: &VString, chunk_size: u64) -> VVString {
+    let mut out: VVString = vec![];
+
+    if (values.len() == 0) || (chunk_size == 0) {
+        return out;
+    }
+
+    if values.len() <= chunk_size as usize {
+        out.push(values.clone());
+        return out;
+    }
+
+    let the_len = values.len() as u64;
+    let mut chunks_count: u64 = (the_len / chunk_size) as u64;
+    if (the_len % chunk_size) != 0 {
+        chunks_count += 1;
+    }
+
+    for i in 0..chunks_count {
+        let mut end_index: u64 = 0;
+        if (i + 1) * chunk_size < values.len() as u64 {
+            end_index = (i + 1) * chunk_size;
+        } else {
+            end_index = the_len as u64;
+        }
+        let a_chunk: Vec<String> = values[(i * chunk_size) as usize..end_index as usize].to_vec();
+        if a_chunk.len() > 0 {
+            out.push(a_chunk);
+        }
+    }
+
+    return out;
+    // fill
+    //  std::size_t const half_size = lines.len() / 2;
+    //  T split_lo(lines.begin(), lines.begin() + half_size);
+    //  T split_hi(lines.begin() + half_size, lines.end());
+}
+
+// pub fn clone_vstring(inp: &VString) -> VString {
+//     let mut out: VString = vec![];
+//     for a_str in inp {
+//         out.push(a_str.clone());
+//     }
+//     return out;
+// }
+
+// pub fn clone_T<T: Clone>(inp: &Vec<T>) -> Vec<T> {
+//     let mut out: Vec<T> = vec![];
+//     for a_str in inp {
+//         out.push(a_str.clone());
+//     }
+//     return out;
+// }
+
+pub fn copy_vec<T: Clone>(vec: &Vec<T>) -> Vec<T> {
+    let vec = vec[..].to_vec();
+    vec
+}
+
+
+pub trait ExtendString {
+    fn clone_me(&self) -> String;
+}
+
+impl ExtendString for String {
+    fn clone_me(&self) -> String {
+        self.to_string().clone()
+    }
 }

@@ -11,8 +11,6 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
     let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
     if !status || (bundle == "") { return false; };
-    println!("resss   s  s  sss {}", bundle);
-
 /*
     QJsonObject DAGBundle = CUtils::parseToJsonObj(bundle);
     QJsonArray blocks = DAGBundle.value("blocks").toArray();

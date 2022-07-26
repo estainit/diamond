@@ -25,18 +25,11 @@ pub fn bech32_encode(str: &str) -> String
 }
 
 pub fn keccak256(msg: &String) -> String {
-    // use sha3;
-    use sha3::{Digest, Sha3_256};
-    assert_eq!(hex::encode(vec![1, 2, 3, 15, 16]), "0102030f10");
-
-    // create a SHA3-256 object
-    let mut hasher = Sha3_256::new();
-    // write input message
-    hasher.update(&msg);
-    // read hash digest
-    let result = hasher.finalize();
-    let encoded_str = hex::encode(result);
-    encoded_str
+    use crypto::{sha3::Sha3, digest::Digest};
+    let mut hasher = Sha3::keccak256();
+    hasher.input_str(msg);
+    let hex = hasher.result_str();
+    hex
 }
 
 //old_name_was convertTitleToHash
@@ -446,7 +439,6 @@ pub fn rsa_generate_key_pair() -> (bool, String, String) {
     let private_pem = rsa_convert_prv_obj_to_pem_str(private_key);
     // let private_pem = private_key.to_pkcs8_pem(rsa::pkcs1::LineEnding::CRLF).expect("Failed in private convert to pem");
     // let private_pem = format!("{:?}", private_pem.to_string());
-    // println!("private_pem: {}", private_pem);
 
     let public_pem: String = rsa_convert_pub_obj_to_pem_str(public_key);
     // let mut public_pem:String = match public_key.to_public_key_pem(rsa::pkcs1::LineEnding::CRLF) {
@@ -462,7 +454,6 @@ pub fn rsa_generate_key_pair() -> (bool, String, String) {
 
     // let public_pem = public_key.to_public_key_pem(rsa::pkcs1::LineEnding::CRLF).expect("");
     // let public_pem = format!("{:?}", public_pem);
-    // println!("public_pem: {}", public_pem);
 
     (true, private_pem, public_pem)
 }

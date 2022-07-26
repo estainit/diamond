@@ -1,4 +1,7 @@
 pub type CDateT = String;
+pub type VString = Vec<String>;
+pub type VVString = Vec<Vec<String>>;
+
 
 /*
 
@@ -62,8 +65,6 @@ pub type QVector<OrderModifier> OrderT;
 pub type QHash<QString, QVDRecordsT> GRecordsT; // Groupped records
 pub type QHash<QString, GRecordsT> G2RecordsT; // Groupped Groupped records
 
-class MerkleNodeData;
-pub type QHash<QString, MerkleNodeData> MNodesMapT;
 
 class Coin;
 pub type QList<QStringList> CListListT;

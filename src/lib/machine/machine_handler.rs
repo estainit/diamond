@@ -1,5 +1,8 @@
 use std::sync::{Arc, Mutex};
 
+// use crate::lib::constants as cconsts;
+use crate::lib::custom_types::{VString};
+
 #[derive(Default)]
 pub struct CMachine {
     count: Mutex<u8>,
@@ -30,7 +33,7 @@ impl CMachine {
     }
 
     // func name was parseArgs
-    pub fn parse_args(args: Vec<String>, manual_clone_id: i8)
+    pub fn parse_args(args: VString, manual_clone_id: i8)
     {
         // println!("Env args: {:?}", args);
 

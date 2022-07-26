@@ -1,6 +1,9 @@
 extern crate core;
 
 use std::env;
+
+
+// use substring::Substring;
 // use der::Encode;
 // use pkcs1::LineEnding;
 // use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
@@ -22,13 +25,14 @@ mod tests;
 // use std::thread::sleep;
 // use std::time::Duration;
 
-// use crate::lib::constants as CConsts;
+// use crate::lib::constants as cconsts;
 // use lib::threads_handler::launch_threads;
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
-use crate::ccrypto::rsa_generate_key_pair;
-
 use crate::lib::ccrypto;
+// use crate::lib::ccrypto;
+// use crate::lib::custom_types::VString;
+use crate::lib::utils::cmerkle as cmerkle;
 
 // use crate::tests::unit_tests::cutils::test_chunk_qstring_list;
 
@@ -45,20 +49,6 @@ async fn main() {
     //!
     //!
     //!
-
-    use base64::{encode, decode};
-
-    {
-        let a = b"hello world";
-        let b = "aGVsbG8gd29ybGQ=";
-
-        assert_eq!(encode(a), b);
-        assert_eq!(a, &decode(b).unwrap()[..]);
-
-
-        // println!("encc: {}", encc);
-
-    }
 
 
 // config::print_config();
