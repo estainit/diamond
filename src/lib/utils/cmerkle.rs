@@ -29,7 +29,7 @@ pub trait MerkleNodeDataTrait {
 }
 
 impl MerkleNodeDataTrait for MerkleNodeData {
-     fn new() -> MerkleNodeData {
+    fn new() -> MerkleNodeData {
         let o: MerkleNodeData = MerkleNodeData {
             m_proof_keys: vec![],
             m_parent: "".to_string(),
@@ -39,7 +39,7 @@ impl MerkleNodeDataTrait for MerkleNodeData {
         return o;
     }
 
-     fn mynew() -> MerkleNodeData {
+    fn mynew() -> MerkleNodeData {
         let o: MerkleNodeData = MerkleNodeData {
             m_proof_keys: vec![],
             m_parent: "".to_string(),
@@ -73,7 +73,7 @@ pub fn generate(
     elms: &VString,
     input_type: &String,
     hash_algorithm: &String,
-    version_: &String) -> (String, MNodesMapT, String, i8, i8)
+    version_: &String) -> (String, MNodesMapT, String, usize, usize)
 {
     let mut version = version_.to_string();
     if version == "".to_string() {
@@ -157,8 +157,8 @@ pub fn generate(
         root,
         final_verifies,
         version,
-        levels as i8,
-        leaves as i8
+        levels,
+        leaves
     );
 }
 
@@ -180,7 +180,7 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
 
 //old_name_was innerMerkle
 pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &String, _version: &String)
-                    -> (String, MNodesMapT, i32, i32)
+                    -> (String, MNodesMapT, usize, usize)
 {
     let mut elms = cutils::clone_vec(elms_);
     if input_type == "string" {
@@ -192,8 +192,8 @@ pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &Strin
     }
 
     let mut verifies: MNodesMapT = HashMap::new();
-    let leaves = elms.len();
-    let mut level: i32 = 0;
+    let leaves: usize = elms.len();
+    let mut level: usize = 0;
     let mut parent: String;
     let l_key: String;
     let r_key: String;
@@ -207,7 +207,7 @@ pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &Strin
                 (
                     elms[0].to_string(), //root:
                     verifies,
-                    leaves as i32,
+                    leaves,
                     level
                 );
         }
