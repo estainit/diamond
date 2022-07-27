@@ -488,9 +488,18 @@ pub fn chunk_to_vvstring(values: &VString, chunk_size: u64) -> VVString {
 //     return out;
 // }
 
-pub fn copy_vec<T: Clone>(vec: &Vec<T>) -> Vec<T> {
+pub fn clone_vec<T: Clone>(vec: &Vec<T>) -> Vec<T> {
     let vec = vec[..].to_vec();
     vec
+}
+
+pub fn clone_vvec<T: Clone>(inp_vvec: &Vec<Vec<T>>) -> Vec<Vec<T>> {
+    let mut out: Vec<Vec<T>> = vec![];
+    for a_vec in inp_vvec {
+        let new_vec: Vec<T> = clone_vec(a_vec);
+        out.push(new_vec);
+    }
+    out
 }
 
 

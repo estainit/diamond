@@ -51,10 +51,10 @@ impl MerkleNodeDataTrait for MerkleNodeData {
 
     fn clone_me(&self) -> MerkleNodeData {
         let mut o: MerkleNodeData = MerkleNodeData::new();
-        o.m_proof_keys = cutils::copy_vec(&self.m_proof_keys);
+        o.m_proof_keys = cutils::clone_vec(&self.m_proof_keys);
         o.m_parent = self.m_parent.clone();
         o.m_left_hash = self.m_left_hash.clone();
-        o.m_merkle_proof = cutils::copy_vec(&self.m_merkle_proof);
+        o.m_merkle_proof = cutils::clone_vec(&self.m_merkle_proof);
         return o;
     }
 
@@ -127,7 +127,7 @@ pub fn generate(
         4097..=8192 => 8192,
         _ => panic!("Invalid needed_leaves: {}", needed_leaves)
     };
-    let mut elms_ = cutils::copy_vec(&elms);
+    let mut elms_ = cutils::clone_vec(&elms);
     while inx < needed_leaves as usize {
         elms_.push("leave_".to_owned() + &format!("{}", inx + 1));
         inx += 1;
@@ -150,7 +150,7 @@ pub fn generate(
             final_verifies.insert(the_key.clone(), a_proof);
         }
         let mut the_element = final_verifies.get(&the_key).unwrap().clone_me();
-        // the_element.m_merkle_proof = cutils::copy_vec(&verifies.get(&key.clone()).unwrap().m_proof_keys);
+        // the_element.m_merkle_proof = cutils::clone_vec(&verifies.get(&key.clone()).unwrap().m_proof_keys);
         // the_element.m_left_hash = verifies.get(&key.clone()).unwrap().m_left_hash.clone();
     }
     return (
@@ -182,13 +182,13 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
 pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &String, _version: &String)
                     -> (String, MNodesMapT, i32, i32)
 {
-    let mut elms = cutils::copy_vec(elms_);
+    let mut elms = cutils::clone_vec(elms_);
     if input_type == "string" {
         let mut hashed_elements: VString = vec![];
         for element in elms {
             hashed_elements.push(do_hash_a_node(&element, hash_algorithm));
         }
-        elms = cutils::copy_vec(&hashed_elements);
+        elms = cutils::clone_vec(&hashed_elements);
     }
 
     let mut verifies: MNodesMapT = HashMap::new();

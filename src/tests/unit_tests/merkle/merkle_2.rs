@@ -1,6 +1,3 @@
-// use crate::lib::utils::cutils;
-// use crate::lib::utils::cmerkle;
-
 #[cfg(test)]
 pub mod merkel_tests_2 {
     use crate::cmerkle;

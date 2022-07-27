@@ -33,6 +33,7 @@ use crate::lib::ccrypto;
 // use crate::lib::ccrypto;
 // use crate::lib::custom_types::VString;
 use crate::lib::utils::cmerkle as cmerkle;
+use crate::lib::utils::permutation_handler::PermutationHandler;
 
 // use crate::tests::unit_tests::cutils::test_chunk_qstring_list;
 
@@ -49,7 +50,18 @@ async fn main() {
     //!
     //!
     //!
-
+    {
+        let mut hp = PermutationHandler::new(
+            &vec!["a".to_string(), "b".to_string(), "c".to_string()],
+            2,
+            true,
+            &vec![],
+            &vec![]);
+        println!("hp.m_elements.len() {:?}", hp.m_elements);
+        println!("hp.m_permutations.len() {:?}", hp.m_permutations);
+        assert_eq!(hp.m_permutations.len() , 3);
+        hp.testAnalyze(&vec![]);
+    }
 
 // config::print_config();
 
