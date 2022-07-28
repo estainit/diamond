@@ -1,6 +1,11 @@
 extern crate core;
-
 use std::env;
+
+use std::thread;
+use std::time::Duration;
+use once_cell::sync::Lazy;
+use std::sync::{LockResult, Mutex, MutexGuard};
+use std::thread::sleep as std_sleep;
 
 
 // use substring::Substring;
@@ -25,17 +30,19 @@ mod tests;
 // use std::thread::sleep;
 // use std::time::Duration;
 
-// use crate::lib::constants as cconsts;
-// use lib::threads_handler::launch_threads;
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
 use crate::lib::ccrypto;
-// use crate::lib::ccrypto;
-// use crate::lib::custom_types::VString;
+use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
+use crate::machine_handler::CMachine;
 
-// use crate::tests::unit_tests::cutils::test_chunk_qstring_list;
+static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
+fn machine() -> MutexGuard<'static, CMachine>{
+    CMACHINE.lock().unwrap()
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -50,18 +57,7 @@ async fn main() {
     //!
     //!
     //!
-    {
-        let mut hp = PermutationHandler::new(
-            &vec!["a".to_string(), "b".to_string(), "c".to_string()],
-            2,
-            true,
-            &vec![],
-            &vec![]);
-        println!("hp.m_elements.len() {:?}", hp.m_elements);
-        println!("hp.m_permutations.len() {:?}", hp.m_permutations);
-        assert_eq!(hp.m_permutations.len() , 3);
-        hp.testAnalyze(&vec![]);
-    }
+
 
 // config::print_config();
 
@@ -70,8 +66,11 @@ async fn main() {
     let manual_clone_id: i8 = 0;
 // CMachine::onAboutToQuit(&w);
 
-    machine_handler::CMachine::init();
-    machine_handler::CMachine::parse_args(env::args().collect(), manual_clone_id);
+    machine().init();
+    machine().parse_args(env::args().collect(), manual_clone_id);
+
+
+
 
     /*
 
@@ -87,8 +86,7 @@ async fn main() {
       }
          */
 
-// launch_threads().await;
+    launch_giga_loop(false);//    launch_threads();
 
-// sleep(Duration::from_secs(5)).await;
 }
 

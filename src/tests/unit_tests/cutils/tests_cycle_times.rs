@@ -86,14 +86,14 @@ pub mod tests_cycle_times {
     pub fn test_date_range()
     {
         if CConsts::TIME_GAIN == 1 {
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 00:00:00".to_string()).from, "2017-07-21 00:00:00".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 00:00:00".to_string()).to, "2017-07-21 11:59:59".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 11:59:59".to_string()).from, "2017-07-21 00:00:00".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 11:59:59".to_string()).to, "2017-07-21 11:59:59".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 12:00:00".to_string()).from, "2017-07-21 12:00:00".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 12:00:00".to_string()).to, "2017-07-21 23:59:59".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 23:59:00".to_string()).from, "2017-07-21 12:00:00".to_string());
-            assert_eq!(cutils::get_cb_utxos_date_range("2017-07-22 23:59:00".to_string()).to, "2017-07-21 23:59:59".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 00:00:00".to_string()).from, "2017-07-21 00:00:00".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 00:00:00".to_string()).to, "2017-07-21 11:59:59".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 11:59:59".to_string()).from, "2017-07-21 00:00:00".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 11:59:59".to_string()).to, "2017-07-21 11:59:59".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 12:00:00".to_string()).from, "2017-07-21 12:00:00".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 12:00:00".to_string()).to, "2017-07-21 23:59:59".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 23:59:00".to_string()).from, "2017-07-21 12:00:00".to_string());
+            assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 23:59:00".to_string()).to, "2017-07-21 23:59:59".to_string());
         }
     }
 

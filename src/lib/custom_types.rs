@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub type CDateT = String;
 pub type VString = Vec<String>;
 pub type VVString = Vec<Vec<String>>;
@@ -35,8 +37,8 @@ pub type CVoteT = i16;  // between -100 0 100
 pub type TimeByHoursT = f64;
 // time by hours
 pub type TimeByMinutesT = u64;
-pub type TimeBySecT = u64;
  */
+pub type TimeBySecT = u64;
 
 /*
 use std::collections::HashMap;
@@ -46,15 +48,22 @@ pub type floatDicT = HashMap<String, f64>       floatDicT; // custom dictionary
 pub type UI16DicT = HashMap<String, CDocIndexT>  UI16DicT; // custom dictionary
 pub type QHash<QString, uint32_t>    UI32DicT; // custom dictionary
 pub type QHash<QString, uint64_t>    UI64DicT; // custom dictionary
-pub type QHash<QString, QString>     QSDicT; // custom dictionary
+*/
+pub type QSDicT = HashMap<String, String>;
+// custom dictionary
+/*
 pub type QHash<QString, QStringList> QSLDicT; // custom dictionary
 pub type QHash<QString, QSDicT>      QS2DicT; // custom dictionary
-pub type QHash<QString, QVariant>    QVDicT; // custom dictionary
+*/
+pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
+pub type QVDicT = HashMap<String, QVariant>    ; // custom dictionary
+/*
 pub type QHash<QString, QJsonObject> QJODicT; // custom dictionary
 pub type QHash<QString, QJsonArray>  QJADicT; // custom dictionary
 pub type QHash<QString, QVDicT>      QV2DicT;
-
-pub type QVector<QVDicT>        QVDRecordsT;
+*/
+pub type QVDRecordsT = Vec<QVDicT>;
+/*
 pub type QVector<QSDicT>        QSDRecordsT;
 pub type QVector<QV2DicT>       QV2DRecordsT;
 pub type QVector<QJsonObject>   JORecordsT;

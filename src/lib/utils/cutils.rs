@@ -163,7 +163,7 @@ pub fn get_cycle_elapsed_by_minutes(c_date_: CDateT) -> u64 {
         c_date = get_now();
     }
 
-    let cycle_start_time: CDateT = get_a_cycle_range(c_date.clone(), 0, 0).from;
+    let cycle_start_time: CDateT = get_a_cycle_range(&c_date.clone(), 0, 0).from;
     return time_diff(cycle_start_time, c_date).as_minutes;
 }
 
@@ -221,7 +221,12 @@ pub fn add_fff_zzzz_to_yyyymmdd(c_date: CDateT) -> CDateT {
 }
 
 //old_name_was timeDiff
-pub fn time_diff(from_t: CDateT, to_t: CDateT) -> TimeDiff {
+pub fn time_diff(from_t_: CDateT, to_t_: CDateT) -> TimeDiff {
+    let mut from_t = from_t_;
+    if from_t == "" { from_t = get_now(); }
+    let mut to_t = to_t_;
+    if to_t == "" { to_t = get_now(); }
+
     let mut res: TimeDiff = TimeDiff::new();
     let start_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(from_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
     let end_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(to_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
@@ -244,7 +249,7 @@ pub fn time_diff(from_t: CDateT, to_t: CDateT) -> TimeDiff {
 
 //old_name_was getACycleRange
 pub fn get_a_cycle_range(
-    c_date_: CDateT,
+    c_date_: &CDateT,
     back_by_cycle: u8,
     forward_by_cycle: u8, ) -> TimeRange
 {
@@ -343,7 +348,7 @@ pub fn minutes_after(forward_in_time_by_minutes: u64, c_date: CDateT) -> String 
 //old name was getCoinbaseRange
 #[allow(dead_code)]
 pub fn get_coinbase_range(c_date: CDateT) -> TimeRange {
-    return get_a_cycle_range(c_date, 0, 0);
+    return get_a_cycle_range(&c_date, 0, 0);
 }
 
 //old_name_was getCoinbaseCycleStamp
@@ -354,7 +359,7 @@ pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
     }
 
     if CConsts::TIME_GAIN == 1 {
-        return get_a_cycle_range(c_date, 0, 0).from;
+        return get_a_cycle_range(&c_date, 0, 0).from;
     }
 
     let day: Vec<&str> = c_date.split(" ").collect();
@@ -363,7 +368,7 @@ pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
 
 //old_name_was getCbUTXOsDateRange
 #[allow(dead_code)]
-pub fn get_cb_utxos_date_range(c_date: CDateT) -> TimeRange {
+pub fn get_cb_coins_date_range(c_date: &CDateT) -> TimeRange {
     return get_a_cycle_range(c_date, CConsts::COINBASE_MATURATION_CYCLES, 0);
 }
 
