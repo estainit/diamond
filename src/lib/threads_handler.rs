@@ -1,3 +1,5 @@
+use std::thread::sleep;
+use std::time::Duration;
 use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::import_coinbased_coins;
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
@@ -101,6 +103,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             }
         }
 
+        sleep(Duration::from_secs(10));
     }
 }
 

@@ -411,7 +411,7 @@ void PollingHandler::treatPollingMissed(
 
 void PollingHandler::doOnePollingConcludeTreatment(
   QVDicT aPolling,
-  const CDateT& cDate)
+  const CDateT& c_date)
 {
 //  CDateT polling_end_date = CUtils::minutesAfter(aPolling.value("pll_timeframe").toDouble() * 60 * 1.5, aPolling.value("pll_start_date").toString());
   CDateT polling_end_date = aPolling.value("pll_end_date").toString();
@@ -431,7 +431,7 @@ void PollingHandler::doOnePollingConcludeTreatment(
   }
 
   // compare_date is the start date of last cycle, so ONLY pollings with close date before compare date can be consider and treat the conclude treatments
-  CDateT compare_date = CUtils::getACycleRange(cDate, 1).from;
+  CDateT compare_date = CUtils::getACycleRange(c_date, 1).from;
   CLog::log("retrive for conclude Treatment polling(" + CUtils::hash8c(aPolling.value("pll_hash").toString()) + ") compare_date(" + compare_date + ")");
 
   /**
@@ -498,7 +498,7 @@ void PollingHandler::doOnePollingConcludeTreatment(
 
 // js name was doPollingConcludeTreatment
 bool PollingHandler::loopConcludeTreatment(
-  const CDateT& cDate,
+  const CDateT& c_date,
   bool force_to_update)
 {
   QString thread_prefix = "conclude_treatment_";
@@ -507,7 +507,7 @@ bool PollingHandler::loopConcludeTreatment(
   while (CMachine::shouldLoopThreads())
   {
     CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
-    doConcludeTreatment(cDate, force_to_update);
+    doConcludeTreatment(c_date, force_to_update);
 
     CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getConcludeTreatmentGap()));
@@ -524,7 +524,7 @@ use crate::lib::custom_types::CDateT;
 // js name was doPollingConcludeTreatment
 //old_name_was doConcludeTreatment
 pub fn do_conclude_treatment(
-    cDate: &CDateT,
+    c_date: &CDateT,
     force_to_update: bool) -> bool
 {
     /*
@@ -555,7 +555,7 @@ pub fn do_conclude_treatment(
       QVDRecordsT pollings = PollingHandler::searchInPollings(clauses);
       for (QVDicT a_polling: pollings)
       {
-        doOnePollingConcludeTreatment(a_polling, cDate);
+        doOnePollingConcludeTreatment(a_polling, c_date);
       }
     */
     return true;
@@ -789,7 +789,7 @@ std::tuple<bool, QString> PollingHandler::makeReqForAdmPolling(
   double the_value,
   uint64_t voters_count,
   QString doc_comment,
-  const CDateT& cDate,
+  const CDateT& c_date,
   const CAddressT& the_creator,
   const QString& polling_doc_type,
   const QString& polling_doc_class)
@@ -846,7 +846,7 @@ std::tuple<bool, QString> PollingHandler::makeReqForAdmPolling(
     {"dComment", doc_comment},
     {"pSubject", polling_subject},
     {"pValues", polling_values},
-    {"dCDate", cDate},
+    {"dCDate", c_date},
     {"dCreator", the_creator}};    // the bech32 address of shareholde}r
 
   AdministrativePollingDocument* adm_polling_doc = new AdministrativePollingDocument(adm_polling_json);
@@ -882,7 +882,7 @@ std::tuple<bool, QString> PollingHandler::makeReqForAdmPolling(
     CConsts::DOC_TYPES::Polling,
     POLLING_PROFILE_CLASSES["Basic"]["ppName"].toString(),
     doc_comment,
-    cDate);
+    c_date);
 
   // 3. create trx to pay ReqForRelRes doc cost
   // calculate ballot cost

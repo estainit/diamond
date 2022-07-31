@@ -1,4 +1,5 @@
 extern crate core;
+
 use std::env;
 
 use std::thread;
@@ -6,7 +7,7 @@ use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
-
+use serde_json::{json, Value};
 
 // use substring::Substring;
 // use der::Encode;
@@ -33,19 +34,20 @@ mod tests;
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
 use crate::lib::ccrypto;
+use crate::lib::database::db_handler::DBHandler;
 use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-fn machine() -> MutexGuard<'static, CMachine>{
-    CMACHINE.lock().unwrap()
-}
+fn machine() -> MutexGuard<'static, CMachine> { CMACHINE.lock().unwrap() }
+
+static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
+fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 
-#[tokio::main]
-async fn main() {
+fn main() {
     //! # Diamond, the Community Maker Engine
     //! ```
     //! fn main()
@@ -58,6 +60,20 @@ async fn main() {
     //!
     //!
 
+    let john: Value = json!({
+        "name": "John Doe",
+        "age": 43,
+        "phones": [
+            "+44 1234567",
+            "+44 2345678"
+        ]
+    });
+
+    println!("first phone number: {}", john["phones"][0]);
+
+    // Convert to a string of JSON and print it out
+    println!("{}", john.to_string());
+
 
 // config::print_config();
 
@@ -65,11 +81,10 @@ async fn main() {
 
     let manual_clone_id: i8 = 0;
 // CMachine::onAboutToQuit(&w);
-
     machine().init();
     machine().parse_args(env::args().collect(), manual_clone_id);
-
-
+    println!("uuuuuuuuu  uuuuuuu u uuu");
+    machine().boot_machine();
 
 
     /*
@@ -87,6 +102,5 @@ async fn main() {
          */
 
     launch_giga_loop(false);//    launch_threads();
-
 }
 

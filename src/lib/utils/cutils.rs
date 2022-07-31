@@ -3,6 +3,8 @@ use std::fmt::format;
 use chrono::Utc;
 use chrono::{DateTime, TimeZone};
 use substring::Substring;
+use lazy_static::lazy_static;
+use regex::Regex;
 
 use crate::lib::constants as CConsts;
 use crate::lib::custom_types::{CDateT, VString, VVString};
@@ -516,4 +518,14 @@ impl ExtendString for String {
     fn clone_me(&self) -> String {
         self.to_string().clone()
     }
+}
+
+pub fn remove_dbl_spaces(s: &String) -> String
+{
+    lazy_static! {
+        static ref ISO8601_DATE_REGEX : Regex = Regex::new(
+            r"[' ']{2,}"
+            ).unwrap();
+    }
+    return ISO8601_DATE_REGEX.replace_all(s, " ").to_string();
 }

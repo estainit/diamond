@@ -13,9 +13,9 @@ pub struct PremInfo
 
 pub struct PermutationHandler {
     pub(crate) m_elements: VString,
-    pub(crate) m_shouldBeUnique: bool,
+    pub(crate) m_should_be_unique: bool,
     pub(crate) m_permutations: VVString,
-    pub(crate) m_permutationsStringify: VString,
+    pub(crate) m_permutations_stringify: VString,
     pub(crate) m_test_analyze: HashMap<String, PremInfo>,
 }
 
@@ -23,26 +23,26 @@ impl PermutationHandler {
     pub(crate) fn new(
         elements: &VString,
         subset_count: u32,
-        shouldBeUnique: bool,
+        should_be_unique: bool,
         premutions: &VVString,
-        premutionsStringify: &VString,
+        premutions_stringify: &VString,
     ) -> PermutationHandler {
         let test_analyze: HashMap<String, PremInfo> = HashMap::new();
         let mut o: PermutationHandler = PermutationHandler {
             m_elements: clone_vec(elements),
-            m_shouldBeUnique: shouldBeUnique,
+            m_should_be_unique: should_be_unique,
             m_permutations: clone_vvec(premutions),
-            m_permutationsStringify: clone_vec(premutionsStringify),
+            m_permutations_stringify: clone_vec(premutions_stringify),
             m_test_analyze: test_analyze,
         };
         if subset_count > 0 {
-            o.recursiveHeapP(&o.m_elements.clone(), subset_count, -1);
+            o.recursive_heap_p(&o.m_elements.clone(), subset_count, -1);
         }
 
         return o;
     }
 
-    pub(crate) fn testAnalyze(&mut self, premutations_: &VVString) {
+    pub(crate) fn test_analyze(&mut self, premutations_: &VVString) {
         let mut premutations: VVString = clone_vvec(premutations_);
         if premutations.len() == 0
         {
@@ -70,10 +70,10 @@ impl PermutationHandler {
         }
     }
 
-    pub(crate) fn recursiveHeapP(&mut self,
-                                 values: &VString,
-                                 subset_count: u32,
-                                 inner_size: i32)
+    pub(crate) fn recursive_heap_p(&mut self,
+                                   values: &VString,
+                                   subset_count: u32,
+                                   inner_size: i32)
     {
 
         // FIXME: implement automatic calculation START

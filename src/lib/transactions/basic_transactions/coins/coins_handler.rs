@@ -13,7 +13,7 @@ pub static stbl_trx_utxos_fields: Vec<&str> = vec!["ut_id", "ut_creation_date", 
  */
 
 //old_name_was loopCoinCleaner
-pub fn loop_coin_cleaner(cDate: &CDateT)
+pub fn loop_coin_cleaner(c_date: &CDateT)
 {
     let thread_prefix = "coin_cleaner_".to_string();
     let thread_code = format!("{:?}", thread::current().id());
@@ -25,15 +25,15 @@ pub fn loop_coin_cleaner(cDate: &CDateT)
 
     while (machine().should_loop_threads())
     {
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::RUNNING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_coin_clean(&"".to_string());
 
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::SLEEPING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
 
         // sleep(Duration::from_secs(machine().get_block_invoke_gap()));
     }
 
-    machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::STOPPED.to_string());
+    machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::STOPPED.to_string());
     dlog(
         &format!("Gracefully stopped thread({}) of loop coin cleaner", thread_prefix.clone() + &thread_code),
         constants::Modules::App,
@@ -42,7 +42,7 @@ pub fn loop_coin_cleaner(cDate: &CDateT)
 
 
 //old_name_was doCoinClean
-pub fn do_coin_clean( cDate:&CDateT)
+pub fn do_coin_clean( c_date:&CDateT)
 {
   /**
   * remove from i_trx_utxo the the entries which are visible by blocks that are not "leave" any more and
@@ -85,10 +85,10 @@ pub fn do_coin_clean( cDate:&CDateT)
 /**
  * method, takes coins visibility and replace them with new blocks in future of block
  */
-bool UTXOHandler::refreshVisibility(CDateT cDate)
+bool UTXOHandler::refreshVisibility(CDateT c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   QString full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + stbl_trx_utxos +
   " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";
@@ -97,7 +97,7 @@ bool UTXOHandler::refreshVisibility(CDateT cDate)
     full_query,
     {"ut_visible_by", "ut_creation_date"},
     0,
-    {{"ut_creation_date", CUtils::minutesBefore(CMachine::getCycleByMinutes() * 4, cDate)}},
+    {{"ut_creation_date", CUtils::minutesBefore(CMachine::getCycleByMinutes() * 4, c_date)}},
     true,
     true);
 
@@ -228,7 +228,7 @@ QVDRecordsT UTXOHandler::searchInSpendableCoins(
 
   complete_query += " FROM  " + stbl_trx_utxos + " ";
 
-  QueryElements qElms = DbModel::preQueryGenerator(clauses, order);
+  QueryElements qElms = DbModel::pre_query_generator(clauses, order);
   complete_query += qElms.m_clauses;
 
   if (limit > 0 )
@@ -546,7 +546,7 @@ QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const QStringList& addresses)
   if (addresses.size() == 0)
     return {};
 
-  auto[clauses_, values_] = DbModel::clausesQueryGenerator({{"ut_o_address", addresses, "IN"}});
+  auto[clauses_, values_] = DbModel::clauses_query_generator({{"ut_o_address", addresses, "IN"}});
 
   QString complete_query = "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date ";
   complete_query += "FROM " + stbl_trx_utxos + " WHERE " + clauses_;

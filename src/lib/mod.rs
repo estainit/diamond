@@ -16,3 +16,5 @@ pub mod sending_q_handler;
 pub mod parsing_q_handler;
 pub mod network;
 pub mod services;
+pub mod database;
+pub mod k_v_handler;

@@ -101,25 +101,25 @@ QJsonObject CoinbaseIssuer::createCBCore(
   const QString& version)
 {
   CLog::log("create CBCore cycle(" + cycle +") mode(" + mode +")", "cb", "info");
-  CDateT cDate = "";
+  CDateT c_date = "";
   QString mintingYear = "";
   if (cycle == "")
   {
-    cDate = CUtils::getNow();
+    c_date = CUtils::getNow();
     cycle = CUtils::getCoinbaseCycleStamp();
-    mintingYear = cDate.split(" ")[0].split("-")[0];
+    mintingYear = c_date.split(" ")[0].split("-")[0];
 
   } else {
     if (CConsts::TIME_GAIN == 1)
     {
       // normally the cycle time is 12 hours
-      cDate = cycle;
+      c_date = cycle;
 
     } else {
       // here is for test net in which the cycle time is accelerated to have a faster block generator(even 2 minutes)
       uint64_t minutes = cycle.split(" ")[1].toUInt() * CMachine::getCycleByMinutes();
       QString minutes_ = CUtils::convertMinutesToHHMM(minutes);
-      cDate = cycle.split(" ")[0] + " " + minutes_ + ":00";
+      c_date = cycle.split(" ")[0] + " " + minutes_ + ":00";
     }
     mintingYear = cycle.midRef(0, 4).toString();
   }
@@ -129,8 +129,8 @@ QJsonObject CoinbaseIssuer::createCBCore(
 
   coinbase_document["cycle"] = cycle;
 
-  auto[fromDate, toDate, incomes] = TreasuryHandler::calcTreasuryIncomes(cDate);
-  CLog::log("The treasury incomes for coinbase cDate(" + cDate + ") treasury incomes(" + CUtils::sepNum(incomes) + ") micro PAIs from Date(" + fromDate + ") toDate(" + toDate + ")", "cb", "info");
+  auto[fromDate, toDate, incomes] = TreasuryHandler::calcTreasuryIncomes(c_date);
+  CLog::log("The treasury incomes for coinbase c_date(" + c_date + ") treasury incomes(" + CUtils::sepNum(incomes) + ") micro PAIs from Date(" + fromDate + ") toDate(" + toDate + ")", "cb", "info");
 
   coinbase_document["treasuryIncomes"] = QVariant::fromValue(incomes).toJsonValue();
   coinbase_document["treasuryFrom"] = fromDate;
@@ -321,10 +321,10 @@ CMPAIValueT CoinbaseIssuer::calcPotentialMicroPaiPerOneCycle(QString year_)
 }
 
 std::tuple<CMPAIValueT, CMPAIValueT, DNAShareCountT, QHash<QString, DNAShareCountT> > CoinbaseIssuer::calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore(
-  const CDateT& cDate)
+  const CDateT& c_date)
 {
-  CMPAIValueT one_cycle_max_mili_PAIs = calcPotentialMicroPaiPerOneCycle(cDate.split("-")[0]);
-  auto[total_shares, share_amount_per_holder, holdersOrderByShares_] = DNAHandler::getSharesInfo(cDate);
+  CMPAIValueT one_cycle_max_mili_PAIs = calcPotentialMicroPaiPerOneCycle(c_date.split("-")[0]);
+  auto[total_shares, share_amount_per_holder, holdersOrderByShares_] = DNAHandler::getSharesInfo(c_date);
   Q_UNUSED(holdersOrderByShares_);
 
   CMPAIValueT one_cycle_issued = CUtils::CFloor((calculateReleasableCoinsBasedOnContributesVolume(total_shares) * one_cycle_max_mili_PAIs) / 100);
@@ -336,21 +336,21 @@ std::tuple<CMPAIValueT, CMPAIValueT, DNAShareCountT> CoinbaseIssuer::predictRele
   const DNAShareCountT& current_total_sahres,
   const QString& prevDue,
   CDateT due,
-  CDateT cDate)
+  CDateT c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   if (due == "")
     due = CUtils::getNow();
 
-  if (cDate > CUtils::getNow())
+  if (c_date > CUtils::getNow())
   {
     CLog::log("for now the formule does not support future contribute calculation. TODO: implement it", "app", "error");
     return {0, 0, 0};
   }
 
-  auto[one_cycle_max_coins, one_cycle_issued, sum_shares, share_amount_per_holder_] = calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore(cDate);
+  auto[one_cycle_max_coins, one_cycle_issued, sum_shares, share_amount_per_holder_] = calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore(c_date);
   Q_UNUSED(share_amount_per_holder_);
 
   if (current_total_sahres != 0)
@@ -386,29 +386,29 @@ std::tuple<CMPAIValueT, CMPAIValueT, DNAShareCountT> CoinbaseIssuer::predictRele
  */
 FutureIncomes CoinbaseIssuer::predictFutureIncomes(
   const uint32_t& the_contribute,  // contributeHours * contributeLevel
-  CDateT cDate, // contribute creation date (supposing aproved date of proposal)
+  CDateT c_date, // contribute creation date (supposing aproved date of proposal)
   uint32_t months,
   DNAShareCountT current_total_sahres,
   uint32_t annualContributeGrowthRate)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   CMPAIValueT total_incomes = 0;
   std::vector<MonthCoinsReport> monthly_incomes {};
   CMPAIValueT one_cycle_income, income_per_month;
   CDateT due;
-  CDateT prevDue = cDate;
+  CDateT prevDue = c_date;
   for (uint32_t month = 0; month < months; month++)
   {
-    due = CUtils::minutesAfter((60 * 24) * (365 / 12) * month, cDate);   //TODO change it to more accurate on month starting day
+    due = CUtils::minutesAfter((60 * 24) * (365 / 12) * month, c_date);   //TODO change it to more accurate on month starting day
 
     auto[one_cycle_max_coins, one_cycle_issued, sum_shares] = predictReleaseableMicroPAIsPerOneCycle(
       annualContributeGrowthRate,
       current_total_sahres,
       prevDue,
       due,
-      cDate);
+      c_date);
     one_cycle_income = CUtils::CFloor((one_cycle_issued * the_contribute) / sum_shares);  // one cycle income
     income_per_month = CUtils::CFloor((one_cycle_issued * the_contribute * (2 * 30)) / sum_shares);  // one month income almost = one cycle income * 2 perDay * 30 perMonth
     CLog::log("predict Future Incomes sum_shares " + CUtils::dumpIt(sum_shares) + " one_cycle_income("+CUtils::microPAIToPAI6(one_cycle_income)+") income_per_month("+CUtils::microPAIToPAI6(income_per_month)+")", "app", "trace");
@@ -441,7 +441,7 @@ FutureIncomes CoinbaseIssuer::predictFutureIncomes(
     total_incomes * 3,   // 1 block released immidiately wheras 3 copy of that will be releaseable in next 3 months by voting of shareholders of block on creation time of block
 //    CUtils::CFloor(total_incomes / 1000000),  //TODO treasuryIncomes should be calcullated in a more smart way :)
     monthly_incomes,
-    cDate,
+    c_date,
     due};
 }
 
@@ -573,79 +573,93 @@ bool CoinbaseIssuer::haveIFirstHashedEmail(const QString order)
   CLog::log("Machine has to wait To Create Coinbase Block! (if does not receive the fresh CBB) keys(" + cycle + "::" + machine_email + ")", "cb", "trace");
   return false;
 }
+*/
+use crate::cutils;
+use crate::lib::constants;
+use crate::lib::dag::leaves_handler::has_fresh_leaves;
+use crate::lib::dlog::dlog;
 
-bool CoinbaseIssuer::controlCoinbaseIssuanceCriteria()
+
+//old_name_was controlCoinbaseIssuanceCriteria
+pub fn control_coinbase_issuance_criteria() -> bool
 {
-  auto current_cycle_range = CUtils::getCoinbaseRange();
-  //let res = {};
-  CLog::log("Coinbase check Range (from " + current_cycle_range.from + " to " + current_cycle_range.to + ")", "cb", "info");
-
-  if (!LeavesHandler::hasFreshLeaves())
-  {
-    // younger than 2 cycle
-    CLog::log("Machine hasn't fresh leaves!", "cb", "info");
-    DAGMessageHandler::setMaybeAskForLatestBlocksFlag(CConsts::YES);
-    return false;
-  }
-
-  // control if already exist in DAG a more confidence Coinbase Block than what machine can create?
-  bool DAG_has_more_confidence_CB = doesDAGHasMoreConfidenceCB();
-  if (DAG_has_more_confidence_CB)
-  {
-    CLog::log("Machine already has more confidente Coinbase blocks in DAG", "cb", "info");
-    return false;
-  }
+    let current_cycle_range = cutils::get_coinbase_range("".to_string());
+    dlog(
+        &format!("Coinbase check Range (from {} to {} ", current_cycle_range.from, current_cycle_range.to),
+        constants::Modules::CB,
+        constants::SecLevel::Info);
 
 
-  // // some control to be sure the coinbase block for current 12 hour cycle didn't create still,
-  // // or at least I haven't it in my local machine
-  // let latestCoinbase = cbBufferHandler.getMostConfidenceFromBuffer(currntCoinbaseTimestamp);
-  // if (latestCoinbase.cycle == currntCoinbaseTimestamp) {
-  //     // check if after sending cb to other , the local machine has added any new block to DAG? and machine still doesn't receive confirmed cb block?
-  //     // so must create nd send new coinbase block
-  //     msg = `At least one CB exists on local machine: ${latestCoinbase} (${iutils.getCoinbaseRange().from.split(' ')[1]} - ${iutils.getCoinbaseRange().to.split(' ')[1]})`
-  //     clog.cb.info(msg);
-  //     res.msg = msg
-  //     res.atLeastOneCBExists = true;
-  // }
+      if (!has_fresh_leaves())
+      {
+    /*
+        // younger than 2 cycle
+        CLog::log("Machine hasn't fresh leaves!", "cb", "info");
+        DAGMessageHandler::setMaybeAskForLatestBlocksFlag(CConsts::YES);
+        return false;
 
-  // postpond coinbase-generating if machine missed some blocks
-  QStringList missed_blocks = MissedBlocksHandler::getMissedBlocksToInvoke();
-  if (missed_blocks.size() > 0)
-  {
+     */
+      }
+ /*
+      // control if already exist in DAG a more confidence Coinbase Block than what machine can create?
+      bool DAG_has_more_confidence_CB = doesDAGHasMoreConfidenceCB();
+      if (DAG_has_more_confidence_CB)
+      {
+        CLog::log("Machine already has more confidente Coinbase blocks in DAG", "cb", "info");
+        return false;
+      }
 
-    // // FIXME: if an adversory sends a bunch of blocks which have ancestors, in machine will finished with a long list of
-    // // missed blocks. so machine(or entire network machines) can not issue new coinbase block!
-    // if (missed_blocks.length > iConsts.MAX_TOLERATED_MISS_BLOCKS) {
-    //     msg = `Machine missed ${missed_blocks.length} blocks and touched the limitation(${iConsts.MAX_TOLERATED_MISS_BLOCKS}), so can not issue a coinbase block`
-    //     clog.cb.info(msg);
-    //     res.canGenCB = false;
-    //     res.msg = msg
-    //     return res;
-    // }
 
-    double latenancy_factor = CUtils::CFloor(((log(missed_blocks.size() + 1) / log(CConsts::MAX_TOLERATED_MISS_BLOCKS)) * CUtils::getCoinbaseAgeBySecond()));
-    bool are_we_in_4_of_5 = (CUtils::getCoinbaseAgeBySecond() < (CUtils::getCycleBySeconds() * 4 / 5));
-    if (are_we_in_4_of_5 && (CUtils::getCoinbaseAgeBySecond() < latenancy_factor))
-    {
-      CLog::log("Because of " + QString::number(missed_blocks.size()) + " missed blocks, machine can not create a CB before " + QString::number(latenancy_factor) + " second age of cycle or atleast 4/5 of cycle age passed", "cb", "info");
-      return false;
-    }
-  }
+      // // some control to be sure the coinbase block for current 12 hour cycle didn't create still,
+      // // or at least I haven't it in my local machine
+      // let latestCoinbase = cbBufferHandler.getMostConfidenceFromBuffer(currntCoinbaseTimestamp);
+      // if (latestCoinbase.cycle == currntCoinbaseTimestamp) {
+      //     // check if after sending cb to other , the local machine has added any new block to DAG? and machine still doesn't receive confirmed cb block?
+      //     // so must create nd send new coinbase block
+      //     msg = `At least one CB exists on local machine: ${latestCoinbase} (${iutils.getCoinbaseRange().from.split(' ')[1]} - ${iutils.getCoinbaseRange().to.split(' ')[1]})`
+      //     clog.cb.info(msg);
+      //     res.msg = msg
+      //     res.atLeastOneCBExists = true;
+      // }
 
-  // a psudo random mechanisem
-  bool am_i_qualified_to_issue_coinbase = haveIFirstHashedEmail();
-  if (!am_i_qualified_to_issue_coinbase)
-  {
-    CLog::log("It is not machine turn To Create Coinbase Block!", "cb", "trace");
-    return false;
-  }
+      // postpond coinbase-generating if machine missed some blocks
+      QStringList missed_blocks = MissedBlocksHandler::getMissedBlocksToInvoke();
+      if (missed_blocks.size() > 0)
+      {
 
-  return true;
+        // // FIXME: if an adversory sends a bunch of blocks which have ancestors, in machine will finished with a long list of
+        // // missed blocks. so machine(or entire network machines) can not issue new coinbase block!
+        // if (missed_blocks.length > iConsts.MAX_TOLERATED_MISS_BLOCKS) {
+        //     msg = `Machine missed ${missed_blocks.length} blocks and touched the limitation(${iConsts.MAX_TOLERATED_MISS_BLOCKS}), so can not issue a coinbase block`
+        //     clog.cb.info(msg);
+        //     res.canGenCB = false;
+        //     res.msg = msg
+        //     return res;
+        // }
+
+        double latenancy_factor = CUtils::CFloor(((log(missed_blocks.size() + 1) / log(CConsts::MAX_TOLERATED_MISS_BLOCKS)) * CUtils::getCoinbaseAgeBySecond()));
+        bool are_we_in_4_of_5 = (CUtils::getCoinbaseAgeBySecond() < (CUtils::getCycleBySeconds() * 4 / 5));
+        if (are_we_in_4_of_5 && (CUtils::getCoinbaseAgeBySecond() < latenancy_factor))
+        {
+          CLog::log("Because of " + QString::number(missed_blocks.size()) + " missed blocks, machine can not create a CB before " + QString::number(latenancy_factor) + " second age of cycle or atleast 4/5 of cycle age passed", "cb", "info");
+          return false;
+        }
+      }
+
+      // a psudo random mechanisem
+      bool am_i_qualified_to_issue_coinbase = haveIFirstHashedEmail();
+      if (!am_i_qualified_to_issue_coinbase)
+      {
+        CLog::log("It is not machine turn To Create Coinbase Block!", "cb", "trace");
+        return false;
+      }
+    */
+    return true;
 }
 
+/*
 // if passed 1/4 of a cycle time and still the coinbase block is not created, so broadcast one of them
-bool CoinbaseIssuer::passedCertainTimeOfCycleToRecordInDAG(const CDateT& cDate)
+bool CoinbaseIssuer::passedCertainTimeOfCycleToRecordInDAG(const CDateT& c_date)
 {
   auto[cycle, machine_email, machine_key, emails_hash_dict] = makeEmailHashDict();
   QStringList keys = emails_hash_dict.keys();
@@ -654,7 +668,7 @@ bool CoinbaseIssuer::passedCertainTimeOfCycleToRecordInDAG(const CDateT& cDate)
   CLog::log("psudo-random CB creation machine_index: " + QString::number(machine_index), "cb", "trace");
 
   TimeByMinutesT cycle_by_minutes = (CConsts::TIME_GAIN == 1) ? CConsts::STANDARD_CYCLE_BY_MINUTES : CConsts::TIME_GAIN;
-  bool res = CUtils::timeDiff(CUtils::getCoinbaseRange(cDate).from).asSeconds >= (cycle_by_minutes * 60 * CConsts::COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG * (1 + (pow(machine_index, 7) / 131)));
+  bool res = CUtils::timeDiff(CUtils::getCoinbaseRange(c_date).from).asSeconds >= (cycle_by_minutes * 60 * CConsts::COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG * (1 + (pow(machine_index, 7) / 131)));
   CLog::log("passed CertainTimeOfCycleToRecordInDAG? " + CUtils::dumpIt(res), "cb", "trace");
   return res;
 }
@@ -663,8 +677,8 @@ bool CoinbaseIssuer::passedCertainTimeOfCycleToRecordInDAG(const CDateT& cDate)
 //old_name_was maybeCreateCoinbaseBlock
 pub fn maybe_create_coinbase_block()
 {
+    let can_issue_new_cb = control_coinbase_issuance_criteria();
     /*
-  bool can_issue_new_cb = controlCoinbaseIssuanceCriteria();
   if (!can_issue_new_cb)
     return;
 

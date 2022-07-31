@@ -22,14 +22,14 @@ pub fn loop_import_normal_coins()
 
     while (machine().should_loop_threads())
     {
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::RUNNING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_import_coins(&cutils::get_now());
 
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::SLEEPING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
         // sleep(Duration::from_secs(machine().get_nb_coins_import_gap()));
     }
 
-    machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::STOPPED.to_string());
+    machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::STOPPED.to_string());
     dlog(
         &format!("Gracefully stopped thread({}) of loop Import Normal Coins", thread_prefix.clone() + &thread_code),
         constants::Modules::App,
@@ -37,13 +37,13 @@ pub fn loop_import_normal_coins()
 }
 
 //old_name_was doImportUTXOs
-pub fn do_import_coins(cDate_: &CDateT)
+pub fn do_import_coins(c_date_: &CDateT)
 {
-    let mut cDate = cDate_.clone();
-    if cDate == ""
-    { cDate = cutils::get_now(); }
+    let mut c_date = c_date_.clone();
+    if c_date == ""
+    { c_date = cutils::get_now(); }
 
-    import_normal_block_coins(&cDate);
+    import_normal_block_coins(&c_date);
 
 
 //  bool OUTPUT_TIMELOCK_IS_ENABLED = false;
@@ -53,13 +53,13 @@ pub fn do_import_coins(cDate_: &CDateT)
 
 /*
 
-QVDRecordsT NormalUTXOHandler::retrieveProperBlocks(QString cDate)
+QVDRecordsT NormalUTXOHandler::retrieveProperBlocks(QString c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
-  QString minCreationDate = CUtils::minutesBefore(CMachine::getCycleByMinutes(), cDate);
+  QString minCreationDate = CUtils::minutesBefore(CMachine::getCycleByMinutes(), c_date);
   CLog::log("importing matured UTXOs(Nornam Block) before(" + minCreationDate + ")", "trx", "trace");
 
   ClausesT clauses = {
@@ -90,22 +90,22 @@ QVDRecordsT NormalUTXOHandler::retrieveProperBlocks(QString cDate)
 }
 */
 //old_name_was importNormalBlockUTXOs
-pub fn import_normal_block_coins(cDate_: &CDateT)
+pub fn import_normal_block_coins(c_date_: &CDateT)
 {
-    let mut cDate: String = cDate_.clone();
-    if cDate == "" {
-        cDate = cutils::get_now();
+    let mut c_date: String = c_date_.clone();
+    if c_date == "" {
+        c_date = cutils::get_now();
     }
     dlog(
-        &format!("Importing Normal block Coins at {}", cDate),
+        &format!("Importing Normal block Coins at {}", c_date),
         constants::Modules::Trx,
         constants::SecLevel::Info);
 
     /*
-      QVDRecordsT wBlocks = retrieveProperBlocks(cDate);
+      QVDRecordsT wBlocks = retrieveProperBlocks(c_date);
       if (wBlocks.size() == 0)
       {
-        CLog::log("There is no importable normal block for time(" + cDate + ")", "trx", "trace");
+        CLog::log("There is no importable normal block for time(" + c_date + ")", "trx", "trace");
         return;
       }
 
@@ -119,7 +119,7 @@ pub fn import_normal_block_coins(cDate_: &CDateT)
 
         QJsonObject blockJ = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
         block = BlockFactory::create(blockJ);
-        CLog::log("Extract matured UTXOs(NormalBlock) on cDate(" + cDate + ") from block(" + CUtils::hash8c(wBlock.value("b_hash").toString()) + ") created on(" + block->m_block_creation_date + ")", "trx", "info");
+        CLog::log("Extract matured UTXOs(NormalBlock) on c_date(" + c_date + ") from block(" + CUtils::hash8c(wBlock.value("b_hash").toString()) + ") created on(" + block->m_block_creation_date + ")", "trx", "info");
 
         UTXOAnalyzer::analyzeBlockUsedCoins(block_inspect_container, block);
 

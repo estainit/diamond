@@ -3,6 +3,7 @@ pub enum Modules {
     App,
     CB,
     Trx,
+    Sql,
 }
 
 #[allow(dead_code)]
@@ -33,23 +34,7 @@ pub(crate) const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
 pub(crate) const SIGN_MSG_LENGTH: u8 = 32;
 
-
 /*
-
-#ifndef CONTANTS_H
-#define CONTANTS_H
-
-#include <vector>
-
-#include <QHash>
-#include <QJsonObject>
-#include <QString>
-#include <QVector>
-
-class ModelClause;
-class OrderModifier;
-
-
 typedef QString  CCoinCodeT;
 typedef uint64_t CMPAIValueT;  // (+) micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
 typedef int64_t CMPAISValueT;  // (+-)micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
@@ -248,7 +233,7 @@ pub(crate) const DATABASAE_AGENT: &str = "psql";
     const QString Validating = "Validating";
   };
 */
-pub mod THREAD_STATE
+pub mod thread_state
 {
     pub(crate) const RUNNING: &str = "RUNNING";
     pub(crate) const SLEEPING: &str = "SLEEPING";
@@ -273,23 +258,25 @@ pub mod THREAD_STATE
   {
     const QString GUI_ASSETS = "/tmp/comen_gui_asstes"; // FIXME: change it to standard path
   }
-
-  namespace PSQL_DB
-  {
-    const QString DB_HOST = "localhost";
-    const QString DB_NAME = "comendb";
-    const QString DB_USER = "comendb";
-    const QString DB_PASS = "comendb";
-  }
-
-  const QString DEFAULT_LANG = "eng";
+*/
+pub(crate) mod psql_db
+{
+    pub(crate) const DB_HOST: &str = "localhost";
+    pub(crate) const DB_NAME: &str = "diamond";
+    pub(crate) const DB_USER: &str = "diamond";
+    pub(crate) const DB_PASS: &str = "diamondpass";
+}
+  pub const DEFAULT_LANG:&str = "eng";
+/*
   const QString DEFAULT_VERSION = "0.0.0";
 
   const QString NL = "\n";
   const QString TAB = "\t";
 
   const QString ALL =  "All";
-  const QString DEFAULT =  "Default";
+  */
+  pub const DEFAULT:&str =  "Default";
+/*
   const QString DEFAULT_DOCUMENT_VERSION =  "0.0.0";
   const QString DEFAULT_CONTENT_VERSION =  "0.0.0";
   const QString PUBLIC =  "Public";
@@ -299,9 +286,10 @@ pub mod THREAD_STATE
   const QString COMPLETE =  "Complete";
   const QString SHORT =  "Short";
 
-
-  const QString YES =  "Y";
-  const QString NO =  "N";
+*/
+pub const YES: &str = "Y";
+pub const NO: &str = "N";
+/*
   const QString ABSTAIN =  "A";
   const QString OPEN =  "O";
   const QString CLOSE =  "C";

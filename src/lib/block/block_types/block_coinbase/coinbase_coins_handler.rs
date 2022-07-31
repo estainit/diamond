@@ -31,7 +31,7 @@ pub fn loop_import_coinbase_coins()
 
     while (machine().should_loop_threads())
     {
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::RUNNING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         import_coinbased_coins(&cutils::get_now());
         /*
 
@@ -50,11 +50,11 @@ pub fn loop_import_coinbase_coins()
         }
 
         */
-        machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::SLEEPING.to_string());
+        machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
         // sleep(Duration::from_secs(machine().get_coinbase_import_gap()));
     }
 
-    machine().report_thread_status(&thread_prefix, &thread_code, &constants::THREAD_STATE::STOPPED.to_string());
+    machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::STOPPED.to_string());
     dlog(
         &format!("Gracefully stopped thread({}) of loop Import Coinbase Coins", thread_prefix + &thread_code),
         constants::Modules::App,
@@ -67,8 +67,8 @@ pub fn import_coinbased_coins(c_date: &CDateT)
     dlog(&format!("import Coinbased UTXOs {}", c_date.clone()), constants::Modules::App, constants::SecLevel::Trace);
 
     // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_utxos
-    let maxCreationDate = cutils::get_cb_coins_date_range(&c_date).to;
-    dlog(&format!("Extract maturated coinbase UTXOs created before({})", maxCreationDate.clone()), constants::Modules::Trx, constants::SecLevel::Trace);
+    let max_creation_date = cutils::get_cb_coins_date_range(&c_date).to;
+    dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::Trace);
     /*
       QVDRecordsT coinbases = DAG::searchInDAG(
           {{"b_type", CConsts::BLOCK_TYPES::Coinbase},

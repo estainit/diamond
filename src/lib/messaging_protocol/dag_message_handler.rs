@@ -5,7 +5,7 @@
 #include "lib/dag/full_dag_handler.h"
 #include "dag_message_handler.h"
 
-const QString DAGMessageHandler::stbl_kvalue = "c_kvalue";
+const QString DAGMessageHandler::STBL_KVALUE = "c_kvalue";
 
 DAGMessageHandler::DAGMessageHandler()
 {
@@ -18,7 +18,7 @@ bool DAGMessageHandler::setLastReceivedBlockTimestamp(
   const QString &receive_date)
 {
   DbModel::upsert(
-    stbl_kvalue,
+    STBL_KVALUE,
     "kv_key",
     "LAST_RECEIVED_BLOCK_TIMESTAMP",
     {

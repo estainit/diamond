@@ -1,0 +1,66 @@
+DROP FUNCTION IF EXISTS drop_tables;
+CREATE OR REPLACE FUNCTION drop_tables() RETURNS void AS
+$$
+
+DROP TRIGGER IF EXISTS trigger_added_utxo ON c_trx_utxos;
+DROP TRIGGER IF EXISTS trigger_c_dna_shares_calc_shares ON c_dna_shares;
+
+DROP TABLE IF EXISTS c_administrative_pollings;
+DROP TABLE IF EXISTS c_administrative_refines_history;
+DROP TABLE IF EXISTS c_ballots;
+DROP TABLE IF EXISTS c_collisions;
+DROP TABLE IF EXISTS c_block_extinfos;
+DROP TABLE IF EXISTS c_blocks;
+DROP TABLE IF EXISTS c_custom_posts;
+DROP TABLE IF EXISTS c_agoras;
+DROP TABLE IF EXISTS c_agoras_posts;
+DROP TABLE IF EXISTS c_dna_shares;
+DROP TABLE IF EXISTS c_docs_blocks_map;
+DROP TABLE IF EXISTS c_pledged_accounts;
+DROP TABLE IF EXISTS c_iname_bindings;
+DROP TABLE IF EXISTS c_iname_records;
+DROP TABLE IF EXISTS c_kvalue;
+DROP TABLE IF EXISTS c_logs_block_import_report;
+DROP TABLE IF EXISTS c_logs_broadcast;
+DROP TABLE IF EXISTS c_logs_suspect_transactions;
+DROP TABLE IF EXISTS c_logs_time_locked;
+DROP TABLE IF EXISTS c_machine_ballots;
+DROP TABLE IF EXISTS c_machine_block_buffer;
+DROP TABLE IF EXISTS c_machine_direct_messages;
+DROP TABLE IF EXISTS c_machine_draft_pledges;
+DROP TABLE IF EXISTS c_machine_draft_proposals;
+DROP TABLE IF EXISTS c_machine_iname_messages;
+DROP TABLE IF EXISTS c_machine_iname_bindings;
+DROP TABLE IF EXISTS c_machine_iname_records;
+DROP TABLE IF EXISTS c_machine_neighbors;
+DROP TABLE IF EXISTS c_machine_onchain_contracts;
+DROP TABLE IF EXISTS c_machine_posted_files;
+DROP TABLE IF EXISTS c_machine_profiles;
+DROP TABLE IF EXISTS c_machine_tmp_contents;
+DROP TABLE IF EXISTS c_machine_used_coins;
+DROP TABLE IF EXISTS c_machine_wallet_addresses;
+DROP TABLE IF EXISTS c_machine_wallet_funds;
+DROP TABLE IF EXISTS c_cpacket_ticketing;
+DROP TABLE IF EXISTS c_missed_blocks;
+DROP TABLE IF EXISTS c_nodes_snapshots;
+DROP TABLE IF EXISTS c_parsing_q;
+DROP TABLE IF EXISTS c_pollings;
+DROP TABLE IF EXISTS c_polling_profiles;
+DROP TABLE IF EXISTS c_proposals;
+DROP TABLE IF EXISTS c_released_reserves;
+DROP TABLE IF EXISTS c_sending_q;
+DROP TABLE IF EXISTS c_signals;
+DROP TABLE IF EXISTS c_treasury;
+DROP TABLE IF EXISTS c_trx_rejected_transactions;
+DROP TABLE IF EXISTS c_trx_spend;
+DROP TABLE IF EXISTS c_trx_suspect_transactions;
+DROP TABLE IF EXISTS c_trx_output_time_locked;
+DROP TABLE IF EXISTS c_trx_utxos;
+DROP TABLE IF EXISTS c_wiki_contents;
+DROP TABLE IF EXISTS c_wiki_pages;
+DROP TABLE IF EXISTS cdev_inbox_logs;
+DROP TABLE IF EXISTS cdev_logs_trx_utxos;
+DROP TABLE IF EXISTS cdev_parsing_q;
+DROP TABLE IF EXISTS cdev_sending_q;
+
+$$ LANGUAGE sql;

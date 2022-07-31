@@ -1,9 +1,12 @@
 use std::collections::HashMap;
+use serde_json::Value;
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier};
 
 pub type CDateT = String;
 pub type VString = Vec<String>;
 pub type VVString = Vec<Vec<String>>;
 
+pub(crate) type JSonT = Value;
 
 /*
 
@@ -55,8 +58,8 @@ pub type QSDicT = HashMap<String, String>;
 pub type QHash<QString, QStringList> QSLDicT; // custom dictionary
 pub type QHash<QString, QSDicT>      QS2DicT; // custom dictionary
 */
-pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
-pub type QVDicT = HashMap<String, QVariant>    ; // custom dictionary
+// pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
+pub type QVDicT = HashMap<String, String>    ; // custom dictionary
 /*
 pub type QHash<QString, QJsonObject> QJODicT; // custom dictionary
 pub type QHash<QString, QJsonArray>  QJADicT; // custom dictionary
@@ -68,8 +71,10 @@ pub type QVector<QSDicT>        QSDRecordsT;
 pub type QVector<QV2DicT>       QV2DRecordsT;
 pub type QVector<QJsonObject>   JORecordsT;
 pub type QVector<QJsonArray>    JARecordsT;
-pub type QVector<ModelClause>   ClausesT;
-pub type QVector<OrderModifier> OrderT;
+*/
+pub type ClausesT<'l> = Vec<&'l ModelClause<'l>>   ;
+pub type OrderT<'l> = Vec<&'l OrderModifier<'l>> ;
+/*
 
 pub type QHash<QString, QVDRecordsT> GRecordsT; // Groupped records
 pub type QHash<QString, GRecordsT> G2RecordsT; // Groupped Groupped records

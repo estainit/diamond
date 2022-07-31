@@ -371,10 +371,10 @@ void DAG::updateUtxoImported(
 
 }
 
-bool DAG::isDAGUptodated(QString cDate)
+bool DAG::isDAGUptodated(QString c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   QVDRecordsT latestBlockDate = searchInDAG(
     {},
@@ -446,10 +446,10 @@ pub fn do_prerequisities_remover() -> bool
 
 /*
 
-bool DAG::DAGHasBlocksWhichAreCreatedInCurrrentCycle(QString cDate)
+bool DAG::DAGHasBlocksWhichAreCreatedInCurrrentCycle(QString c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
   QVDRecordsT latest_blocks = DAG::searchInDAG(
     {},
@@ -459,7 +459,7 @@ bool DAG::DAGHasBlocksWhichAreCreatedInCurrrentCycle(QString cDate)
   if (latest_blocks.size() == 0)
     return false;
   QString latest_block_date = latest_blocks[0].value("b_creation_date").toString();
-  return CUtils::timeDiff(latest_block_date, cDate).asMinutes < CMachine::getCycleByMinutes();
+  return CUtils::timeDiff(latest_block_date, c_date).asMinutes < CMachine::getCycleByMinutes();
 }
 
 // need to be fixed because of array response of get BlockHashByDocHash
@@ -771,16 +771,16 @@ QVDicT DAG::getLatestRecordedBlcok()
 
 /**
  * @brief DAG::getMostConfidenceCoinbaseBlockFromDAG
- * @param cDate
+ * @param c_date
  * @return {atleast one CB exist, the max confidence}
  *
  */
-std::tuple<bool, QVDicT> DAG::getMostConfidenceCoinbaseBlockFromDAG(CDateT cDate)
+std::tuple<bool, QVDicT> DAG::getMostConfidenceCoinbaseBlockFromDAG(CDateT c_date)
 {
-  if (cDate == "")
-    cDate = CUtils::getNow();
+  if (c_date == "")
+    c_date = CUtils::getNow();
 
-  auto[coinbase_cycle_stamp, coinbase_from, coinbase_to, coinbase_from_hour, coinbase_to_hour] = CUtils::getCoinbaseInfo(cDate);
+  auto[coinbase_cycle_stamp, coinbase_from, coinbase_to, coinbase_from_hour, coinbase_to_hour] = CUtils::getCoinbaseInfo(c_date);
 
   QVDRecordsT current_coinbases_in_DAG = searchInDAG(
     {{"b_type", CConsts::BLOCK_TYPES::Coinbase},
