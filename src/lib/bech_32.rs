@@ -42,7 +42,7 @@ pub fn comen_encode(hex_str: &str, hrp: &str) -> String
     const std::string ff=fullBin;
     stChunk binC = chunkString(ff, 5);
     for (std::string aBin: binC){
-        intVec.push_back(std::stoi(aBin, nullptr, 2));
+        intVec.push(std::stoi(aBin, nullptr, 2));
     }
     std::string bechEnc = Encode(hrp, intVec);
     return QString::fromStdString(bechEnc);

@@ -121,7 +121,7 @@ QJsonObject CoinbaseIssuer::createCBCore(
       QString minutes_ = CUtils::convertMinutesToHHMM(minutes);
       c_date = cycle.split(" ")[0] + " " + minutes_ + ":00";
     }
-    mintingYear = cycle.midRef(0, 4).toString();
+    mintingYear = cycle.midRef(0, 4).to_string();
   }
 
   CDateT block_creation_date = CUtils::getCoinbaseRangeByCycleStamp(cycle).from;
@@ -166,7 +166,7 @@ QJsonObject CoinbaseIssuer::createCBCore(
     // let dividend = utils.floor((utils.iFloorFloat(aShare / sumShares) * cycleCoins));
 
     holders.append(aHolder);
-    dividends.push_back(dividend);
+    dividends.push(dividend);
     if (!tmpOutDict.keys().contains(dividend))
       tmpOutDict[dividend] = QHash<QString, TmpHolder> {};
     tmpOutDict[dividend][aHolder] = TmpHolder {aHolder, dividend};
@@ -211,7 +211,7 @@ QJsonObject CoinbaseIssuer::createCBCore(
 
   Jblock["cycle"] = cycle;
   Jblock["docs"] = QJsonArray {coinbase_document};
-  auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate({coinbase_document["dHash"].toString()});
+  auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate({coinbase_document["dHash"].to_string()});
   Q_UNUSED(verifies);
   Q_UNUSED(merkle_version);
   Q_UNUSED(levels);
@@ -420,7 +420,7 @@ FutureIncomes CoinbaseIssuer::predictFutureIncomes(
       income_per_month,
       sum_shares,
       due.split(" ")[0]};
-    monthly_incomes.push_back(a_month);
+    monthly_incomes.push(a_month);
 
 //    monthly_incomes.push({
 //      one_cycle_max_coins,
@@ -484,8 +484,8 @@ bool CoinbaseIssuer::doesDAGHasMoreConfidenceCB()
   QStringList already_recorded_ancestors {};
   for (QVDicT block_record: already_recorded_coinbase_blocks)
   {
-    already_recorded_confidents.push_back(CUtils::customFloorFloat(block_record.value("b_confidence").toDouble()));
-    already_recorded_ancestors = CUtils::arrayAdd(already_recorded_ancestors, CUtils::convertJSonArrayToQStringList(CUtils::parseToJsonArr(block_record.value("b_ancestors").toString())));
+    already_recorded_confidents.push(CUtils::customFloorFloat(block_record.value("b_confidence").toDouble()));
+    already_recorded_ancestors = CUtils::arrayAdd(already_recorded_ancestors, CUtils::convertJSonArrayToQStringList(CUtils::parseToJsonArr(block_record.value("b_ancestors").to_string())));
   }
   already_recorded_ancestors = CUtils::arrayUnique(already_recorded_ancestors);
   CLog::log("already Recorded Confidents from(" + current_cycle_range_from + ")" + CUtils::dumpIt(already_recorded_confidents), "cb", "info");
@@ -521,8 +521,8 @@ std::tuple<QString, QString, QString, QSDicT> CoinbaseIssuer::makeEmailHashDict(
   CLog::log("neightbors in makeEmail Hash Dict: " + CUtils::dumpIt(neightbors), "cb", "trace");
   for(QVDicT neighbor: neightbors)
   {
-    QString key = CCrypto::keccak256(cycle + "::" + neighbor.value("n_email").toString());
-    emails_hash_dict[key] = neighbor.value("n_email").toString();
+    QString key = CCrypto::keccak256(cycle + "::" + neighbor.value("n_email").to_string());
+    emails_hash_dict[key] = neighbor.value("n_email").to_string();
   }
   return {cycle, machine_email, machine_key, emails_hash_dict};
 }
@@ -590,7 +590,7 @@ pub fn control_coinbase_issuance_criteria() -> bool
         constants::SecLevel::Info);
 
 
-      if (!has_fresh_leaves())
+      if !has_fresh_leaves()
       {
     /*
         // younger than 2 cycle
@@ -730,13 +730,13 @@ void CoinbaseIssuer::tryCreateCoinbaseBlock()
   } else {
     CLog::log("The most_confidence_in_DAG for cycle range (" + coinbase_from + ", " + coinbase_to + ") is: " + CUtils::dumpIt(most_confidence_in_DAG), "cb", "trace");
     tmp_DAG_confidence = most_confidence_in_DAG.value("b_confidence").toDouble();
-    QStringList tmp_DAG_ancestors = CUtils::convertCommaSeperatedToArray(most_confidence_in_DAG.value("b_ancestors").toString());
+    QStringList tmp_DAG_ancestors = CUtils::convertCommaSeperatedToArray(most_confidence_in_DAG.value("b_ancestors").to_string());
   }
 
   bool locally_created_coinbase_block_has_more_confidence_than_DAG = (tmp_DAG_confidence < tmp_local_confidence);
   locally_created_coinbase_block_has_more_confidence_than_DAG = false;// FIXME implement remote block confidence calcuilation
   if (locally_created_coinbase_block_has_more_confidence_than_DAG)
-    CLog::log("More confidence: local coinbase(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") has more confidence(" + QString::number(tmp_local_confidence) + " than DAG(" + QString::number(tmp_DAG_confidence) + ") in cycle range (" + coinbase_from + ", " + coinbase_to + ")" , "cb", "trace");
+    CLog::log("More confidence: local coinbase(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") has more confidence(" + QString::number(tmp_local_confidence) + " than DAG(" + QString::number(tmp_DAG_confidence) + ") in cycle range (" + coinbase_from + ", " + coinbase_to + ")" , "cb", "trace");
 
   QStringList ancestors_diff = CUtils::arrayDiff(CUtils::convertJSonArrayToQStringList(final_json_block.value("ancestors").toArray()), tmp_DAG_ancestors);
   if (ancestors_diff.size() > 0)
@@ -750,13 +750,13 @@ void CoinbaseIssuer::tryCreateCoinbaseBlock()
     {
       QStringList tmp {};
       for (QVDicT record: existed_RpBlocks)
-        tmp.append(record.value("b_hash").toString());
+        tmp.append(record.value("b_hash").to_string());
       ancestors_diff = CUtils::arrayDiff(ancestors_diff, tmp);
     }
   }
   bool locally_created_coinbase_block_has_more_ancestors_than_DAG = (ancestors_diff.size() > 0);
   if (locally_created_coinbase_block_has_more_ancestors_than_DAG)
-    CLog::log("More ancestors: local coinbase(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") has more ancestors(" + CUtils::dumpIt(final_json_block.value("ancestors").toArray()) + " than DAG(" + CUtils::dumpIt(tmp_DAG_ancestors) + ") in cycle range (" + coinbase_from + ", " + coinbase_to + ")" , "cb", "trace");
+    CLog::log("More ancestors: local coinbase(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") has more ancestors(" + CUtils::dumpIt(final_json_block.value("ancestors").toArray()) + " than DAG(" + CUtils::dumpIt(tmp_DAG_ancestors) + ") in cycle range (" + coinbase_from + ", " + coinbase_to + ")" , "cb", "trace");
 
   CLog::log("Is about to issuing coinbase block in cycle range (" + coinbase_from + ", " + coinbase_to + ") the block: " + CUtils::serializeJson(final_json_block)  , "cb", "trace");
 
@@ -774,16 +774,16 @@ void CoinbaseIssuer::tryCreateCoinbaseBlock()
   {
 
     // broadcast coin base
-    if (CUtils::isInCurrentCycle(final_json_block.value("bCDate").toString()))
+    if (CUtils::isInCurrentCycle(final_json_block.value("bCDate").to_string()))
     {
       bool push_res = SendingQHandler::pushIntoSendingQ(
         CConsts::BLOCK_TYPES::Coinbase,
-        final_json_block.value("bHash").toString(),
+        final_json_block.value("bHash").to_string(),
         CUtils::serializeJson(final_json_block),
-        "Broadcasting coinbase block CB(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")");
+        "Broadcasting coinbase block CB(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")");
 
       CLog::log("coinbase push1 res(" + CUtils::dumpIt(push_res) + ")", "cb", "trace");
-      CLog::log("Coinbase issued because of clause 1 CB(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
+      CLog::log("Coinbase issued because of clause 1 CB(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
       return;
     }
 
@@ -797,19 +797,19 @@ void CoinbaseIssuer::tryCreateCoinbaseBlock()
     {
       bool push_res = SendingQHandler::pushIntoSendingQ(
         CConsts::BLOCK_TYPES::Coinbase,
-        final_json_block.value("bHash").toString(),
+        final_json_block.value("bHash").to_string(),
         CUtils::serializeJson(final_json_block),
-        "Broadcasting coinbase block CB(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")");
+        "Broadcasting coinbase block CB(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")");
 
       CLog::log("coinbase push2 res(" + CUtils::dumpIt(push_res) + ")", "cb", "trace");
-      CLog::log("Coinbase issued because of clause 2 CB(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
+      CLog::log("Coinbase issued because of clause 2 CB(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
       return;
     }
 
   }
   else
   {
-    CLog::log("Coinbase can be issued by clause 3 but local hasn't neither more confidence nor more ancestors and still not riched to 1/4 of cycle time. CB(" + CUtils::hash8c(final_json_block.value("bHash").toString()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
+    CLog::log("Coinbase can be issued by clause 3 but local hasn't neither more confidence nor more ancestors and still not riched to 1/4 of cycle time. CB(" + CUtils::hash8c(final_json_block.value("bHash").to_string()) + ") issued by(" + CMachine::getPubEmailInfo().m_address + " for cycle range(" + coinbase_from + ", " + coinbase_to + ")", "cb", "trace");
     return;
   }
 

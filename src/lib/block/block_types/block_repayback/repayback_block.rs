@@ -69,9 +69,9 @@ QString RepaybackBlock::getBlockHashableString(const QJsonObject& Jblock)
 //  QString hashables = "{";
 //  hashables += "\"ancestors\":[" + CUtils::convertJSonArrayToQStringList(Jblock.value("ancestors").toArray()).join(",") + "],";
 //  hashables += "\"bLen\":\"" + CUtils::paddingLengthValue(Jblock.value("bLen").toDouble()) + "\",";
-//  hashables += "\"bType\":\"" + Jblock.value("bType").toString() + "\",";
-//  hashables += "\"bVer\":\"" + Jblock.value("dVer").toString() + "\",";
-//  hashables += "\"creation Date\":\"" + Jblock.value("creation Date").toString() + "\",";
+//  hashables += "\"bType\":\"" + Jblock.value("bType").to_string() + "\",";
+//  hashables += "\"bVer\":\"" + Jblock.value("dVer").to_string() + "\",";
+//  hashables += "\"creation Date\":\"" + Jblock.value("creation Date").to_string() + "\",";
 //  QStringList docs {};
 //  for (QJsonValueRef a_doc: Jblock.value("docs").toArray())
 //  {
@@ -79,8 +79,8 @@ QString RepaybackBlock::getBlockHashableString(const QJsonObject& Jblock)
 //    docs.append(a_doc_str);
 //  }
 //  hashables += "\"docs\":[" + docs.join(",") + "],";
-//  hashables += "\"docsRootHash\":\"" + Jblock.value("docsRootHash").toString() + "\",";
-//  hashables += "\"net\":\"" + Jblock.value("net").toString() + "\",";
+//  hashables += "\"docsRootHash\":\"" + Jblock.value("docsRootHash").to_string() + "\",";
+//  hashables += "\"net\":\"" + Jblock.value("net").to_string() + "\",";
 
 //  return hashables;
   return "";
@@ -154,7 +154,7 @@ QJsonArray RepaybackBlock::exportDocumentsToJSon(const bool ext_info_in_document
   QJsonArray documents {};
   for(auto a_doc: m_rp_documents)
   {
-    documents.push_back(a_doc->exportDocToJson(ext_info_in_document));
+    documents.push(a_doc->exportDocToJson(ext_info_in_document));
   }
   return documents;
 }
@@ -182,10 +182,10 @@ void RepaybackBlock::createRepaymentBlock(
 {
   RepaybackBlock* tmp_repay_block = new RepaybackBlock();
   tmp_repay_block->m_block_hash = "0000000000000000000000000000000000000000000000000000000000000000";
-  tmp_repay_block->m_ancestors = QStringList {related_coinbase_block.value("bHash").toString()};
+  tmp_repay_block->m_ancestors = QStringList {related_coinbase_block.value("bHash").to_string()};
   tmp_repay_block->m_block_type = CConsts::BLOCK_TYPES::RpBlock;
-  tmp_repay_block->m_cycle = related_coinbase_block.value("cycle").toString();
-  tmp_repay_block->m_block_creation_date = (CConsts::TIME_GAIN == 1) ? CUtils::minutesAfter(1, related_coinbase_block.value("bCDate").toString()) : CUtils::secondsAfter(1, related_coinbase_block.value("bCDate").toString());
+  tmp_repay_block->m_cycle = related_coinbase_block.value("cycle").to_string();
+  tmp_repay_block->m_block_creation_date = (CConsts::TIME_GAIN == 1) ? CUtils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : CUtils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
 
   QHash<CDocHashT, RepaymentDocument*> map_doc_hash_to_doc {};
   for (QJsonObject a_repay: repayment_docs)
@@ -194,9 +194,9 @@ void RepaybackBlock::createRepaymentBlock(
     a_doc->m_doc_type = CConsts::DOC_TYPES::RpDoc;
     a_doc->m_doc_class = CConsts::DOC_TYPES::RpDoc;
     a_doc->m_doc_version = "0.0.0";
-    a_doc->m_doc_cycle = related_coinbase_block.value("cycle").toString();
+    a_doc->m_doc_cycle = related_coinbase_block.value("cycle").to_string();
     TInput* input = new TInput {
-      a_repay.value("input").toArray()[0].toString(),
+      a_repay.value("input").toArray()[0].to_string(),
       static_cast<COutputIndexT>(a_repay.value("input").toArray()[1].toInt())};
     a_doc->m_inputs = {input};
 
@@ -205,8 +205,8 @@ void RepaybackBlock::createRepaymentBlock(
     Q_UNUSED(status);
     for (auto an_output: normalized_outputs)
     {
-      TOutput* output = new TOutput {an_output.toArray()[0].toString(), static_cast<CMPAIValueT>(an_output.toArray()[1].toDouble())};
-      a_doc->m_outputs.push_back(output);
+      TOutput* output = new TOutput {an_output.toArray()[0].to_string(), static_cast<CMPAIValueT>(an_output.toArray()[1].toDouble())};
+      a_doc->m_outputs.push(output);
     }
 
     CDocHashT doc_hash = a_doc->calcDocHash();
@@ -217,7 +217,7 @@ void RepaybackBlock::createRepaymentBlock(
   QStringList doc_hashes = map_doc_hash_to_doc.keys();
   doc_hashes.sort(); // in order to provide unique blockHash for entire network
   for (CDocHashT a_hash: doc_hashes)
-    tmp_repay_block->m_rp_documents.push_back(map_doc_hash_to_doc[a_hash]);
+    tmp_repay_block->m_rp_documents.push(map_doc_hash_to_doc[a_hash]);
 
   auto[root, verifies, version, levels, leaves] = CMerkle::generate(doc_hashes);
   Q_UNUSED(verifies);
@@ -234,7 +234,7 @@ void RepaybackBlock::createRepaymentBlock(
   tmp_repay_block->addBlockToDAG();
 
   // immediately update imported of related coinbase block
-  DAG::updateUtxoImported(related_coinbase_block.value("bHash").toString(), CConsts::YES);
+  DAG::updateUtxoImported(related_coinbase_block.value("bHash").to_string(), CConsts::YES);
   tmp_repay_block->postAddBlockToDAG();
 
 
@@ -256,9 +256,9 @@ void RepaybackBlock::createRepaymentBlock(
       {
         CLog::log("insert new utxo(because of Repayment) the coin(" + coin + ")", "trx", "info");
         UTXOHandler::addNewUTXO(
-          a_block_record.value("b_creation_date").toString(),
+          a_block_record.value("b_creation_date").to_string(),
           coin,
-          a_block_record.value("b_hash").toString(),  //visibleBy
+          a_block_record.value("b_hash").to_string(),  //visibleBy
           an_output->m_address,  //address
           an_output->m_amount, // coin value
           tmp_repay_block->m_block_creation_date); // refCreationDate
@@ -286,10 +286,10 @@ pub fn import_double_check()
         CLog::log("not_imported repay back block! " + CUtils::dumpIt(not_imported), "sql", "warning");
         for(QVDicT a_repay_block: not_imported)
         {
-          auto[status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(a_repay_block.value("b_hash").toString());
+          auto[status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(a_repay_block.value("b_hash").to_string());
           Q_UNUSED(status);
           Q_UNUSED(validity_percentage);
-          QJsonObject Jblock = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block.value("b_body").toString()).content);    // do not need safe open check
+          QJsonObject Jblock = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block.value("b_body").to_string()).content);    // do not need safe open check
 
           // add missed repayback coins
           QJsonArray documents = Jblock.value("docs").toArray();
@@ -298,29 +298,29 @@ pub fn import_double_check()
             auto a_doc = documents[doc_inx].toObject();
 
             // connect documents and blocks/ maybe it is not necessay at all
-            Document::mapDocToBlock(a_doc.value("dHash").toString(), Jblock.value("bHash").toString(), doc_inx);
+            Document::mapDocToBlock(a_doc.value("dHash").to_string(), Jblock.value("bHash").to_string(), doc_inx);
 
             QJsonArray outputs = a_doc.value("outputs").toArray();
             for (COutputIndexT out_inx = 0; out_inx < outputs.size(); out_inx++)
             {
               QJsonArray an_output = outputs[out_inx].toArray();
-              QString coin = CUtils::packCoinCode(a_doc.value("dHash").toString(), out_inx);
+              QString coin = CUtils::packCoinCode(a_doc.value("dHash").to_string(), out_inx);
               // immediately import newly created UTXOs and make it visible for all decendent blocks
               for (QVDicT a_block_record: descendent_blocks)
               {
                 CLog::log("insert new utxo(because of 'MISSED!' Repayment) the coin(" + coin + ")", "trx", "info");
                 UTXOHandler::addNewUTXO(
-                  a_block_record.value("b_creation_date").toString(),
+                  a_block_record.value("b_creation_date").to_string(),
                   coin,
-                  a_block_record.value("b_hash").toString(),  //visibleBy
-                  an_output[0].toString(),  //address
+                  a_block_record.value("b_hash").to_string(),  //visibleBy
+                  an_output[0].to_string(),  //address
                   static_cast<CMPAIValueT>(an_output[1].toDouble()), // coin value
-                  Jblock.value("bCDate").toString()); // refCreationDate
+                  Jblock.value("bCDate").to_string()); // refCreationDate
 
               }
             }
           }
-          DAG::updateUtxoImported(a_repay_block.value("b_hash").toString(), CConsts::YES);
+          DAG::updateUtxoImported(a_repay_block.value("b_hash").to_string(), CConsts::YES);
         }
       }
     */

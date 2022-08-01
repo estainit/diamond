@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use secp256k1::serde::de::Unexpected::Str;
 use crate::cutils::{clone_vec, clone_vvec};
 use crate::lib::custom_types::{VString, VVString};
 
@@ -22,7 +21,7 @@ pub struct PermutationHandler {
 impl PermutationHandler {
     pub(crate) fn new(
         elements: &VString,
-        subset_count: u32,
+        subset_count: u16,
         should_be_unique: bool,
         premutions: &VVString,
         premutions_stringify: &VString,
@@ -72,7 +71,7 @@ impl PermutationHandler {
 
     pub(crate) fn recursive_heap_p(&mut self,
                                    values: &VString,
-                                   subset_count: u32,
+                                   subset_count: u16,
                                    inner_size: i32)
     {
 

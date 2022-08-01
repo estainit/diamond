@@ -33,15 +33,16 @@ mod tests;
 
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
-use crate::lib::ccrypto;
+use crate::lib::{ccrypto, constants};
 use crate::lib::database::db_handler::DBHandler;
+use crate::lib::dlog::dlog;
 use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-fn machine() -> MutexGuard<'static, CMachine> { CMACHINE.lock().unwrap() }
+fn machine<'m, 'a>() -> MutexGuard<'static, CMachine<'static, 'a>> { CMACHINE.lock().unwrap() }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
@@ -59,6 +60,11 @@ fn main() {
     //!
     //!
     //!
+
+    dlog(
+        &format!("Running Diamond Node (version 0.0.0). started at {}", cutils::get_now()),
+        constants::Modules::App,
+        constants::SecLevel::Info);
 
     let john: Value = json!({
         "name": "John Doe",

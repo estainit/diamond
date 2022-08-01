@@ -8,6 +8,7 @@ pub enum Modules {
 
 #[allow(dead_code)]
 pub enum SecLevel {
+    Debug,
     Trace,
     Info,
     Warning,
@@ -35,61 +36,6 @@ pub(crate) const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 pub(crate) const SIGN_MSG_LENGTH: u8 = 32;
 
 /*
-typedef QString  CCoinCodeT;
-typedef uint64_t CMPAIValueT;  // (+) micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
-typedef int64_t CMPAISValueT;  // (+-)micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
-typedef QString  CBlockHashT;
-typedef QString  CDocHashT;
-typedef QString  CAddressT;
-typedef QString  CDateT;
-typedef uint32_t CDocIndexT;
-typedef uint16_t CInputIndexT; // customizing document index maximum number
-typedef uint16_t CSigIndexT;
-typedef uint16_t COutputIndexT; // customizing document index maximum number
-
-typedef uint16_t DPIIndexT;
-typedef double   DNASharePercentT;
-typedef double   DNAShareCountT;
-
-typedef uint16_t BlockAncestorsCountT;  // TODO: add max ancestor count control for received blocks
-typedef uint32_t BlockLenT;
-typedef uint32_t DocLenT;
-
-typedef int16_t CVoteT;  // between -100 0 100
-
-typedef double TimeByHoursT;  // time by hours
-typedef uint64_t TimeByMinutesT;
-typedef uint64_t TimeBySecT;
-typedef QHash<QString, double>      doubleDicT; // custom dictionary
-typedef QHash<QString, float>       floatDicT; // custom dictionary
-typedef QHash<QString, CDocIndexT>  UI16DicT; // custom dictionary
-typedef QHash<QString, uint32_t>    UI32DicT; // custom dictionary
-typedef QHash<QString, uint64_t>    UI64DicT; // custom dictionary
-typedef QHash<QString, QString>     QSDicT; // custom dictionary
-typedef QHash<QString, QStringList> QSLDicT; // custom dictionary
-typedef QHash<QString, QSDicT>      QS2DicT; // custom dictionary
-typedef QHash<QString, QVariant>    QVDicT; // custom dictionary
-typedef QHash<QString, QJsonObject> QJODicT; // custom dictionary
-typedef QHash<QString, QJsonArray>  QJADicT; // custom dictionary
-typedef QHash<QString, QVDicT>      QV2DicT;
-
-typedef QVector<QVDicT>        QVDRecordsT;
-typedef QVector<QSDicT>        QSDRecordsT;
-typedef QVector<QV2DicT>       QV2DRecordsT;
-typedef QVector<QJsonObject>   JORecordsT;
-typedef QVector<QJsonArray>    JARecordsT;
-typedef QVector<ModelClause>   ClausesT;
-typedef QVector<OrderModifier> OrderT;
-
-typedef QHash<QString, QVDRecordsT> GRecordsT; // Groupped records
-typedef QHash<QString, GRecordsT> G2RecordsT; // Groupped Groupped records
-
-class MerkleNodeData;
-typedef QHash<QString, MerkleNodeData> MNodesMapT;
-
-class Coin;
-typedef QList<QStringList> CListListT;
-typedef QVector<Coin> CoinsT;
 
 const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
 
@@ -160,8 +106,9 @@ pub(crate) const DATABASAE_AGENT: &str = "psql";
 
   // at least 4 cycle must be a gap between pay to treasury and dividing to shareholders
   const uint TREASURY_MATURATION_CYCLES = 4;
-
-  const QString DUMPER_INDENT = "  ";
+*/
+pub const DUMPER_INDENT: &str = "  ";
+/*
 
   const uint16_t GAP_EMAIL_POP = 300; // default is 5 minutes = 300 second
 
@@ -266,16 +213,15 @@ pub(crate) mod psql_db
     pub(crate) const DB_USER: &str = "diamond";
     pub(crate) const DB_PASS: &str = "diamondpass";
 }
-  pub const DEFAULT_LANG:&str = "eng";
-/*
-  const QString DEFAULT_VERSION = "0.0.0";
 
-  const QString NL = "\n";
-  const QString TAB = "\t";
+pub const DEFAULT_LANG: &str = "eng";
+pub const DEFAULT_VERSION: &str = "0.0.0";
 
-  const QString ALL =  "All";
-  */
-  pub const DEFAULT:&str =  "Default";
+pub const NL: &str = "\n";
+pub const TAB: &str = "\t";
+
+pub const ALL: &str = "All";
+pub const DEFAULT: &str = "Default";
 /*
   const QString DEFAULT_DOCUMENT_VERSION =  "0.0.0";
   const QString DEFAULT_CONTENT_VERSION =  "0.0.0";
@@ -628,16 +574,22 @@ pub const NO: &str = "N";
   {
       const QString IPGP = "IPGP";
   };
-
-  namespace SIGNATURE_TYPES
-  {
-    const QString Mix23 = "Mix23"; // Mixed of sha256 and keccak256 signature. TODO: implement Mix32 recording on blockgraph
-    const QString Basic = "Basic"; // Basic signature
-    const QString Bitcoin = "Bitcoin"; // Bitcoin like sha256 hash address
-    const QString IOT = "IOT"; // simple light signature for Internet Of Things
-    const QString Strict = "Strict"; // Strict signature by which some signer are allowed to pledge/unpledge account or delegate it
-    const QString StrictITL = "StrictITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
-  };
+*/
+pub mod signature_types
+{
+    pub const Mix23: &str = "Mix23";
+    // Mixed of sha256 and keccak256 signature. TODO: implement Mix32 recording on blockgraph
+    pub const Basic: &str = "Basic";
+    // Basic signature
+    pub const Bitcoin: &str = "Bitcoin";
+    // Bitcoin like sha256 hash address
+    pub const IOT: &str = "IOT";
+    // simple light signature for Internet Of Things
+    pub const Strict: &str = "Strict";
+    // Strict signature by which some signer are allowed to pledge/unpledge account or delegate it
+    pub const StrictITL: &str = "StrictITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
+}
+/*
   const QString DEFAULT_SIGNATURE_MOD = "2/3"; // needs 2 signature of 3
 
   namespace CARD_TYPES
@@ -683,9 +635,12 @@ pub const NO: &str = "N";
   // GUI settings
   const uint16_t WATCHING_BLOCKS_COUNT = 300; // default is 5 minutes = 300 second
 
-  // hu part
-  const QString HU_DNA_SHARE_ADDRESS = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d"; //im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
-  const QString HU_INAME_OWNER_ADDRESS = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
+*/
+// hu part
+//im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
+pub const HU_DNA_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
+pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
+/*
 }
 
 class GenRes

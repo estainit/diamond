@@ -22,7 +22,7 @@ void DAG::appendDescendents(const QStringList& block_hashes, const QStringList& 
 
       if (a_block_record.records.size() == 1)
       {
-         QStringList current_descendents = a_block_record.records[0].value("b_descendents").toString().split(",");
+         QStringList current_descendents = a_block_record.records[0].value("b_descendents").to_string().split(",");
          QStringList final_descendents = CUtils::arrayUnique(CUtils::arrayAdd(new_descendents, current_descendents));
          DbModel::update(
           stbl_blocks,
@@ -51,9 +51,9 @@ std::tuple<QStringList, GRecordsT> DAG::getBlockHashesByDocHashes(
     QStringList tmp{};
     for(QString a_hash: doc_hashes)
       tmp.append(a_hash + "%");
-    clauses.push_back({"dbm_doc_hash", tmp, "LIKE:OR"});
+    clauses.push({"dbm_doc_hash", tmp, "LIKE:OR"});
   } else {
-    clauses.push_back({"dbm_doc_hash", doc_hashes, "IN"});
+    clauses.push({"dbm_doc_hash", doc_hashes, "IN"});
   }
 
   QueryRes res = DbModel::select(
@@ -64,13 +64,13 @@ std::tuple<QStringList, GRecordsT> DAG::getBlockHashesByDocHashes(
   GRecordsT map_doc_to_block{};
   for (QVDicT element: res.records)
   {
-    block_hashes.append(element.value("dbm_block_hash").toString());
+    block_hashes.append(element.value("dbm_block_hash").to_string());
     // since we can have more than 1 coinbase block for each cycle, so mapping a document to its container block could be 1 to n mapping
     // also in lone transactions we have same psituation in which a certain transaction can take place in different blocks by different backers
-    QString dbm_doc_hash = element.value("dbm_doc_hash").toString();
+    QString dbm_doc_hash = element.value("dbm_doc_hash").to_string();
     if (!map_doc_to_block.keys().contains(dbm_doc_hash))
       map_doc_to_block[dbm_doc_hash] = QVDRecordsT{};
-    map_doc_to_block[dbm_doc_hash].push_back(QVDicT{
+    map_doc_to_block[dbm_doc_hash].push(QVDicT{
       {"block_hash", element.value("dbm_block_hash")},
       {"doc_index", element.value("dbm_doc_index")}
     });
@@ -126,7 +126,7 @@ std::tuple<bool, QJsonObject, CDocIndexT, MerkleNodeData, QJsonArray> DAG::retri
   if (block_records.size() == 0)
     return {false, {}, {}, {}, {}};
 
-  QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(block_records[0].value("b_body").toString()).content);
+  QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(block_records[0].value("b_body").to_string()).content);
 
   QJsonObject document {};
   CDocIndexT documentIndex = 0;
@@ -134,7 +134,7 @@ std::tuple<bool, QJsonObject, CDocIndexT, MerkleNodeData, QJsonArray> DAG::retri
   for (CDocIndexT docInx = 0; docInx < docs.size(); docInx++)
   {
     QJsonObject aDoc = docs[docInx].toObject();
-    if ((document.keys().size() == 0) && (aDoc.value("dHash").toString() == doc_hash))
+    if ((document.keys().size() == 0) && (aDoc.value("dHash").to_string() == doc_hash))
     {
       documentIndex = docInx;
       document = aDoc;
@@ -147,10 +147,10 @@ std::tuple<bool, QJsonObject, CDocIndexT, MerkleNodeData, QJsonArray> DAG::retri
   QJsonArray the_doc_ext_info {};
   if (need_doc_ext_info)
   {
-    auto[status, extExist, block_ext_info] = Block::getBlockExtInfo(block.value("bHash").toString());
+    auto[status, extExist, block_ext_info] = Block::getBlockExtInfo(block.value("bHash").to_string());
     if (!extExist)
     {
-      msg = "missed bExtInfo3 (" + CUtils::hash8c(block.value("bHash").toString()) + ")";
+      msg = "missed bExtInfo3 (" + CUtils::hash8c(block.value("bHash").to_string()) + ")";
       CLog::log(msg, "sec", "error");
       return {false, {}, {}, {}, {}};
     }
@@ -191,7 +191,7 @@ QV2DicT DAG::getCoinsGenerationInfoViaSQL(const QStringList& coins)
   QV2DicT outputsDict {};
   for (QVDicT wBlock: block_records)
   {
-    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
+    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
     if (block.keys().contains("docs"))
     {
       for (QJsonValueRef doc_: block.value("docs").toArray())
@@ -203,7 +203,7 @@ QV2DicT DAG::getCoinsGenerationInfoViaSQL(const QStringList& coins)
           for (COutputIndexT output_index = 0; output_index < static_cast<COutputIndexT>(outputs.size()); output_index++)
           {
             auto output = outputs[output_index].toArray();
-            QString aCoin = CUtils::packCoinCode(doc.value("dHash").toString(), output_index);
+            QString aCoin = CUtils::packCoinCode(doc.value("dHash").to_string(), output_index);
             outputsDict[aCoin] = QVDicT {
               {"coinGenCycle", wBlock.value("b_cycle")},
               {"coinGenBlockHash", block.value("bHash")},
@@ -211,7 +211,7 @@ QV2DicT DAG::getCoinsGenerationInfoViaSQL(const QStringList& coins)
               {"coinGenCreationDate", block.value("bCDate")}, // coin creation date is the BLOCK creation date and not the transaction date
               {"coinGenDocType", doc.value("dType")},
               {"coinGenRefLoc", aCoin},
-              {"coinGenOutputAddress", output[0].toString()},
+              {"coinGenOutputAddress", output[0].to_string()},
               {"coinGenOutputValue", output[1].toDouble()}};
           }
         }
@@ -247,7 +247,7 @@ void DAG::recursive_backwardInTime(
 
   QStringList out {};
   for (QVDicT aRes: res)
-    out = CUtils::arrayAdd(out, aRes.value("b_ancestors").toString().split(","));
+    out = CUtils::arrayAdd(out, aRes.value("b_ancestors").to_string().split(","));
 
   out = CUtils::arrayUnique(out);
   ancestors = CUtils::arrayAdd(ancestors, out);
@@ -311,14 +311,14 @@ QSDRecordsT DAG::analyzeDAGHealth(const bool shouldUpdateDescendants)
   QV2DicT blocksInfo {};
   for (QVDicT wBlock: wBlocks)
   {
-    blocksInfo[CUtils::hash8c(wBlock.value("b_hash").toString())] = QVDicT {
-      {"b_type", wBlock.value("b_type").toString()},
-      {"b_creation_date", wBlock.value("b_creation_date").toString()}};
+    blocksInfo[CUtils::hash8c(wBlock.value("b_hash").to_string())] = QVDicT {
+      {"b_type", wBlock.value("b_type").to_string()},
+      {"b_creation_date", wBlock.value("b_creation_date").to_string()}};
 
-    QStringList ancestors = wBlock.value("b_ancestors").toString().split(",");
+    QStringList ancestors = wBlock.value("b_ancestors").to_string().split(",");
     for (QString dadHash: ancestors)
     {
-      childByDad[CUtils::hash8c(dadHash)] = CUtils::hash8c(wBlock.value("b_hash").toString());
+      childByDad[CUtils::hash8c(dadHash)] = CUtils::hash8c(wBlock.value("b_hash").to_string());
     };
   };
   // console.log(blocksInfo);
@@ -332,10 +332,10 @@ QSDRecordsT DAG::analyzeDAGHealth(const bool shouldUpdateDescendants)
 
   tmp.sort();
   for (QString hash: tmp)
-    leaves.push_back(QSDicT {
+    leaves.push(QSDicT {
       {"b_ash", hash},
-      {"b_type", blocksInfo[hash].value("b_type").toString()},
-      {"b_creation_date", blocksInfo[hash].value("b_creation_date").toString().split(" ")[1]}});
+      {"b_type", blocksInfo[hash].value("b_type").to_string()},
+      {"b_creation_date", blocksInfo[hash].value("b_creation_date").to_string().split(" ")[1]}});
 
   return leaves;
 }
@@ -384,7 +384,7 @@ bool DAG::isDAGUptodated(QString c_date)
   if (latestBlockDate.size() == 0)
       return false;
 
-  QString latest_block_date = latestBlockDate[0].value("b_creation_date").toString();
+  QString latest_block_date = latestBlockDate[0].value("b_creation_date").to_string();
   return CUtils::isYoungerThan2Cycle(latest_block_date);
   // FIXME: it must be more sophisticated such as missed blocks count, last received blocks which are in parsingQ...
 }
@@ -421,7 +421,7 @@ pub fn do_prerequisities_remover() -> bool
       for (QVDicT a_cpack: queued_packets)
       {
         // control if already recorded in DAG
-        QStringList pre = CUtils::unpackCommaSeperated(a_cpack.value("pq_prerequisites").toString());
+        QStringList pre = CUtils::unpackCommaSeperated(a_cpack.value("pq_prerequisites").to_string());
         ClausesT clauses = {{"b_hash", pre, "IN"}};
         // if (machine.isInSyncProcess())
         //     query.push(['b_utxo_imported', 'Y'])    // to avoid removing prerequisities, before importing UTXOs
@@ -432,9 +432,9 @@ pub fn do_prerequisities_remover() -> bool
           {
             for (QVDicT aBlock: existedBlocksInDAG)
             {
-              CLog::log("Prerequisities Remover, removed dependencies to block(" + CUtils::hash8c(aBlock.value("b_hash").toString()) + ")", "app", "trace");
+              CLog::log("Prerequisities Remover, removed dependencies to block(" + CUtils::hash8c(aBlock.value("b_hash").to_string()) + ")", "app", "trace");
               // remove dependency to this block
-              ParsingQHandler::removePrerequisites(aBlock.value("b_hash").toString());
+              ParsingQHandler::removePrerequisites(aBlock.value("b_hash").to_string());
             }
           }
         }
@@ -458,7 +458,7 @@ bool DAG::DAGHasBlocksWhichAreCreatedInCurrrentCycle(QString c_date)
     1);
   if (latest_blocks.size() == 0)
     return false;
-  QString latest_block_date = latest_blocks[0].value("b_creation_date").toString();
+  QString latest_block_date = latest_blocks[0].value("b_creation_date").to_string();
   return CUtils::timeDiff(latest_block_date, c_date).asMinutes < CMachine::getCycleByMinutes();
 }
 
@@ -534,13 +534,13 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
   QStringList calculated_coinbase {};
   for (QVDicT wBlock: wBlocks)
   {
-    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
+    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
 
-    if (calculated_coinbase.contains(block.value("cycle").toString()))
+    if (calculated_coinbase.contains(block.value("cycle").to_string()))
       continue;
 
-    if (block.value("bType").toString() == CConsts::BLOCK_TYPES::Coinbase)
-        calculated_coinbase.append(block.value("cycle").toString());
+    if (block.value("bType").to_string() == CConsts::BLOCK_TYPES::Coinbase)
+        calculated_coinbase.append(block.value("cycle").to_string());
 
     // analyze outputs
     QJsonObject doc = block.value("docs").toArray()[0].toObject();
@@ -551,11 +551,11 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
 
       sum += output[1].toDouble();
 
-      processed_outputs.push_back(QVDicT {
-        {"block_type", wBlock.value("bType").toString()},
-        {"creation_date", block.value("bCDate").toString().split(" ")[1]},
-        {"doc_hash", CUtils::hash8c(doc.value("dHash").toString())},
-        {"owner", CUtils::shortBech16(output[0].toString())},
+      processed_outputs.push(QVDicT {
+        {"block_type", wBlock.value("bType").to_string()},
+        {"creation_date", block.value("bCDate").to_string().split(" ")[1]},
+        {"doc_hash", CUtils::hash8c(doc.value("dHash").to_string())},
+        {"owner", CUtils::shortBech16(output[0].to_string())},
         {"value", CUtils::microPAIToPAI6(output[1].toDouble())}});
     }
   }
@@ -586,12 +586,12 @@ std::tuple<CMPAIValueT, QStringList, QString> DAG::getNotImportedNormalBlock()
 
   for (QVDicT wBlock: wBlocks)
   {
-    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
+    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
 
     for (auto doc_: block.value("docs").toArray())
     {
       auto doc = doc_.toObject();
-      if (!QStringList{CConsts::DOC_TYPES::BasicTx}.contains(doc.value("dType").toString()))
+      if (!QStringList{CConsts::DOC_TYPES::BasicTx}.contains(doc.value("dType").to_string()))
         continue;
 
       // since DPCostPay docs alredy are in transactions , so we do not calculate it 2 times
@@ -599,7 +599,7 @@ std::tuple<CMPAIValueT, QStringList, QString> DAG::getNotImportedNormalBlock()
       // analyze inputs
       for (auto input: doc.value("inputs").toArray())
       {
-        CCoinCodeT the_coin = CUtils::packCoinCode(input.toArray()[0].toString(), input.toArray()[1].toDouble());
+        CCoinCodeT the_coin = CUtils::packCoinCode(input.toArray()[0].to_string(), input.toArray()[1].toDouble());
         if (!maybe_dbl_spends.contains(the_coin))
           maybe_dbl_spends[the_coin] = 0;
         maybe_dbl_spends[the_coin] += 1;
@@ -618,25 +618,25 @@ std::tuple<CMPAIValueT, QStringList, QString> DAG::getNotImportedNormalBlock()
           if (doc.value("dPIs").toArray().contains(output_inx))
           {
             processed_outputs.append(QStringList {
-              block.value("bCDate").toString().split(" ")[1],
-              CUtils::hash6c(doc.value("dHash").toString()),
+              block.value("bCDate").to_string().split(" ")[1],
+              CUtils::hash6c(doc.value("dHash").to_string()),
               "DPCost",
               CUtils::microPAIToPAI6(output[1].toDouble())
             }.join("\t  "));
           } else {
-            if (CConsts::TREASURY_PAYMENTS.contains(output[0].toString()))
+            if (CConsts::TREASURY_PAYMENTS.contains(output[0].to_string()))
             {
               processed_outputs.append(QStringList {
-                block.value("bCDate").toString().split(" ")[1],
-                CUtils::hash6c(doc.value("dHash").toString()),
-                CUtils::shortBech16(output[0].toString()),
+                block.value("bCDate").to_string().split(" ")[1],
+                CUtils::hash6c(doc.value("dHash").to_string()),
+                CUtils::shortBech16(output[0].to_string()),
                 CUtils::microPAIToPAI6(output[1].toDouble())});
 
             } else {
                 processed_outputs.append(QStringList {
-                  block.value("bCDate").toString().split(" ")[1],
-                  CUtils::hash6c(doc.value("dHash").toString()),
-                  CUtils::shortBech16(output[0].toString()),
+                  block.value("bCDate").to_string().split(" ")[1],
+                  CUtils::hash6c(doc.value("dHash").to_string()),
+                  CUtils::shortBech16(output[0].to_string()),
                   CUtils::microPAIToPAI6(output[1].toDouble())});
 
             }
@@ -684,14 +684,14 @@ std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlo
 
   for (QVDicT wBlock: wBlocks)
   {
-    if (considered_cycles.contains(wBlock.value("b_cycle").toString()))
+    if (considered_cycles.contains(wBlock.value("b_cycle").to_string()))
       continue;
 
-    considered_cycles.append(wBlock.value("b_cycle").toString());
+    considered_cycles.append(wBlock.value("b_cycle").to_string());
 
 
-    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
-    CBlockHashT block_hash = block.value("bHash").toString();
+    QJsonObject block = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
+    CBlockHashT block_hash = block.value("bHash").to_string();
 
     CMPAIValueT block_outputs_sum = 0;
     CMPAIValueT blockMissedPAIs = 0;
@@ -717,7 +717,7 @@ std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlo
     if (blockMissedPAIs > 0)
        burned_by_block[block_hash] = blockMissedPAIs;
 
-    if (wBlock.value("b_utxo_imported").toString() == CConsts::NO)
+    if (wBlock.value("b_utxo_imported").to_string() == CConsts::NO)
        waited_coinbases_to_be_spendable += block_outputs_sum;
   }
 

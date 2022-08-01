@@ -13,15 +13,15 @@ pub mod merkel_tests_3 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate(&vec![
+                cmerkle::generate_m(&vec![
                     "a".to_string(),
                     "b".to_string(),
                     "c".to_string(),
                     "d".to_string(),
                     "e".to_string()],
-                                  &"hashed".to_string(),
-                                  &"noHash".to_string(),
-                                  &"".to_string());
+                                    &"hashed".to_string(),
+                                    &"noHash".to_string(),
+                                    &"".to_string());
             assert_eq!(root, "abcdeleave_6leave_7leave_8".to_string());
             assert_eq!(proofs["a"].m_left_hash, "");
             assert_eq!(proofs["a"].m_merkle_proof[0].substring(0, 1), "r");

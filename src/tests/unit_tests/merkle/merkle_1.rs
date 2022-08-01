@@ -23,10 +23,10 @@ pub mod merkel_tests_1 {
                 _version,
                 _levels,
                 _leaves) =
-                cmerkle::generate(&vec!["a".to_string()],
-                                  &"hashed".to_string(),
-                                  &"noHash".to_string(),
-                                  &"".to_string());
+                cmerkle::generate_m(&vec!["a".to_string()],
+                                    &"hashed".to_string(),
+                                    &"noHash".to_string(),
+                                    &"".to_string());
             assert_eq!(root, "a");
             assert_eq!(proofs.len(), 0);
         }
@@ -39,10 +39,10 @@ pub mod merkel_tests_1 {
                 _version,
                 _levels,
                 _leaves) =
-                cmerkle::generate(&vec!["1".to_string()],
-                                  &"string".to_string(),
-                                  &"".to_string(),
-                                  &"".to_string());
+                cmerkle::generate_m(&vec!["1".to_string()],
+                                    &"string".to_string(),
+                                    &"".to_string(),
+                                    &"".to_string());
             assert_eq!(root, ccrypto::keccak256(&"1".to_string()));
             assert_eq!(proofs.len(), 0);
         }

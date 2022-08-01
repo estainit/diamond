@@ -17,7 +17,8 @@ use crate::lib::machine::machine_profile::{MachineProfile};
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
-pub struct CMachine {
+pub struct CMachine<'m, 'a> {
+    m_dummy_m_lifetime_user: &'m str,
     m_clone_id: i8,
     m_should_loop_threads: bool,
 
@@ -62,7 +63,7 @@ pub struct CMachine {
     QVDRecordsT m_DAG_cached_blocks; // TODO: optimize it ASAP
     QStringList m_DAG_cached_block_hashes = {}; // TODO: optimize it ASAP
 */
-    pub(crate) m_profile: MachineProfile,
+    pub(crate) m_profile: MachineProfile<'m, 'a>,
 
 }
 /*
@@ -74,10 +75,11 @@ pub trait CMachineThreadGaps {
  */
 
 
-impl CMachine {
-    pub(crate) fn new() -> CMachine {
+impl <'m, 'a>CMachine<'m, 'a> {
+    pub(crate) fn new() -> CMachine<'m, 'a> {
         let (status, mut profile) = MachineProfile::get_profile(constants::DEFAULT);
         CMachine {
+            m_dummy_m_lifetime_user: "",
             m_clone_id: 0,
             m_should_loop_threads: true,
 
@@ -206,10 +208,10 @@ impl CMachine {
         cycleByMinutes = CMachine::getCycleByMinutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if (!force_to_control_based_on_DAG_status & &
-            (lastSyncStatusObj.value("checkDate").toString() > CUtils::minutesBefore((cycleByMinutes / 24))))
+            (lastSyncStatusObj.value("checkDate").to_string() > CUtils::minutesBefore((cycleByMinutes / 24))))
         {
             bool
-            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").toString() < CUtils::minutesBefore(2 * cycleByMinutes);
+            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < CUtils::minutesBefore(2 * cycleByMinutes);
             setIsInSyncProcess(is_in_sync, CUtils::getNow());
             return is_in_sync;
         } else {
@@ -640,16 +642,16 @@ impl CMachine {
 
     void EmailSettings::importJson(const QJsonObject& obj)
     {
-      m_address = obj.value("m_address").toString();
-      m_password = obj.value("m_password").toString();
-      m_income_IMAP = obj.value("m_income_IMAP").toString();
-      m_income_POP3 = obj.value("m_income_POP3").toString();
-      m_incoming_mail_server = obj.value("m_incoming_mail_server").toString();
-      m_outgoing_mail_server = obj.value("m_outgoing_mail_server").toString();
-      m_outgoing_SMTP = obj.value("m_outgoing_SMTP").toString();
-      m_fetching_interval_by_minute = obj.value("m_fetching_interval_by_minute").toString();
-      m_PGP_private_key = obj.value("m_PGP_private_key").toString();
-      m_PGP_public_key = obj.value("m_PGP_public_key").toString();
+      m_address = obj.value("m_address").to_string();
+      m_password = obj.value("m_password").to_string();
+      m_income_IMAP = obj.value("m_income_IMAP").to_string();
+      m_income_POP3 = obj.value("m_income_POP3").to_string();
+      m_incoming_mail_server = obj.value("m_incoming_mail_server").to_string();
+      m_outgoing_mail_server = obj.value("m_outgoing_mail_server").to_string();
+      m_outgoing_SMTP = obj.value("m_outgoing_SMTP").to_string();
+      m_fetching_interval_by_minute = obj.value("m_fetching_interval_by_minute").to_string();
+      m_PGP_private_key = obj.value("m_PGP_private_key").to_string();
+      m_PGP_public_key = obj.value("m_PGP_public_key").to_string();
     }
 
 
@@ -658,10 +660,10 @@ impl CMachine {
     //  -  -  -  MPSetting
     void MPSetting::importJson(const QJsonObject& obj)
     {
-      m_machine_alias = obj.value("m_machine_alias").toString();
-      m_language = obj.value("m_language").toString();
-      m_term_of_services = obj.value("m_term_of_services").toString();
-      m_machine_alias = obj.value("m_machine_alias").toString();
+      m_machine_alias = obj.value("m_machine_alias").to_string();
+      m_language = obj.value("m_language").to_string();
+      m_term_of_services = obj.value("m_term_of_services").to_string();
+      m_machine_alias = obj.value("m_machine_alias").to_string();
       m_already_presented_neighbors = obj.value("m_already_presented_neighbors").toArray();
       m_backer_detail = new UnlockDocument();
       m_backer_detail->importJson(obj.value("m_backer_detail").toObject());
@@ -1048,7 +1050,7 @@ impl CMachine {
       }
 
 
-      MachineProfile mp(selected_prof.records[0]["kv_value"].toString());
+      MachineProfile mp(selected_prof.records[0]["kv_value"].to_string());
       m_profile = mp;
       return true;
     }
@@ -1068,7 +1070,7 @@ impl CMachine {
         CLog::log("NoooOOOOOOOOOOOOOOooooooooooooo profile!", "app", "fatal");
         exit(345);
       }
-      m_selected_profile = res.records[0].value("kv_value").toString();
+      m_selected_profile = res.records[0].value("kv_value").to_string();
       return m_selected_profile;
     }
 
@@ -1295,7 +1297,7 @@ impl CMachine {
     //  try {
     //    // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
     //    std::lock_guard<std::mutex> lck ();
-    //    m_DAG_cached_blocks.push_back(block);
+    //    m_DAG_cached_blocks.push(block);
     //    return true;
     //  }
     //  catch (std::logic_error&) {
@@ -1321,14 +1323,14 @@ impl CMachine {
         if (action == "append")
         {
           for (QVDicT a_block: blocks)
-            m_DAG_cached_blocks.push_back(a_block);
+            m_DAG_cached_blocks.push(a_block);
         }
 
         if (action == "update")
         {
           for (QVDicT a_block: blocks)
             for (int i = 0 ; i < m_DAG_cached_blocks.size(); i++)
-              if (m_DAG_cached_blocks[i].value("b_hash").toString() == a_block.value("b_hash").toString())
+              if (m_DAG_cached_blocks[i].value("b_hash").to_string() == a_block.value("b_hash").to_string())
                 m_DAG_cached_blocks[i]["b_utxo_imported"] = status;
         }
 
@@ -1360,7 +1362,7 @@ impl CMachine {
         if (action == "append")
         {
           for (QString a_hash: block_hashes)
-            m_DAG_cached_block_hashes.push_back(a_hash);
+            m_DAG_cached_block_hashes.push(a_hash);
         }
 
         return {true, m_DAG_cached_block_hashes};
@@ -1393,7 +1395,7 @@ impl CMachine {
         if (action == "append")
         {
           for (QVDicT coin: coins)
-            m_cache_spendable_coins.push_back(coin);
+            m_cache_spendable_coins.push(coin);
         }
 
         if (action == "remove")
@@ -1405,19 +1407,19 @@ impl CMachine {
             {
               if ((visible_by != "") && (the_coin != ""))
               {
-                if ((a_coin.value("ut_visible_by").toString() != visible_by) || (a_coin.value("ut_coin").toString() != the_coin))
-                  remined_coins.push_back(a_coin);
+                if ((a_coin.value("ut_visible_by").to_string() != visible_by) || (a_coin.value("ut_coin").to_string() != the_coin))
+                  remined_coins.push(a_coin);
 
               }
               else if (visible_by != "")
               {
-                if (a_coin.value("ut_visible_by").toString() != visible_by)
-                  remined_coins.push_back(a_coin);
+                if (a_coin.value("ut_visible_by").to_string() != visible_by)
+                  remined_coins.push(a_coin);
               }
               else if (the_coin != "")
               {
-                if (a_coin.value("ut_coin").toString() != the_coin)
-                  remined_coins.push_back(a_coin);
+                if (a_coin.value("ut_coin").to_string() != the_coin)
+                  remined_coins.push(a_coin);
               }
             }
 
@@ -1455,7 +1457,7 @@ impl CMachine {
         if (action == "append")
         {
           for (QString a_visiblity: entries)
-            m_cache_coins_visibility.push_back(a_visiblity);
+            m_cache_coins_visibility.push(a_visiblity);
         }
 
         if (action == "contains")

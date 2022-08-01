@@ -21,7 +21,7 @@ pub fn smart_pull_q()->bool
   }
 
   QVDicT packet = packets.records[0];
-  auto unwrap_res = BlockUtils::unwrapSafeContentForDB(packet.value("pq_payload").toString());
+  auto unwrap_res = BlockUtils::unwrapSafeContentForDB(packet.value("pq_payload").to_string());
   if (!unwrap_res.status)
   {
     // purge record
@@ -36,7 +36,7 @@ pub fn smart_pull_q()->bool
   auto[status, should_purge_record] = handlePulledPacket(packet);
   if (should_purge_record == false)
   {
-    CLog::log("Why not purge1! pq_type(" + packet.value("pq_type").toString() + ") block(" + CUtils::hash8c(packet.value("pq_code").toString()) + ")" + " from(" + packet.value("pq_sender").toString() + ")", "app", "error");
+    CLog::log("Why not purge1! pq_type(" + packet.value("pq_type").to_string() + ") block(" + CUtils::hash8c(packet.value("pq_code").to_string()) + ")" + " from(" + packet.value("pq_sender").to_string() + ")", "app", "error");
 
   } else {
     DbModel::dDelete(
@@ -170,9 +170,9 @@ bool ParsingQHandler::increaseToparseAttempsCountSync(const QVDicT &packet)
       stbl_parsing_q,
       {{"pq_parse_attempts", packet.value("pq_parse_attempts").toUInt() + 1},
       {"pq_last_modified", CUtils::getNow() }},
-      {{"pq_type", packet.value("pq_type").toString()},
-      {"pq_code", packet.value("pq_code").toString()},
-      {"pq_sender", packet.value("pq_sender").toString()}});
+      {{"pq_type", packet.value("pq_type").to_string()},
+      {"pq_code", packet.value("pq_code").to_string()},
+      {"pq_sender", packet.value("pq_sender").to_string()}});
   return true;
   } catch (std::exception) {
     return false;

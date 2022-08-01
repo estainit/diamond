@@ -18,3 +18,4 @@ pub mod network;
 pub mod services;
 pub mod database;
 pub mod k_v_handler;
+pub mod address;

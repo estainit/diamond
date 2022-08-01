@@ -7,6 +7,9 @@ use rsa::{RsaPrivateKey, RsaPublicKey,
           PaddingScheme, PublicKey as rsa_pub, //pkcs1::LineEnding,
           pkcs8::{EncodePrivateKey, DecodePrivateKey, EncodePublicKey, DecodePublicKey}};
 
+use base64::{encode, decode};
+use std::str;
+
 use crate::lib::constants as cconsts;
 use crate::lib::utils::cutils as cutils;
 use crate::lib::bech_32;
@@ -24,12 +27,18 @@ pub fn bech32_encode(str: &str) -> String
     bech_32::comen_encode(str, cconsts::SOCIETY_NAME)
 }
 
-pub fn keccak256(msg: &String) -> String {
+pub fn keccak256(msg: &str) -> String {
     use crypto::{sha3::Sha3, digest::Digest};
     let mut hasher = Sha3::keccak256();
     hasher.input_str(msg);
     let hex = hasher.result_str();
     hex
+}
+
+//old_name_was keccak256Dbl
+pub fn keccak256_dbl(msg: &str) -> String
+{
+    keccak256(&keccak256(msg))
 }
 
 //old_name_was convertTitleToHash
@@ -49,15 +58,17 @@ pub fn do_sha256(_message: &String) -> String {
     "".to_string()
 }
 
-use base64::{encode, decode};
-use std::str;
-
-pub fn b64_encode(message:&String)->String{
- encode(message.as_bytes())
+pub fn sha256_dbl(_message: &String) -> String {
+    "".to_string()
 }
 
-pub fn b64_decode(message:&String)->String{
-    let buf:Vec<u8> = decode(&message).unwrap();
+
+pub fn b64_encode(message: &String) -> String {
+    encode(message.as_bytes())
+}
+
+pub fn b64_decode(message: &String) -> String {
+    let buf: Vec<u8> = decode(&message).unwrap();
     match str::from_utf8(&buf) {
         Ok(v) => return v.to_string(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
@@ -235,7 +246,7 @@ QString CCrypto::getRandomNumber(int len)
   while (res.length() < len)
     res += QString::number(rand());
 
-  return res.midRef(0, len).toString();
+  return res.midRef(0, len).to_string();
 }
 
 
@@ -261,7 +272,7 @@ QString CCrypto::base64Decode(const QString &encoded)
   return QString(QByteArray::fromBase64(ba));
 }
 
-QString CCrypto::bech32Encode(const QString &str)
+QString CCrypto::bech32_encode(const QString &str)
 {
   return bech32::ComenEncode(str, "im");
 }

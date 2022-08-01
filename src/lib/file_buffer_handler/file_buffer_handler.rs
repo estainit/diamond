@@ -23,7 +23,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
         {
         QJsonObject a_ballot = ballots[aBlt].toObject();
         sanBallots[aBlt] = QJsonObject {
-        {"baReceiveDate", CUtils::stripNonInDateString(a_ballot.value("baReceiveDate").toString())},
+        {"baReceiveDate", CUtils::stripNonInDateString(a_ballot.value("baReceiveDate").to_string())},
         {"baVoteRDiff", a_ballot.value("baVoteRDiff").toDouble()}};
         }
         KVHandler::upsertKValue("ballotsReceiveDates", CUtils::serializeJson(sanBallots));

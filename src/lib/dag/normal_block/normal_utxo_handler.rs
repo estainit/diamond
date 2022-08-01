@@ -1,6 +1,5 @@
 use std::thread;
 use std::thread::sleep;
-use std::time::Duration;
 use crate::lib::constants;
 use crate::{cutils, machine};
 use crate::lib::custom_types::CDateT;
@@ -20,7 +19,7 @@ pub fn loop_import_normal_coins()
     //     constants::Modules::App,
     //     constants::SecLevel::Info);
 
-    while (machine().should_loop_threads())
+    while machine().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_import_coins(&cutils::get_now());
@@ -78,8 +77,8 @@ QVDRecordsT NormalUTXOHandler::retrieveProperBlocks(QString c_date)
      */
     QJsonObject lastSyncStatus = CMachine::getLastSyncStatus();
     CLog::log("last SyncStatus in import Normal Block UTXOs: " + CUtils::dumpIt(lastSyncStatus), "trx", "trace");
-    if (lastSyncStatus.value("lastTimeMachineWasInSyncMode").toString() < CUtils::minutesBefore(CMachine::getCycleByMinutes()))
-        clauses.push_back(ModelClause{"b_receive_date", minCreationDate, "<"});
+    if (lastSyncStatus.value("lastTimeMachineWasInSyncMode").to_string() < CUtils::minutesBefore(CMachine::getCycleByMinutes()))
+        clauses.push(ModelClause{"b_receive_date", minCreationDate, "<"});
   }
   QVDRecordsT records = DAG::searchInDAG(
     clauses,
@@ -117,15 +116,15 @@ pub fn import_normal_block_coins(c_date_: &CDateT)
         block_inspect_container->reset();
         delete block;
 
-        QJsonObject blockJ = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").toString()).content);
+        QJsonObject blockJ = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
         block = BlockFactory::create(blockJ);
-        CLog::log("Extract matured UTXOs(NormalBlock) on c_date(" + c_date + ") from block(" + CUtils::hash8c(wBlock.value("b_hash").toString()) + ") created on(" + block->m_block_creation_date + ")", "trx", "info");
+        CLog::log("Extract matured UTXOs(NormalBlock) on c_date(" + c_date + ") from block(" + CUtils::hash8c(wBlock.value("b_hash").to_string()) + ") created on(" + block->m_block_creation_date + ")", "trx", "info");
 
         UTXOAnalyzer::analyzeBlockUsedCoins(block_inspect_container, block);
 
         block_inspect_container->m_DPCost_coin_codes = {};
         for (CDocHashT a_key: block_inspect_container->m_a_single_trx_DPCost.keys())
-          block_inspect_container->m_DPCost_coin_codes.push_back(block_inspect_container->m_a_single_trx_DPCost[a_key].m_coin);
+          block_inspect_container->m_DPCost_coin_codes.push(block_inspect_container->m_a_single_trx_DPCost[a_key].m_coin);
 
         if (block_inspect_container->m_must_not_import_trx_outputs.size() > 0)
           std::sort(block_inspect_container->m_must_not_import_trx_outputs.begin(), block_inspect_container->m_must_not_import_trx_outputs.end());
@@ -228,9 +227,9 @@ pub fn import_normal_block_coins(c_date_: &CDateT)
           CLog::log("Importing Normal block Coins(Backer) Block(" + CUtils::hash8c(block->getBlockHash()) + ") ", "trx", "info");
           for (auto aWBlock: wBlocksDescendents)
             UTXOHandler::addNewUTXO(
-              aWBlock.value("b_creation_date").toString(),
+              aWBlock.value("b_creation_date").to_string(),
               block_inspect_container->m_block_DPCost_backer.m_coin,
-              aWBlock.value("b_hash").toString(),
+              aWBlock.value("b_hash").to_string(),
               block_inspect_container->m_block_DPCost_backer.m_address,
               block_inspect_container->m_block_DPCost_backer_final,
               block->m_block_creation_date);
@@ -306,9 +305,9 @@ pub fn import_normal_block_coins(c_date_: &CDateT)
             for (QVDicT aWBlock: wBlocksDescendents)
             {
               UTXOHandler::addNewUTXO(
-                aWBlock.value("b_creation_date").toString(),
+                aWBlock.value("b_creation_date").to_string(),
                 aUTXO.m_coin,
-                aWBlock.value("b_hash").toString(),
+                aWBlock.value("b_hash").to_string(),
                 aUTXO.m_owner,  // address
                 aUTXO.m_amount, // coin_value
                 aUTXO.m_creation_date);  // refCreationDate:
@@ -327,9 +326,9 @@ pub fn import_normal_block_coins(c_date_: &CDateT)
           for (QVDicT aWBlock: wBlocksDescendents)
           {
             UTXOHandler::addNewUTXO(
-              aWBlock.value("b_creation_date").toString(),
+              aWBlock.value("b_creation_date").to_string(),
               aUTXO.m_coin,
-              aWBlock.value("b_hash").toString(),
+              aWBlock.value("b_hash").to_string(),
               aUTXO.m_owner,  // address
               aUTXO.m_amount, // coin_value
               aUTXO.m_creation_date);  // refCreationDate:

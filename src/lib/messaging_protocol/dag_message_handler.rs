@@ -55,13 +55,13 @@ bool DAGMessageHandler::invokeDescendents(
     {
       for (QVDicT wBlock: likeHashRes)
       {
-        QJsonObject jBlock = CUtils::parseToJsonObj(wBlock.value("pq_payload").toString());
+        QJsonObject jBlock = CUtils::parseToJsonObj(wBlock.value("pq_payload").to_string());
         // if the existed block in parsing q is descendent of block
         QStringList tmp = {};
         for(QJsonValueRef an_anc: jBlock.value("ancestors").toArray())
-          tmp.push_back(an_anc.toString());
+          tmp.push(an_anc.to_string());
         if (tmp.contains(block_hash))
-          existed_descendents_in_parsingQ.push_back(jBlock.value("bHash").toString());
+          existed_descendents_in_parsingQ.push(jBlock.value("bHash").to_string());
       }
     }
     if (existed_descendents_in_parsingQ.size() > 0)
@@ -156,7 +156,7 @@ bool DAGMessageHandler::blockInvokingNeeds(
 
     QStringList tmp;
     for(QVDicT a_row: existedInDAG)
-      tmp.append(a_row.value("b_hash").toString());
+      tmp.append(a_row.value("b_hash").to_string());
     QStringList array_diff = CUtils::arrayDiff(block_hashes, tmp);
 
     // control if block exist in parsing_q
@@ -168,17 +168,17 @@ bool DAGMessageHandler::blockInvokingNeeds(
 
       if (existsInParsingQ.size() == 0)
       {
-        missed_blocks.push_back(looking_hash);
+        missed_blocks.push(looking_hash);
       } else {
 //        let ancestors = existsInParsingQ.map(x => JSON.parse(x.pqPayload).ancestors);
         QList<QStringList> ancestors;
         for(auto x: existsInParsingQ)
         {
-          QJsonObject payloadJs = CUtils::parseToJsonObj(x.value("pq_payload").toString());
+          QJsonObject payloadJs = CUtils::parseToJsonObj(x.value("pq_payload").to_string());
           QJsonArray ancsJS = payloadJs.value("ancestors").toArray();
           QStringList ancestors;
           for(auto y: ancsJS)
-            ancestors.append(y.toString());
+            ancestors.append(y.to_string());
         }
 
         if (ancestors.size() == 0)
@@ -190,7 +190,7 @@ bool DAGMessageHandler::blockInvokingNeeds(
         {
           for(auto ancestor: pckedAncestors)
           {
-            next_level_block_hashes.push_back(ancestor);
+            next_level_block_hashes.push(ancestor);
           }
         }
       }
@@ -329,7 +329,7 @@ void DAGMessageHandler::setMaybeAskForLatestBlocksFlag(const QString& value)
 
     QJsonObject last_leave_invoke_response = CUtils::parseToJsonObj(last_leave_invoke_response_str);
     // TODO: tune the gap time
-    if (CUtils::timeDiff(last_leave_invoke_response.value("receiveDate").toString()).asSeconds < CMachine::getInvokeLeavesGap())
+    if (CUtils::timeDiff(last_leave_invoke_response.value("receiveDate").to_string()).asSeconds < CMachine::getInvokeLeavesGap())
       return;
 
     // control LAST_RECEIVED_BLOCK_TIMESTAMP flag
@@ -337,7 +337,7 @@ void DAGMessageHandler::setMaybeAskForLatestBlocksFlag(const QString& value)
     // this case happends in runing a new machin in which the machine has to download entire DAG.
     QJsonObject last_block = getLastReceivedBlockTimestamp();
     // TODO: tune the gap time
-    if (CUtils::timeDiff(last_block.value("last_block_receive_date").toString()).asSeconds < CMachine::getInvokeLeavesGap())
+    if (CUtils::timeDiff(last_block.value("last_block_receive_date").to_string()).asSeconds < CMachine::getInvokeLeavesGap())
       return;
 
     QVDRecordsT machine_request_status = KVHandler::serach(
@@ -345,7 +345,7 @@ void DAGMessageHandler::setMaybeAskForLatestBlocksFlag(const QString& value)
       {"kv_last_modified"});
     if (machine_request_status.size() > 0)
     {
-      TimeBySecT invoke_age = CUtils::timeDiff(machine_request_status[0].value("kv_last_modified").toString()).asSeconds;
+      TimeBySecT invoke_age = CUtils::timeDiff(machine_request_status[0].value("kv_last_modified").to_string()).asSeconds;
       CLog::log("control if (invoke_age: " + QString::number(invoke_age) + ") < (invokeGap: " + QString::number(CMachine::getInvokeLeavesGap()) + ") ");
       if (invoke_age < CMachine::getInvokeLeavesGap())
           return;
@@ -365,7 +365,7 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
   const QJsonObject& payload,
   const QString& connection_type)
 {
-  const CBlockHashT& block_hash = payload.value("bHash").toString();
+  const CBlockHashT& block_hash = payload.value("bHash").to_string();
 
   QString short_hash = CUtils::hash8c(block_hash);
   CLog::log("handle Block Invoke Req block(" + short_hash + ")", "app", "trace");
@@ -383,7 +383,7 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
     return {false, true};
   }
 
-  CLog::log("Broadcasting Replay to invoke for block(" + regenerated_json_block.value("bType").toString() + " / " + CUtils::hash8c(block_hash) + ")", "app", "trace");
+  CLog::log("Broadcasting Replay to invoke for block(" + regenerated_json_block.value("bType").to_string() + " / " + CUtils::hash8c(block_hash) + ")", "app", "trace");
   Block* block = BlockFactory::create(regenerated_json_block);
   bool push_res = SendingQHandler::pushIntoSendingQ(
     block->m_block_type,

@@ -33,11 +33,11 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
   CLog::log("handle Pulled Packet: " + CUtils::dumpIt(packet), "app", "trace");
 
-  QString receive_date = packet.value("pq_receive_date", CUtils::getNow()).toString();
-  QString pq_type = packet.value("pq_type", "").toString();
-  QString pq_code = packet.value("pq_code", "").toString();
-  QString pq_sender = packet.value("pq_sender", "").toString();
-  QString connection_type = packet.value("pq_connection_type", "").toString();
+  QString receive_date = packet.value("pq_receive_date", CUtils::getNow()).to_string();
+  QString pq_type = packet.value("pq_type", "").to_string();
+  QString pq_code = packet.value("pq_code", "").to_string();
+  QString pq_sender = packet.value("pq_sender", "").to_string();
+  QString connection_type = packet.value("pq_connection_type", "").to_string();
   /**
   * payload could be a block, GQL or even old-style messages
   * TODO: optimizine to use heap allocation for bigger payloads
@@ -61,9 +61,9 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
     return {false, true};
   }
 
-  if(payload.value("bType").toString() == CConsts::BLOCK_TYPES::RpBlock)
+  if(payload.value("bType").to_string() == CConsts::BLOCK_TYPES::RpBlock)
   {
-    CLog::log("A repay Block received block(" + CUtils::hash8c(payload.value("bHash").toString()) + ")", "trx", "info");
+    CLog::log("A repay Block received block(" + CUtils::hash8c(payload.value("bHash").to_string()) + ")", "trx", "info");
     // Since machine must create the repayments by itself we drop this block immidiately,
     // in addition machine calls importCoinbasedUTXOs method to import potentially minted coins and cut the potentially repay backs in on shot
     return {true, true};
@@ -83,7 +83,7 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
     if (!block->objectAssignmentsControlls())
     {
-      CLog::log("Maleformed JSon block couldn't be parsed! block(" + CUtils::hash8c(payload.value("bHash").toString()) + ")", "trx", "error");
+      CLog::log("Maleformed JSon block couldn't be parsed! block(" + CUtils::hash8c(payload.value("bHash").to_string()) + ")", "trx", "error");
       return {false, true};
     }
 
@@ -269,7 +269,7 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
     {
       for(auto an_anc: message.value("ancestors").toArray())
       {
-        message_ancestors.append(an_anc.toString());
+        message_ancestors.append(an_anc.to_string());
       }
 
 //      // check if ancestores exist in parsing q
@@ -288,7 +288,7 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
 //      {
 //        QStringList pq_codes = {};
 //        for(QVDicT a_row: queuedAncs.records)
-//          pq_codes.append(a_row.value("pq_code").toString());
+//          pq_codes.append(a_row.value("pq_code").to_string());
 //        missedAnc = CUtils::arrayDiff(message_ancestors, pq_codes);
 //        CLog::log("block(" + code + ") partially missed ancestors (" + CUtils::dumpIt(missedAnc) + ") ", "app", "trace");
 //      }
@@ -311,7 +311,7 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
 //        QStringList exist_in_DAG;
 //        for (QVDicT x: DAGedAncs)
 //        {
-//          exist_in_DAG.append(x.value("b_hash").toString());
+//          exist_in_DAG.append(x.value("b_hash").to_string());
 //        }
 
         CLog::log("some likly missed blocks(" + message_ancestors.join(",") + ") already recorded in DAG(" + exist_in_DAG.join(",") + ")", "app", "trace");
@@ -326,16 +326,16 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
      * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
      * so depends on voting type(bCat) for, we need proper treatment
      */
-    if (message.value("bType").toString() == CConsts::BLOCK_TYPES::FVote)
+    if (message.value("bType").to_string() == CConsts::BLOCK_TYPES::FVote)
     {
 
-      if (message.value("bCat").toString() == CConsts::FLOAT_BLOCKS_CATEGORIES::Trx)
+      if (message.value("bCat").to_string() == CConsts::FLOAT_BLOCKS_CATEGORIES::Trx)
       {
         /**
         * if the machine get an FVote, so insert uplink block in SUS BLOCKS WHICH NEEDED VOTES TO BE IMPORTED AHAED(SusBlockWNVTBIA)
         * WNVTBIA: Wait becaue Needs Vote To Be Importable
         */
-        QString uplinkBlock = message.value("ancestors").toArray()[0].toString();    // FVote blocks always have ONLY one ancestor for which Fvote is voting
+        QString uplinkBlock = message.value("ancestors").toArray()[0].to_string();    // FVote blocks always have ONLY one ancestor for which Fvote is voting
         QString currentWNVTBIA = KVHandler::getValue("SusBlockWNVTBIA");
         QStringList currentWNVTBIA_arr = {};
         if (currentWNVTBIA == "")
@@ -344,7 +344,7 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
         } else {
           auto tmp = CUtils::parseToJsonArr(currentWNVTBIA);
           for(auto x: tmp)
-            currentWNVTBIA_arr.append(x.toString());
+            currentWNVTBIA_arr.append(x.to_string());
           currentWNVTBIA_arr.append(uplinkBlock);
           currentWNVTBIA_arr = CUtils::arrayUnique(currentWNVTBIA_arr);
         }

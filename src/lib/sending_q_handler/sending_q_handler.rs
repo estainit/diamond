@@ -40,8 +40,8 @@ CListListT SendingQHandler::preparePacketsForNeighbors(
     // keep only requested neighbors
     QVDRecordsT selectedNeighbors;
     for (QVDicT neighbor: neighbors)
-      if (sq_receivers.contains(neighbor.value("n_email").toString()))
-        selectedNeighbors.push_back(neighbor);
+      if (sq_receivers.contains(neighbor.value("n_email").to_string()))
+        selectedNeighbors.push(neighbor);
     neighbors = selectedNeighbors;
   }
 
@@ -50,8 +50,8 @@ CListListT SendingQHandler::preparePacketsForNeighbors(
      // keep only requested neighbors
      QVDRecordsT selectedNeighbors;
      for (QVDicT neighbor: neighbors)
-         if (!no_receivers.contains(neighbor.value("n_email").toString()))
-             selectedNeighbors.push_back(neighbor);
+         if (!no_receivers.contains(neighbor.value("n_email").to_string()))
+             selectedNeighbors.push(neighbor);
      neighbors = selectedNeighbors;
   }
 
@@ -70,7 +70,7 @@ CListListT SendingQHandler::preparePacketsForNeighbors(
   QString sender;
   for (QVDicT neighbor: neighbors)
   {
-    QString receiver_pub_key = neighbor.value("n_pgp_public_key", "").toString();
+    QString receiver_pub_key = neighbor.value("n_pgp_public_key", "").to_string();
     if (receiver_pub_key == "")
       continue;
 
@@ -80,8 +80,8 @@ CListListT SendingQHandler::preparePacketsForNeighbors(
 //         message: args.sq_payload,
 //     };
     QString sender_priv_key;
-    QString connection_type = neighbor.value("n_connection_type", "").toString();
-    QString receiver_email = neighbor.value("n_email", "").toString();
+    QString connection_type = neighbor.value("n_connection_type", "").to_string();
+    QString receiver_email = neighbor.value("n_email", "").to_string();
     if (connection_type == CConsts::PRIVATE)
     {
       sender = prive_email_info.m_address;
@@ -257,7 +257,7 @@ void SendingQHandler::maybeCancelIvokeBlocksRequest()
 
   QStringList hashes;
   for (QVDicT elm: existed.records)
-    hashes.append(elm.value("sq_code").toString());
+    hashes.append(elm.value("sq_code").to_string());
   CLog::log("Potentially block invoke requests(" + QString::number(existed.records.size()) + ")");
 
   QVDRecordsT existed_in_DAG = DAG::searchInDAG(
@@ -265,7 +265,7 @@ void SendingQHandler::maybeCancelIvokeBlocksRequest()
     {"b_hash"});
   CLog::log("Potentially block invoke but existed In DAG(" + QString::number(existed_in_DAG.size()) + ")");
   for (QVDicT a_block: existed_in_DAG)
-    cancelIvokeBlockRequest(a_block.value("b_hash").toString());
+    cancelIvokeBlockRequest(a_block.value("b_hash").to_string());
 
   // remove existed in parsing q
   QVDRecordsT existed_in_parsing_queue = ParsingQHandler::searchParsingQ(
@@ -273,7 +273,7 @@ void SendingQHandler::maybeCancelIvokeBlocksRequest()
     {"pq_code"});
   CLog::log("Potentially block invoke but existed In Parsing queue(" + QString::number(existed_in_parsing_queue.size()) + ")");
   for (QVDicT a_block: existed_in_parsing_queue)
-    cancelIvokeBlockRequest(a_block.value("pq_code").toString());
+    cancelIvokeBlockRequest(a_block.value("pq_code").to_string());
 
 }
 */
@@ -294,10 +294,10 @@ pub fn send_out_the_packet() -> bool
       // always pick the first pkt! TODO: maybe more intelligent solution needed
       QVDicT packet = cpackets[0];
       bool send_res = NetworkHandler::iPush(
-        packet.value("sq_title").toString(),
-        packet.value("sq_payload").toString(),
-        packet.value("sq_sender").toString(),
-        packet.value("sq_receiver").toString());
+        packet.value("sq_title").to_string(),
+        packet.value("sq_payload").to_string(),
+        packet.value("sq_sender").to_string(),
+        packet.value("sq_receiver").to_string());
 
       // remove packet from sending queue
       if (send_res)

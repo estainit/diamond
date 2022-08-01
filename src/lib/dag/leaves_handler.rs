@@ -68,8 +68,8 @@ pub fn get_leave_blocks(only_before_date:&CDateT)->JSonT
   {
     QJsonObject aLeave = json_obj.value(a_key).toObject();
     if (
-       (aLeave.value("bType").toString() == CConsts::BLOCK_TYPES::Genesis) ||
-       (aLeave.value("bCDate").toString() < only_before_date)
+       (aLeave.value("bType").to_string() == CConsts::BLOCK_TYPES::Genesis) ||
+       (aLeave.value("bCDate").to_string() < only_before_date)
        )
     {
       filterd_json_obj.insert(a_key, json_obj.value(a_key));
@@ -127,7 +127,7 @@ std::tuple<bool, QString> LeavesHandler::addToLeaveBlocks(
   for (QString a_key : leaves.keys())
   {
     QJsonObject aLeave = leaves.value(a_key).toObject();
-    uint64_t leaveAge = CUtils::timeDiff(aLeave.value("bCDate").toString(), now).asMinutes;
+    uint64_t leaveAge = CUtils::timeDiff(aLeave.value("bCDate").to_string(), now).asMinutes;
     QString msg = "leave("+CUtils::hash8c(a_key)+") age (" + QString("%1").arg(leaveAge) + ") minutes is " +
           ((leaveAge < CMachine::getCycleByMinutes() * 2) ? "younger" : "older") +
         " than 2 cycles";

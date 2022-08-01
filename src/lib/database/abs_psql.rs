@@ -283,7 +283,7 @@ QueryRes DbModel::customQuery(
   QStringList bound_list_for_log;
   for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
   {
-    bound_list_for_log.push_back(i.key().toUtf8() + ": " + i.value().toString().toUtf8());
+    bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
   }
   if (do_log)
     CLog::log("Query Values: [" + bound_list_for_log.join(", ") + "]", "sql", "trace");
@@ -323,13 +323,13 @@ QueryRes DbModel::customQuery(
         a_row[QString::number(i)] = query.value(i);
 
     }
-    records.push_back(a_row);
+    records.push(a_row);
 
     QMap<QString, QVariant> sqlIterator(query.boundValues());
     QStringList bound_list_for_log;
     for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
     {
-      bound_list_for_log.push_back(i.key().toUtf8() + ": " + i.value().toString().toUtf8());
+      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
     }
   }
 
@@ -376,7 +376,7 @@ QueryRes DbModel::customPSQLQuery(
     QMap<QString, QVariant> sqlIterator(query->boundValues());
     for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
     {
-      bound_list_for_log.push_back(i.key().toUtf8() + ": " + i.value().toString().toUtf8());
+      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
     }
 
     exec_res = query->exec();
@@ -422,12 +422,12 @@ QueryRes DbModel::customPSQLQuery(
         a_row[QString::number(i)] = query->value(i);
 
     }
-    records.push_back(a_row);
+    records.push(a_row);
 
     QMap<QString, QVariant> sqlIterator(query->boundValues());
 //    QStringList bound_list_for_log;
 //    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
-//      bound_list_for_log.push_back(i.key().toUtf8() + ": " + i.value().toString().toUtf8());
+//      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
 
   }
 
@@ -539,9 +539,9 @@ const QString UNIQUE_ERR_MSG_PREFIX2 = "ERROR:  duplicate key value violates uni
 
 bool DbModel::uniqueConstraintFailed(const QString& msg)
 {
-  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX1.length()).toString() == UNIQUE_ERR_MSG_PREFIX1)
+  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX1.length()).to_string() == UNIQUE_ERR_MSG_PREFIX1)
     return true;
-  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX2.length()).toString() == UNIQUE_ERR_MSG_PREFIX2)
+  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX2.length()).to_string() == UNIQUE_ERR_MSG_PREFIX2)
     return true;
   return false;
 }

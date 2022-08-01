@@ -1,9 +1,9 @@
 use std::thread::sleep;
 use std::time::Duration;
+use crate::{cutils, machine};
 use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::import_coinbased_coins;
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
-use crate::{CMACHINE, cutils, machine};
 use crate::lib::block::block_types::block_coinbase::coinbase_issuer::maybe_create_coinbase_block;
 use crate::lib::block::block_types::block_repayback::repayback_block::import_double_check;
 use crate::lib::dag::dag::do_prerequisities_remover;

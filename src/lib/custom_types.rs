@@ -59,7 +59,8 @@ pub type QHash<QString, QStringList> QSLDicT; // custom dictionary
 pub type QHash<QString, QSDicT>      QS2DicT; // custom dictionary
 */
 // pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
-pub type QVDicT = HashMap<String, String>    ; // custom dictionary
+pub type QVDicT = HashMap<String, String>;
+// custom dictionary
 /*
 pub type QHash<QString, QJsonObject> QJODicT; // custom dictionary
 pub type QHash<QString, QJsonArray>  QJADicT; // custom dictionary
@@ -72,8 +73,8 @@ pub type QVector<QV2DicT>       QV2DRecordsT;
 pub type QVector<QJsonObject>   JORecordsT;
 pub type QVector<QJsonArray>    JARecordsT;
 */
-pub type ClausesT<'l> = Vec<&'l ModelClause<'l>>   ;
-pub type OrderT<'l> = Vec<&'l OrderModifier<'l>> ;
+pub type ClausesT<'l> = Vec<&'l ModelClause<'l>>;
+pub type OrderT<'l> = Vec<&'l OrderModifier<'l>>;
 /*
 
 pub type QHash<QString, QVDRecordsT> GRecordsT; // Groupped records
@@ -83,5 +84,63 @@ pub type QHash<QString, GRecordsT> G2RecordsT; // Groupped Groupped records
 class Coin;
 pub type QList<QStringList> CListListT;
 pub type QVector<Coin> CoinsT;
+typedef QString  CCoinCodeT;
+typedef uint64_t CMPAIValueT;  // (+) micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
+typedef int64_t CMPAISValueT;  // (+-)micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
+typedef QString  CBlockHashT;
+typedef QString  CDocHashT;
+*/
+pub type CAddressT = String;
+/*
+typedef QString  CDateT;
+typedef uint32_t CDocIndexT;
+typedef uint16_t CInputIndexT; // customizing document index maximum number
+typedef uint16_t CSigIndexT;
+typedef uint16_t COutputIndexT; // customizing document index maximum number
+
+typedef uint16_t DPIIndexT;
+typedef double   DNASharePercentT;
+typedef double   DNAShareCountT;
+
+typedef uint16_t BlockAncestorsCountT;  // TODO: add max ancestor count control for received blocks
+typedef uint32_t BlockLenT;
+typedef uint32_t DocLenT;
+
+typedef int16_t CVoteT;  // between -100 0 100
+*/
+pub type TimeByHoursT = u32;  // time by hours
+/*
+typedef uint64_t TimeByMinutesT;
+typedef uint64_t TimeBySecT;
+typedef QHash<QString, double>      doubleDicT; // custom dictionary
+typedef QHash<QString, float>       floatDicT; // custom dictionary
+typedef QHash<QString, CDocIndexT>  UI16DicT; // custom dictionary
+typedef QHash<QString, uint32_t>    UI32DicT; // custom dictionary
+typedef QHash<QString, uint64_t>    UI64DicT; // custom dictionary
+typedef QHash<QString, QString>     QSDicT; // custom dictionary
+typedef QHash<QString, QStringList> QSLDicT; // custom dictionary
+typedef QHash<QString, QSDicT>      QS2DicT; // custom dictionary
+typedef QHash<QString, QVariant>    QVDicT; // custom dictionary
+typedef QHash<QString, QJsonObject> QJODicT; // custom dictionary
+typedef QHash<QString, QJsonArray>  QJADicT; // custom dictionary
+typedef QHash<QString, QVDicT>      QV2DicT;
+
+typedef QVector<QVDicT>        QVDRecordsT;
+typedef QVector<QSDicT>        QSDRecordsT;
+typedef QVector<QV2DicT>       QV2DRecordsT;
+typedef QVector<QJsonObject>   JORecordsT;
+typedef QVector<QJsonArray>    JARecordsT;
+typedef QVector<ModelClause>   ClausesT;
+typedef QVector<OrderModifier> OrderT;
+
+typedef QHash<QString, QVDRecordsT> GRecordsT; // Groupped records
+typedef QHash<QString, GRecordsT> G2RecordsT; // Groupped Groupped records
+
+class MerkleNodeData;
+typedef QHash<QString, MerkleNodeData> MNodesMapT;
+
+class Coin;
+typedef QList<QStringList> CListListT;
+typedef QVector<Coin> CoinsT;
 
  */

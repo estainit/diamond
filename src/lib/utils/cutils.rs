@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::lib::constants as CConsts;
-use crate::lib::custom_types::{CDateT, VString, VVString};
+use crate::lib::custom_types::{CDateT, VVString};
 
 #[allow(dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
@@ -34,7 +34,7 @@ pub fn left_padding(inp_str: String, length: u8) -> String {
     return str;
 }
 
-//old_name_was convertFloatToString
+//old_name_was convertFloatto_string
 #[allow(dead_code)]
 pub fn convert_float_to_string(num: f64, precision: u32) -> String {
     let mut num_per_10 = num.clone();
@@ -441,7 +441,7 @@ pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
 //old_name_was chunkQStringList
 
 //old_name_was chunkStringList
-pub fn chunk_to_vvstring(values: &VString, chunk_size: u64) -> VVString {
+pub fn chunk_to_vvstring(values: &Vec<&str>, chunk_size: u64) -> VVString {
     let mut out: VVString = vec![];
 
     if (values.len() == 0) || (chunk_size == 0) {
@@ -449,7 +449,7 @@ pub fn chunk_to_vvstring(values: &VString, chunk_size: u64) -> VVString {
     }
 
     if values.len() <= chunk_size as usize {
-        out.push(values.clone());
+        out.push(values.iter().map(|x| x.to_string()).collect::<Vec<String>>());
         return out;
     }
 
@@ -466,7 +466,11 @@ pub fn chunk_to_vvstring(values: &VString, chunk_size: u64) -> VVString {
         } else {
             end_index = the_len as u64;
         }
-        let a_chunk: Vec<String> = values[(i * chunk_size) as usize..end_index as usize].to_vec();
+        let a_chunk: Vec<String> = values[(i * chunk_size) as usize..end_index as usize]
+            .to_vec()
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
         if a_chunk.len() > 0 {
             out.push(a_chunk);
         }
@@ -528,4 +532,45 @@ pub fn remove_dbl_spaces(s: &String) -> String
             ).unwrap();
     }
     return ISO8601_DATE_REGEX.replace_all(s, " ").to_string();
+}
+
+//old_name_was paddingLengthValue
+pub fn padding_length_value(value: String, neededLen: u8) -> String
+{
+    return left_padding(value.to_string(), neededLen);
+}
+
+pub fn hash4c(s: &String) -> String
+{
+    s.substring(0, 4).to_string()
+}
+
+pub fn hash6c(s: &String) -> String
+{
+    s.substring(0, 6).to_string()
+}
+
+pub fn hash8c(s: &String) -> String
+{
+    s.substring(0, 8).to_string()
+}
+
+pub fn hash16c(s: &String) -> String
+{
+    s.substring(0, 16).to_string()
+}
+
+pub fn hash32c(s: &String) -> String
+{
+    s.substring(0, 32).to_string()
+}
+
+pub fn hash64c(s: &String) -> String
+{
+    s.substring(0, 64).to_string()
+}
+
+pub fn shortBech16(s: &String) -> String
+{
+    return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
 }

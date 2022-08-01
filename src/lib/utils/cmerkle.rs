@@ -69,8 +69,8 @@ impl MerkleNodeDataTrait for MerkleNodeData {
 
 pub type MNodesMapT = HashMap<String, MerkleNodeData>;
 
-pub fn generate(
-    elms: &VString,
+pub fn generate_m(
+    elms: &Vec<&str>,
     input_type: &String,
     hash_algorithm: &String,
     version_: &String) -> (String, MNodesMapT, String, usize, usize)
@@ -129,7 +129,7 @@ pub fn generate(
     };
     let mut elms_ = cutils::clone_vec(&elms);
     while inx < needed_leaves as usize {
-        elms_.push("leave_".to_owned() + &format!("{}", inx + 1));
+        elms_.push(&("leave_".to_owned() + &format!("{}", inx + 1)));
         inx += 1;
     }
 
@@ -179,14 +179,14 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
 }
 
 //old_name_was innerMerkle
-pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &String, _version: &String)
+pub fn inner_merkle(elms_: &Vec<&str>, input_type: &String, hash_algorithm: &String, _version: &String)
                     -> (String, MNodesMapT, usize, usize)
 {
     let mut elms = cutils::clone_vec(elms_);
     if input_type == "string" {
-        let mut hashed_elements: VString = vec![];
+        let mut hashed_elements: Vec<&str> = vec![];
         for element in elms {
-            hashed_elements.push(do_hash_a_node(&element, hash_algorithm));
+            hashed_elements.push(&do_hash_a_node(&element.to_string(), hash_algorithm));
         }
         elms = cutils::clone_vec(&hashed_elements);
     }
@@ -220,7 +220,7 @@ pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &Strin
             // QString the_hash = elms[elms.len() - 1];
             // if (version > "0.0.0")
             //     the_hash = CConsts::FAKE_RIGHT_HASH_PREFIX + the_hash;
-            // elms.push_back(the_hash);
+            // elms.push(the_hash);
         }
 
         let mut chunks: VVString = cutils::chunk_to_vvstring(&elms, 2);
@@ -228,7 +228,7 @@ pub fn inner_merkle(elms_: &VString, input_type: &String, hash_algorithm: &Strin
 
         for chunk in chunks {
             parent = do_hash_a_node(&(chunk[0].clone().to_string() + &chunk[1].to_string()), hash_algorithm);
-            elms.push(parent.clone());
+            elms.push(&parent.clone());
             if level == 1 {
                 let l_key = format!("l_{}", chunk[0].clone());
                 let r_key = "r_".to_owned() + &chunk[1].to_string();
