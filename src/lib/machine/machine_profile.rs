@@ -33,16 +33,16 @@ use crate::lib::database::tables::STBL_MACHINE_PROFILES;
 
 
 #[derive(Serialize, Deserialize)]
-pub(crate) struct MachineProfile<'m, 'a>
+pub(crate) struct MachineProfile<'m>
 {
     m_dummy_m_lifetime_user: &'m str,
     pub(crate) m_mp_code: String,
     pub(crate) m_mp_name: String,
     pub(crate) m_mp_last_modified: String,
-    pub(crate) m_mp_settings: MPSetting<'m, 'a>,
+    pub(crate) m_mp_settings: MPSetting<'m>,
 }
 
-impl <'m, 'a>MachineProfile<'m, 'a> {
+impl <'m>MachineProfile<'m> {
     pub fn get_profile(mp_code: &str) -> (bool, MachineProfile)
     {
         let (status, records) = q_select(
@@ -69,7 +69,7 @@ impl <'m, 'a>MachineProfile<'m, 'a> {
         (false, MachineProfile::get_null())
     }
 
-    pub fn get_null() -> MachineProfile<'m, 'a> {
+    pub fn get_null() -> MachineProfile<'m> {
         return MachineProfile {
             m_dummy_m_lifetime_user: "",
             m_mp_code: "".to_string(),
@@ -90,22 +90,22 @@ impl <'m, 'a>MachineProfile<'m, 'a> {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct MPSetting<'m, 'a>
+pub struct MPSetting<'m>
 {
     m_dummy_m_lifetime_user: &'m str,
     pub(crate) m_public_email: EmailSettings,
     pub(crate) m_private_email: EmailSettings,
 
     pub(crate) m_machine_alias: String,
-    pub(crate) m_backer_detail: UnlockDocument<'a>,
+    pub(crate) m_backer_detail: UnlockDocument,
     pub(crate) m_language: String,
     pub(crate) m_term_of_services: String,
     pub(crate) m_already_presented_neighbors: Vec<DummyNeighbor>,
 
 }
 
-impl <'m, 'a>MPSetting<'m, 'a> {
-    pub fn new() -> MPSetting <'m, 'a>{
+impl <'m>MPSetting<'m> {
+    pub fn new() -> MPSetting <'m>{
         return MPSetting {
             m_dummy_m_lifetime_user: "",
             m_public_email: EmailSettings::new(),
@@ -123,11 +123,11 @@ impl <'m, 'a>MPSetting<'m, 'a> {
 pub struct EmailSettings {
     pub(crate) m_address: String,
     pub(crate) m_password: String,
-    pub(crate) m_income_IMAP: String,
-    pub(crate) m_income_POP3: String,
+    pub(crate) m_income_imap: String,
+    pub(crate) m_income_pop3: String,
     pub(crate) m_incoming_mail_server: String,
     pub(crate) m_outgoing_mail_server: String,
-    pub(crate) m_outgoing_SMTP: String,
+    pub(crate) m_outgoing_smtp: String,
     // it depends on smtp server, but less than 5 minute is useless
     pub(crate) m_fetching_interval_by_minute: String,
     pub(crate) m_pgp_private_key: String,
@@ -139,11 +139,11 @@ impl EmailSettings {
         return EmailSettings {
             m_address: "abc@def.gh".to_string(),
             m_password: "".to_string(),
-            m_income_IMAP: "993".to_string(),
-            m_income_POP3: "995".to_string(),
+            m_income_imap: "993".to_string(),
+            m_income_pop3: "995".to_string(),
             m_incoming_mail_server: "".to_string(),
             m_outgoing_mail_server: "".to_string(),
-            m_outgoing_SMTP: "465".to_string(),
+            m_outgoing_smtp: "465".to_string(),
             m_fetching_interval_by_minute: "5".to_string(),  // it depends on smtp server, but less than 5 minute is useles,
             m_pgp_private_key: "".to_string(),
             m_pgp_public_key: "".to_string(),
@@ -154,11 +154,11 @@ impl EmailSettings {
         return EmailSettings {
             m_address: "".to_string(),
             m_password: "".to_string(),
-            m_income_IMAP: "".to_string(),
-            m_income_POP3: "".to_string(),
+            m_income_imap: "".to_string(),
+            m_income_pop3: "".to_string(),
             m_incoming_mail_server: "".to_string(),
             m_outgoing_mail_server: "".to_string(),
-            m_outgoing_SMTP: "".to_string(),
+            m_outgoing_smtp: "".to_string(),
             m_fetching_interval_by_minute: "".to_string(),
             m_pgp_private_key: "".to_string(),
             m_pgp_public_key: "".to_string(),

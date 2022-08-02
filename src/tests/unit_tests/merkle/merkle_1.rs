@@ -23,7 +23,7 @@ pub mod merkel_tests_1 {
                 _version,
                 _levels,
                 _leaves) =
-                cmerkle::generate_m(&vec!["a".to_string()],
+                cmerkle::generate_m(vec!["a".to_string()],
                                     &"hashed".to_string(),
                                     &"noHash".to_string(),
                                     &"".to_string());
@@ -39,7 +39,7 @@ pub mod merkel_tests_1 {
                 _version,
                 _levels,
                 _leaves) =
-                cmerkle::generate_m(&vec!["1".to_string()],
+                cmerkle::generate_m(vec!["1".to_string()],
                                     &"string".to_string(),
                                     &"".to_string(),
                                     &"".to_string());

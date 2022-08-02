@@ -13,7 +13,7 @@ pub mod merkel_tests_3 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec![
+                cmerkle::generate_m(vec![
                     "a".to_string(),
                     "b".to_string(),
                     "c".to_string(),

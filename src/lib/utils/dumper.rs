@@ -26,11 +26,11 @@ pub fn dump_clauses(clauses: &ClausesT) -> String {
     return out.to_string();
 }
 
-pub fn dump_vec_of_str(s: &Vec<&str>) -> String {
+pub fn dump_vec_of_str(s: &Vec<String>) -> String {
     let prefix_tabs = "\t ";
 
     let mut out: String = "".to_string();
-    for &a_vec in s{
+    for a_vec in s {
         out += &(constants::NL.to_owned() + &prefix_tabs + &a_vec);
     }
     return out;

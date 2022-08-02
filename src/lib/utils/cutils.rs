@@ -441,7 +441,7 @@ pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
 //old_name_was chunkQStringList
 
 //old_name_was chunkStringList
-pub fn chunk_to_vvstring(values: &Vec<&str>, chunk_size: u64) -> VVString {
+pub fn chunk_to_vvstring(values: Vec<String>, chunk_size: u64) -> VVString {
     let mut out: VVString = vec![];
 
     if (values.len() == 0) || (chunk_size == 0) {
@@ -570,7 +570,7 @@ pub fn hash64c(s: &String) -> String
     s.substring(0, 64).to_string()
 }
 
-pub fn shortBech16(s: &String) -> String
+pub fn short_bech16(s: &String) -> String
 {
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
 }

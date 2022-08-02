@@ -3,28 +3,28 @@ use crate::lib::constants;
 use crate::lib::custom_types::TimeByHoursT;
 
 
-#[derive(Serialize, Deserialize)]
-pub struct IndividualSignature<'a>
+#[derive(Clone, Serialize, Deserialize)]
+pub struct IndividualSignature
 {
-    pub(crate) m_signer_id: &'a str,
+    pub(crate) m_signer_id: String,
     // a dummy handler id
-    pub(crate) m_signature_key: &'a str,
+    pub(crate) m_signature_key: String,
     // sKey
-    pub(crate) m_permitted_to_pledge: &'a str,
+    pub(crate) m_permitted_to_pledge: String,
     // pPledge
-    pub(crate) m_permitted_to_delegate: &'a str,
+    pub(crate) m_permitted_to_delegate: String,
     // pDelegate
     pub(crate) m_input_time_lock: TimeByHoursT,
     pub(crate) m_output_time_lock: TimeByHoursT,
 }
 
-impl<'a> IndividualSignature<'a> {
-    pub fn new() -> IndividualSignature<'a> {
+impl IndividualSignature {
+    pub fn new() -> IndividualSignature {
         return IndividualSignature {
-            m_signer_id: "",
-            m_signature_key: "",
-            m_permitted_to_pledge: "",
-            m_permitted_to_delegate: "",
+            m_signer_id: "".to_string(),
+            m_signature_key: "".to_string(),
+            m_permitted_to_pledge: "".to_string(),
+            m_permitted_to_delegate: "".to_string(),
             m_input_time_lock: 0,
             m_output_time_lock: 0,
         };
@@ -45,11 +45,11 @@ impl<'a> IndividualSignature<'a> {
     }
 }
 
-pub fn dump_vec_of_ind_sig(custom_data: &Vec<&IndividualSignature>) -> String {
+pub fn dump_vec_of_ind_sig(custom_data: &Vec<IndividualSignature>) -> String {
     let prefix_tabs = "\t ";
     let mut out_str = constants::NL.to_string();
-    for &an_ind in custom_data{
-        out_str += &(constants::NL.to_owned() + &prefix_tabs + "an Individual Signature: " + &an_ind.dump());
+    for an_ind in custom_data{
+        out_str += &(constants::NL.to_owned() + &prefix_tabs + "an Individual Signature: " + &*an_ind.dump());
     }
     return out_str.to_string();
 }

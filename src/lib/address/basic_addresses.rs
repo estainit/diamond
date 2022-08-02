@@ -10,7 +10,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::u
 
 pub fn createANewBasicAddress<'a>(
     signature_mod: &str,
-    signature_version: &'a str) -> (bool, UnlockDocument<'a>)
+    signature_version: &'a str) -> (bool, UnlockDocument)
 {
     let signature_type = constants::signature_types::Basic; // by default is two of three (m of n === m/n)
     dlog(
@@ -19,11 +19,11 @@ pub fn createANewBasicAddress<'a>(
         constants::SecLevel::Info);
 
 
-    let mut map_pub_key_to_priv_key: &HashMap<&str, &str> = &HashMap::new();
+    let mut map_pub_key_to_priv_key: HashMap<String, String> = HashMap::new();
     let signatures_dtl: Vec<String> = signature_mod.to_string().split("/").map(|x| x.to_string()).collect::<Vec<String>>();
     let m_signatures_count: u16 = signatures_dtl[0].parse::<u16>().unwrap();
     let n_signatures_count: u16 = signatures_dtl[1].parse::<u16>().unwrap();
-    let mut individuals_signing_sets: &HashMap<&str, &IndividualSignature> = &HashMap::new();
+    let mut individuals_signing_sets: HashMap<String, IndividualSignature> = HashMap::new();
 
     for i in 0..n_signatures_count
     {
@@ -38,18 +38,18 @@ pub fn createANewBasicAddress<'a>(
             return (false, UnlockDocument::new());
         }
 
-        map_pub_key_to_priv_key.insert(&public_key[..], &private_key[..]);
+        map_pub_key_to_priv_key.insert(public_key.clone(), private_key.clone());
 
         let mut a_sign_set: IndividualSignature = IndividualSignature {
-            m_signer_id: "",
-            m_signature_key: &public_key[..],
-            m_permitted_to_pledge: constants::NO,
-            m_permitted_to_delegate: constants::NO,
+            m_signer_id: "".to_string(),
+            m_signature_key: public_key,
+            m_permitted_to_pledge: constants::NO.to_string(),
+            m_permitted_to_delegate: constants::NO.to_string(),
             m_input_time_lock: 0,
             m_output_time_lock: 0,
         };
-        a_sign_set.m_signer_id = &*cutils::padding_length_value(format!("{}", i), 7);
-        individuals_signing_sets.insert(a_sign_set.m_signer_id, &a_sign_set);
+        a_sign_set.m_signer_id = cutils::padding_length_value(format!("{}", i), 7);
+        individuals_signing_sets.insert(a_sign_set.m_signer_id.clone(), a_sign_set);
     }
 
 
@@ -64,24 +64,28 @@ pub fn createANewBasicAddress<'a>(
         m_signatures_count,
         &options);
 
-    for &an_unlocker_set in unlock_info.m_unlock_sets
+    for an_unlocker_set in &unlock_info.m_unlock_sets
     {
-        let mut private_keys: Vec<&str> = vec![];
-        for &aSignSet in an_unlocker_set.m_signature_sets
+        let mut private_keys: Vec<String> = vec![];
+        for a_sign_set in &an_unlocker_set.m_signature_sets
         {
-            private_keys.push(&map_pub_key_to_priv_key.get(aSignSet.m_signature_key).unwrap().to_string());
+            let private_key = map_pub_key_to_priv_key.get(&a_sign_set.m_signature_key).unwrap().clone();
+            private_keys.push(private_key);
         }
-        unlock_info.m_private_keys.insert(an_unlocker_set.m_salt, private_keys);
+        unlock_info.m_private_keys.insert(an_unlocker_set.m_salt.clone(), private_keys);
 
         // test unlock structure&  signature
         let is_valid: bool = validateSigStruct(
-            an_unlocker_set,
-            unlock_info.m_account_address,
-            &HashMap::new()
+            &an_unlocker_set,
+            &unlock_info.m_account_address,
+            &HashMap::new(),
         );
-        if (is_valid) {
+        if is_valid {
             dlog(
-                &format!("The new address {} created & tested successfully", cutils::shortBech16(&unlock_info.m_account_address.to_string())),
+                &format!("The new address {} created & tested successfully. {}",
+                         cutils::short_bech16(&unlock_info.m_account_address.to_string()),
+                         unlock_info.dump()
+                ),
                 constants::Modules::App,
                 constants::SecLevel::Info);
         } else {
@@ -95,8 +99,6 @@ pub fn createANewBasicAddress<'a>(
         }
     }
 
-    // console.log(\n unlock_info: ${utils.stringify(unlock_info)}\n);
-
     //TODO: FIXME: implement key signature potential ASAP
     // validate signature of new address
     let message = ccrypto::convert_title_to_hash(
@@ -105,13 +107,12 @@ pub fn createANewBasicAddress<'a>(
             .substring(0, constants::SIGN_MSG_LENGTH as usize)
             .to_string()
     );
-    for &an_unlock_set in unlock_info.m_unlock_sets
+    for an_unlock_set in &unlock_info.m_unlock_sets
     {
         for inx in 0..an_unlock_set.m_signature_sets.len()
         {
-            let salk_key = an_unlock_set.m_salt;
             let (status, signature_hex, signature) = ccrypto::ecdsa_sign_message(
-                &unlock_info.m_private_keys.get(salk_key).unwrap()[inx].to_string(),
+                &unlock_info.m_private_keys.get(&an_unlock_set.m_salt).unwrap()[inx].to_string(),
                 &message);
             if !status
             {

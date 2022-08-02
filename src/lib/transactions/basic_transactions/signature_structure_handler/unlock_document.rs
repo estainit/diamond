@@ -5,53 +5,53 @@ use crate::lib::custom_types::CAddressT;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
 #[derive(Serialize, Deserialize)]
-pub struct UnlockDocument<'a> {
-    pub m_unlock_sets: &'a Vec<&'a UnlockSet<'a>>,
-    pub m_merkle_root: &'a str,
-    pub m_account_address: &'a str,
-    pub m_merkle_version: &'a str,
-    pub m_private_keys: HashMap<&'a str, Vec<&'a str>>,//QHash<QString, QStringList>
+pub struct UnlockDocument {
+    pub m_unlock_sets: Vec<UnlockSet>,
+    pub m_merkle_root: String,
+    pub m_account_address: String,
+    pub m_merkle_version: String,
+    pub m_private_keys: HashMap<String, Vec<String>>,//QHash<QString, QStringList>
 }
 
-impl<'a> UnlockDocument<'a> {
-    pub fn new() -> UnlockDocument<'a> {
+impl UnlockDocument {
+    pub fn new() -> UnlockDocument {
         return UnlockDocument {
-            m_unlock_sets: &vec![],
-            m_merkle_root: "",
-            m_account_address: "",
-            m_merkle_version: "0.0.0",
+            m_unlock_sets: vec![],
+            m_merkle_root: "".to_string(),
+            m_account_address: "".to_string(),
+            m_merkle_version: "0.0.0".to_string(),
             m_private_keys: Default::default(),
         };
     }
 
-    pub fn get_null() -> UnlockDocument<'a> {
+    pub fn get_null() -> UnlockDocument {
         return UnlockDocument {
-            m_unlock_sets: &vec![],
-            m_merkle_root: "",
-            m_account_address: "",
-            m_merkle_version: "",
+            m_unlock_sets: vec![],
+            m_merkle_root: "".to_string(),
+            m_account_address: "".to_string(),
+            m_merkle_version: "".to_string(),
             m_private_keys: Default::default(),
         };
     }
 
     pub fn dump(&self) -> String {
         let prefix_tabs = "\t ";
-        let mut out_str: String = constants::NL.to_owned().to_owned() + &prefix_tabs + "merkle_root: " + self.m_merkle_root + "(" + self.m_merkle_version + ")";
-        out_str += &(constants::NL.to_owned() + &prefix_tabs + &"account_address: " + self.m_account_address + &constants::NL.to_owned() + &"unlock_sets");
-        return constants::NL.to_owned() + &prefix_tabs + &out_str + &dump_vec_of_unlock_sets(self.m_unlock_sets);
+        let mut out_str: String = constants::NL.to_owned().to_owned() + &prefix_tabs + "merkle_root: " + &self.m_merkle_root + "(" + &self.m_merkle_version + ")";
+        out_str += &(constants::NL.to_owned() + &prefix_tabs + &"account_address: " + &self.m_account_address + &constants::NL.to_owned() + &"unlock_sets");
+        return constants::NL.to_owned() + &prefix_tabs + &out_str + &dump_vec_of_unlock_sets(&self.m_unlock_sets);
     }
 }
 
-pub fn dump_vec_of_unlock_sets(custom_data: &Vec<&UnlockSet>) -> String {
+pub fn dump_vec_of_unlock_sets(custom_data: &Vec<UnlockSet>) -> String {
     let prefix_tabs = "\t ";
-    let mut out: Vec<&String>;
-    for &a_set in custom_data
+    let mut out: Vec<String> = vec![];
+    for a_set in custom_data
     {
         let dumped_row = prefix_tabs.to_owned() + &a_set.dump();
-        out.push(&dumped_row);
+        out.push(dumped_row);
     }
 
-    let joined =out.iter().map(|&x| x.to_string()).collect::<Vec<String>>().join(&constants::NL);
+    let joined = out.iter().map(|x| x.clone()).collect::<Vec<String>>().join(&constants::NL);
     return constants::NL.to_owned() + prefix_tabs + &joined;
 }
 

@@ -17,7 +17,7 @@ use crate::lib::machine::machine_profile::{MachineProfile};
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
-pub struct CMachine<'m, 'a> {
+pub struct CMachine<'m> {
     m_dummy_m_lifetime_user: &'m str,
     m_clone_id: i8,
     m_should_loop_threads: bool,
@@ -63,7 +63,7 @@ pub struct CMachine<'m, 'a> {
     QVDRecordsT m_DAG_cached_blocks; // TODO: optimize it ASAP
     QStringList m_DAG_cached_block_hashes = {}; // TODO: optimize it ASAP
 */
-    pub(crate) m_profile: MachineProfile<'m, 'a>,
+    pub(crate) m_profile: MachineProfile<'m>,
 
 }
 /*
@@ -75,8 +75,8 @@ pub trait CMachineThreadGaps {
  */
 
 
-impl <'m, 'a>CMachine<'m, 'a> {
-    pub(crate) fn new() -> CMachine<'m, 'a> {
+impl <'m>CMachine<'m> {
+    pub(crate) fn new() -> CMachine<'m> {
         let (status, mut profile) = MachineProfile::get_profile(constants::DEFAULT);
         CMachine {
             m_dummy_m_lifetime_user: "",
@@ -629,11 +629,11 @@ impl <'m, 'a>CMachine<'m, 'a> {
       {
         {"m_address", m_address},
         {"m_password", m_password},
-        {"m_income_IMAP", m_income_IMAP},
-        {"m_income_POP3", m_income_POP3},
+        {"m_income_imap", m_income_imap},
+        {"m_income_pop3", m_income_pop3},
         {"m_incoming_mail_server", m_incoming_mail_server},
         {"m_outgoing_mail_server", m_outgoing_mail_server},
-        {"m_outgoing_SMTP", m_outgoing_SMTP},
+        {"m_outgoing_smtp", m_outgoing_smtp},
         {"m_fetching_interval_by_minute", m_fetching_interval_by_minute}, // it depends on smtp server, but less than 5 minute is useless
         {"m_PGP_private_key", m_PGP_private_key},
         {"m_PGP_public_key", m_PGP_public_key}
@@ -644,11 +644,11 @@ impl <'m, 'a>CMachine<'m, 'a> {
     {
       m_address = obj.value("m_address").to_string();
       m_password = obj.value("m_password").to_string();
-      m_income_IMAP = obj.value("m_income_IMAP").to_string();
-      m_income_POP3 = obj.value("m_income_POP3").to_string();
+      m_income_imap = obj.value("m_income_imap").to_string();
+      m_income_pop3 = obj.value("m_income_pop3").to_string();
       m_incoming_mail_server = obj.value("m_incoming_mail_server").to_string();
       m_outgoing_mail_server = obj.value("m_outgoing_mail_server").to_string();
-      m_outgoing_SMTP = obj.value("m_outgoing_SMTP").to_string();
+      m_outgoing_smtp = obj.value("m_outgoing_smtp").to_string();
       m_fetching_interval_by_minute = obj.value("m_fetching_interval_by_minute").to_string();
       m_PGP_private_key = obj.value("m_PGP_private_key").to_string();
       m_PGP_public_key = obj.value("m_PGP_public_key").to_string();
@@ -1117,19 +1117,19 @@ impl <'m, 'a>CMachine<'m, 'a> {
 
     bool CMachine::IsetPublicEmailIncomeIMAP(const QString&  v)
     {
-      m_profile.m_mp_settings.m_public_email.m_income_IMAP = v;
+      m_profile.m_mp_settings.m_public_email.m_income_imap = v;
       return true;
     }
 
     bool CMachine::IsetPublicEmailIncomePOP(const QString&  v)
     {
-      m_profile.m_mp_settings.m_public_email.m_income_POP3 = v;
+      m_profile.m_mp_settings.m_public_email.m_income_pop3 = v;
       return true;
     }
 
     bool CMachine::IsetPublicEmailOutgoingSMTP(const QString&  v)
     {
-      m_profile.m_mp_settings.m_public_email.m_outgoing_SMTP = v;
+      m_profile.m_mp_settings.m_public_email.m_outgoing_smtp = v;
       return true;
     }
 

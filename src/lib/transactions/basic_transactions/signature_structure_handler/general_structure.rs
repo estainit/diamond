@@ -35,20 +35,20 @@ pub fn my_get<'a>(the_map: &'a HashMap<&str, &str>, the_key: &'a str, default_va
 }
 
 pub fn createCompleteUnlockSets<'a>(
-    individuals_signing_sets: &'a HashMap<&str, &IndividualSignature>,
+    individuals_signing_sets: HashMap<String, IndividualSignature>,
     neccessary_signatures_count: u16,
-    options: &'a HashMap<&str, &str>) -> UnlockDocument<'a>
+    options: &'a HashMap<&str, &str>) -> UnlockDocument
 {
     let signature_type: String = my_get(options, "signature_type", "").to_string();
     let signature_version: String = my_get(options, "signature_version", "").to_string();
-    let customSalt: String = my_get(options, "customSalt", "PURE_LEAVE").to_string();
+    let custom_salt: String = my_get(options, "customSalt", "PURE_LEAVE").to_string();
 
     let mut signers_ids: Vec<String> = vec![];
 
     // generate permutation of signatures. later will be used as tree leaves
     let mut leave_ids: Vec<String> = individuals_signing_sets
         .iter()
-        .map(|(&k, &v)| k.to_string())
+        .map(|(k, _v)| k.clone())
         .collect::<Vec<String>>();
     leave_ids.sort();
     let signPermutations = PermutationHandler::new(
@@ -59,41 +59,45 @@ pub fn createCompleteUnlockSets<'a>(
         &vec![],
     );
 
-    let mut custom_types: HashMap<&str, HashMap<&str, &str>> = HashMap::new();
+    let mut custom_types: HashMap<String, HashMap<String, String>> = HashMap::new();
     let mut unlock_sets: Vec<UnlockSet> = vec![];
-    let mut custom_salts: HashMap<&str, &str> = HashMap::new();
+    let mut custom_salts: HashMap<String, String> = HashMap::new();
     for an_unlock_individuals_combination in signPermutations.m_permutations
     {
-        let mut a_signature_combination: Vec<&IndividualSignature> = vec![];
+        let mut a_signature_combination: Vec<IndividualSignature> = vec![];
         for an_individual_id in an_unlock_individuals_combination {
-            let sign_set = *individuals_signing_sets.get(&*an_individual_id).unwrap();
+            let sign_set = individuals_signing_sets[&an_individual_id].clone();
             a_signature_combination.push(sign_set);
         }
+        let custom_key = cutils::hash16c(
+            &ccrypto::keccak256(
+                &customStringifySignatureSets(&a_signature_combination)
+            )
+        );
         let mut an_unlock: UnlockSet = UnlockSet::new();
-        an_unlock.m_signature_sets = &a_signature_combination;
+        an_unlock.m_signature_sets = a_signature_combination;
         unlock_sets.push(an_unlock);
 
-        let custom_key = cutils::hash16c(&ccrypto::keccak256(&customStringifySignatureSets(&a_signature_combination)));
         if (signature_type != "") && (signature_version != "")
         {
-            let custom: HashMap<&str, &str> = HashMap::from([
-                ("signature_type", &*signature_type),
-                ("signature_version", &*signature_version)
+            let custom: HashMap<String, String> = HashMap::from([
+                ("signature_type".to_string(), signature_type.to_string()),
+                ("signature_version".to_string(), signature_version.to_string())
             ]);
-            custom_types.insert(&custom_key, custom);
+            custom_types.insert(custom_key.clone(), custom);
         }
 
-        if customSalt != ""
+        if custom_salt != ""
         {
-            if customSalt == "PURE_LEAVE" {
-                custom_salts.insert(&custom_key, &custom_key);
+            if custom_salt == "PURE_LEAVE" {
+                custom_salts.insert(custom_key.clone(), custom_key.clone());
             } else {
-                custom_salts.insert(&custom_key, &customSalt.clone());
+                custom_salts.insert(custom_key.clone(), custom_salt.clone());
             }
         }
     }
 
-    return createMOfNMerkle(
+    return create_m_of_n_merkle(
         &mut unlock_sets,
         custom_types,
         custom_salts,
@@ -102,52 +106,55 @@ pub fn createCompleteUnlockSets<'a>(
 }
 
 
-pub fn createMOfNMerkle<'a>(
-    unlock_sets: &mut Vec<UnlockSet<'a>>,
-    custom_types: HashMap<&str, HashMap<&str, &str>>,
-    custom_salts: HashMap<&str, &str>,
-    options: &'a HashMap<&str, &str>) -> UnlockDocument<'a>
+pub fn create_m_of_n_merkle<'a>(
+    unlock_sets: &mut Vec<UnlockSet>,
+    custom_types: HashMap<String, HashMap<String, String>>,
+    custom_salts: HashMap<String, String>,
+    options: &'a HashMap<&str, &str>) -> UnlockDocument
 {
-//  CLog::log("createMOfNMerkle creating unlock_sets" + cutils::dumpIt(unlock_sets), "app", "trace");
+//  CLog::log("create M Of N Merkle creating unlock_sets" + cutils::dumpIt(unlock_sets), "app", "trace");
 
     let hash_algorithm: String = my_get(options, "hash_algorithm", "keccak256").to_string();
     let input_type: String = my_get(options, "input_type", "hashed").to_string();
 
-    let mut hashed_unlocks: Vec<&str> = vec![];
-    let mut tmp_unlockers: HashMap<&str, &UnlockSet> = HashMap::new();
-    let mut custom_key: &str = "";
-    let mut leave_hash: &str = "";
+    let mut hashed_unlocks: Vec<String> = vec![];
+    let mut tmp_unlockers: HashMap<String, &UnlockSet> = HashMap::new();
+    let mut custom_key: String = "".to_string();
+    let mut leave_hash: String = "".to_string();
     for mut an_unlock_set in unlock_sets
     {
-        custom_key = &cutils::hash16c(&ccrypto::keccak256(&customStringifySignatureSets(an_unlock_set.m_signature_sets)));
-        if custom_types.contains_key(custom_key)
+        custom_key = cutils::hash16c(&ccrypto::keccak256(&customStringifySignatureSets(&an_unlock_set.m_signature_sets)));
+        if custom_types.contains_key(&custom_key)
         {
-            an_unlock_set.m_signature_type = &custom_types[custom_key]["signature_type"].to_string();
-            an_unlock_set.m_signature_ver = &custom_types[custom_key]["signature_version"].to_string();
+            an_unlock_set.m_signature_type = custom_types[&custom_key]["signature_type"].clone();
+            an_unlock_set.m_signature_ver = custom_types[&custom_key]["signature_version"].clone();
         } else {
-            an_unlock_set.m_signature_type = &constants::signature_types::Basic;
-            an_unlock_set.m_signature_ver = &"0.0.0";
+            an_unlock_set.m_signature_type = constants::signature_types::Basic.to_string();
+            an_unlock_set.m_signature_ver = "0.0.0".to_string();
         }
 
         // adding random salt to obsecure/unpredictable final address
         // TODO: maybe use crypto secure random generator
-        if (custom_salts.contains_key(custom_key))
+        if (custom_salts.contains_key(&custom_key))
         {
-            an_unlock_set.m_salt = &custom_salts[custom_key].to_string();
+            an_unlock_set.m_salt = custom_salts[&custom_key].clone();
         } else {
-            let tt = &cutils::hash16c(
-                &ccrypto::keccak256(&(an_unlock_set.dump() + &cutils::get_now() + &format!("{}", rand::thread_rng().gen::<u32>()))
+            an_unlock_set.m_salt = cutils::hash16c(
+                &ccrypto::keccak256(
+                    &(an_unlock_set.dump()
+                        + &cutils::get_now()
+                        + &format!("{}", rand::thread_rng().gen::<u32>())
+                    )
                 )
             );
-            an_unlock_set.m_salt = &&tt[..];
         }
-        leave_hash = &calcUnlockHash(an_unlock_set, &hash_algorithm);
-        hashed_unlocks.push(leave_hash);
-        tmp_unlockers[leave_hash] = an_unlock_set;
+        leave_hash = calcUnlockHash(an_unlock_set, &hash_algorithm);
+        hashed_unlocks.push(leave_hash.clone());
+        tmp_unlockers.insert(leave_hash,an_unlock_set);
     }
 
     let (merkle_root, mVerifies, mVersion, _levels, _leaves) = generate_m(
-        &hashed_unlocks,
+        hashed_unlocks,
         &input_type,
         &hash_algorithm,
         &"".to_string());
@@ -156,33 +163,33 @@ pub fn createMOfNMerkle<'a>(
     // FIXME: m_signature_type is aplyable for each uSet in a m of n shema, wherase for merkle root we can apply only one signature_type.
     // for now we just use the signature_type of fist uSet.
     // BTW for now all signature_types in an address are same
-    let first_unlocker: &str = tmp_unlockers.keys().map(|&k| k).collect::<Vec<&str>>()[0];
-    if tmp_unlockers.get(first_unlocker).unwrap().m_signature_type == constants::signature_types::Mix23
+    let first_unlocker: String = tmp_unlockers.keys().map(|k| k.clone()).collect::<Vec<String>>()[0].clone();
+    if tmp_unlockers.get(&first_unlocker).unwrap().m_signature_type == constants::signature_types::Mix23
     {
         merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Extra securiy level
     }
 
     let mut unlock_document: UnlockDocument = UnlockDocument {
-        m_unlock_sets: &vec![],
-        m_merkle_root: &merkle_root,
-        m_account_address: &ccrypto::bech32_encode(&merkle_root),
-        m_merkle_version: &*mVersion,
+        m_unlock_sets: vec![],
+        m_merkle_root: merkle_root.clone(),
+        m_account_address: ccrypto::bech32_encode(&merkle_root),
+        m_merkle_version: mVersion,
         m_private_keys: Default::default(),
     };
 
     // asign merkle proofs to sign_set itself
-    for &key in tmp_unlockers.keys()
+    for key in tmp_unlockers.keys()
     {
         let tmp: UnlockSet = UnlockSet {
-            m_signature_type: tmp_unlockers[key].m_signature_type,
-            m_signature_ver: tmp_unlockers[key].m_signature_ver,
-            m_signature_sets: tmp_unlockers[key].m_signature_sets,
-            m_merkle_proof: &mVerifies.get(key).unwrap().m_merkle_proof.iter().map(|&x| &*x).collect::<Vec<&str>>(),
-            m_left_hash: &mVerifies.get(key).unwrap().m_left_hash,
-            m_salt: tmp_unlockers[key].m_salt,
+            m_signature_type: tmp_unlockers[key].m_signature_type.clone(),
+            m_signature_ver: tmp_unlockers[key].m_signature_ver.clone(),
+            m_signature_sets: tmp_unlockers[key].m_signature_sets.clone(),
+            m_merkle_proof: mVerifies.get(key).unwrap().m_merkle_proof.iter().map(|x| x.clone()).collect::<Vec<String>>(),
+            m_left_hash: mVerifies.get(key).unwrap().m_left_hash.clone(),
+            m_salt: tmp_unlockers[key].m_salt.clone(),
         };
 
-        unlock_document.m_unlock_sets.push(&tmp);
+        unlock_document.m_unlock_sets.push(tmp);
     }
     return unlock_document;
 }
@@ -204,9 +211,9 @@ pub fn calcUnlockHash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 
 
     let mut to_be_hashed = unlock_set.m_signature_type.to_owned()
-        + ":" + unlock_set.m_signature_ver
-        + ":" + &customStringifySignatureSets(unlock_set.m_signature_sets)
-        + ":" + unlock_set.m_salt;//  hash_algorithm(${sType}:${sVer}:${JSON.stringify(sSet)}:${salt})
+        + ":" + &unlock_set.m_signature_ver
+        + ":" + &customStringifySignatureSets(&unlock_set.m_signature_sets)
+        + ":" + &unlock_set.m_salt;//  hash_algorithm(${sType}:${sVer}:${JSON.stringify(sSet)}:${salt})
     dlog(
         &format!("Custom stringyfied unlock_struct: {}", to_be_hashed),
         constants::Modules::App,
@@ -443,7 +450,7 @@ pub fn validateSigStruct(
     // normally the wallets SHOULD send the saved order of a sSets, so we do not need to Permutation
     let leaveHash = calcUnlockHash(&unlock_set, "keccak256");
 
-    let merkle_proof = &unlock_set.m_merkle_proof.iter().map(|&x| x.to_string()).collect::<Vec<String>>();
+    let merkle_proof = &unlock_set.m_merkle_proof.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut merkle_root = get_root_by_a_prove(
         &leaveHash,
         merkle_proof,
@@ -501,21 +508,21 @@ pub fn validateSigStruct(
     return false;
 }
 
-pub fn customStringifySignatureSets(signature_sets: &Vec<&IndividualSignature>) -> String
+pub fn customStringifySignatureSets(signature_sets: &Vec<IndividualSignature>) -> String
 {
     let mut sSets_serial: Vec<String> = vec![];
-    for &a_sig in signature_sets
+    for a_sig in signature_sets
     {
-        let mut tmp = "{\"sKey\":\"".to_owned() + a_sig.m_signature_key + "\"";
+        let mut tmp = "{\"sKey\":\"".to_owned() + &*a_sig.m_signature_key + "\"";
 
         if a_sig.m_permitted_to_pledge != ""
         {
-            tmp += &(",\"pPledge\":\"".to_owned() + a_sig.m_permitted_to_pledge + "\"");
+            tmp += &(",\"pPledge\":\"".to_owned() + &*a_sig.m_permitted_to_pledge + "\"");
         }
 
         if a_sig.m_permitted_to_delegate != ""
         {
-            tmp += &(",\"pDelegate\":\"".to_owned() + a_sig.m_permitted_to_delegate + "\"");
+            tmp += &(",\"pDelegate\":\"".to_owned() + &*a_sig.m_permitted_to_delegate + "\"");
         }
 
         tmp += "}";
@@ -552,7 +559,7 @@ pub fn validate_structure_restrictions(
             return false;
         }
 
-        for aSignSet in unlock_set.m_signature_sets
+        for aSignSet in &unlock_set.m_signature_sets
         {
             if (aSignSet.m_signature_key == "") || (aSignSet.m_permitted_to_pledge == "") ||
                 (aSignSet.m_permitted_to_delegate == "")

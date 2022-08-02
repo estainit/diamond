@@ -140,12 +140,12 @@ bool EmailHandler::sendEmailWrapper(
     sender = machine_private_email.m_address;
     pass = machine_private_email.m_password;
     host = machine_private_email.m_outgoing_mail_server;
-    port = QVariant::fromValue(machine_private_email.m_outgoing_SMTP).toInt();
+    port = QVariant::fromValue(machine_private_email.m_outgoing_smtp).toInt();
   } else {
     sender = machine_public_email.m_address;
     pass = machine_public_email.m_password;
     host = machine_public_email.m_outgoing_mail_server;
-    port = QVariant::fromValue(machine_public_email.m_outgoing_SMTP).toInt();
+    port = QVariant::fromValue(machine_public_email.m_outgoing_smtp).toInt();
   }
   return sendMail(host, sender, pass, title, message, receiver, port);
 }

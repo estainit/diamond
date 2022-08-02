@@ -42,7 +42,7 @@ use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-fn machine<'m, 'a>() -> MutexGuard<'static, CMachine<'static, 'a>> { CMACHINE.lock().unwrap() }
+fn machine<'m>() -> MutexGuard<'static, CMachine<'static >> { CMACHINE.lock().unwrap() }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }

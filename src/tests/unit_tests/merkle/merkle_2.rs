@@ -12,7 +12,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"hashed".to_string(),
                                     &"noHash".to_string(),
                                     &"".to_string());
@@ -36,7 +36,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"hashed".to_string(),
                                     &"noHash".to_string(),
                                     &"".to_string());
@@ -62,7 +62,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"hashed".to_string(),
                                     &"aliasHash".to_string(),
                                     &"".to_string());
@@ -87,7 +87,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"string".to_string(),
                                     &"aliasHash".to_string(),
                                     &"".to_string());
@@ -103,7 +103,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"string".to_string(),
                                     &"".to_string(),
                                     &"".to_string());
@@ -118,7 +118,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"".to_string(),
                                     &"".to_string(),
                                     &"".to_string());
@@ -136,7 +136,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"hashed".to_string(),
                                     &"aliasHash".to_string(),
                                     &"".to_string());
@@ -155,7 +155,7 @@ pub mod merkel_tests_2 {
                 _version,
                 levels,
                 leaves) =
-                cmerkle::generate_m(&vec!["1".to_string(), "2".to_string()],
+                cmerkle::generate_m(vec!["1".to_string(), "2".to_string()],
                                     &"string".to_string(),
                                     &"aliasHash".to_string(),
                                     &"".to_string());

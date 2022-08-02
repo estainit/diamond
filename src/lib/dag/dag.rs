@@ -555,7 +555,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
         {"block_type", wBlock.value("bType").to_string()},
         {"creation_date", block.value("bCDate").to_string().split(" ")[1]},
         {"doc_hash", CUtils::hash8c(doc.value("dHash").to_string())},
-        {"owner", CUtils::shortBech16(output[0].to_string())},
+        {"owner", CUtils::short_bech16(output[0].to_string())},
         {"value", CUtils::microPAIToPAI6(output[1].toDouble())}});
     }
   }
@@ -629,14 +629,14 @@ std::tuple<CMPAIValueT, QStringList, QString> DAG::getNotImportedNormalBlock()
               processed_outputs.append(QStringList {
                 block.value("bCDate").to_string().split(" ")[1],
                 CUtils::hash6c(doc.value("dHash").to_string()),
-                CUtils::shortBech16(output[0].to_string()),
+                CUtils::short_bech16(output[0].to_string()),
                 CUtils::microPAIToPAI6(output[1].toDouble())});
 
             } else {
                 processed_outputs.append(QStringList {
                   block.value("bCDate").to_string().split(" ")[1],
                   CUtils::hash6c(doc.value("dHash").to_string()),
-                  CUtils::shortBech16(output[0].to_string()),
+                  CUtils::short_bech16(output[0].to_string()),
                   CUtils::microPAIToPAI6(output[1].toDouble())});
 
             }

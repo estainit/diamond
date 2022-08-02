@@ -5,25 +5,25 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::i
 use crate::lib::utils::dumper::dump_vec_of_str;
 
 #[derive(Serialize, Deserialize)]
-pub struct UnlockSet<'a>
+pub struct UnlockSet
 {
-    pub(crate) m_signature_type: &'a str,
-    pub(crate) m_signature_ver: &'a str,
-    pub(crate) m_signature_sets: &'a Vec<&'a IndividualSignature<'a>>,
-    pub(crate) m_merkle_proof: &'a Vec<&'a str>,
-    pub(crate) m_left_hash: &'a str,
-    pub(crate) m_salt: &'a str,
+    pub(crate) m_signature_type: String,
+    pub(crate) m_signature_ver: String ,
+    pub(crate) m_signature_sets: Vec<IndividualSignature>,
+    pub(crate) m_merkle_proof: Vec<String>,
+    pub(crate) m_left_hash: String,
+    pub(crate) m_salt: String,
 }
 
-impl<'a> UnlockSet<'a> {
-    pub fn new() -> UnlockSet<'a> {
+impl UnlockSet {
+    pub fn new() -> UnlockSet {
         return UnlockSet {
-            m_signature_type: constants::signature_types::Basic,
-            m_signature_ver: "0.0.0",
-            m_signature_sets: &vec![],
-            m_merkle_proof: &vec![],
-            m_left_hash: "",
-            m_salt: "",
+            m_signature_type: constants::signature_types::Basic.to_string(),
+            m_signature_ver: "0.0.0".to_string(),
+            m_signature_sets: vec![],
+            m_merkle_proof: vec![],
+            m_left_hash: "".to_string(),
+            m_salt: "".to_string(),
         };
     }
 
@@ -31,7 +31,7 @@ impl<'a> UnlockSet<'a> {
         let prefix_tabs = "\t ";
         let mut out_str = constants::NL.to_owned() + &prefix_tabs + "Signature: " + &self.m_signature_type + "(" + &self.m_signature_ver + ")";
         out_str += &(constants::NL.to_owned() + &prefix_tabs + "salt: " + &self.m_salt + "(lHash " + &self.m_left_hash + ")");
-        out_str += &(constants::NL.to_owned() + &prefix_tabs + "Proofs: " + &prefix_tabs + constants::DUMPER_INDENT + &dump_vec_of_str(self.m_merkle_proof));
+        out_str += &(constants::NL.to_owned() + &prefix_tabs + "Proofs: " + &prefix_tabs + constants::DUMPER_INDENT + &dump_vec_of_str(&self.m_merkle_proof));
         out_str += &(constants::NL.to_owned() + &prefix_tabs + "Signature sets: " + &dump_vec_of_ind_sig(&self.m_signature_sets));
         return out_str;
     }

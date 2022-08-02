@@ -70,7 +70,7 @@ impl MerkleNodeDataTrait for MerkleNodeData {
 pub type MNodesMapT = HashMap<String, MerkleNodeData>;
 
 pub fn generate_m(
-    elms: &Vec<&str>,
+    elms: Vec<String>,
     input_type: &String,
     hash_algorithm: &String,
     version_: &String) -> (String, MNodesMapT, String, usize, usize)
@@ -127,9 +127,10 @@ pub fn generate_m(
         4097..=8192 => 8192,
         _ => panic!("Invalid needed_leaves: {}", needed_leaves)
     };
-    let mut elms_ = cutils::clone_vec(&elms);
+    let mut elms_ = elms.iter().map(|x|x.clone()).collect::<Vec<String>>();
     while inx < needed_leaves as usize {
-        elms_.push(&("leave_".to_owned() + &format!("{}", inx + 1)));
+        let the_elm:String = ("leave_".to_owned() + &format!("{}", inx + 1));
+        elms_.push(the_elm.clone());
         inx += 1;
     }
 
@@ -137,7 +138,7 @@ pub fn generate_m(
         verifies,
         leaves,
         levels) =
-        inner_merkle(&elms_, input_type, hash_algorithm, &"".to_string());
+        inner_merkle(elms_, input_type, hash_algorithm, &"".to_string());
 
     let mut final_verifies: MNodesMapT = HashMap::new();
     let mut keys: Vec<&String> = verifies.keys().collect();
@@ -179,16 +180,16 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
 }
 
 //old_name_was innerMerkle
-pub fn inner_merkle(elms_: &Vec<&str>, input_type: &String, hash_algorithm: &String, _version: &String)
+pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: &String, _version: &String)
                     -> (String, MNodesMapT, usize, usize)
 {
-    let mut elms = cutils::clone_vec(elms_);
+    // let mut elms = cutils::clone_vec(elms_);
     if input_type == "string" {
-        let mut hashed_elements: Vec<&str> = vec![];
+        let mut hashed_elements: Vec<String> = vec![];
         for element in elms {
-            hashed_elements.push(&do_hash_a_node(&element.to_string(), hash_algorithm));
+            hashed_elements.push(do_hash_a_node(&element, hash_algorithm));
         }
-        elms = cutils::clone_vec(&hashed_elements);
+        elms = hashed_elements;
     }
 
     let mut verifies: MNodesMapT = HashMap::new();
@@ -223,12 +224,12 @@ pub fn inner_merkle(elms_: &Vec<&str>, input_type: &String, hash_algorithm: &Str
             // elms.push(the_hash);
         }
 
-        let mut chunks: VVString = cutils::chunk_to_vvstring(&elms, 2);
+        let mut chunks: VVString = cutils::chunk_to_vvstring(elms, 2);
         elms = vec![]; // emptying elements
 
         for chunk in chunks {
             parent = do_hash_a_node(&(chunk[0].clone().to_string() + &chunk[1].to_string()), hash_algorithm);
-            elms.push(&parent.clone());
+            elms.push(parent.clone());
             if level == 1 {
                 let l_key = format!("l_{}", chunk[0].clone());
                 let r_key = "r_".to_owned() + &chunk[1].to_string();
