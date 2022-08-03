@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use serde_json::Value;
-use crate::lib::database::abs_psql::{ModelClause, OrderModifier};
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, QUnion};
 
 pub type CDateT = String;
 pub type VString = Vec<String>;
@@ -53,6 +53,7 @@ pub type QHash<QString, uint32_t>    UI32DicT; // custom dictionary
 pub type QHash<QString, uint64_t>    UI64DicT; // custom dictionary
 */
 pub type QSDicT = HashMap<String, String>;
+pub type QUDicT = HashMap<String, QUnion>;
 // custom dictionary
 /*
 pub type QHash<QString, QStringList> QSLDicT; // custom dictionary
@@ -66,7 +67,7 @@ pub type QHash<QString, QJsonObject> QJODicT; // custom dictionary
 pub type QHash<QString, QJsonArray>  QJADicT; // custom dictionary
 pub type QHash<QString, QVDicT>      QV2DicT;
 */
-pub type QVDRecordsT = Vec<QVDicT>;
+pub type QVDRecordsT = Vec<QUDicT>;//Vec<QVDicT>;
 /*
 pub type QVector<QSDicT>        QSDRecordsT;
 pub type QVector<QV2DicT>       QV2DRecordsT;

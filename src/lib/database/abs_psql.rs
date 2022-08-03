@@ -6,7 +6,7 @@ use postgres::types::{FromSql, ToSql};
 use crate::{cutils, dbhandler, machine};
 use crate::cutils::remove_dbl_spaces;
 use crate::lib::constants;
-use crate::lib::custom_types::{ClausesT, OrderT, QVDicT, VString};
+use crate::lib::custom_types::{ClausesT, OrderT, QUDicT, QVDicT, QVDRecordsT, VString};
 use crate::lib::dlog::dlog;
 use crate::lib::utils::dumper::dump_clauses;
 
@@ -119,13 +119,25 @@ pub struct QUnion {
     pub s: String,
 }
 
+impl QUnion{
+    pub fn from_string(s:String)->QUnion{
+        return QUnion{
+            i: 0,
+            f: 0.0,
+            b: false,
+            s
+        };
+
+    }
+}
+
 pub fn q_select(
     table: &str,
     fields: &Vec<&str>,
     clauses: &ClausesT,
     order: &OrderT,
     limit: i8,
-    do_log: bool) -> (bool, Vec<HashMap<String, QUnion>>)
+    do_log: bool) -> (bool, QVDRecordsT)
 {
     return exec_query(
         &prepare_to_select(table, fields, clauses, order, limit),
@@ -467,7 +479,7 @@ pub fn exec_query(
     clauses: &ClausesT,
     fields: &Vec<&str>,
     upd_values: &HashMap<&str, &str>,
-    do_log: bool) -> (bool, Vec<HashMap<String, QUnion>>)
+    do_log: bool) -> (bool, QVDRecordsT)
 {
     if do_log {
         dlog(
@@ -482,7 +494,7 @@ pub fn exec_query(
             constants::Modules::Sql,
             constants::SecLevel::Trace);
     }
-    let mut out_rows: Vec<HashMap<String, QUnion>> = vec![];
+    let mut out_rows: QVDRecordsT = vec![];
     let params: Vec<_> = query_elements.m_params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
     return match dbhandler().m_db.query(
         &query_elements.m_complete_query,
@@ -515,7 +527,7 @@ pub fn exec_query(
 
 
             for mut a_row in &rows {
-                let mut a_row_dict: HashMap<String, QUnion> = HashMap::new();
+                let mut a_row_dict: QUDicT = HashMap::new();
                 for col_inx in 0..a_row.len() {
                     let (col_name, col_type) = &res_cols_info[col_inx];
                     // let col_name = res_cols_info[col_inx].clone();

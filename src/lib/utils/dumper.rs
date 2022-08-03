@@ -47,4 +47,14 @@ pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
     return out;
 }
 
+pub fn dump_hashmap_of_string(s: &HashMap<&str, String>) -> String {
+    let prefix_tabs = "\t ";
+
+    let mut out: String = "".to_string();
+    for (k, v) in s {
+        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &v);
+    }
+    return out;
+}
+
 

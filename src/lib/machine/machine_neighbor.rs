@@ -408,7 +408,7 @@ bool CMachine::IfloodEmailToNeighbors(
     if (!is_already_sent)
     {
       //TODO: adding some expiration control to have availabality to re-broadcast email
-      already_presented_neighbors.push_back(QJsonObject{
+      already_presented_neighbors.push(QJsonObject{
         {"vertice", vertice},
         {"date", cutils::get_now()}});
 

@@ -7,6 +7,7 @@ use crate::lib::constants::LAUNCH_DATE;
 use crate::lib::custom_types::{CDateT, QSDicT, TimeBySecT, VString};
 use crate::lib::database::db_handler::{empty_db, init_db};
 use postgres::Client;
+use postgres::types::ToSql;
 use serde_json::json;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
@@ -14,9 +15,10 @@ use crate::lib::database::abs_psql::q_upsert;
 use crate::lib::database::tables::STBL_MACHINE_PROFILES;
 use crate::lib::dlog::dlog;
 use crate::lib::k_v_handler::{get_value, set_value};
-use crate::lib::machine::machine_neighbor::{ NeighborInfo};
+use crate::lib::machine::machine_neighbor::{NeighborInfo};
 use crate::lib::machine::machine_profile::{MachineProfile};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
+use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
@@ -828,14 +830,18 @@ impl<'m> CMachine<'m> {
             true,
         );
 
+        // add backer address to wallet as well
+        let w_address = WalletAddress::new(
+            &self.m_profile.m_mp_settings.m_backer_detail,
+            constants::DEFAULT.to_string(),   // mp code
+            "Backer Address (".to_owned() +
+                &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_type + &" ".to_owned() +
+                &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_ver + &")".to_owned(),
+            cutils::get_now(),
+        );
+        let (status, msg) = insert_address(&w_address);
+
         /*
-                         // add backer address to wallet as well
-                         Wallet::insertAddress( WalletAddress (
-                           m_profile.m_mp_settings.m_backer_detail,
-                           constants::DEFAULT,   // mp code
-                           "Backer Address (" +
-                           m_profile.m_mp_settings.m_backer_detail->m_unlock_sets[0].m_signature_type + " " +
-                           m_profile.m_mp_settings.m_backer_detail->m_unlock_sets[0].m_signature_ver + ")"));
 
                          ImaybeAddSeedNeighbors();
 
