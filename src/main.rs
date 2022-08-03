@@ -40,6 +40,7 @@ use lib::utils::cutils as cutils;
 use crate::lib::{ccrypto, constants};
 use crate::lib::database::db_handler::DBHandler;
 use crate::lib::dlog::{dlog, initialize_log};
+use crate::lib::k_v_handler::get_value;
 use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
@@ -115,6 +116,9 @@ fn main() {
         dummyTestsHandler();
       }
          */
+
+    let res = get_value(&"SELECTED_PROFILE".to_string());
+println!("res res res: {}", res);
 
     launch_giga_loop(false);//    launch_threads();
 }

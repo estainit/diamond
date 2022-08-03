@@ -12,7 +12,7 @@ use crate::constants::{Modules, SecLevel};
 pub fn initialize_log(){
     let window_size = 30; // log0, log1, log2
     let fixed_window_roller = FixedWindowRoller::builder().build("log{}", window_size).unwrap();
-    let size_limit = 50 * 1024; // 50 KB as max log file size to roll
+    let size_limit = 500 * 1024; // 50 KB as max log file size to roll
     let size_trigger = SizeTrigger::new(size_limit);
     let compound_policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(fixed_window_roller));
     let config = Config::builder()
@@ -57,7 +57,7 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
         _ => "Gen"
     };
 
-    let log_msg = format!("{}({}): {}", module_, level_, msg);
+    let log_msg = format!("({}): {}", module_, msg);
 
     match level {
         SecLevel::Debug => { debug!("{}", log_msg); }

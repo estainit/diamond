@@ -26,8 +26,7 @@ pub fn get_value(kv_key: &String) -> String
     if records.len() == 0 {
         return "".to_string();
     }
-    return "iiiiiiii".to_string();
-    // return res.records[0].value("kv_value").to_string();
+    return records[0].get("kv_value").unwrap().s.clone();
 }
 
 /*

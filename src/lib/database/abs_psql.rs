@@ -1,6 +1,8 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use postgres::Row;
-use postgres::types::ToSql;
+use postgres::row::RowIndex;
+use postgres::types::{FromSql, ToSql};
 use crate::{cutils, dbhandler, machine};
 use crate::cutils::remove_dbl_spaces;
 use crate::lib::constants;
@@ -109,13 +111,21 @@ const QSDicT DbModel::s_map_table_to_db = {
 
 */
 
+#[derive(Debug)]
+pub struct QUnion {
+    pub i: i64,
+    pub f: f64,
+    pub b: bool,
+    pub s: String,
+}
+
 pub fn q_select(
     table: &str,
     fields: &Vec<&str>,
     clauses: &ClausesT,
     order: &OrderT,
     limit: i8,
-    do_log: bool) -> (bool, Vec<Row>)
+    do_log: bool) -> (bool, Vec<HashMap<String, QUnion>>)
 {
     return exec_query(
         &prepare_to_select(table, fields, clauses, order, limit),
@@ -457,7 +467,7 @@ pub fn exec_query(
     clauses: &ClausesT,
     fields: &Vec<&str>,
     upd_values: &HashMap<&str, &str>,
-    do_log: bool) -> (bool, Vec<Row>)
+    do_log: bool) -> (bool, Vec<HashMap<String, QUnion>>)
 {
     if do_log {
         dlog(
@@ -472,7 +482,7 @@ pub fn exec_query(
             constants::Modules::Sql,
             constants::SecLevel::Trace);
     }
-
+    let mut out_rows: Vec<HashMap<String, QUnion>> = vec![];
     let params: Vec<_> = query_elements.m_params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
     return match dbhandler().m_db.query(
         &query_elements.m_complete_query,
@@ -484,8 +494,94 @@ pub fn exec_query(
                     constants::Modules::Sql,
                     constants::SecLevel::Trace);
             }
-            println!("rows_________________: {:?}", rows);
-            (true, rows)
+
+            if rows.len() == 0
+            {
+                let res: Vec<Row> = vec![];
+                return (true, out_rows);
+            }
+
+            let rr = Row::columns(&rows[0]);
+            // println!("a rr rr rr: {:?}", rr);
+            // println!("a rr rr rr[0]: {:?}", rr[0]);
+            // println!("a rr rr rr[0]type_: {:?}", rr[0].type_());
+            let mut res_cols_info: Vec<(String, String)> = vec![];
+            for a_col in &*rows[0].columns() {
+                println!("a col: {:?}", a_col);
+                // println!("a col.name: {:?}", a_col.name());
+                res_cols_info.push((a_col.name().to_string(), a_col.type_().to_string()));
+            }
+            // println!("a res_col_names: {:?}", res_col_names);
+
+
+            for mut a_row in &rows {
+                let mut a_row_dict: HashMap<String, QUnion> = HashMap::new();
+                for col_inx in 0..a_row.len() {
+                    let (col_name, col_type) = &res_cols_info[col_inx];
+                    // let col_name = res_cols_info[col_inx].clone();
+                    let col_value: QUnion = match &*col_type.clone() {
+                        ("real" | "double precision") => {
+                            let col_value: f64 = Row::get(a_row, col_inx);
+                            QUnion {
+                                i: 0,
+                                f: col_value,
+                                b: false,
+                                s: "".to_string(),
+                            }
+                        }
+                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial") => {
+                            let col_value: i64 = Row::get(a_row, col_inx);
+                            QUnion {
+                                i: col_value,
+                                f: 0.0,
+                                b: false,
+                                s: "".to_string(),
+                            }
+                        }
+                        ("varchar") => {
+                            let col_value: String = Row::get(a_row, col_inx);
+                            QUnion {
+                                i: 0,
+                                f: 0.0,
+                                b: false,
+                                s: col_value,
+                            }
+                        }
+                        ("text") => {
+                            let col_value: String = Row::get(a_row, col_inx);
+                            QUnion {
+                                i: 0,
+                                f: 0.0,
+                                b: false,
+                                s: col_value,
+                            }
+                        }
+                        ("bool") => {
+                            let col_value: bool = Row::get(a_row, col_inx);
+                            QUnion {
+                                i: 0,
+                                f: 0.0,
+                                b: col_value,
+                                s: "".to_string(),
+                            }
+                        }
+                        (_) => {
+                            let col_value: String = Row::get(a_row, col_inx);
+                            println!("UUUUU Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
+                            QUnion {
+                                i: 0,
+                                f: 0.0,
+                                b: false,
+                                s: col_value,
+                            }
+                        }
+                    };
+                    a_row_dict.insert(col_name.clone(), col_value);
+                }
+                out_rows.push(a_row_dict);
+            }
+            println!(">>> out_dict: {:?}", out_rows);
+            (true, out_rows)
         }
         Err(e) => {
             dlog(
@@ -668,7 +764,7 @@ pub fn prepare_to_update(
 
     let mut updates: Vec<String> = vec![];
     let mut position = 0;
-    let mut finall_upd_values:Vec<String> = vec![]; //query_elements.m_params
+    let mut finall_upd_values: Vec<String> = vec![]; //query_elements.m_params
     for (a_key, a_value) in upd_values
     {
         position += 1;
@@ -679,7 +775,7 @@ pub fn prepare_to_update(
         updates.push(the_single_update);
         finall_upd_values.push(a_value.to_string());
     }
-    for a_value in &query_elements.m_params{
+    for a_value in &query_elements.m_params {
         finall_upd_values.push(a_value.to_string());
     }
     query_elements.m_params = finall_upd_values;
