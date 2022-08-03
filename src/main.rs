@@ -1,4 +1,5 @@
 extern crate core;
+
 use std::env;
 
 use std::thread;
@@ -6,7 +7,7 @@ use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
-
+use lib::rest::apis;
 
 // use substring::Substring;
 // use der::Encode;
@@ -43,21 +44,9 @@ fn machine() -> MutexGuard<'static, CMachine>{
     CMACHINE.lock().unwrap()
 }
 
-
 #[tokio::main]
 async fn main() {
-    //! # Diamond, the Community Maker Engine
-    //! ```
-    //! fn main()
-    //! ```
-    //!
-    //! This starts whole game
-    //!
-    //!
-    //!
-    //!
-    //!
-
+    
 
 // config::print_config();
 
@@ -85,8 +74,15 @@ async fn main() {
         dummyTestsHandler();
       }
          */
-
-    launch_giga_loop(false);//    launch_threads();
+        tokio::join!(
+            lib::rest::apis::run_web_server(),
+            run_loops()
+        );
+    // launch_giga_loop(false);//    launch_threads();
+    
 
 }
 
+async fn run_loops() {
+    launch_giga_loop(false);
+}
