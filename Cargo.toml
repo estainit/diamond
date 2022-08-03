@@ -13,6 +13,9 @@ serde_json = "1.0.82"
 lazy_static = "1.4.0"
 regex = "1.6.0"
 
+log = "0.4.17"
+log4rs = "1.1.1"
+
 rust-crypto = "0.2" # to use for keccak256
 
 #der = "0.6.0"

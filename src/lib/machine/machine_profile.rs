@@ -1,6 +1,6 @@
 use crate::lib::constants;
 use crate::lib::database::abs_psql::{ModelClause, q_select};
-use crate::lib::machine::machine_neighbor::DummyNeighbor;
+use crate::lib::machine::machine_neighbor::{ NeighborInfo};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
 use crate::lib::database::tables::STBL_MACHINE_PROFILES;
@@ -100,7 +100,7 @@ pub struct MPSetting<'m>
     pub(crate) m_backer_detail: UnlockDocument,
     pub(crate) m_language: String,
     pub(crate) m_term_of_services: String,
-    pub(crate) m_already_presented_neighbors: Vec<DummyNeighbor>,
+    pub(crate) m_already_presented_neighbors: Vec<NeighborInfo>,
 
 }
 

@@ -1,4 +1,3 @@
-use std::fmt;
 use std::collections::HashMap;
 use postgres::Row;
 use postgres::types::ToSql;
@@ -133,7 +132,7 @@ pub fn prepare_to_select(
     order: &OrderT,
     limit: i8) -> QueryElements
 {
-    let mut query_elements: QueryElements = pre_query_generator(clauses, order, limit);
+    let mut query_elements: QueryElements = pre_query_generator(0, clauses, order, limit);
     let mut complete_query: String = "SELECT ".to_owned() + &fields.join(", ") + " FROM " + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
     complete_query = complete_query.trim().parse().unwrap();
     query_elements.m_complete_query = remove_dbl_spaces(&complete_query);
@@ -165,7 +164,10 @@ PTRRes DbModel::prepareToDelete(
 }
 */
 
-pub fn clauses_query_generator(clauses: &ClausesT) -> (String, Vec<String>)
+pub fn clauses_query_generator(
+    placeholder_offset: u8,
+    clauses: &ClausesT,
+) -> (String, Vec<String>)
 {
     println!("in clauses_ query_ generator clauses: {:?}", dump_clauses(clauses));
 
@@ -176,7 +178,7 @@ pub fn clauses_query_generator(clauses: &ClausesT) -> (String, Vec<String>)
     if clauses.len() > 0 {
         let mut tmp: Vec<String> = vec![];
 
-        let mut placeholder_index = 0;
+        let mut placeholder_index = placeholder_offset;
         for a_clause_tuple in clauses
         {
             placeholder_index += 1;
@@ -223,11 +225,12 @@ pub fn clauses_query_generator(clauses: &ClausesT) -> (String, Vec<String>)
 */
 
 pub fn pre_query_generator(
+    placeholder_offset: u8,
     clauses_: &ClausesT,
     order_: &OrderT,
     limit_: i8) -> QueryElements
 {
-    let (mut clauses, values_) = clauses_query_generator(clauses_);
+    let (mut clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
     if clauses.len() > 0 {
         clauses = " WHERE ".to_owned() + &clauses;
     }
@@ -481,6 +484,7 @@ pub fn exec_query(
                     constants::Modules::Sql,
                     constants::SecLevel::Trace);
             }
+            println!("rows_________________: {:?}", rows);
             (true, rows)
         }
         Err(e) => {
@@ -660,19 +664,27 @@ pub fn prepare_to_update(
     upd_values: &HashMap<&str, &str>,
     clauses: &ClausesT) -> QueryElements
 {
-    let mut query_elements: QueryElements = pre_query_generator(clauses, &vec![], 0);
+    let mut query_elements: QueryElements = pre_query_generator(upd_values.len() as u8, clauses, &vec![], 0);
 
-    let mut field_clauses: Vec<String> = vec![];
-    // let mut fields:vec<&str> = vec![];
-    for (a_key, _v) in upd_values
+    let mut updates: Vec<String> = vec![];
+    let mut position = 0;
+    let mut finall_upd_values:Vec<String> = vec![]; //query_elements.m_params
+    for (a_key, a_value) in upd_values
     {
+        position += 1;
         println!("the_clauseZ aKey: {}", a_key);
         let the_key = a_key.clone();
-        let the_clause = (the_key.to_owned() + &"= ?").clone();
-        println!("the_clauseZ ff: {}", the_clause);
-        field_clauses.push(the_clause);
+        let the_single_update = (the_key.to_owned() + &format!("= ${}", position)).clone();
+        println!("the_clauseZ ff: {}", the_single_update);
+        updates.push(the_single_update);
+        finall_upd_values.push(a_value.to_string());
     }
-    let set_fields = field_clauses.join(", ");
+    for a_value in &query_elements.m_params{
+        finall_upd_values.push(a_value.to_string());
+    }
+    query_elements.m_params = finall_upd_values;
+
+    let set_fields = updates.join(", ");
     let mut complete_query = "UPDATE ".to_owned() + &table + " SET " + &set_fields + &query_elements.m_clauses;
     complete_query = complete_query.trim().parse().unwrap();
     query_elements.m_complete_query = remove_dbl_spaces(&complete_query);

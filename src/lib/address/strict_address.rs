@@ -114,11 +114,11 @@ pub fn create_a_new_strict_address<'a>(
                     constants::SecLevel::Fatal);
                 panic!("Curropted strict address created signature status!? {} ", &unlock_info.dump());
             }
-            let verifyRes = ccrypto::ecdsa_verify_signature(
+            let verify_res = ccrypto::ecdsa_verify_signature(
                 &an_unlock_set.m_signature_sets[inx].m_signature_key.to_string(),
                 &message,
                 &format!("{}", signature_hex));
-            if !verifyRes
+            if !verify_res
             {
                 dlog(
                     &format!("Curropted strict address created signature!? {} ", &unlock_info.dump()),

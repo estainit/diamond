@@ -222,12 +222,12 @@ pub const TAB: &str = "\t";
 
 pub const ALL: &str = "All";
 pub const DEFAULT: &str = "Default";
+pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
+pub const DEFAULT_CONTENT_VERSION: &str = "0.0.0";
+pub const PUBLIC: &str = "Public";
+pub const PRIVATE: &str = "Private";
+pub const GENERAL: &str = "General";
 /*
-  const QString DEFAULT_DOCUMENT_VERSION =  "0.0.0";
-  const QString DEFAULT_CONTENT_VERSION =  "0.0.0";
-  const QString PUBLIC =  "Public";
-  const QString PRIVATE =  "Private";
-  const QString GENERAL =  "General";
 
   const QString COMPLETE =  "Complete";
   const QString SHORT =  "Short";

@@ -7,7 +7,11 @@ use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::Config;
+use log4rs::config::{Appender, Root};
 use serde_json::{json, Value};
+
 
 // use substring::Substring;
 // use der::Encode;
@@ -35,16 +39,18 @@ use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
 use crate::lib::{ccrypto, constants};
 use crate::lib::database::db_handler::DBHandler;
-use crate::lib::dlog::dlog;
+use crate::lib::dlog::{dlog, initialize_log};
 use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-fn machine<'m>() -> MutexGuard<'static, CMachine<'static >> { CMACHINE.lock().unwrap() }
+
+fn machine<'m>() -> MutexGuard<'static, CMachine<'static>> { CMACHINE.lock().unwrap() }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
+
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 
@@ -60,6 +66,9 @@ fn main() {
     //!
     //!
     //!
+
+    initialize_log();
+
 
     dlog(
         &format!("Running Diamond Node (version 0.0.0). started at {}", cutils::get_now()),
@@ -109,4 +118,3 @@ fn main() {
 
     launch_giga_loop(false);//    launch_threads();
 }
-

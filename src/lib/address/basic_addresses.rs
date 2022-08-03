@@ -123,11 +123,11 @@ pub fn createANewBasicAddress<'a>(
 
                 panic!("Curropted strict address created signature status!? {}", unlock_info.dump());
             }
-            let verifyRes = ccrypto::ecdsa_verify_signature(
+            let verify_res = ccrypto::ecdsa_verify_signature(
                 &an_unlock_set.m_signature_sets[inx].m_signature_key.to_string(),
                 &message,
                 &signature_hex);
-            if !verifyRes
+            if !verify_res
             {
                 dlog(
                     &format!("Curropted strict address created signature!? {}", unlock_info.dump()),

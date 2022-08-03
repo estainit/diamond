@@ -8,12 +8,15 @@ use crate::lib::custom_types::{CDateT, QSDicT, TimeBySecT, VString};
 use crate::lib::database::db_handler::{empty_db, init_db};
 use postgres::Client;
 use serde_json::json;
+use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
 use crate::lib::database::abs_psql::q_upsert;
 use crate::lib::database::tables::STBL_MACHINE_PROFILES;
 use crate::lib::dlog::dlog;
 use crate::lib::k_v_handler::{get_value, set_value};
+use crate::lib::machine::machine_neighbor::{ NeighborInfo};
 use crate::lib::machine::machine_profile::{MachineProfile};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
@@ -75,7 +78,7 @@ pub trait CMachineThreadGaps {
  */
 
 
-impl <'m>CMachine<'m> {
+impl<'m> CMachine<'m> {
     pub(crate) fn new() -> CMachine<'m> {
         let (status, mut profile) = MachineProfile::get_profile(constants::DEFAULT);
         CMachine {
@@ -202,35 +205,35 @@ impl <'m>CMachine<'m> {
             lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
         }
         QJsonObject
-        lastSyncStatusObj = CUtils::parseToJsonObj(lastSyncStatus);
+        lastSyncStatusObj = cutils::parseToJsonObj(lastSyncStatus);
 
         uint64_t
         cycleByMinutes = CMachine::getCycleByMinutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if (!force_to_control_based_on_DAG_status & &
-            (lastSyncStatusObj.value("checkDate").to_string() > CUtils::minutesBefore((cycleByMinutes / 24))))
+            (lastSyncStatusObj.value("checkDate").to_string() > cutils::minutesBefore((cycleByMinutes / 24))))
         {
             bool
-            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < CUtils::minutesBefore(2 * cycleByMinutes);
-            setIsInSyncProcess(is_in_sync, CUtils::getNow());
+            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < cutils::minutesBefore(2 * cycleByMinutes);
+            setIsInSyncProcess(is_in_sync, cutils::getNow());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
             auto
             [status, blockRecord] = DAG::getLatestBlockRecord();
             if (status)
-            CUtils::exiter("No block in DAG exit!!", 111);
+            cutils::exiter("No block in DAG exit!!", 111);
 
             bool
-            is_in_sync_process = (blockRecord.m_creation_date < CUtils::minutesBefore(2 * cycleByMinutes));
+            is_in_sync_process = (blockRecord.m_creation_date < cutils::minutesBefore(2 * cycleByMinutes));
 
             lastSyncStatusObj.insert("isInSyncMode", is_in_sync_process? "Y": "N");
-            lastSyncStatusObj.insert("checkDate", CUtils::getNow());
+            lastSyncStatusObj.insert("checkDate", cutils::getNow());
             lastSyncStatusObj.insert("lastDAGBlockCreationDate", blockRecord.m_creation_date);
             if (is_in_sync_process)
-            lastSyncStatusObj.insert("lastTimeMachineWasInSyncMode", CUtils::getNow());
-            KVHandler::upsertKValue("LAST_SYNC_STATUS", CUtils::serializeJson(lastSyncStatusObj));
-            setIsInSyncProcess(is_in_sync_process, CUtils::getNow());
+            lastSyncStatusObj.insert("lastTimeMachineWasInSyncMode", cutils::getNow());
+            KVHandler::upsertKValue("LAST_SYNC_STATUS", cutils::serializeJson(lastSyncStatusObj));
+            setIsInSyncProcess(is_in_sync_process, cutils::getNow());
             return is_in_sync_process;
         }
         */
@@ -393,14 +396,7 @@ impl <'m>CMachine<'m> {
 
       static QVDRecordsT getActiveNeighbors(const QString& mp_code = getSelectedMProfile());
 
-      static std::tuple<bool, QString> addANewNeighbor(
-        const QString& email,
-        const QString& connection_type,
-        const QString& public_key = "",
-        const QString& mp_code = getSelectedMProfile(),
-        const QString& is_active = constants::YES,
-        const QJsonObject& neighbor_info = QJsonObject(),
-        QString creation_date = "");
+
 
       static bool handshakeNeighbor(const QString& n_id, const QString& connection_type);
 
@@ -635,8 +631,8 @@ impl <'m>CMachine<'m> {
         {"m_outgoing_mail_server", m_outgoing_mail_server},
         {"m_outgoing_smtp", m_outgoing_smtp},
         {"m_fetching_interval_by_minute", m_fetching_interval_by_minute}, // it depends on smtp server, but less than 5 minute is useless
-        {"m_PGP_private_key", m_PGP_private_key},
-        {"m_PGP_public_key", m_PGP_public_key}
+        {"m_pgp_private_key", m_pgp_private_key},
+        {"m_pgp_public_key", m_pgp_public_key}
       };
     }
 
@@ -650,8 +646,8 @@ impl <'m>CMachine<'m> {
       m_outgoing_mail_server = obj.value("m_outgoing_mail_server").to_string();
       m_outgoing_smtp = obj.value("m_outgoing_smtp").to_string();
       m_fetching_interval_by_minute = obj.value("m_fetching_interval_by_minute").to_string();
-      m_PGP_private_key = obj.value("m_PGP_private_key").to_string();
-      m_PGP_public_key = obj.value("m_PGP_public_key").to_string();
+      m_pgp_private_key = obj.value("m_pgp_private_key").to_string();
+      m_pgp_public_key = obj.value("m_pgp_public_key").to_string();
     }
 
 
@@ -763,54 +759,59 @@ impl <'m>CMachine<'m> {
             self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = public_pgp;
         }
 
-        /*
-                  auto[status, unlock_doc] = CAddress::createANewAddress(
-                    constants::SIGNATURE_TYPES::Strict,
-                    "2/3",
-                    "0.0.1");
-                  if (!status)
-                    return {false, "Couldn't creat ECDSA key pairs (for public channel)"};
+        let (status, unlock_doc) = create_a_new_address(
+            constants::signature_types::Strict,
+            "2/3",
+            "0.0.1");
+        if !status
+        {
+            return (false, "Couldn't creat ECDSA key pairs (for public channel)".to_string());
+        }
 
-                  m_profile.m_mp_settings.m_backer_detail = new UnlockDocument();
-                  m_profile.m_mp_settings.m_backer_detail = &unlock_doc;
-                  m_profile.m_mp_settings.m_machine_alias = "node-" + CUtils::hash6c(CCrypto::keccak256(unlock_doc.m_account_address));
+        self.m_profile.m_mp_settings.m_machine_alias = "node-".to_owned() + &cutils::hash6c(&ccrypto::keccak256(&unlock_doc.m_account_address));
+        self.m_profile.m_mp_settings.m_backer_detail = unlock_doc;
 
-                  {
-                    // this block existed ONLY for test and development environment
-                    QString AAA_PGP_private_key = "-----BEGIN PRIVATE KEY-----\n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\nmNI4cf8hgrmIb2AgIyZ9LJMhSDaF+g==\n-----END PRIVATE KEY-----";
-                    QString AAA_PGP_public_key = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAjSeu+Qny40lpzFfDy1XN\nWYyNHAldVUwH2I++PwV+xN9LE0JIbg3kh4BMHB5zN468qmlvE8QvTYbA2NNkHDYH\ngbi+cszEZveERJK8i34ZqqrgFh8+nBiRExVFjmtJMqxjUpGUIURlw4U0/EC3fM5O\nuQjX4z992F0L0vs0gWgFd3o3mapoh+NPTeyJ+b6IZ8JUm0Mw/i0hLGyBoK5wCY1Z\npqBuMmnK+st8/QG2UxS1TifiEy/zSFDdmvJ14B2CdckAY3PEtzCPYnm7Q1NpM9vs\nDdjrkOtiaREJaqvfuEw9g9IlECb5wkmXUNpWMfgd31ecD766SK/YP8dqR5zVW+Vh\ndp8FtRZGiGyWbOglyARKh4GC37LoJZJk8uTvp1FmEnUZK6nSSDmDzNAq8M8849zH\nMGXpoRd2A04nmuL5JAA2WpkW7WQqbvpmunXHRrOKt9cFmE6zuslm8TiRTigjD69Y\nOuSl48x7o/3LLJw4dbgPlmYi5Ezf2ZncllFSbIPxXSP5t95cqOrxTA7/Ue8/VJnu\nD3GJym8lXPFn8zHMjVH9ujxpm69+0XqSsBnkiQtcv0qeaPEBMobbABBcvMumvUAb\ndU1oMVr4Md+5Oapn7M03w+ZNIqofZtQFbmEiWajAYTixhYQHSqLXdp1YXgVIcfBa\nIyo+tB2Zu7WF6b4mp0tD0tUCARE=\n-----END PUBLIC KEY-----";
+        {
+            // this block existed ONLY for test and development environment
+            let AAA_pgp_private_key: String = "-----BEGIN PRIVATE KEY-----\nMIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQCNJ675CfLjSWnM\nV8PLVc1ZjI0cCV1VTAfYj74/BX7E30sTQkhuDeSHgEwcHnM3jryqaW8TxC9NhsDY\n02QcNgeBuL5yzMRm94REkryLfhmqquAWHz6cGJETFUWOa0kyrGNSkZQhRGXDhTT8\nQLd8zk65CNfjP33YXQvS+zSBaAV3ejeZqmiH409N7In5vohnwlSbQzD+LSEsbIGg\nrnAJjVmmoG4yacr6y3z9AbZTFLVOJ+ITL/NIUN2a8nXgHYJ1yQBjc8S3MI9iebtD\nU2kz2+wN2OuQ62JpEQlqq9+4TD2D0iUQJvnCSZdQ2lYx+B3fV5wPvrpIr9g/x2pH\nnNVb5WF2nwW1FkaIbJZs6CXIBEqHgYLfsuglkmTy5O+nUWYSdRkrqdJIOYPM0Crw\nzzzj3McwZemhF3YDTiea4vkkADZamRbtZCpu+ma6dcdGs4q31wWYTrO6yWbxOJFO\nKCMPr1g65KXjzHuj/cssnDh1uA+WZiLkTN/ZmdyWUVJsg/FdI/m33lyo6vFMDv9R\n7z9Ume4PcYnKbyVc8WfzMcyNUf26PGmbr37RepKwGeSJC1y/Sp5o8QEyhtsAEFy8\ny6a9QBt1TWgxWvgx37k5qmfszTfD5k0iqh9m1AVuYSJZqMBhOLGFhAdKotd2nVhe\nBUhx8FojKj60HZm7tYXpvianS0PS1QIBEQKCAgASrqn7UGAlnIo87X+Pni4AjtZw\n4x8tK/H6x7sP3thOwzNZIyAsrwPkwev0qa1d8QJh2T+kf5zZUdXCWDapYYD+WHOP\nMbCVKEn6BFy4G/veHiUwGrk6Tour7/3pcBT7aaO73o/XOf5o7797vUV2Kl0+Iw2D\nuVgvdboJGbfj82oiov/UVo3Vv/esMiFR/t1ZBuWNBSDWWMvrhtTr2tofYcRWDbQ7\nYNNV5jn0T0kShoFodjhGTeAy+6TcCYCK1rqttPTB3mGQt15FgQ19ndz7kdAvAltp\nxM0GYF9dLVYUoK3J6t9CI0a0EUT34KmGnRMDNQHU6E1ccaBiy1WYiXaXdPKLvQuz\nmmMX83v9EGMGe3bwZEDoU72QdDhZeqvmKJOfHtED6afl1t5/YeID6sSzsXurWoT1\ngtojejsI3uFKInibxLlayldxan1bDMTy4WJEeERUL6516NAQYG+sWqMjM3Tof8r9\n47HQMpzjtOdAF3cNKBBZi6NzdcNl77fFam9MjYkG9NH/RM7RKUPGA/7qMynchDWa\nfjjBcA72OW+MqgucO7/ldtfLpMHOICyVWIWsr6wqaWSbMFqbppVaaHGzZwiuTFcK\np97P7kdmmH5GBozNt296IBeURMAjMX+z5WqMbIuBbAQHgYV+tbsrHW3f83EFcPRu\nwYhWf7+FHG2XzY9bWQKCAQEAxVorRAl8lBX27lOiEgBPbr53P3N8zgUZX9Mc1l1N\neYMhEwJTuTlDYgNK+ONmbr4Nobp8pkmN0nuFsaMbjjL+YtQ3evLqO9cmub7qvFVu\nguZHPb88fmF2UzUlniCzH6UPTlmvhRleHczdhlsmW7JsHLvWyi9Vs/eJowE6PtuK\nyAGU5jRbkmYrj/FTILhLL48p/wczjURhnQCZ2AWG8OkopG73ucwxvgzRirD6kwyY\nGsoAeUSTHQiHw/FjvWDZKVmt/vxmDE076zRg7vHdz+te2ILlBD7rYksmm7qBdNXr\nqcLiW13X8W3QgWe1ok8Pt7D6gcCHBZV1ctn/sgCyDX1pHQKCAQEAtxo80fsBjGXh\nfgJmvzlYq4SpiPjXHWDDrV8U1q1oEsAl6k0r7/JVNUMWdsQvv0ZM+9DJBkqF4Cbu\nnVqC+8lt9h+WKU2BKDHHW42ipaQnjozU/gc8T4wbmvP13THEYD/dJhWZjwZZtusk\n23vc4/YcNyRo8d2NT67uDOS0BHeP9bPuaRIZ+1QQnJwmsFZYy1t/xHvOtm0M6Uuj\nNgptzhIuDW0zkDe5ilvJKlR7abOAOWpEd+DubkJSDHSt+SO1DEdNDaFB6IlEs0zu\nAmaokuuoFZxqCLyM+IBaT2oXNaj7Pl7RTeBWbQc+FDGbhJ7GJcT/i/IEtxqcRJMY\nw5SWuuCbGQKCAQEAub5G1p+ETyO7OqkRAeIspHcG0k6TlLmBSyEMFQyFJxIBAtUD\ngSbWAeT7RJnJ0aPQmDcL58zBtwrYLrehdsaVEbisr/OvR2EVY4aCkyM61Y1wOh1m\nHJf25Oa5/jzk0n07lQkdqnI6dmZ2JBmNg3rAGwskgg5ux3+QmWqRLBnsB4kEnG2D\nXJxlPC5sWwfOSuEYd45OoxMuseJyrTJg4r1TbZWd3At6HEhMvsSvmXVD3PpazHzG\nsenpMOMwsj0In2N2laJB7XXeCoumholJPCjRvLduIh0ZxexgkpFqyFDdzPOn3YV/\n8kk8tgdBibPSjsSviS2sQX2bt2PDelsB7pQmsQKCAQEAoY+fE6E9mf+KunqW5PZd\nTAukpgi9zqCsqAiZ6pkBefTWKRbqiGxpTR0T0jSimbaAKXv8qzKyXF6WTpsoR5Od\nQpRXUZ69QZVVjQSAdAlQFF4lWJz4+uUJTHzn/2glvlZ31k9LQfaLZSnVOiH/I37N\nmhERTeGazdaVzyQmXktg59r/ieLLoYZpAqfl5uLG0Yz4Q/TFc8mh+waA83KdHz03\nsX54youFmDLerOEhmYBD9mzTAF0OnYXP7N9sVEyuzplD/PeyoACmB547a4fB6wwq\n5eRdjzz020QTcz995A2SZDWLgPMfFOhF1ZUu3m36IVN4EhHH7Ns+ltwk6M5m4SCI\n2QKCAQEAhueikHEK98tAbGsbUoAwEf5XEIpsDwtlTB/1EBX00QLl9FCfahAZoDYY\n6+2L+Axj8ANCqt4XXDKdbjDGiEV14E4D5QeJsWKMzedacjW+x9e1pbVRyGMoPBDz\nGPHruXSejR4lyi7cFvnhFiEb+18t+KWP38iCL42Mi6i4o3ojemkNQ+GDR+jnc4wJ\n98bpOr7Hhc0UPJZnAFmn614JA0b5V7KZaWlKiDlPdhE0tPLaUDZP4jzlTkSqdwVZ\nmxg6yiV93jpqhmM1Eru05EsbQiDgb5+HOj+yUuz0f82txjMihkH+sbffOyWhqAB7\nmNI4cf8hgrmIb2AgIyZ9LJMhSDaF+g==\n-----END PRIVATE KEY-----".to_string();
+            let AAA_pgp_public_key: String = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAjSeu+Qny40lpzFfDy1XN\nWYyNHAldVUwH2I++PwV+xN9LE0JIbg3kh4BMHB5zN468qmlvE8QvTYbA2NNkHDYH\ngbi+cszEZveERJK8i34ZqqrgFh8+nBiRExVFjmtJMqxjUpGUIURlw4U0/EC3fM5O\nuQjX4z992F0L0vs0gWgFd3o3mapoh+NPTeyJ+b6IZ8JUm0Mw/i0hLGyBoK5wCY1Z\npqBuMmnK+st8/QG2UxS1TifiEy/zSFDdmvJ14B2CdckAY3PEtzCPYnm7Q1NpM9vs\nDdjrkOtiaREJaqvfuEw9g9IlECb5wkmXUNpWMfgd31ecD766SK/YP8dqR5zVW+Vh\ndp8FtRZGiGyWbOglyARKh4GC37LoJZJk8uTvp1FmEnUZK6nSSDmDzNAq8M8849zH\nMGXpoRd2A04nmuL5JAA2WpkW7WQqbvpmunXHRrOKt9cFmE6zuslm8TiRTigjD69Y\nOuSl48x7o/3LLJw4dbgPlmYi5Ezf2ZncllFSbIPxXSP5t95cqOrxTA7/Ue8/VJnu\nD3GJym8lXPFn8zHMjVH9ujxpm69+0XqSsBnkiQtcv0qeaPEBMobbABBcvMumvUAb\ndU1oMVr4Md+5Oapn7M03w+ZNIqofZtQFbmEiWajAYTixhYQHSqLXdp1YXgVIcfBa\nIyo+tB2Zu7WF6b4mp0tD0tUCARE=\n-----END PUBLIC KEY-----".to_string();
 
-                    QString BBB_PGP_private_key = "-----BEGIN PRIVATE KEY-----\n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\nbxC8SYNfb397H1VNQUzlPIW6oA==\n-----END PRIVATE KEY-----";
-                    QString BBB_PGP_public_key = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAzruXdhodXPeHsaMgNSw6\nUN4sRVGXeQRri8PJ4EFGKuTcVF6/2ZWy+I/VHHoq1Y/15vm/RFR/Qfit9TIgi+p2\neCw9djM7jlrKvTZfs+vAKx+qJ56x1gu0Cja+RkdbJdliqVKALZfY0+jWaco+zH+e\nuE8qPjUygUoISzmsNdcZrNNi2eLJ0yNMVa4x5y0Y0ywuhJvbxwMfvdRxMuy0YZwc\nC8i5lkCPCPKjr9OzR+jC7weUM/O/HmfqJOFhXiCKXvjXaBZdEt5WqU86lMRElk9p\nXhyglOlrPe/39n1Bhs0wu4MDbhcrXPj8pfEmxplhQfaR3/ezxwVxY0MEffFGlMgX\n60RwoEgR7BX1BZv2qwp7KBf7gYYJeOVYCjxdbKYRBLdOMfqQ3rXbtpljioa1975X\nZu3bAH0ByhKKPZKqVApL3sA1Pm7vWjS8XEUOcLgLKxYeqjrZeTes0VW30y/tHnkU\nOHT0zV8SYpwuS3mgQmbivrvCLhdAYE1e8HGztb2bhBPHsQgBnqRnfNDHyrErMQHB\nfwXT79uN/oyj4CReoMqfgm0n/GH2ZijKb94LR2MMHeTrTxOh3rI94t0HCqVxB7Ks\nh2H5H9ynZ6YUtM0FQQIjzUgU/bTQuAQHqOBTiiSCKFGrPf0iUcY0tt/pX8HQMP82\nzLZXKLKXNWgRfTAXiZTOzVUCARE=\n-----END PUBLIC KEY-----";
+            let bbb_pgp_private_key: String = "-----BEGIN PRIVATE KEY-----\n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\nbxC8SYNfb397H1VNQUzlPIW6oA==\n-----END PRIVATE KEY-----".to_string();
+            let bbb_pgp_public_key: String = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAzruXdhodXPeHsaMgNSw6\nUN4sRVGXeQRri8PJ4EFGKuTcVF6/2ZWy+I/VHHoq1Y/15vm/RFR/Qfit9TIgi+p2\neCw9djM7jlrKvTZfs+vAKx+qJ56x1gu0Cja+RkdbJdliqVKALZfY0+jWaco+zH+e\nuE8qPjUygUoISzmsNdcZrNNi2eLJ0yNMVa4x5y0Y0ywuhJvbxwMfvdRxMuy0YZwc\nC8i5lkCPCPKjr9OzR+jC7weUM/O/HmfqJOFhXiCKXvjXaBZdEt5WqU86lMRElk9p\nXhyglOlrPe/39n1Bhs0wu4MDbhcrXPj8pfEmxplhQfaR3/ezxwVxY0MEffFGlMgX\n60RwoEgR7BX1BZv2qwp7KBf7gYYJeOVYCjxdbKYRBLdOMfqQ3rXbtpljioa1975X\nZu3bAH0ByhKKPZKqVApL3sA1Pm7vWjS8XEUOcLgLKxYeqjrZeTes0VW30y/tHnkU\nOHT0zV8SYpwuS3mgQmbivrvCLhdAYE1e8HGztb2bhBPHsQgBnqRnfNDHyrErMQHB\nfwXT79uN/oyj4CReoMqfgm0n/GH2ZijKb94LR2MMHeTrTxOh3rI94t0HCqVxB7Ks\nh2H5H9ynZ6YUtM0FQQIjzUgU/bTQuAQHqOBTiiSCKFGrPf0iUcY0tt/pX8HQMP82\nzLZXKLKXNWgRfTAXiZTOzVUCARE=\n-----END PUBLIC KEY-----".to_string();
 
-                    if (m_clone_id == 1)
-                    {
-                      m_profile.m_mp_settings.m_machine_alias = "node-AAA";
-                      m_profile.m_mp_settings.m_public_email.m_address = "AAA@AAA.AAA";
-                      m_profile.m_mp_settings.m_public_email.m_PGP_private_key = AAA_PGP_private_key;
-                      m_profile.m_mp_settings.m_public_email.m_PGP_public_key = AAA_PGP_public_key;
-                      addANewNeighbor(
-                        "BBB@BBB.BBB",
-                        constants::PUBLIC,
-                        BBB_PGP_public_key,
-                        constants::DEFAULT);
-                    }
-                    if (m_clone_id == 2)
-                    {
-                      m_profile.m_mp_settings.m_machine_alias = "node-BBB";
-                      m_profile.m_mp_settings.m_public_email.m_address = "BBB@BBB.BBB";
-                      m_profile.m_mp_settings.m_public_email.m_PGP_private_key = BBB_PGP_private_key;
-                      m_profile.m_mp_settings.m_public_email.m_PGP_public_key = BBB_PGP_public_key;
-                      addANewNeighbor(
-                        "AAA@AAA.AAA",
-                        constants::PUBLIC,
-                        AAA_PGP_public_key,
-                        constants::DEFAULT);
-                    }
-                  }
+            if self.m_clone_id == 1
+            {
+                self.m_profile.m_mp_settings.m_machine_alias = "node-AAA".to_string();
+                self.m_profile.m_mp_settings.m_public_email.m_address = "AAA@AAA.AAA".to_string();
+                self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = AAA_pgp_private_key;
+                self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = AAA_pgp_public_key.clone();
+                self.add_a_new_neighbor(
+                    "BBB@BBB.BBB".to_string(),
+                    constants::PUBLIC.to_string(),
+                    bbb_pgp_public_key.clone(),
+                    constants::DEFAULT.to_string(),
+                    constants::YES.to_string(),
+                    NeighborInfo::new(),
+                    cutils::get_now());
+            }
+            if self.m_clone_id == 2
+            {
+                self.m_profile.m_mp_settings.m_machine_alias = "node-BBB".to_string();
+                self.m_profile.m_mp_settings.m_public_email.m_address = "BBB@BBB.BBB".to_string();
+                self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = bbb_pgp_private_key;
+                self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = bbb_pgp_public_key.to_string();
+                self.add_a_new_neighbor(
+                    "AAA@AAA.AAA".to_string(),
+                    constants::PUBLIC.to_string(),
+                    AAA_pgp_public_key,
+                    constants::DEFAULT.to_string(),
+                    constants::YES.to_string(),
+                    NeighborInfo::new(),
+                    cutils::get_now());
+            }
+        }
 
 
-*/
         self.save_settings();
 
 
@@ -1088,7 +1089,7 @@ impl <'m>CMachine<'m> {
       TimeByHoursT voting_timeframe = (CMachine::getCycleByMinutes() * 2) / 60;   // at least 2 cycle for voting
       if (voting_timeframe == static_cast<uint64_t>(voting_timeframe))
         return voting_timeframe;
-      return CUtils::customFloorFloat(static_cast<double>(voting_timeframe), 2);
+      return cutils::customFloorFloat(static_cast<double>(voting_timeframe), 2);
     }
 
     bool CMachine::IsetPublicEmailAddress(const QString&  v)
@@ -1160,7 +1161,7 @@ impl <'m>CMachine<'m> {
         if !status
         { return false; }
 
-        //   QString serialized_setting = CUtils::serializeJson(m_profile.exportJson());
+        //   QString serialized_setting = cutils::serializeJson(m_profile.exportJson());
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code[..]),
             ("mp_name", &self.m_profile.m_mp_name[..]),
@@ -1180,7 +1181,7 @@ impl <'m>CMachine<'m> {
 
     bool CMachine::ImaybeAddSeedNeighbors()
     {
-      addANewNeighbor("matbit@secmail.pro", constants::PUBLIC);
+      add_a_new_neighbor("matbit@secmail.pro", constants::PUBLIC);
       return true;
     }
 
@@ -1193,7 +1194,7 @@ impl <'m>CMachine<'m> {
         get().IinitLastSyncStatus();
         lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
       }
-      return CUtils::parseToJsonObj(lastSyncStatus);
+      return cutils::parseToJsonObj(lastSyncStatus);
     }
 
     bool CMachine::IinitLastSyncStatus()
@@ -1201,13 +1202,13 @@ impl <'m>CMachine<'m> {
         QJsonObject lastSyncStatus {
           {"isInSyncMode", "Unknown"},
           {"lastTimeMachineWasInSyncMode",
-            CUtils::minutesBefore(CMachine::getCycleByMinutes() * 2)},
-          {"checkDate", CUtils::minutesBefore(CMachine::getCycleByMinutes())},
+            cutils::minutesBefore(CMachine::getCycleByMinutes() * 2)},
+          {"checkDate", cutils::minutesBefore(CMachine::getCycleByMinutes())},
           {"lastDAGBlockCreationDate", "Unknown"}
         };
         return KVHandler::upsertKValue(
           "LAST_SYNC_STATUS",
-          CUtils::serializeJson(lastSyncStatus));
+          cutils::serializeJson(lastSyncStatus));
     }
 
 

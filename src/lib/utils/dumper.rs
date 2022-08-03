@@ -2,6 +2,7 @@
 // use crate::lib::custom_types::CDateT;
 
 
+use std::collections::HashMap;
 use crate::constants;
 use crate::lib::custom_types::ClausesT;
 
@@ -35,3 +36,15 @@ pub fn dump_vec_of_str(s: &Vec<String>) -> String {
     }
     return out;
 }
+
+pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
+    let prefix_tabs = "\t ";
+
+    let mut out: String = "".to_string();
+    for (k, v) in s {
+        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &v);
+    }
+    return out;
+}
+
+
