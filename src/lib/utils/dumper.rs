@@ -28,7 +28,7 @@ pub fn dump_clauses(clauses: &ClausesT) -> String {
 }
 
 pub fn dump_vec_of_str(s: &Vec<String>) -> String {
-    let prefix_tabs = "\t ";
+    let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();
     for a_vec in s {
@@ -38,7 +38,7 @@ pub fn dump_vec_of_str(s: &Vec<String>) -> String {
 }
 
 pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
-    let prefix_tabs = "\t ";
+    let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();
     for (k, v) in s {
@@ -48,7 +48,7 @@ pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
 }
 
 pub fn dump_hashmap_of_string(s: &HashMap<&str, String>) -> String {
-    let prefix_tabs = "\t ";
+    let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();
     for (k, v) in s {

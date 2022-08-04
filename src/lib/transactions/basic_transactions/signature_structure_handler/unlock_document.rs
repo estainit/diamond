@@ -8,7 +8,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::u
 pub struct UnlockDocument {
     pub m_unlock_sets: Vec<UnlockSet>,
     pub m_merkle_root: String,
-    pub m_account_address: String,
+    pub m_account_address: CAddressT,
     pub m_merkle_version: String,
     pub m_private_keys: HashMap<String, Vec<String>>,//QHash<QString, QStringList>
 }
@@ -35,7 +35,7 @@ impl UnlockDocument {
     }
 
     pub fn dump(&self) -> String {
-        let prefix_tabs = "\t ";
+        let prefix_tabs = constants::TAB;
         let mut out_str: String = constants::NL.to_owned().to_owned() + &prefix_tabs + "merkle_root: " + &self.m_merkle_root + "(" + &self.m_merkle_version + ")";
         out_str += &(constants::NL.to_owned() + &prefix_tabs + &"account_address: " + &self.m_account_address + &constants::NL.to_owned() + &"unlock_sets");
         return constants::NL.to_owned() + &prefix_tabs + &out_str + &dump_vec_of_unlock_sets(&self.m_unlock_sets);

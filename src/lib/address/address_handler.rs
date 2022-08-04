@@ -1,5 +1,5 @@
 use crate::dlog;
-use crate::lib::address::basic_addresses::createANewBasicAddress;
+use crate::lib::address::basic_addresses::create_anew_basic_address;
 use crate::lib::address::strict_address::create_a_new_strict_address;
 use crate::lib::constants;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
@@ -10,18 +10,18 @@ pub fn create_a_new_address<'a>(
     signature_mod: &'a str, // m of n
     signature_version: &'a str) -> (bool, UnlockDocument)
 {
-    if signature_type == constants::signature_types::Basic
+    if signature_type == constants::signature_types::BASIC
     {
         if signature_mod == "Complex"
         {
 //      return complexAddressHandler.createANewComplexModAddress(args);
         } else {
-            return createANewBasicAddress(signature_mod, signature_version);
+            return create_anew_basic_address(signature_mod, signature_version);
         }
-    } else if (signature_type == constants::signature_types::Strict)
+    } else if (signature_type == constants::signature_types::STRICT)
     {
         return create_a_new_strict_address(signature_mod, signature_version);
-    } else if (signature_type == constants::signature_types::Bitcoin)
+    } else if (signature_type == constants::signature_types::BITCOIN)
     {
 //    return bitcoinAddressHandler.createANewBitcoinAddress(args);
     }

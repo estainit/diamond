@@ -45,6 +45,7 @@ use crate::lib::threads_handler::launch_giga_loop;
 use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
+use lib::rest::apis;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
 
@@ -76,19 +77,17 @@ fn main() {
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let john: Value = json!({
-        "name": "John Doe",
-        "age": 43,
-        "phones": [
-            "+44 1234567",
-            "+44 2345678"
-        ]
-    });
-
-    println!("first phone number: {}", john["phones"][0]);
-
-    // Convert to a string of JSON and print it out
-    println!("{}", john.to_string());
+    // let john: Value = json!({
+    //     "name": "John Doe",
+    //     "age": 43,
+    //     "phones": [
+    //         "+44 1234567",
+    //         "+44 2345678"
+    //     ]
+    // });
+    // println!("first phone number: {}", john["phones"][0]);
+    // // Convert to a string of JSON and print it out
+    // println!("{}", john.to_string());
 
 
 // config::print_config();
@@ -99,7 +98,6 @@ fn main() {
 // CMachine::onAboutToQuit(&w);
     machine().init();
     machine().parse_args(env::args().collect(), manual_clone_id);
-    println!("uuuuuuuuu  uuuuuuu u uuu");
     machine().boot_machine();
 
 
@@ -118,7 +116,14 @@ fn main() {
          */
 
     let res = get_value(&"SELECTED_PROFILE".to_string());
-println!("res res res: {}", res);
-
+    println!("res res res: {}", res);
+    // tokio::join!(
+    //         lib::rest::apis::run_web_server(),
+    //         run_loops()
+    //     );
     launch_giga_loop(false);//    launch_threads();
+}
+
+async fn run_loops() {
+    launch_giga_loop(false);
 }

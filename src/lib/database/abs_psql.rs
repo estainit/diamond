@@ -113,6 +113,7 @@ const QSDicT DbModel::s_map_table_to_db = {
 
 #[derive(Debug)]
 pub struct QUnion {
+    pub su: String, // selected member
     pub i: i64,
     pub f: f64,
     pub b: bool,
@@ -122,6 +123,7 @@ pub struct QUnion {
 impl QUnion{
     pub fn from_string(s:String)->QUnion{
         return QUnion{
+            su: "".to_string(),
             i: 0,
             f: 0.0,
             b: false,
@@ -191,7 +193,7 @@ pub fn clauses_query_generator(
     clauses: &ClausesT,
 ) -> (String, Vec<String>)
 {
-    println!("in clauses_ query_ generator clauses: {:?}", dump_clauses(clauses));
+    // println!("in clauses_ query_ generator clauses: {:?}", dump_clauses(clauses));
 
     let mut values_: Vec<String> = vec![];
     let mut clauses_: String = "".to_string();
@@ -514,27 +516,20 @@ pub fn exec_query(
             }
 
             let rr = Row::columns(&rows[0]);
-            // println!("a rr rr rr: {:?}", rr);
-            // println!("a rr rr rr[0]: {:?}", rr[0]);
-            // println!("a rr rr rr[0]type_: {:?}", rr[0].type_());
             let mut res_cols_info: Vec<(String, String)> = vec![];
             for a_col in &*rows[0].columns() {
-                println!("a col: {:?}", a_col);
-                // println!("a col.name: {:?}", a_col.name());
                 res_cols_info.push((a_col.name().to_string(), a_col.type_().to_string()));
             }
-            // println!("a res_col_names: {:?}", res_col_names);
-
 
             for mut a_row in &rows {
                 let mut a_row_dict: QUDicT = HashMap::new();
                 for col_inx in 0..a_row.len() {
                     let (col_name, col_type) = &res_cols_info[col_inx];
-                    // let col_name = res_cols_info[col_inx].clone();
                     let col_value: QUnion = match &*col_type.clone() {
                         ("real" | "double precision") => {
                             let col_value: f64 = Row::get(a_row, col_inx);
                             QUnion {
+                                su: "f".to_string(),
                                 i: 0,
                                 f: col_value,
                                 b: false,
@@ -544,6 +539,7 @@ pub fn exec_query(
                         ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial") => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             QUnion {
+                                su: "i".to_string(),
                                 i: col_value,
                                 f: 0.0,
                                 b: false,
@@ -553,6 +549,7 @@ pub fn exec_query(
                         ("varchar") => {
                             let col_value: String = Row::get(a_row, col_inx);
                             QUnion {
+                                su: "s".to_string(),
                                 i: 0,
                                 f: 0.0,
                                 b: false,
@@ -562,6 +559,7 @@ pub fn exec_query(
                         ("text") => {
                             let col_value: String = Row::get(a_row, col_inx);
                             QUnion {
+                                su: "s".to_string(),
                                 i: 0,
                                 f: 0.0,
                                 b: false,
@@ -571,6 +569,7 @@ pub fn exec_query(
                         ("bool") => {
                             let col_value: bool = Row::get(a_row, col_inx);
                             QUnion {
+                                su: "b".to_string(),
                                 i: 0,
                                 f: 0.0,
                                 b: col_value,
@@ -581,6 +580,7 @@ pub fn exec_query(
                             let col_value: String = Row::get(a_row, col_inx);
                             println!("UUUUU Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
                             QUnion {
+                                su: "s".to_string(),
                                 i: 0,
                                 f: 0.0,
                                 b: false,
@@ -592,7 +592,7 @@ pub fn exec_query(
                 }
                 out_rows.push(a_row_dict);
             }
-            println!(">>> out_dict: {:?}", out_rows);
+            //println!(">>> out_dict: {:?}", out_rows);
             (true, out_rows)
         }
         Err(e) => {
@@ -780,10 +780,8 @@ pub fn prepare_to_update(
     for (a_key, a_value) in upd_values
     {
         position += 1;
-        println!("the_clauseZ aKey: {}", a_key);
         let the_key = a_key.clone();
         let the_single_update = (the_key.to_owned() + &format!("= ${}", position)).clone();
-        println!("the_clauseZ ff: {}", the_single_update);
         updates.push(the_single_update);
         finall_upd_values.push(a_value.to_string());
     }

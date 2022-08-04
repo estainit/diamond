@@ -762,7 +762,7 @@ impl<'m> CMachine<'m> {
         }
 
         let (status, unlock_doc) = create_a_new_address(
-            constants::signature_types::Strict,
+            constants::signature_types::STRICT,
             "2/3",
             "0.0.1");
         if !status

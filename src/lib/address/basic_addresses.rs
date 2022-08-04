@@ -4,15 +4,16 @@ use warp::body::form;
 use crate::{ccrypto, cutils};
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{createCompleteUnlockSets, validateSigStruct};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{create_complete_unlock_sets, validate_sig_struct};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 
-pub fn createANewBasicAddress<'a>(
+//old_name_was createANewBasicAddress
+pub fn create_anew_basic_address<'a>(
     signature_mod: &str,
     signature_version: &'a str) -> (bool, UnlockDocument)
 {
-    let signature_type = constants::signature_types::Basic; // by default is two of three (m of n === m/n)
+    let signature_type = constants::signature_types::BASIC; // by default is two of three (m of n === m/n)
     dlog(
         &format!("creating a new signature_type:signature_mod {}:{}", signature_type, signature_mod),
         constants::Modules::App,
@@ -59,7 +60,7 @@ pub fn createANewBasicAddress<'a>(
         ("signature_version", signature_version),
         ("customSalt", "PURE_LEAVE"),
     ]);
-    let mut unlock_info: UnlockDocument = createCompleteUnlockSets(
+    let mut unlock_info: UnlockDocument = create_complete_unlock_sets(
         individuals_signing_sets,
         m_signatures_count,
         &options);
@@ -75,7 +76,7 @@ pub fn createANewBasicAddress<'a>(
         unlock_info.m_private_keys.insert(an_unlocker_set.m_salt.clone(), private_keys);
 
         // test unlock structure&  signature
-        let is_valid: bool = validateSigStruct(
+        let is_valid: bool = validate_sig_struct(
             &an_unlocker_set,
             &unlock_info.m_account_address,
             &HashMap::new(),

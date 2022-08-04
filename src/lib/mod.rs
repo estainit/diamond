@@ -14,6 +14,7 @@ pub mod machine;
 pub mod messaging_protocol;
 pub mod network;
 pub mod parsing_q_handler;
+pub mod rest;
 pub mod sending_q_handler;
 pub mod services;
 pub mod threads_handler;

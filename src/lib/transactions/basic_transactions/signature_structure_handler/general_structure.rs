@@ -34,7 +34,8 @@ pub fn my_get<'a>(the_map: &'a HashMap<&str, &str>, the_key: &'a str, default_va
     return default_value;
 }
 
-pub fn createCompleteUnlockSets<'a>(
+//old_name_was createCompleteUnlockSets
+pub fn create_complete_unlock_sets<'a>(
     individuals_signing_sets: HashMap<String, IndividualSignature>,
     neccessary_signatures_count: u16,
     options: &'a HashMap<&str, &str>) -> UnlockDocument
@@ -51,7 +52,7 @@ pub fn createCompleteUnlockSets<'a>(
         .map(|(k, _v)| k.clone())
         .collect::<Vec<String>>();
     leave_ids.sort();
-    let signPermutations = PermutationHandler::new(
+    let sign_permutations = PermutationHandler::new(
         &leave_ids,
         neccessary_signatures_count,
         true,
@@ -62,7 +63,7 @@ pub fn createCompleteUnlockSets<'a>(
     let mut custom_types: HashMap<String, HashMap<String, String>> = HashMap::new();
     let mut unlock_sets: Vec<UnlockSet> = vec![];
     let mut custom_salts: HashMap<String, String> = HashMap::new();
-    for an_unlock_individuals_combination in signPermutations.m_permutations
+    for an_unlock_individuals_combination in sign_permutations.m_permutations
     {
         let mut a_signature_combination: Vec<IndividualSignature> = vec![];
         for an_individual_id in an_unlock_individuals_combination {
@@ -71,7 +72,7 @@ pub fn createCompleteUnlockSets<'a>(
         }
         let custom_key = cutils::hash16c(
             &ccrypto::keccak256(
-                &customStringifySignatureSets(&a_signature_combination)
+                &custom_stringify_signature_sets(&a_signature_combination)
             )
         );
         let mut an_unlock: UnlockSet = UnlockSet::new();
@@ -123,13 +124,13 @@ pub fn create_m_of_n_merkle<'a>(
     let mut leave_hash: String = "".to_string();
     for mut an_unlock_set in unlock_sets
     {
-        custom_key = cutils::hash16c(&ccrypto::keccak256(&customStringifySignatureSets(&an_unlock_set.m_signature_sets)));
+        custom_key = cutils::hash16c(&ccrypto::keccak256(&custom_stringify_signature_sets(&an_unlock_set.m_signature_sets)));
         if custom_types.contains_key(&custom_key)
         {
             an_unlock_set.m_signature_type = custom_types[&custom_key]["signature_type"].clone();
             an_unlock_set.m_signature_ver = custom_types[&custom_key]["signature_version"].clone();
         } else {
-            an_unlock_set.m_signature_type = constants::signature_types::Basic.to_string();
+            an_unlock_set.m_signature_type = constants::signature_types::BASIC.to_string();
             an_unlock_set.m_signature_ver = "0.0.0".to_string();
         }
 
@@ -148,12 +149,12 @@ pub fn create_m_of_n_merkle<'a>(
                 )
             );
         }
-        leave_hash = calcUnlockHash(an_unlock_set, &hash_algorithm);
+        leave_hash = calc_unlock_hash(an_unlock_set, &hash_algorithm);
         hashed_unlocks.push(leave_hash.clone());
         tmp_unlockers.insert(leave_hash,an_unlock_set);
     }
 
-    let (merkle_root, mVerifies, mVersion, _levels, _leaves) = generate_m(
+    let (merkle_root, m_verifies, m_version, _levels, _leaves) = generate_m(
         hashed_unlocks,
         &input_type,
         &hash_algorithm,
@@ -164,7 +165,7 @@ pub fn create_m_of_n_merkle<'a>(
     // for now we just use the signature_type of fist uSet.
     // BTW for now all signature_types in an address are same
     let first_unlocker: String = tmp_unlockers.keys().map(|k| k.clone()).collect::<Vec<String>>()[0].clone();
-    if tmp_unlockers.get(&first_unlocker).unwrap().m_signature_type == constants::signature_types::Mix23
+    if tmp_unlockers.get(&first_unlocker).unwrap().m_signature_type == constants::signature_types::MIX23
     {
         merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Extra securiy level
     }
@@ -173,7 +174,7 @@ pub fn create_m_of_n_merkle<'a>(
         m_unlock_sets: vec![],
         m_merkle_root: merkle_root.clone(),
         m_account_address: ccrypto::bech32_encode(&merkle_root),
-        m_merkle_version: mVersion,
+        m_merkle_version: m_version,
         m_private_keys: Default::default(),
     };
 
@@ -184,8 +185,8 @@ pub fn create_m_of_n_merkle<'a>(
             m_signature_type: tmp_unlockers[key].m_signature_type.clone(),
             m_signature_ver: tmp_unlockers[key].m_signature_ver.clone(),
             m_signature_sets: tmp_unlockers[key].m_signature_sets.clone(),
-            m_merkle_proof: mVerifies.get(key).unwrap().m_merkle_proof.iter().map(|x| x.clone()).collect::<Vec<String>>(),
-            m_left_hash: mVerifies.get(key).unwrap().m_left_hash.clone(),
+            m_merkle_proof: m_verifies.get(key).unwrap().m_merkle_proof.iter().map(|x| x.clone()).collect::<Vec<String>>(),
+            m_left_hash: m_verifies.get(key).unwrap().m_left_hash.clone(),
             m_salt: tmp_unlockers[key].m_salt.clone(),
         };
 
@@ -194,8 +195,8 @@ pub fn create_m_of_n_merkle<'a>(
     return unlock_document;
 }
 
-
-pub fn calcUnlockHash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
+//old_name_was calcUnlockHash
+pub fn calc_unlock_hash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 {
 //  std::string potential_strings = R"(
 //  Basic:0.0.0:[{"sKey":"0353444374647c47d52534fb9e0c1d7767d1a143ac5511c1ea45f98bc321732a0c"}]:a1ca0290308ed6a3
@@ -212,7 +213,7 @@ pub fn calcUnlockHash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 
     let mut to_be_hashed = unlock_set.m_signature_type.to_owned()
         + ":" + &unlock_set.m_signature_ver
-        + ":" + &customStringifySignatureSets(&unlock_set.m_signature_sets)
+        + ":" + &custom_stringify_signature_sets(&unlock_set.m_signature_sets)
         + ":" + &unlock_set.m_salt;//  hash_algorithm(${sType}:${sVer}:${JSON.stringify(sSet)}:${salt})
     dlog(
         &format!("Custom stringyfied unlock_struct: {}", to_be_hashed),
@@ -421,7 +422,7 @@ QString safeStringifyUnlockSet(const QJsonObject& unlockSet)
 */
 
 //old_name_was validateSigStruct
-pub fn validateSigStruct(
+pub fn validate_sig_struct(
     unlock_set: &UnlockSet,
     address: &str,
     options: &HashMap<&str, &str>) -> bool
@@ -436,7 +437,7 @@ pub fn validateSigStruct(
     let do_permutation: String = my_get(options, "do_permutation", constants::NO).to_string();
 
     // console.log(validate StructureOfAnUnlockMOfN.args: ${utils.stringify(args)});
-    if unlock_set.m_signature_type == constants::signature_types::Strict {
+    if unlock_set.m_signature_type == constants::signature_types::STRICT {
         if !validate_structure_restrictions(unlock_set, &options)
         {
             dlog(
@@ -448,11 +449,11 @@ pub fn validateSigStruct(
     }
 
     // normally the wallets SHOULD send the saved order of a sSets, so we do not need to Permutation
-    let leaveHash = calcUnlockHash(&unlock_set, "keccak256");
+    let leave_hash = calc_unlock_hash(&unlock_set, "keccak256");
 
     let merkle_proof = &unlock_set.m_merkle_proof.iter().map(|x| x.to_string()).collect::<Vec<String>>();
     let mut merkle_root = get_root_by_a_prove(
-        &leaveHash,
+        &leave_hash,
         merkle_proof,
         &unlock_set.m_left_hash.to_string(),
         &input_type,
@@ -460,7 +461,7 @@ pub fn validateSigStruct(
     merkle_root = ccrypto::keccak256_dbl(&merkle_root);  // because of securiy, MUST use double hash
 
     if (vec![constants::HU_DNA_SHARE_ADDRESS, constants::HU_INAME_OWNER_ADDRESS].contains(&address)) &&
-        (unlock_set.m_signature_type == constants::signature_types::Mix23) {
+        (unlock_set.m_signature_type == constants::signature_types::MIX23) {
         merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Mixed extra securiy level
     }
 
@@ -485,8 +486,8 @@ pub fn validateSigStruct(
 //     let hp = new utils.heapPermutation();
 //     hp.heapP(unlock_set.sSets)
 //     for (let premu of hp.premutions) {
-//         leaveHash = hash_algorithm(${unlock_set.sType}:${unlock_set.sVer}:${JSON.stringify(premu)}:${unlock_set.salt});
-//         merkle_root = crypto.merkleGetRootByAProve(leaveHash, unlock_set.proofs, unlock_set.lHash, input_type, hash_algorithm);
+//         leave_hash = hash_algorithm(${unlock_set.sType}:${unlock_set.sVer}:${JSON.stringify(premu)}:${unlock_set.salt});
+//         merkle_root = crypto.merkleGetRootByAProve(leave_hash, unlock_set.proofs, unlock_set.lHash, input_type, hash_algorithm);
 //         bech32 = crypto.bech32_encodePub(crypto.keccak256_dbl(merkle_root)).encoded;  // because of securiy, MUST use double hash
 //         if (_.has(unlock_set, 'address')) {
 //             if (unlock_set.address == bech32) {
@@ -508,9 +509,9 @@ pub fn validateSigStruct(
     return false;
 }
 
-pub fn customStringifySignatureSets(signature_sets: &Vec<IndividualSignature>) -> String
+pub fn custom_stringify_signature_sets(signature_sets: &Vec<IndividualSignature>) -> String
 {
-    let mut sSets_serial: Vec<String> = vec![];
+    let mut s_sets_serial: Vec<String> = vec![];
     for a_sig in signature_sets
     {
         let mut tmp = "{\"sKey\":\"".to_owned() + &*a_sig.m_signature_key + "\"";
@@ -527,9 +528,9 @@ pub fn customStringifySignatureSets(signature_sets: &Vec<IndividualSignature>) -
 
         tmp += "}";
 
-        sSets_serial.push(tmp);
+        s_sets_serial.push(tmp);
     }
-    let custom_stringify = "[".to_owned() + &sSets_serial.join(",") + "]";  //  JSON.stringify(sSet)
+    let custom_stringify = "[".to_owned() + &s_sets_serial.join(",") + "]";  //  JSON.stringify(sSet)
     return custom_stringify;
 }
 
@@ -541,7 +542,7 @@ pub fn validate_structure_restrictions(
     // console.log(validate StructureStrictions.args: ${utils.stringify(args)});
     let hash_algorithm = my_get(&options, "hash_algorithm", "keccak256").to_string();
 
-    if unlock_set.m_signature_type == constants::signature_types::Strict
+    if unlock_set.m_signature_type == constants::signature_types::STRICT
     {
         /**
          * this strict type of signature MUST have and ONLY have these 3 features
@@ -550,7 +551,7 @@ pub fn validate_structure_restrictions(
          * pDelegate: means the signer Permited to Delegate some rights (binded to this address) to others
          */
 
-        if cutils::hash16c(&ccrypto::keccak256(&customStringifySignatureSets(&unlock_set.m_signature_sets))) != unlock_set.m_salt
+        if cutils::hash16c(&ccrypto::keccak256(&custom_stringify_signature_sets(&unlock_set.m_signature_sets))) != unlock_set.m_salt
         {
             dlog(
                 &format!("invalid strict structure of signature of salt({}) ", unlock_set.m_salt),
@@ -559,10 +560,10 @@ pub fn validate_structure_restrictions(
             return false;
         }
 
-        for aSignSet in &unlock_set.m_signature_sets
+        for a_sign_set in &unlock_set.m_signature_sets
         {
-            if (aSignSet.m_signature_key == "") || (aSignSet.m_permitted_to_pledge == "") ||
-                (aSignSet.m_permitted_to_delegate == "")
+            if (a_sign_set.m_signature_key == "") || (a_sign_set.m_permitted_to_pledge == "") ||
+                (a_sign_set.m_permitted_to_delegate == "")
 
             {
                 dlog(

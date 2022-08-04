@@ -61,9 +61,6 @@ impl <'m>MachineProfile<'m> {
         );
         if records.len() == 1
         {
-            println!("XXXXX: {:?}", records);
-            // let mp: MachineProfile = serde_json::from_str(records[0]["mp_settings"]).unwrap();
-            // (true, mp)
             return (false, MachineProfile::get_null());
         }
         (false, MachineProfile::get_null())

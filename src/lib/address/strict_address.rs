@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog};
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{createCompleteUnlockSets, validateSigStruct};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{create_complete_unlock_sets, validate_sig_struct};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 
@@ -9,7 +9,7 @@ pub fn create_a_new_strict_address<'a>(
     signature_mod: &'a str,
     signature_version: &'a str) -> (bool, UnlockDocument)
 {
-    let signature_type = constants::signature_types::Strict;
+    let signature_type = constants::signature_types::STRICT;
     dlog(
         &format!("creating a new signature (type:mod:version) {}: {}: {}", signature_type, signature_mod, signature_version),
         constants::Modules::App,
@@ -61,7 +61,7 @@ pub fn create_a_new_strict_address<'a>(
         ("signature_version", signature_version),
         ("customSalt", "PURE_LEAVE")
     ]);
-    let mut unlock_info: UnlockDocument = createCompleteUnlockSets(
+    let mut unlock_info: UnlockDocument = create_complete_unlock_sets(
         individuals_signing_sets,
         m_signatures_count,
         &options,
@@ -70,14 +70,14 @@ pub fn create_a_new_strict_address<'a>(
     for an_unlocker_set in &unlock_info.m_unlock_sets
     {
         let mut private_keys: Vec<String> = vec![];
-        for aSignSet in &an_unlocker_set.m_signature_sets
+        for a_sign_set in &an_unlocker_set.m_signature_sets
         {
-            private_keys.push(map_pub_key_to_priv_key.get(&aSignSet.m_signature_key).unwrap().clone());
+            private_keys.push(map_pub_key_to_priv_key.get(&a_sign_set.m_signature_key).unwrap().clone());
         }
         unlock_info.m_private_keys.insert(an_unlocker_set.m_salt.clone(), private_keys);
 
 // test unlock structure&  signature
-        let is_valid = validateSigStruct(
+        let is_valid = validate_sig_struct(
             &an_unlocker_set,
             &unlock_info.m_account_address,
             &HashMap::new());

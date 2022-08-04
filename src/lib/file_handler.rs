@@ -1,7 +1,7 @@
 // use std::fs::{File, OpenOptions, remove_file};
-use std::fs:: {File};
+use std::fs::{File};
 // use std::io::{Write, Read};
-use std::io:: Read;
+use std::io::Read;
 use crate::lib::constants::{Modules, SecLevel};
 use crate::lib::dlog::dlog;
 
@@ -25,6 +25,11 @@ pub fn read(
 }
 
 pub fn read_(file_full_path: &String) -> (bool, String) {
+    use std::path::Path;
+    if !Path::new(file_full_path).exists() {
+        return (false, "".to_string());
+    }
+
     // Open the file in read-only mode.
     match File::open(file_full_path) {
         // The file is open (no error).
@@ -37,12 +42,12 @@ pub fn read_(file_full_path: &String) -> (bool, String) {
             // *contents = content.clone();
             // The file is automatically closed when is goes out of scope.
             return (true, content);
-        },
+        }
         // Error handling.
         Err(error) => {
             let err_msg = format!("Error opening file {}: {}", file_full_path, error);
             dlog(&err_msg, Modules::App, SecLevel::Warning);
             return (false, "".to_string());
-        },
+        }
     }
 }

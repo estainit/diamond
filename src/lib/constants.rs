@@ -577,17 +577,17 @@ pub const NO: &str = "N";
 */
 pub mod signature_types
 {
-    pub const Mix23: &str = "Mix23";
+    pub const MIX23: &str = "Mix23";
     // Mixed of sha256 and keccak256 signature. TODO: implement Mix32 recording on blockgraph
-    pub const Basic: &str = "Basic";
+    pub const BASIC: &str = "Basic";
     // Basic signature
-    pub const Bitcoin: &str = "Bitcoin";
+    pub const BITCOIN: &str = "Bitcoin";
     // Bitcoin like sha256 hash address
     pub const IOT: &str = "IOT";
     // simple light signature for Internet Of Things
-    pub const Strict: &str = "Strict";
+    pub const STRICT: &str = "Strict";
     // Strict signature by which some signer are allowed to pledge/unpledge account or delegate it
-    pub const StrictITL: &str = "StrictITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
+    pub const STRICTITL: &str = "STRICTITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
 }
 /*
   const QString DEFAULT_SIGNATURE_MOD = "2/3"; // needs 2 signature of 3

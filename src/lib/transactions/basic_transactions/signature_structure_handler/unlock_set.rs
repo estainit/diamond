@@ -18,7 +18,7 @@ pub struct UnlockSet
 impl UnlockSet {
     pub fn new() -> UnlockSet {
         return UnlockSet {
-            m_signature_type: constants::signature_types::Basic.to_string(),
+            m_signature_type: constants::signature_types::BASIC.to_string(),
             m_signature_ver: "0.0.0".to_string(),
             m_signature_sets: vec![],
             m_merkle_proof: vec![],

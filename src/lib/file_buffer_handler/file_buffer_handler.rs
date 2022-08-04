@@ -1,3 +1,4 @@
+use crate::constants;
 use crate::lib::constants as cconsts;
 use crate::lib::file_handler as file_handler;
 
@@ -52,7 +53,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     return file_handler::read(
-        &mut cconsts::HD_FILES.to_string(),
+        &mut constants::HD_FILES.to_string(),
         &"DAGBundle.txt".to_string(),
         clone_id);
 }

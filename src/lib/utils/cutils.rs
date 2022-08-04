@@ -535,9 +535,9 @@ pub fn remove_dbl_spaces(s: &String) -> String
 }
 
 //old_name_was paddingLengthValue
-pub fn padding_length_value(value: String, neededLen: u8) -> String
+pub fn padding_length_value(value: String, needed_len: u8) -> String
 {
-    return left_padding(value.to_string(), neededLen);
+    return left_padding(value.to_string(), needed_len);
 }
 
 pub fn hash4c(s: &String) -> String
