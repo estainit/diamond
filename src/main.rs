@@ -56,7 +56,8 @@ static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::ne
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 
-fn main() {
+#[tokio::main]
+async fn main() {
     //! # Diamond, the Community Maker Engine
     //! ```
     //! fn main()
@@ -117,11 +118,11 @@ fn main() {
 
     let res = get_value(&"SELECTED_PROFILE".to_string());
     println!("res res res: {}", res);
-    // tokio::join!(
-    //         lib::rest::apis::run_web_server(),
-    //         run_loops()
-    //     );
-    launch_giga_loop(false);//    launch_threads();
+    tokio::join!(
+            lib::rest::apis::run_web_server(),
+            run_loops()
+        );
+    // launch_giga_loop(false);//    launch_threads();
 }
 
 async fn run_loops() {
