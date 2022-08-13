@@ -45,7 +45,7 @@ use lib::rest::apis;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
 
-fn machine<'m>() -> MutexGuard<'static, CMachine<'static>> { CMACHINE.lock().unwrap() }
+fn machine() -> MutexGuard<'static, CMachine> { CMACHINE.lock().unwrap() }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
 

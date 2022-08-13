@@ -5,10 +5,9 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, DNAShareCountT, DNASharePercentT};
 use crate::lib::database::abs_psql::{q_customQuery, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::STBL_DNA_SHARES;
-use crate::lib::utils::dumper::dump_hashmap_of_str;
 
 
-struct Shareholder {
+pub struct Shareholder {
     account: CAddressT,
     shares: DNAShareCountT,
 }
@@ -37,12 +36,11 @@ public:
 
 pub fn insertAShare(doc: &Document) -> (bool, String)
 {
-    let c1 = simple_eq_clause("dn_doc_hash", &*doc.get_doc_hash());
-
-    let (status, records) = q_select(
+    let single_value = doc.get_doc_hash().clone();
+    let (_status, records) = q_select(
         STBL_DNA_SHARES,
         &vec!["dn_doc_hash"],
-        &vec![c1],
+        &vec![simple_eq_clause("dn_doc_hash", single_value.as_str())],
         &vec![],
         1,
         false);
@@ -57,23 +55,31 @@ pub fn insertAShare(doc: &Document) -> (bool, String)
         return (false, format!("share is newer than now! {}", doc.m_doc_creation_date));
     }
 
+    let dn_help_hours = doc.m_if_proposal_doc.m_help_hours.to_string();
+    let dn_help_level = doc.m_if_proposal_doc.m_help_level.to_string();
+    let dn_shares = doc.m_if_proposal_doc.m_shares.to_string();
+    let dn_votes_y= doc.m_if_proposal_doc.m_votes_yes.to_string();
+    let dn_votes_a= doc.m_if_proposal_doc.m_votes_abstain.to_string();
+    let dn_votes_n= doc.m_if_proposal_doc.m_votes_no.to_string();
+
     let values: HashMap<&str, &str> = HashMap::from([
         ("dn_doc_hash", doc.m_doc_hash.as_str()),
         ("dn_shareholder", doc.m_if_proposal_doc.m_contributor_account.as_str()),
         ("dn_project_hash", doc.m_if_proposal_doc.m_project_hash.as_str()),
-        ("dn_help_hours", doc.m_if_proposal_doc.m_help_hours.to_string().as_str()),
-        ("dn_help_level", doc.m_if_proposal_doc.m_help_level.to_string().as_str()),
-        ("dn_shares", doc.m_if_proposal_doc.m_shares.to_string().as_str()),
+        ("dn_help_hours", dn_help_hours.as_str()),
+        ("dn_help_level", dn_help_level.as_str()),
+        ("dn_shares", dn_shares.as_str()),
         ("dn_title", doc.m_doc_title.as_str()),
         ("dn_descriptions", doc.m_doc_comment.as_str()),
         ("dn_tags", doc.m_doc_tags.as_str()),
-        ("dn_votes_y", doc.m_if_proposal_doc.m_votes_yes.to_string().as_str()),
-        ("dn_votes_a", doc.m_if_proposal_doc.m_votes_abstain.to_string().as_str()),
-        ("dn_votes_n", doc.m_if_proposal_doc.m_votes_no.to_string().as_str()),
-        ("dn_creation_date", doc.m_doc_creation_date.as_str())]);
+        ("dn_votes_y", dn_votes_y.as_str()),
+        ("dn_votes_a", dn_votes_a.as_str()),
+        ("dn_votes_n", dn_votes_n.as_str()),
+        ("dn_creation_date", doc.m_doc_creation_date.as_str())
+    ]);
 
     dlog(
-        &format!("Inserting a DNA share: {}", dump_hashmap_of_str(&values)),
+        &format!("Inserting a DNA share: {:?}", &values),
         constants::Modules::App,
         constants::SecLevel::Trace);
 
@@ -190,7 +196,7 @@ pub fn getSharesInfo(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShar
         constants::SecLevel::Info);
 
     // let msg = `Retrieve shares: SELECT shareholder _shareholder, SUM(shares) _share FROM i_dna_shares WHERE creation_date between '${minCreationDate}' AND '${maxCreationDate}' GROUP BY _shareholder ORDER BY _share DESC `;
-    let (status, records) = q_customQuery(
+    let (_status, records) = q_customQuery(
         &query,
         &vec![],
         true);
@@ -203,7 +209,7 @@ pub fn getSharesInfo(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShar
         let sum_: f64 = a_share["sum_"].parse::<f64>().unwrap();
         sum_shares += sum_;
         let owner: CAddressT = a_share["dn_shareholder"].to_string();
-        share_amount_per_holder[&owner] = sum_;
+        share_amount_per_holder.insert(owner.clone(), sum_);
         holders_order_by_shares.push(
             Shareholder {
                 account: owner.clone(),

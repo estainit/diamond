@@ -10,7 +10,7 @@ struct WrapDBObj
 };
 
 */
-struct Unwrapped
+pub struct Unwrapped
 {
     pub(crate) status: bool,
     pub(crate) version: String,

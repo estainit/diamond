@@ -19,7 +19,7 @@ impl NeighborInfo {
     }
 }
 
-impl<'m> CMachine<'m> {
+impl CMachine {
     //old_name_was addANewNeighbor
     pub fn add_a_new_neighbor(
         &self,

@@ -14,7 +14,7 @@ pub fn dump_it<T>(x: T) -> String {
 
 pub fn dump_clauses(clauses: &ClausesT) -> String {
     let mut out: String = "".to_string();
-    for &a_clause_tuple in clauses
+    for a_clause_tuple in clauses
     {
         let mvs = format!("{:?}", a_clause_tuple.m_field_multi_values);
         let the_outs: Vec<String> = vec![
@@ -79,6 +79,16 @@ pub fn dump_hashmap_of_string_string(s: &HashMap<String, String>) -> String {
 }
 
 pub fn dump_hashmap_of_str_string(s: &HashMap<&str, String>) -> String {
+    let prefix_tabs = constants::TAB;
+
+    let mut out: String = "".to_string();
+    for (k, v) in s {
+        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &v);
+    }
+    return out;
+}
+
+pub fn dump_hashmap_of_str_str(s: &HashMap<&str, &str>) -> String {
     let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();

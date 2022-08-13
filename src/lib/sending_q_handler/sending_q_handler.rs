@@ -161,9 +161,11 @@ pub fn preparePacketsForNeighbors(
             ("lb_code", sq_code),
             ("lb_title", sq_title),
             ("lb_sender", sender.as_str()),
+            ("lb_send_date", cutils::get_now().as_str()),
             ("lb_receiver", receiver_email.as_str()),
             ("lb_connection_type", connection_type.as_str())
         ]));
+
     }
     return packets;
 

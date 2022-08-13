@@ -61,9 +61,9 @@ pub(crate) const EMAIL_IS_ACTIVE: bool = false;
   const bool SUPPORTS_CLONED_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
   const bool SUPPORTS_P4P_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
 */
-pub const LAUNCH_YEAR: u8 = 2022;
+pub const LAUNCH_YEAR: u16 = 2022;
 // every twelve years the coinbse divided to 2
-pub const HALVING_PERIOD: u8 = 1;
+pub const HALVING_PERIOD: u16 = 1;
 // every twelve years the coinbse divided to 2
 
 pub const COIN_ISSUING_INIT_EXPONENT: u8 = 11;
@@ -105,7 +105,7 @@ pub const COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG: f64 = 3.0 / 5.0;
 pub const MINIMUM_SHARES_IF_IS_NOT_SHAREHOLDER: f64 = 0.0000000001;
 pub const SHARE_MATURITY_CYCLE: u8 = 2;
 
-pub const CONTRIBUTION_APPRECIATING_PERIOD: u8 = 700;
+pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 700;
 
 // every little help is appreciated for 7 years
 // 2 cycle after inserting a share in DB, coinbase will include the newly recorded share in it's dividend

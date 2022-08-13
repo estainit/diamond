@@ -25,8 +25,7 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
-pub struct CMachine<'m> {
-    m_dummy_m_lifetime_user: &'m str,
+pub struct CMachine{
     m_clone_id: i8,
     m_should_loop_threads: bool,
 
@@ -67,7 +66,7 @@ pub struct CMachine<'m> {
     // TODO: optimize it ASAP
     pub m_dag_cached_block_hashes: Vec<String>,
     // TODO: optimize it ASAP
-    pub(crate) m_profile: MachineProfile<'m>,
+    pub(crate) m_profile: MachineProfile,
 
 }
 /*
@@ -79,11 +78,10 @@ pub trait CMachineThreadGaps {
  */
 
 
-impl<'m> CMachine<'m> {
-    pub(crate) fn new() -> CMachine<'m> {
+impl CMachine {
+    pub(crate) fn new() -> CMachine {
         let (_status, profile) = MachineProfile::get_profile(constants::DEFAULT);
         CMachine {
-            m_dummy_m_lifetime_user: "",
             m_clone_id: 0,
             m_should_loop_threads: true,
 
@@ -930,14 +928,14 @@ impl<'m> CMachine<'m> {
     }
 
     //old_name_was loadSelectedProfile
-    pub fn loadSelectedProfile(&'m mut self) -> bool
+    pub fn loadSelectedProfile(&mut self) -> bool
     {
         let selected_prof = get_value("SELECTED_PROFILE");
         if selected_prof == "" {
             return false;
         }
 
-        let mp: MachineProfile<'m> = self.read_profile(selected_prof);
+        let mp: MachineProfile = self.read_profile(selected_prof);
         self.m_profile = mp;
         return true;
 
@@ -956,7 +954,7 @@ impl<'m> CMachine<'m> {
         // }
     }
 
-    pub fn read_profile(&self, mp_code: String) -> MachineProfile<'m>
+    pub fn read_profile(&self, mp_code: String) -> MachineProfile
     {
         let (_status, records) = q_select(
             STBL_MACHINE_PROFILES,

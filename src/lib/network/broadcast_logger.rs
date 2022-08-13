@@ -3,7 +3,7 @@ use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::STBL_LOGS_BROADCAST;
-use crate::lib::utils::dumper::dump_it;
+use crate::lib::utils::dumper::{dump_hashmap_of_str_str, dump_hashmap_of_str_string, dump_it};
 
 
 pub fn listSentBlocks(after_that_: &CDateT, fields: &Vec<&str>) -> QVDRecordsT
@@ -55,16 +55,15 @@ pub fn listSentBloksIds() -> Vec<String>
 
 pub fn addSentBlock(values: &mut HashMap<&str, &str>) -> bool
 {
-    if values["lb_send_date"] == "" {
-        values["lb_send_date"] = &*cutils::get_now();
-    }
-
     dlog(
-        &format!("add SentBlock: {}", dump_it(values)),
+        &format!("add SentBlock: {}", dump_hashmap_of_str_str(&values)),
         constants::Modules::App,
         constants::SecLevel::Trace);
 
-    q_insert(STBL_LOGS_BROADCAST, values, false);
+    q_insert(
+        STBL_LOGS_BROADCAST,
+        values,
+        false);
     return true;
 }
 

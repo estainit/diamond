@@ -454,7 +454,7 @@ pub fn get_coinbase_info(c_date: &CDateT, cycle: &str) -> (String, String, Strin
 
 pub fn yearsBefore(backInTimesByYears: u64, cDate: &CDateT) -> String
 {
-    let since_epoch: i64;
+    let mut since_epoch: i64;
     if cDate == ""
     {
         since_epoch = get_since_epoch();
@@ -471,13 +471,19 @@ pub fn yearsBefore(backInTimesByYears: u64, cDate: &CDateT) -> String
 #[allow(dead_code)]
 pub fn get_coinbase_range_by_cycle_stamp(cycle: &str) -> TimeRange {
     let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
-    let cycle_dtl: Vec<&str> = cycle.to_string().split(" ").collect();
-    if cycle_dtl[1].to_string() == "00:00:00" {
-        res.from = cycle_dtl[0].to_string() + &" 00:00:00".to_string();
-        res.to = cycle_dtl[0].to_string() + &" 11:59:59".to_string();
+    let cycle_dtl  = cycle
+        .to_string()
+        .clone()
+        .split(" ")
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|x|x.to_string())
+        .collect::<Vec<String>>();
+    if cycle_dtl[1] == "00:00:00".to_string() {
+        res.from = cycle_dtl[0].to_owned() + &" 00:00:00".to_string();
+        res.to = cycle_dtl[0].to_owned() + &" 11:59:59".to_string();
         return res;
-    } else if cycle_dtl[1] == "12:00:00"
-    {
+    } else if cycle_dtl[1] == "12:00:00"{
         return TimeRange { from: cycle_dtl[0].to_owned() + " 12:00:00", to: cycle_dtl[0].to_owned() + " 23:59:59" };
     } else {
         // develop mod

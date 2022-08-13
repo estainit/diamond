@@ -193,11 +193,13 @@ pub fn initAdministrativeConfigurationsHistory(machine: &CMachine)
     for (a_key, a_value) in admCostParams
     {
         let arh_hash: String = ccrypto::keccak256(&(machine.get_launch_date() + "-" + &a_key));
+        let arh_value = cutils::convert_float_to_string(a_value, constants::FLOAT_LENGTH);
+        let arh_apply_date = machine.get_launch_date();
         let values: HashMap<&str, &str> = HashMap::from([
-            ("arh_hash", &*arh_hash),
-            ("arh_subject", &*a_key),
-            ("arh_value", &cutils::convert_float_to_string(a_value, constants::FLOAT_LENGTH)),
-            ("arh_apply_date", &*machine.get_launch_date())
+            ("arh_hash", arh_hash.as_str()),
+            ("arh_subject", a_key.as_str()),
+            ("arh_value", arh_value.as_str()),
+            ("arh_apply_date", arh_apply_date.as_str())
         ]);
         q_insert(
             STBL_ADMINISTRATIVE_REFINES_HISTORY,

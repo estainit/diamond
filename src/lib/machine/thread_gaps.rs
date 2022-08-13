@@ -1,7 +1,7 @@
 use crate::{CMachine, constants};
 use crate::lib::custom_types::TimeBySecT;
 
-impl<'m> CMachine<'m> {
+impl CMachine{
     /*
 
         //old_name_was getCoinbaseImportGap

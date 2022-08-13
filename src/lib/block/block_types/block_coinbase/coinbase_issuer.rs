@@ -301,7 +301,7 @@ pub fn calcPotentialMicroPaiPerOneCycle(year_: &String) -> CMPAIValueT
         year = cutils::get_current_year();
     }
 
-    let year = year.parse::<u8>().unwrap();
+    let year = year.parse::<u16>().unwrap();
     let halving_cycle_number = cutils::CFloor(((year - constants::LAUNCH_YEAR) / constants::HALVING_PERIOD) as f64);
     let one_cycle_max_bili_pais: CMPAIValueT = 2_i32.pow((constants::COIN_ISSUING_INIT_EXPONENT as i64 - halving_cycle_number) as u32) as CMPAIValueT;
     return one_cycle_max_bili_pais * constants::ONE_BILLION;

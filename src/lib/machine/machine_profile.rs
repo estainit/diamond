@@ -33,16 +33,15 @@ use crate::lib::database::tables::STBL_MACHINE_PROFILES;
 
 
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct MachineProfile<'m>
+pub(crate) struct MachineProfile
 {
-    m_dummy_m_lifetime_user: &'m str,
     pub(crate) m_mp_code: String,
     pub(crate) m_mp_name: String,
     pub(crate) m_mp_last_modified: String,
-    pub(crate) m_mp_settings: MPSetting<'m>,
+    pub(crate) m_mp_settings: MPSetting,
 }
 
-impl <'m>MachineProfile<'m> {
+impl MachineProfile {
     pub fn get_profile(mp_code: &str) -> (bool, MachineProfile)
     {
         let (_status, records) = q_select(
@@ -61,30 +60,19 @@ impl <'m>MachineProfile<'m> {
         (false, MachineProfile::get_null())
     }
 
-    pub fn get_null() -> MachineProfile<'m> {
+    pub fn get_null() -> MachineProfile {
         return MachineProfile {
-            m_dummy_m_lifetime_user: "",
             m_mp_code: "".to_string(),
             m_mp_name: "".to_string(),
             m_mp_last_modified: "".to_string(),
-            m_mp_settings: MPSetting {
-                m_dummy_m_lifetime_user: "",
-                m_public_email: EmailSettings::get_null(),
-                m_private_email: EmailSettings::get_null(),
-                m_machine_alias: "".to_string(),
-                m_backer_detail: UnlockDocument::get_null(),
-                m_language: "".to_string(),
-                m_term_of_services: "".to_string(),
-                m_already_presented_neighbors: vec![],
-            },
+            m_mp_settings: MPSetting::new(),
         };
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct MPSetting<'m>
+pub struct MPSetting
 {
-    m_dummy_m_lifetime_user: &'m str,
     pub(crate) m_public_email: EmailSettings,
     pub(crate) m_private_email: EmailSettings,
 
@@ -96,10 +84,9 @@ pub struct MPSetting<'m>
 
 }
 
-impl <'m>MPSetting<'m> {
-    pub fn new() -> MPSetting <'m>{
+impl MPSetting {
+    pub fn new() -> MPSetting {
         return MPSetting {
-            m_dummy_m_lifetime_user: "",
             m_public_email: EmailSettings::new(),
             m_private_email: EmailSettings::new(),
             m_machine_alias: "Diamond_node".to_string(),

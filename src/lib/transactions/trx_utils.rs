@@ -10,16 +10,16 @@ pub fn normalize_inputs(inputs: &Vec<TInput>) -> Vec<TInput>
     let mut normalized_inputs: Vec<TInput> = vec![];
     if inputs.len() > 1
     {
-        let dict: HashMap<String, &TInput> = HashMap::new();
+        let mut dict: HashMap<String, &TInput> = HashMap::new();
         for an_input in inputs
         {
             let key = vec![
-                an_input.m_transaction_hash,
+                an_input.m_transaction_hash.clone(),
                 cutils::padding_length_value(
                     an_input.m_output_index.to_string(),
                     constants::LEN_PROP_LENGTH),
             ].join("");
-            dict[&key] = an_input;
+            dict.insert(key, an_input);
         }
         let mut keys: Vec<String> = dict.keys().cloned().collect::<Vec<String>>();
         keys.sort();
@@ -29,7 +29,7 @@ pub fn normalize_inputs(inputs: &Vec<TInput>) -> Vec<TInput>
         }
         return normalized_inputs;
     } else {
-        let mut normalized_inputs: Vec<TInput> = vec![inputs[0]];
+        let mut normalized_inputs: Vec<TInput> = vec![inputs[0].clone()];
         return normalized_inputs;
     }
 }
@@ -37,10 +37,11 @@ pub fn normalize_inputs(inputs: &Vec<TInput>) -> Vec<TInput>
 
 pub fn normalize_outputs(outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
 {
-    for &an_output in outputs
+    for an_output in outputs
     {
-        if !constants::TREASURY_PAYMENTS.contains(&&*an_output.m_address) &&
-            !ccrypto::is_valid_bech32(&an_output.m_address)
+        if !ccrypto::is_valid_bech32(&an_output.m_address) &&
+            !constants::TREASURY_PAYMENTS.contains(&&*an_output.m_address)
+
         {
             dlog(
                 &format!("invalid trx output: {}", an_output.dump()),
@@ -61,11 +62,11 @@ pub fn normalize_outputs(outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
         {
             let an_output = outputs[inx].clone();
             let key = vec![
-                an_output.m_address,
+                an_output.m_address.clone(),
                 padding_length_value(an_output.m_amount.to_string(), 20),
                 padding_length_value(inx.to_string(), 5),
             ].join(",");
-            dict[&key] = an_output;
+            dict.insert(key, an_output);
         }
 
 
@@ -77,7 +78,7 @@ pub fn normalize_outputs(outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
         }
         return (true, normalized_outputs);
     } else {
-        return (true, vec![outputs[0]]);
+        return (true, vec![outputs[0].clone()]);
     }
 }
 
