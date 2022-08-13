@@ -31,15 +31,15 @@ pub fn convert_ver_to_val(version: String) -> i64 {
 /*
 }
 
-bool VersionHandler::isValid(const QString& version)
+bool VersionHandler::isValid(const String& version)
 {
-  QStringList v_seg = version.split(".");
+  StringList v_seg = version.split(".");
   QVector<int> version_segments;
   for (auto a_seg: v_seg)
   {
     bool is_valid;
     int seg_int = a_seg.toInt(&is_valid);
-    if (!is_valid || (seg_int < 0) || (a_seg != QString::number(seg_int)))
+    if (!is_valid || (seg_int < 0) || (a_seg != String::number(seg_int)))
       return false;
   }
   return true;
@@ -47,8 +47,8 @@ bool VersionHandler::isValid(const QString& version)
 
 
 bool VersionHandler::isNewerThan(
-  const QString& v1,
-  const QString& v_ref)
+  const String& v1,
+  const String& v_ref)
 {
   int64_t v1_value = convertVerToVal(v1);
   int64_t v_ref_value = convertVerToVal(v_ref);

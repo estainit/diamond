@@ -47,15 +47,15 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
         _ => "Gen"
     };
 
-    let level_ = match level {
-        SecLevel::Debug => "Debug",
-        SecLevel::Trace => "Trace",
-        SecLevel::Info => "Info",
-        SecLevel::Warning => "Warning",
-        SecLevel::Error => "Error",
-        SecLevel::Fatal => "Fatal",
-        _ => "Gen"
-    };
+    // let level_ = match level {
+    //     SecLevel::Debug => "Debug",
+    //     SecLevel::Trace => "Trace",
+    //     SecLevel::Info => "Info",
+    //     SecLevel::Warning => "Warning",
+    //     SecLevel::Error => "Error",
+    //     SecLevel::Fatal => "Fatal",
+    //     _ => "Gen"
+    // };
 
     let log_msg = format!("({}): {}", module_, msg);
 
@@ -66,6 +66,6 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
         SecLevel::Warning => { warn!("{:#?}", log_msg); }
         SecLevel::Error => { error!("{}", log_msg); }
         SecLevel::Fatal => { error!("{}", log_msg); }
-        _ => { error!("{}", log_msg); }
+        // _ => { error!("{}", log_msg); }
     }
 }

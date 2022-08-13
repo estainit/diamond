@@ -39,28 +39,28 @@ impl UnlockSet {
 
 /*
 
-QJsonObject UnlockSet::exportToJson()
+JSonObject UnlockSet::exportToJson()
 {
-  QJsonArray signature_sets{};
+  JSonArray signature_sets{};
   for (IndividualSignature aSig: m_signature_sets)
   {
     signature_sets.push(aSig.exportJson());
   }
-  return QJsonObject {
+  return JSonObject {
     {"sType", m_signature_type},
     {"sVer", m_signature_ver},
-    {"mProof", CUtils::convertQStringListToJSonArray(m_merkle_proof)},
+    {"mProof", cutils::convertStringListToJSonArray(m_merkle_proof)},
     {"sSets", signature_sets},
     {"lHash", m_left_hash},
     {"salt", m_salt}
   };
 }
 
-void UnlockSet::importJson(const QJsonObject& obj)
+void UnlockSet::importJson(const JSonObject& obj)
 {
   m_signature_type = obj.value("sType").to_string();
   m_signature_ver = obj.value("sVer").to_string();
-  m_merkle_proof = CUtils::convertJSonArrayToQStringList(obj.value("mProof").toArray());
+  m_merkle_proof = cutils::convertJSonArrayToStringVector(obj.value("mProof").toArray());
   m_left_hash = obj.value("lHash").to_string();
   m_salt = obj.value("salt").to_string();
   m_signature_sets = {};

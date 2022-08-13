@@ -1,13 +1,10 @@
 extern crate postgres;
 
 use std::thread;
-use postgres::{Client, Row, NoTls};
-use postgres::row::RowIndex;
-use postgres::types::FromSql;
-use crate::lib::{constants, machine};
+use postgres::{Client, NoTls};
+use crate::lib::{constants};
 use crate::lib::dlog::dlog;
-use crate::{CMachine, dbhandler, machine};
-use crate::lib::database::init_psql;
+use crate::{CMachine, dbhandler};
 use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
@@ -27,7 +24,7 @@ pub fn get_connection() -> Client {
     let mut database_name: String = constants::psql_db::DB_NAME.to_string();
     let clone_id = 0;//machine().get_app_clone_id();
     if clone_id > 0 {
-        database_name += &format!("{}", clone_id);
+        database_name += &clone_id.to_string();
     }
 
     let db_connection_full_name = database_name + "_" + "CDB_" + &format!("{:?}", thread::current().id());
@@ -144,7 +141,7 @@ pub fn s_databases<'l>() -> Vec<&'l str> {
 bool DbHandler::IcloseConnections()
 {
 
-    for (QString connection_key: m_sqlite_thread_connections.keys())
+    for (String connection_key: m_sqlite_thread_connections.keys())
     {
       m_psql_thread_connections[connection_key]->close();
       delete m_psql_thread_connections[connection_key];
@@ -153,7 +150,7 @@ bool DbHandler::IcloseConnections()
   return true;
 }
 
-std::tuple<bool, QString, QSqlDatabase> DbHandler::IconnectToSQLITE(QString database_name)
+std::tuple<bool, String, QSqlDatabase> DbHandler::IconnectToSQLITE(String database_name)
 {
   /**
    * @brief divided databases, in order to address scaleability
@@ -165,13 +162,13 @@ std::tuple<bool, QString, QSqlDatabase> DbHandler::IconnectToSQLITE(QString data
    * comen_wallets:
    *
    */
-  auto thread_name = "CDB_" + QString::number((quint64)QThread::currentThread(), 16);
+  auto thread_name = "CDB_" + String::number((quint64)QThread::currentThread(), 16);
 //  CLog::log("thread_name to check(" + thread_name + ")", "sql", "trace");
 
   if (database_name == "")
     database_name = "db_comen_general";
 
-  QString db_connection_full_name = database_name + "_" + thread_name;
+  String db_connection_full_name = database_name + "_" + thread_name;
   if (m_sqlite_thread_connections.keys().contains(db_connection_full_name))
     return {true, db_connection_full_name + " Already connected to Database", m_sqlite_thread_connections[db_connection_full_name]};
 
@@ -179,9 +176,9 @@ std::tuple<bool, QString, QSqlDatabase> DbHandler::IconnectToSQLITE(QString data
 
   QSqlDatabase the_database;
 
-  const QString SQLITE_DRIVER {"QSQLITE"};
+  const String SQLITE_DRIVER {"QSQLITE"};
   if (!QSqlDatabase::isDriverAvailable(SQLITE_DRIVER))
-    CUtils::exiter("SQLITE_DRIVER Failed to open database", 23);
+    cutils::exiter("SQLITE_DRIVER Failed to open database", 23);
 
   the_database = QSqlDatabase::addDatabase(SQLITE_DRIVER, db_connection_full_name);
   QSqlQuery thread_q = QSqlQuery(the_database);
@@ -189,7 +186,7 @@ std::tuple<bool, QString, QSqlDatabase> DbHandler::IconnectToSQLITE(QString data
   if (!the_database.open())
   {
     qDebug() << "Failed to open database" << the_database.lastError();
-    CUtils::exiter("SQLITE_DRIVER Failed to open database", 23);
+    cutils::exiter("SQLITE_DRIVER Failed to open database", 23);
   }
 
   if (!CMachine::databases_are_created())
@@ -265,22 +262,22 @@ pub fn create_tables_in_psql() -> bool
 /*
 bool DbHandler::createTablesSQLITE()
 {
-  const QString SQLITE_DRIVER {"QSQLITE"};
-  for (QString a_db: s_databases)
+  const String SQLITE_DRIVER {"QSQLITE"};
+  for (String a_db: s_databases)
   {
     CLog::log("Creating tables for database(" + a_db + ")", "sql");
     QSqlDatabase tmp_database = QSqlDatabase::addDatabase(SQLITE_DRIVER, a_db);
     QSqlQuery tmp_q = QSqlQuery(tmp_database);
     tmp_database.setDatabaseName(QCoreApplication::applicationDirPath() + QDir::separator() + a_db + ".dat");
     if (!tmp_database.open())
-      CUtils::exiter("failed to open database(" + a_db + ")", 789);
+      cutils::exiter("failed to open database(" + a_db + ")", 789);
 
 
     // FIXME: create only needed tables
     // create essential tables
     for (std::string aQuery : sqlite_init_query)
     {
-      QString qstr = QString::fromStdString(aQuery);
+      String qstr = String::fromStdString(aQuery);
       bool res = tmp_q.exec(qstr);
       if (!res){
           std::cout << std::endl << "Error! " << aQuery;
@@ -291,7 +288,7 @@ bool DbHandler::createTablesSQLITE()
     // create developers tables
     for (std::string aQuery : sqlite_init_query_dev)
     {
-      QString qstr = QString::fromStdString(aQuery);
+      String qstr = String::fromStdString(aQuery);
       bool res = tmp_q.exec(qstr);
       if (!res){
           std::cout << std::endl << "Error! " << aQuery;
@@ -306,26 +303,26 @@ bool DbHandler::createTablesSQLITE()
 
 /*
 
-QSqlDatabase DbHandler::IgetDB(const QString& database_name)
+QSqlDatabase DbHandler::IgetDB(const String& database_name)
 {
   auto[status, msg, db] = connectToSQLITE(database_name);
   Q_UNUSED(msg);
   if (status)
     return db;
 
-  auto thread_name = "CDB_" + QString::number((quint64)QThread::currentThread(), 16);
-  CUtils::exiter("Invalid thread database request sqlite" + thread_name, 14);
+  auto thread_name = "CDB_" + String::number((quint64)QThread::currentThread(), 16);
+  cutils::exiter("Invalid thread database request sqlite" + thread_name, 14);
   return QSqlDatabase {};
 };
 
-QSqlDatabase* DbHandler::IgetPSQLDB(const QString& database_name)
+QSqlDatabase* DbHandler::IgetPSQLDB(const String& database_name)
 {
   auto[status, db] = connectToPSQL(database_name);
   if (status)
     return db;
 
-  auto thread_name = "CDB_" + QString::number((quint64)QThread::currentThread(), 16);
-  CUtils::exiter("Invalid thread database request psql " + thread_name, 14);
+  auto thread_name = "CDB_" + String::number((quint64)QThread::currentThread(), 16);
+  cutils::exiter("Invalid thread database request psql " + thread_name, 14);
   return db;
 };
 

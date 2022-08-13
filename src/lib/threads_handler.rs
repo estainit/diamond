@@ -18,6 +18,8 @@ use crate::lib::transactions::basic_transactions::coins::coins_handler::do_coin_
 use crate::lib::services::polling::polling_handler::do_conclude_treatment;
 
 pub fn launch_giga_loop(only_lazy_loadings: bool) {
+    maybe_boot_dag_from_bundle();
+
     while machine().should_loop_threads()
     {
         dlog(
@@ -34,11 +36,9 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             continue;
         }
 
-        maybe_boot_dag_from_bundle();
 
         // coin importing
         {
-
             // import new minted coins
             import_coinbased_coins(&cutils::get_now());
             // double checking repayblock importing
@@ -46,7 +46,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             if constants::DATABASAE_AGENT == "sqlite"
             {
                 // // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-                // NormalUTXOHandler::doImportUTXOs(CUtils::getNow());
+                // NormalUTXOHandler::doImportUTXOs(cutils::get_now());
                 // PollingHandler::doConcludeTreatment();
                 // ParsingQHandler::smartPullQ();
             }

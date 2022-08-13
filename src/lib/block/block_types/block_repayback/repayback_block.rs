@@ -1,5 +1,5 @@
 /*
-RepaybackBlock::RepaybackBlock(const QJsonObject& obj)
+RepaybackBlock::RepaybackBlock(const JSonObject& obj)
 {
   setByJsonObj(obj);
 }
@@ -14,7 +14,7 @@ RepaybackBlock::~RepaybackBlock()
     delete d;
 }
 
-bool RepaybackBlock::setByJsonObj(const QJsonObject& obj)
+bool RepaybackBlock::setByJsonObj(const JSonObject& obj)
 {
   Block::setByJsonObj(obj);
 
@@ -47,8 +47,8 @@ const QSDicT backward_compatibility_for_repayback_block_hash {
 };
 CBlockHashT RepaybackBlock::calcBlockHash() const
 {
-  QString hashables = getBlockHashableString();
-  QString hash = CCrypto::keccak256(hashables);
+  String hashables = getBlockHashableString();
+  String hash = ccrypto::keccak256(hashables);
 
   if (backward_compatibility_for_repayback_block_hash.keys().contains(hash))
     hash = backward_compatibility_for_repayback_block_hash[hash];
@@ -57,29 +57,29 @@ CBlockHashT RepaybackBlock::calcBlockHash() const
   return hash;
 }
 
-CBlockHashT RepaybackBlock::calcBlockHash(const QJsonObject& Jblock)
+CBlockHashT RepaybackBlock::calcBlockHash(const JSonObject& Jblock)
 {
-  QString hashables = getBlockHashableString(Jblock);
-  return CCrypto::keccak256(hashables);
+  String hashables = getBlockHashableString(Jblock);
+  return ccrypto::keccak256(hashables);
 }
 
-QString RepaybackBlock::getBlockHashableString(const QJsonObject& Jblock)
+String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 {
 // alphabetical order
-//  QString hashables = "{";
-//  hashables += "\"ancestors\":[" + CUtils::convertJSonArrayToQStringList(Jblock.value("ancestors").toArray()).join(",") + "],";
-//  hashables += "\"bLen\":\"" + CUtils::paddingLengthValue(Jblock.value("bLen").toDouble()) + "\",";
+//  String hashables = "{";
+//  hashables += "\"ancestors\":[" + cutils::convertJSonArrayToStringVector(Jblock.value("ancestors").toArray()).join(",") + "],";
+//  hashables += "\"bLen\":\"" + cutils::padding_length_value(Jblock.value("bLen").toDouble()) + "\",";
 //  hashables += "\"bType\":\"" + Jblock.value("bType").to_string() + "\",";
 //  hashables += "\"bVer\":\"" + Jblock.value("dVer").to_string() + "\",";
 //  hashables += "\"creation Date\":\"" + Jblock.value("creation Date").to_string() + "\",";
-//  QStringList docs {};
+//  StringList docs {};
 //  for (QJsonValueRef a_doc: Jblock.value("docs").toArray())
 //  {
-//    QString a_doc_str = RepaymentDocument::getDocHashableString(a_doc.toObject());
-//    docs.append(a_doc_str);
+//    String a_doc_str = RepaymentDocument::getDocHashableString(a_doc.toObject());
+//    docs.push(a_doc_str);
 //  }
 //  hashables += "\"docs\":[" + docs.join(",") + "],";
-//  hashables += "\"docsRootHash\":\"" + Jblock.value("docsRootHash").to_string() + "\",";
+//  hashables += "\"bDocsRootHash\":\"" + Jblock.value("bDocsRootHash").to_string() + "\",";
 //  hashables += "\"net\":\"" + Jblock.value("net").to_string() + "\",";
 
 //  return hashables;
@@ -87,34 +87,34 @@ QString RepaybackBlock::getBlockHashableString(const QJsonObject& Jblock)
 }
 
 
-QString RepaybackBlock::getBlockHashableString() const
+String RepaybackBlock::getBlockHashableString() const
 {
   // TODO: implement new version and remove documents body from block hash, since already contains the document-root-hash
 
-  QString hashables = "{";
-  hashables += "\"ancestors\":" + CUtils::serializeJson(QVariant::fromValue(m_ancestors).toJsonArray()) + ",";
+  String hashables = "{";
+  hashables += "\"ancestors\":" + cutils::serializeJson(QVariant::fromValue(m_ancestors).toJsonArray()) + ",";
   hashables += "\"bLen\":\"0_0_0_0\",";
   hashables += "\"bType\":\"" + m_block_type + "\",";
   hashables += "\"bCDate\":\"" + m_block_creation_date + "\",";
-  QStringList docs {};
+  StringList docs {};
   for (RepaymentDocument* a_doc: m_rp_documents)
   {
-    QString a_doc_str = RepaymentDocument::getDocHashableString2(a_doc);
-    docs.append(a_doc_str);
+    String a_doc_str = RepaymentDocument::getDocHashableString2(a_doc);
+    docs.push(a_doc_str);
   }
   hashables += "\"docs\":[" + docs.join(",") + "],";
-  hashables += "\"docsRootHash\":\"" + m_documents_root_hash + "\",";
+  hashables += "\"bDocsRootHash\":\"" + m_documents_root_hash + "\",";
   hashables += "\"net\":\"" + m_net + "\"}";
 
-  DocLenT len = hashables.length() + 124; // backward compatibility of missed "bVer": "0.0.0","cycle": "2020-10-15 00:00:00","bHash": "0000000000000000000000000000000000000000000000000000000000000000",
-  hashables.replace("0_0_0_0", CUtils::paddingLengthValue(len));
+  DocLenT len = hashables.len() + 124; // backward compatibility of missed "bVer": "0.0.0","cycle": "2020-10-15 00:00:00","bHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  hashables.replace("0_0_0_0", cutils::padding_length_value(len));
 
   return hashables;
 }
 
-QJsonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) const
+JSonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) const
 {
-  QJsonObject block = Block::exportBlockToJSon(ext_info_in_document);
+  JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
 //  out.insert("cycle", m_cycle);
 
   // maybe remove add some item in object
@@ -125,33 +125,33 @@ QJsonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) c
 
   block["cycle"] = m_cycle;
 
-  block["bLen"] = CUtils::paddingLengthValue(CUtils::serializeJson(block).length());
+  block["bLen"] = cutils::padding_length_value(cutils::serializeJson(block).len());
   return block;
 }
 
-BlockLenT RepaybackBlock::calcBlockLength(const QJsonObject& block_obj) const
+BlockLenT RepaybackBlock::calcBlockLength(const JSonObject& block_obj) const
 {
   return 0;
 }
 
-QJsonObject RepaybackBlock::getRepayBlockTpl()
+JSonObject RepaybackBlock::getRepayBlockTpl()
 {
-  return QJsonObject {
+  return JSonObject {
     {"net", "im"},
     {"bVer", "0.0.0"},
-    {"bType", CConsts::BLOCK_TYPES::RpBlock},
+    {"bType", constants::BLOCK_TYPES::RpBlock},
     {"cycle", ""},
-    {"bLen", "0000000"},
-    {"bHash", "0000000000000000000000000000000000000000000000000000000000000000"},
+    {"bLen", constants::LEN_PROP_PLACEHOLDER},
+    {"bHash", constants::HASH_PROP_PLACEHOLDER},
     {"ancestors", {}},
     {"bCDate", ""},
-    {"docsRootHash", ""}, // the hash root of merkle tree of transaction}s
+    {"bDocsRootHash", ""}, // the hash root of merkle tree of transaction}s
     {"docs", {}}};
 }
 
-QJsonArray RepaybackBlock::exportDocumentsToJSon(const bool ext_info_in_document) const
+JSonArray RepaybackBlock::exportDocumentsToJSon(const bool ext_info_in_document) const
 {
-  QJsonArray documents {};
+  JSonArray documents {};
   for(auto a_doc: m_rp_documents)
   {
     documents.push(a_doc->exportDocToJson(ext_info_in_document));
@@ -159,15 +159,15 @@ QJsonArray RepaybackBlock::exportDocumentsToJSon(const bool ext_info_in_document
   return documents;
 }
 
-QString RepaybackBlock::safeStringifyBlock(const bool ext_info_in_document) const
+String RepaybackBlock::safeStringifyBlock(const bool ext_info_in_document) const
 {
-  QJsonObject block = exportBlockToJSon(ext_info_in_document);
+  JSonObject block = exportBlockToJSon(ext_info_in_document);
 
   // recaluculate block final length
-  block["bLen"] = CUtils::paddingLengthValue(CUtils::serializeJson(block).length());
+  block["bLen"] = cutils::padding_length_value(cutils::serializeJson(block).len());
 
-  QString out = CUtils::serializeJson(block);
-  CLog::log("Safe sringified block(rp block) Block(" + CUtils::hash8c(m_block_hash) + ") length(" + QString::number(out.length()) + ") the block: " + out, "app", "trace");
+  String out = cutils::serializeJson(block);
+  CLog::log("Safe sringified block(rp block) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.len()) + ") the block: " + out, "app", "trace");
 
   return out;
 }
@@ -176,81 +176,81 @@ QString RepaybackBlock::safeStringifyBlock(const bool ext_info_in_document) cons
 // this method be called regularly by importCoinbasedUTXOs in order to cut repaybacke immideately after importing minted coins
 
 void RepaybackBlock::createRepaymentBlock(
-  const QJsonObject& related_coinbase_block,
+  const JSonObject& related_coinbase_block,
   const JORecordsT& repayment_docs,
   const QVDRecordsT& descendent_blocks)
 {
   RepaybackBlock* tmp_repay_block = new RepaybackBlock();
-  tmp_repay_block->m_block_hash = "0000000000000000000000000000000000000000000000000000000000000000";
-  tmp_repay_block->m_ancestors = QStringList {related_coinbase_block.value("bHash").to_string()};
-  tmp_repay_block->m_block_type = CConsts::BLOCK_TYPES::RpBlock;
-  tmp_repay_block->m_cycle = related_coinbase_block.value("cycle").to_string();
-  tmp_repay_block->m_block_creation_date = (CConsts::TIME_GAIN == 1) ? CUtils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : CUtils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
+  tmp_repay_block.m_block_hash = constants::HASH_PROP_PLACEHOLDER;
+  tmp_repay_block.m_ancestors = StringList {related_coinbase_block.value("bHash").to_string()};
+  tmp_repay_block.m_block_type = constants::BLOCK_TYPES::RpBlock;
+  tmp_repay_block.m_cycle = related_coinbase_block.value("cycle").to_string();
+  tmp_repay_block.m_block_creation_date = (constants::TIME_GAIN == 1) ? cutils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : cutils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
 
   QHash<CDocHashT, RepaymentDocument*> map_doc_hash_to_doc {};
-  for (QJsonObject a_repay: repayment_docs)
+  for (JSonObject a_repay: repayment_docs)
   {
     RepaymentDocument* a_doc = new RepaymentDocument();
-    a_doc->m_doc_type = CConsts::DOC_TYPES::RpDoc;
-    a_doc->m_doc_class = CConsts::DOC_TYPES::RpDoc;
-    a_doc->m_doc_version = "0.0.0";
-    a_doc->m_doc_cycle = related_coinbase_block.value("cycle").to_string();
+    a_doc.m_doc_type = constants::DOC_TYPES::RpDoc;
+    a_doc.m_doc_class = constants::DOC_TYPES::RpDoc;
+    a_doc.m_doc_version = "0.0.0";
+    a_doc.m_doc_cycle = related_coinbase_block.value("cycle").to_string();
     TInput* input = new TInput {
       a_repay.value("input").toArray()[0].to_string(),
       static_cast<COutputIndexT>(a_repay.value("input").toArray()[1].toInt())};
-    a_doc->m_inputs = {input};
+    a_doc.m_inputs = {input};
 
-    a_doc->m_outputs = {};
-    auto[status, normalized_outputs] = TrxUtils::normalizeOutputsJ(a_repay.value("outputs").toArray());
+    a_doc.m_outputs = {};
+    auto[status, normalized_outputs] = TrxUtils::normalize_outputsJ(a_repay.value("outputs").toArray());
     Q_UNUSED(status);
     for (auto an_output: normalized_outputs)
     {
       TOutput* output = new TOutput {an_output.toArray()[0].to_string(), static_cast<CMPAIValueT>(an_output.toArray()[1].toDouble())};
-      a_doc->m_outputs.push(output);
+      a_doc.m_outputs.push(output);
     }
 
     CDocHashT doc_hash = a_doc->calcDocHash();
-    a_doc->m_doc_hash = doc_hash;
+    a_doc.m_doc_hash = doc_hash;
     map_doc_hash_to_doc[doc_hash] = a_doc;
   }
 
-  QStringList doc_hashes = map_doc_hash_to_doc.keys();
+  StringList doc_hashes = map_doc_hash_to_doc.keys();
   doc_hashes.sort(); // in order to provide unique blockHash for entire network
   for (CDocHashT a_hash: doc_hashes)
-    tmp_repay_block->m_rp_documents.push(map_doc_hash_to_doc[a_hash]);
+    tmp_repay_block.m_rp_documents.push(map_doc_hash_to_doc[a_hash]);
 
   auto[root, verifies, version, levels, leaves] = CMerkle::generate(doc_hashes);
   Q_UNUSED(verifies);
   Q_UNUSED(version);
   Q_UNUSED(levels);
   Q_UNUSED(leaves);
-  tmp_repay_block->m_documents_root_hash = root;
-  tmp_repay_block->m_block_length = tmp_repay_block->safeStringifyBlock(false).length();
+  tmp_repay_block.m_documents_root_hash = root;
+  tmp_repay_block.m_block_length = tmp_repay_block->safeStringifyBlock(false).len();
   CBlockHashT block_hash = tmp_repay_block->calcBlockHash();
   tmp_repay_block->setBlockHash(block_hash);
-  tmp_repay_block->m_block_backer = CMachine::getBackerAddress();
-  CLog::log("the Repayment Jblock(" + CUtils::hash8c(block_hash) + ") is created: " + tmp_repay_block->safeStringifyBlock(false), "trx", "trace");
+  tmp_repay_block.m_block_backer = CMachine::getBackerAddress();
+  CLog::log("the Repayment Jblock(" + cutils::hash8c(block_hash) + ") is created: " + tmp_repay_block->safeStringifyBlock(false), "trx", "trace");
 
   tmp_repay_block->addBlockToDAG();
 
   // immediately update imported of related coinbase block
-  DAG::updateUtxoImported(related_coinbase_block.value("bHash").to_string(), CConsts::YES);
+  DAG::updateUtxoImported(related_coinbase_block.value("bHash").to_string(), constants::YES);
   tmp_repay_block->postAddBlockToDAG();
 
 
 
   // immediately add newly created coins
-  for (CDocIndexT doc_inx = 0; doc_inx < tmp_repay_block->m_rp_documents.size(); doc_inx++)
+  for (CDocIndexT doc_inx = 0; doc_inx < tmp_repay_block.m_rp_documents.len(); doc_inx++)
   {
-    auto a_doc = tmp_repay_block->m_rp_documents[doc_inx];
+    auto a_doc = tmp_repay_block.m_rp_documents[doc_inx];
 
     // connect documents and blocks/ maybe it is not necessay at all
-    a_doc->mapDocToBlock(tmp_repay_block->m_block_hash, doc_inx);
+    a_doc->mapDocToBlock(tmp_repay_block.m_block_hash, doc_inx);
 
-    for (COutputIndexT out_inx = 0; out_inx < a_doc->m_outputs.size(); out_inx++)
+    for (COutputIndexT out_inx = 0; out_inx < a_doc.m_outputs.len(); out_inx++)
     {
-      auto an_output = a_doc->m_outputs[out_inx];
-      QString coin = CUtils::packCoinCode(a_doc->m_doc_hash, out_inx);
+      auto an_output = a_doc.m_outputs[out_inx];
+      String coin = cutils::packCoinCode(a_doc.m_doc_hash, out_inx);
       // immediately import newly created UTXOs and make it visible for all decendent blocks
       for (QVDicT a_block_record: descendent_blocks)
       {
@@ -259,14 +259,14 @@ void RepaybackBlock::createRepaymentBlock(
           a_block_record.value("b_creation_date").to_string(),
           coin,
           a_block_record.value("b_hash").to_string(),  //visibleBy
-          an_output->m_address,  //address
-          an_output->m_amount, // coin value
-          tmp_repay_block->m_block_creation_date); // refCreationDate
+          an_output.m_address,  //address
+          an_output.m_amount, // coin value
+          tmp_repay_block.m_block_creation_date); // refCreationDate
 
       }
     }
   }
-  DAG::updateUtxoImported(tmp_repay_block->m_block_hash, CConsts::YES);
+  DAG::updateUtxoImported(tmp_repay_block.m_block_hash, constants::YES);
 
   delete tmp_repay_block;
 }
@@ -279,32 +279,32 @@ pub fn import_double_check()
 {
     /*
       QVDRecordsT not_imported = DAG::searchInDAG(
-        {{"b_type", CConsts::BLOCK_TYPES::RpBlock}, {"b_utxo_imported", CConsts::NO}},
+        {{"b_type", constants::BLOCK_TYPES::RpBlock}, {"b_utxo_imported", constants::NO}},
         {"b_hash", "b_body"});
-      if (not_imported.size() > 0)
+      if (not_imported.len() > 0)
       {
-        CLog::log("not_imported repay back block! " + CUtils::dumpIt(not_imported), "sql", "warning");
+        CLog::log("not_imported repay back block! " + cutils::dumpIt(not_imported), "sql", "warning");
         for(QVDicT a_repay_block: not_imported)
         {
           auto[status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(a_repay_block.value("b_hash").to_string());
           Q_UNUSED(status);
           Q_UNUSED(validity_percentage);
-          QJsonObject Jblock = CUtils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block.value("b_body").to_string()).content);    // do not need safe open check
+          JSonObject Jblock = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block.value("b_body").to_string()).content);    // do not need safe open check
 
           // add missed repayback coins
-          QJsonArray documents = Jblock.value("docs").toArray();
-          for (CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(documents.size()); doc_inx++)
+          JSonArray documents = Jblock.value("docs").toArray();
+          for (CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(documents.len()); doc_inx++)
           {
             auto a_doc = documents[doc_inx].toObject();
 
             // connect documents and blocks/ maybe it is not necessay at all
             Document::mapDocToBlock(a_doc.value("dHash").to_string(), Jblock.value("bHash").to_string(), doc_inx);
 
-            QJsonArray outputs = a_doc.value("outputs").toArray();
-            for (COutputIndexT out_inx = 0; out_inx < outputs.size(); out_inx++)
+            JSonArray outputs = a_doc.value("outputs").toArray();
+            for (COutputIndexT out_inx = 0; out_inx < outputs.len(); out_inx++)
             {
-              QJsonArray an_output = outputs[out_inx].toArray();
-              QString coin = CUtils::packCoinCode(a_doc.value("dHash").to_string(), out_inx);
+              JSonArray an_output = outputs[out_inx].toArray();
+              String coin = cutils::packCoinCode(a_doc.value("dHash").to_string(), out_inx);
               // immediately import newly created UTXOs and make it visible for all decendent blocks
               for (QVDicT a_block_record: descendent_blocks)
               {
@@ -320,14 +320,14 @@ pub fn import_double_check()
               }
             }
           }
-          DAG::updateUtxoImported(a_repay_block.value("b_hash").to_string(), CConsts::YES);
+          DAG::updateUtxoImported(a_repay_block.value("b_hash").to_string(), constants::YES);
         }
       }
     */
 }
 
 /*
-QString RepaybackBlock::stringifyBExtInfo() const
+String RepaybackBlock::stringifyBExtInfo() const
 {
   return "";
 }

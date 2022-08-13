@@ -14,7 +14,7 @@ pub fn smart_pull_q()->bool
     false
   );
 
-  if (packets.records.size() == 0)
+  if (packets.records.len() == 0)
   {
     CLog::log("No packet in parsing q", "app", "trace");
     return {};
@@ -28,7 +28,7 @@ pub fn smart_pull_q()->bool
     // reputation report
     return false;
   }
-  QJsonObject Jpayload = CUtils::parseToJsonObj(unwrap_res.content);
+  JSonObject Jpayload = cutils::parseToJsonObj(unwrap_res.content);
   packet["pq_payload"] = Jpayload;
 
   increaseToparseAttempsCountSync(packet);
@@ -36,7 +36,7 @@ pub fn smart_pull_q()->bool
   auto[status, should_purge_record] = handlePulledPacket(packet);
   if (should_purge_record == false)
   {
-    CLog::log("Why not purge1! pq_type(" + packet.value("pq_type").to_string() + ") block(" + CUtils::hash8c(packet.value("pq_code").to_string()) + ")" + " from(" + packet.value("pq_sender").to_string() + ")", "app", "error");
+    CLog::log("Why not purge1! pq_type(" + packet.value("pq_type").to_string() + ") block(" + cutils::hash8c(packet.value("pq_code").to_string()) + ")" + " from(" + packet.value("pq_sender").to_string() + ")", "app", "error");
 
   } else {
     DbModel::dDelete(
@@ -55,28 +55,28 @@ pub fn smart_pull_q()->bool
 }
 
 /*
-std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &limit_)
+std::tuple<String, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &limit_)
 {
-  QString fields = stbl_parsing_q_fields.join(", ");
-  QString limit = QString(" LIMIT %1 ").arg(limit_);
+  String fields = stbl_parsing_q_fields.join(", ");
+  String limit = String(" LIMIT %1 ").arg(limit_);
   // TODO: make a more intelligence query
-  QString query;
+  String query;
   srand(time(0));
   uint8_t query_number = rand() % 100;
-  if (CMachine::isInSyncProcess())
+  if (CMachine::is_in_sync_process())
   {
-//    CLog::log("Smart query number: " + QString::number(query_number), "app", "trace");
+//    CLog::log("Smart query number: " + String::number(query_number), "app", "trace");
 
    if (query_number < 60)
    {
      // since it is in sync phase, so maybe better order is based on creationdate(TODO: optimize it to prevent cheater to vector attack)
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=?";
        query += " ORDER BY pq_connection_type ASC, pq_creation_date ASC " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites";
@@ -85,13 +85,13 @@ std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &l
 
    } else if ((query_number > 60) && (query_number < 90))
    {
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=?";
        query += " ORDER BY pq_connection_type ASC, pq_parse_attempts ASC, pq_receive_date ASC " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites";
@@ -99,12 +99,12 @@ std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &l
      }
 
    } else {
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=? " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites " + limit;
@@ -115,13 +115,13 @@ std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &l
   } else {
    if (query_number < 60)
    {
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=?";
        query += " ORDER BY pq_connection_type ASC, pq_parse_attempts ASC, pq_receive_date ASC " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites";
@@ -129,13 +129,13 @@ std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &l
      }
 
    } else if ((query_number > 60) && (query_number < 90)) {
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=?";
        query += " ORDER BY pq_connection_type ASC, pq_creation_date ASC " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites";
@@ -143,12 +143,12 @@ std::tuple<QString, QVDicT> ParsingQHandler::prepareSmartQuery(const uint16_t &l
      }
 
    } else {
-     if (CConsts::DATABASAE_AGENT == "psql")
+     if (constants::DATABASAE_AGENT == "psql")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=? " + limit;
      }
-     else if (CConsts::DATABASAE_AGENT == "sqlite")
+     else if (constants::DATABASAE_AGENT == "sqlite")
      {
        query = "SELECT " + fields + " FROM " + stbl_parsing_q;
        query += " WHERE pq_prerequisites=:pq_prerequisites " + limit;
@@ -169,7 +169,7 @@ bool ParsingQHandler::increaseToparseAttempsCountSync(const QVDicT &packet)
     return DbModel::update(
       stbl_parsing_q,
       {{"pq_parse_attempts", packet.value("pq_parse_attempts").toUInt() + 1},
-      {"pq_last_modified", CUtils::getNow() }},
+      {"pq_last_modified", cutils::get_now() }},
       {{"pq_type", packet.value("pq_type").to_string()},
       {"pq_code", packet.value("pq_code").to_string()},
       {"pq_sender", packet.value("pq_sender").to_string()}});

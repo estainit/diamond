@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use crate::{constants, dlog};
-use crate::lib::custom_types::{ClausesT, QUDicT, QVDRecordsT};
-use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, QUnion};
+use crate::lib::custom_types::{ClausesT, QVDRecordsT};
+use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::STBL_MACHINE_WALLET_ADDRESSES;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
-use crate::lib::utils::dumper::{dump_hashmap_of_str, dump_hashmap_of_string};
+use crate::lib::utils::dumper::{dump_hashmap_of_str_string};
 
 pub struct WalletAddress
 {
@@ -45,12 +45,7 @@ pub fn search_wallet_addresses(
     let clause_1: ModelClause;
     if mp_code != constants::ALL
     {
-        clause_1 = ModelClause {
-            m_field_name: "wa_mp_code",
-            m_field_single_str_value: &*mp_code,
-            m_clause_operand: "=",
-            m_field_multi_values: vec![],
-        };
+        clause_1 = simple_eq_clause("wa_mp_code",&*mp_code);
         clauses.push(&clause_1);
     }
 
@@ -76,8 +71,8 @@ pub fn search_wallet_addresses(
 
 /*
 std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
-    QString mp_code,
-    const QStringList& fields,
+    String mp_code,
+    const StringList& fields,
     const bool& sum)
 {
   ClausesT clauses{};
@@ -85,7 +80,7 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
   if (mp_code == "")
     mp_code = CMachine::getSelectedMProfile();
 
-  if (mp_code != CConsts::ALL)
+  if (mp_code != constants::ALL)
     clauses.push(ModelClause("wa_mp_code", mp_code));
 
   QueryRes addresses_info = DbModel::select(
@@ -97,9 +92,9 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
   if (sum == false)
     return {addresses_info.records, {}};
 
-  CDateT nowT = CUtils::getNow();
+  CDateT nowT = cutils::get_now();
   QV2DicT addressDict = {};
-  QString complete_query = "select wf_address, SUM(wf_o_value) mat_sum, COUNT(*) mat_count FROM " + stbl_machine_wallet_funds + " ";
+  String complete_query = "select wf_address, SUM(wf_o_value) mat_sum, COUNT(*) mat_count FROM " + stbl_machine_wallet_funds + " ";
   complete_query += "WHERE wf_mp_code=:wf_mp_code AND wf_mature_date<:wf_mature_date GROUP BY wf_address";
   QueryRes tmpRes = DbModel::customQuery(
     "db_comen_wallets",
@@ -110,7 +105,7 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
 
   for (QVDicT elm: tmpRes.records)
   {
-    CAddressT add = elm.value("wf_address").toString();
+    CAddressT add = elm.value("wf_address").to_string();
     if (!addressDict.keys().contains(add))
       addressDict[add] = QVDicT {
       {"mat_sum", elm.value("mat_sum").toDouble()},
@@ -125,11 +120,11 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
     complete_query,
     {"wf_address", "unmat_sum", "unmat_count"},
     0,
-    {{"wf_mp_code", mp_code}, {"wf_mature_date", CUtils::getNow()}});
+    {{"wf_mp_code", mp_code}, {"wf_mature_date", cutils::get_now()}});
 
   for (QVDicT elm: tmpRes.records)
   {
-    CAddressT add = elm.value("wf_address").toString();
+    CAddressT add = elm.value("wf_address").to_string();
     if (!addressDict.keys().contains(add))
     {
       addressDict[add] = QVDicT {
@@ -193,7 +188,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
 
     let (status, values) = convert_to_values(w_address);
     dlog(
-        &format!("Insert new address to machine wallet {:?}", dump_hashmap_of_string(&values)),
+        &format!("Insert new address to machine wallet {:?}", dump_hashmap_of_str_string(&values)),
         constants::Modules::App,
         constants::SecLevel::Trace);
     let mut values_: HashMap<&str, &str> = HashMap::new();
@@ -211,10 +206,10 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
 /*
 
 QVDRecordsT Wallet::getAddressesInfo(
-  const QStringList& addresses,
-  const QStringList& fields)
+  const StringList& addresses,
+  const StringList& fields)
 {
-  QString mp_code = CMachine::getSelectedMProfile();
+  String mp_code = CMachine::getSelectedMProfile();
   auto[status, res] = search_wallet_addresses(addresses, mp_code, fields);
   if (!status)
       return {};
@@ -222,9 +217,9 @@ QVDRecordsT Wallet::getAddressesInfo(
 }
 
 GenRes Wallet::createANewAddress(
-  const QString& signature_type,
-  const QString& signature_mod,
-  const QString& signature_version)
+  const String& signature_type,
+  const String& signature_mod,
+  const String& signature_version)
 {
   auto[status, unlock_doc] = CAddress::createANewAddress(
     signature_type,
@@ -237,7 +232,7 @@ GenRes Wallet::createANewAddress(
     &unlock_doc,
     CMachine::getSelectedMProfile(),   // mp code
     signature_type + " address (" + signature_mod + " signatures) ver(" + signature_version + ")",
-    CUtils::getNow()));
+    cutils::get_now()));
 
   CGUI::signalUpdateWalletCoins();
   CGUI::signalUpdateWalletAccounts();
@@ -247,9 +242,9 @@ GenRes Wallet::createANewAddress(
 
 GenRes Wallet::getAnOutputAddress(
   bool make_new_address,
-  const QString& signature_type,
-  const QString& signature_mod,
-  const QString& signature_version)
+  const String& signature_type,
+  const String& signature_mod,
+  const String& signature_version)
 {
   CAddressT the_address;
   if (make_new_address)
@@ -258,7 +253,7 @@ GenRes Wallet::getAnOutputAddress(
   }
 
   auto[wallet_controlled_accounts, details] = getAddressesList();
-  the_address = wallet_controlled_accounts[rand() * wallet_controlled_accounts.size()].value("wa_address").toString();
+  the_address = wallet_controlled_accounts[rand() * wallet_controlled_accounts.len()].value("wa_address").to_string();
   return {(the_address != ""), the_address};
 }
 

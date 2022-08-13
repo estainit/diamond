@@ -5,7 +5,7 @@
 #include "lib/dag/full_dag_handler.h"
 #include "dag_message_handler.h"
 
-const QString DAGMessageHandler::STBL_KVALUE = "c_kvalue";
+const String DAGMessageHandler::STBL_KVALUE = "c_kvalue";
 
 DAGMessageHandler::DAGMessageHandler()
 {
@@ -13,21 +13,21 @@ DAGMessageHandler::DAGMessageHandler()
 }
 
 bool DAGMessageHandler::setLastReceivedBlockTimestamp(
-  const QString &bType,
-  const QString &block_hash,
-  const QString &receive_date)
+  const String &bType,
+  const String &block_hash,
+  const String &receive_date)
 {
   DbModel::upsert(
     STBL_KVALUE,
     "kv_key",
     "LAST_RECEIVED_BLOCK_TIMESTAMP",
     {
-      {"kv_value", CUtils::serializeJson({
+      {"kv_value", cutils::serializeJson({
         {"last_block_type", bType},
         {"last_block_hash", block_hash},
         {"last_block_receive_date", receive_date}
       })},
-      {"kv_last_modified", CUtils::getNow()}
+      {"kv_last_modified", cutils::get_now()}
     });
   return true;
 }
@@ -39,35 +39,35 @@ bool DAGMessageHandler::invokeDescendents(
   auto[status, block_hash, block_creation_date] = DAG::getLatestBlock();
   Q_UNUSED(status);
 
-  if (CUtils::timeDiff(block_creation_date).asMinutes > CMachine::getAcceptableBlocksGap())
+  if (cutils::time_diff(block_creation_date).asMinutes > machine().getAcceptableBlocksGap())
   {
     // control if block's potentially descendent(s) exist in parsing q
     QVDRecordsT likeHashRes = ParsingQHandler::searchParsingQ(
       {
-        {"pq_type", {CConsts::BLOCK_TYPES::Normal, CConsts::BLOCK_TYPES::Coinbase}, "IN"},
+        {"pq_type", {constants::BLOCK_TYPES::Normal, constants::BLOCK_TYPES::Coinbase}, "IN"},
         {"pq_code", block_hash}
       },
       {"pq_type", "pq_code", "pq_payload"});
 
     // invoke network for block probably descendents
-    QStringList existed_descendents_in_parsingQ = {};
-    if (likeHashRes.size() > 0)
+    StringList existed_descendents_in_parsingQ = {};
+    if (likeHashRes.len() > 0)
     {
       for (QVDicT wBlock: likeHashRes)
       {
-        QJsonObject jBlock = CUtils::parseToJsonObj(wBlock.value("pq_payload").to_string());
+        JSonObject jBlock = cutils::parseToJsonObj(wBlock["pq_payload"].to_string());
         // if the existed block in parsing q is descendent of block
-        QStringList tmp = {};
-        for(QJsonValueRef an_anc: jBlock.value("ancestors").toArray())
+        StringList tmp = {};
+        for(QJsonValueRef an_anc: jBlock["ancestors"].toArray())
           tmp.push(an_anc.to_string());
         if (tmp.contains(block_hash))
-          existed_descendents_in_parsingQ.push(jBlock.value("bHash").to_string());
+          existed_descendents_in_parsingQ.push(jBlock["bHash"].to_string());
       }
     }
-    if (existed_descendents_in_parsingQ.size() > 0)
+    if (existed_descendents_in_parsingQ.len() > 0)
     {
       // controling if the ancestors of descendent exist in local or not
-      existed_descendents_in_parsingQ = CUtils::arrayUnique(existed_descendents_in_parsingQ);
+      existed_descendents_in_parsingQ = cutils::arrayUnique(existed_descendents_in_parsingQ);
       return blockInvokingNeeds(existed_descendents_in_parsingQ);
       // set prerequisities null and attemps zero in order to force machine parsing them
 
@@ -84,22 +84,22 @@ bool DAGMessageHandler::invokeDescendents(
 }
 
 bool DAGMessageHandler::doInvokeDescendents(
-  const QString &block_hash,
-  const QString &block_creation_date,
+  const String &block_hash,
+  const String &block_creation_date,
   const bool &denay_double_send_check)
 {
-  CLog::log("do Invoke Descendents args block_hash(" + block_hash + ") block_creation_date(" + block_creation_date + ") denay_double_send_check(" + CUtils::dumpIt(denay_double_send_check) + ")", "app", "trace");
+  CLog::log("do Invoke Descendents args block_hash(" + block_hash + ") block_creation_date(" + block_creation_date + ") denay_double_send_check(" + cutils::dumpIt(denay_double_send_check) + ")", "app", "trace");
 
   // if the last block which exists in DAG is older than 2 cycle time maybe efficient to call full-history
-  if (block_creation_date < CUtils::minutesBefore(2 * CMachine::getCycleByMinutes()))
+  if (block_creation_date < cutils::minutes_before(2 * cutils::get_cycle_by_minutes()))
   {
-    QString LastFullDAGDownloadResponse = KVHandler::getValue("LAST_FULL_DAG_DOWNLOAD_RESPONSE");
+    String LastFullDAGDownloadResponse = KVHandler::getValue("LAST_FULL_DAG_DOWNLOAD_RESPONSE");
     if (LastFullDAGDownloadResponse == "")
     {
-      KVHandler::upsertKValue("LAST_FULL_DAG_DOWNLOAD_RESPONSE", CUtils::minutesBefore(CMachine::getCycleByMinutes()));
+      KVHandler::upsertKValue("LAST_FULL_DAG_DOWNLOAD_RESPONSE", cutils::minutes_before(cutils::get_cycle_by_minutes()));
 
     } else {
-      if (CUtils::timeDiff(LastFullDAGDownloadResponse).asMinutes < 5)
+      if (cutils::time_diff(LastFullDAGDownloadResponse).asMinutes < 5)
       {
         CLog::log("less than 5 minutes ago invoked for full DAG", "app", "trace");
         return true;
@@ -113,17 +113,17 @@ bool DAGMessageHandler::doInvokeDescendents(
   } else {
 
     CLog::log("invoking for descendents of ${utils.hash6c(block_hash)}", "app", "trace");
-    QJsonObject payload = {
-      {"type", CConsts::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS},
+    JSonObject payload = {
+      {"type", constants::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS},
       {"mVer", "0.0.0"},
       {"bHash", block_hash}
     };
-    QString payload_ = CUtils::serializeJson(payload);
+    String payload_ = cutils::serializeJson(payload);
     SendingQHandler::pushIntoSendingQ(
-      CConsts::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS,
+      constants::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS,
       block_hash, // sqCode
       payload_,
-      "Invoke Descendents(" + CUtils::hash16c(block_hash) + ")",
+      "Invoke Descendents(" + cutils::hash16c(block_hash) + ")",
       {},
       {},
       denay_double_send_check);
@@ -138,26 +138,26 @@ bool DAGMessageHandler::doInvokeDescendents(
 * @param {*} level
 */
 bool DAGMessageHandler::blockInvokingNeeds(
-  QStringList block_hashes,
+  StringList block_hashes,
   uint level)
 {
 
 
-  QStringList next_level_block_hashes = {};
-  QStringList missed_blocks = {};
+  StringList next_level_block_hashes = {};
+  StringList missed_blocks = {};
   for (uint l = 0; l < level; l++)
   {
     // exists in DAG?
     QVDRecordsT existedInDAG = DAG::searchInDAG(
       {{"b_hash", block_hashes, "IN"}},
       {"b_hash"});
-    if (existedInDAG.size() == block_hashes.size())
+    if (existedInDAG.len() == block_hashes.len())
       continue; // all blocks are already recorded in local graph
 
-    QStringList tmp;
+    StringList tmp;
     for(QVDicT a_row: existedInDAG)
-      tmp.append(a_row.value("b_hash").to_string());
-    QStringList array_diff = CUtils::arrayDiff(block_hashes, tmp);
+      tmp.push(a_row["b_hash"].to_string());
+    StringList array_diff = cutils::arrayDiff(block_hashes, tmp);
 
     // control if block exist in parsing_q
     for (auto looking_hash: array_diff)
@@ -166,24 +166,24 @@ bool DAGMessageHandler::blockInvokingNeeds(
         {{"pq_code", looking_hash}},
         {"pq_code", "pq_payload"});
 
-      if (existsInParsingQ.size() == 0)
+      if (existsInParsingQ.len() == 0)
       {
         missed_blocks.push(looking_hash);
       } else {
 //        let ancestors = existsInParsingQ.map(x => JSON.parse(x.pqPayload).ancestors);
-        QList<QStringList> ancestors;
+        QList<StringList> ancestors;
         for(auto x: existsInParsingQ)
         {
-          QJsonObject payloadJs = CUtils::parseToJsonObj(x.value("pq_payload").to_string());
-          QJsonArray ancsJS = payloadJs.value("ancestors").toArray();
-          QStringList ancestors;
+          JSonObject payloadJs = cutils::parseToJsonObj(x["pq_payload"].to_string());
+          JSonArray ancsJS = payloadJs["ancestors"].toArray();
+          StringList ancestors;
           for(auto y: ancsJS)
-            ancestors.append(y.to_string());
+            ancestors.push(y.to_string());
         }
 
-        if (ancestors.size() == 0)
+        if (ancestors.len() == 0)
         {
-          CLog::log("The block(" + CUtils::hash16c(looking_hash) + ") has no valid ancestors! " + CUtils::dumpIt(existsInParsingQ), "sec", "error");
+          CLog::log("The block(" + cutils::hash16c(looking_hash) + ") has no valid ancestors! " + cutils::dumpIt(existsInParsingQ), "sec", "error");
           return false;
         }
         for(auto pckedAncestors: ancestors)
@@ -195,9 +195,9 @@ bool DAGMessageHandler::blockInvokingNeeds(
         }
       }
     }
-    block_hashes = CUtils::arrayUnique(next_level_block_hashes);
+    block_hashes = cutils::arrayUnique(next_level_block_hashes);
   }
-  missed_blocks = CUtils::arrayUnique(missed_blocks);
+  missed_blocks = cutils::arrayUnique(missed_blocks);
   MissedBlocksHandler::addMissedBlocksToInvoke(missed_blocks);
 //  loopMissedBlocksInvoker();
   return true;
@@ -205,42 +205,48 @@ bool DAGMessageHandler::blockInvokingNeeds(
 
 void DAGMessageHandler::loopMissedBlocksInvoker()
 {
-  QString thread_prefix = "missed_blocks_invoker_";
-  QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
+  String thread_prefix = "missed_blocks_invoker_";
+  String thread_code = String::number((quint64)QThread::currentThread(), 16);
 
-  while (CMachine::shouldLoopThreads())
+  while (machine().shouldLoopThreads())
   {
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
+    machine().reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     doMissedBlocksInvoker();
 
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
-    std::this_thread::sleep_for(std::chrono::seconds(CMachine::getBlockInvokeGap()));
+    machine().reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
+    std::this_thread::sleep_for(std::chrono::seconds(machine().getBlockInvokeGap()));
   }
 
-  CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::STOPPED);
+  machine().reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::STOPPED);
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Missed Blocks Invoker");
 }
 */
+use serde_json::json;
+use crate::{constants, cutils, dlog, get_value, machine};
+use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::database::abs_psql::simple_eq_clause;
+use crate::lib::k_v_handler::{search_in_kv, set_value};
+
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
 {
     /*
-  QString cycle = CUtils::getCoinbaseCycleStamp();
+  String cycle = cutils::getCoinbaseCycleStamp();
   CLog::log("ReMiBcInv cycle(" + cycle + ") called recursive MissedBlocks Invoker", "app", "trace");
-  QStringList missed = MissedBlocksHandler::getMissedBlocksToInvoke(2);
+  StringList missed = getMissedBlocksToInvoke(2);
   // listener.doCallAsync('APSH_control_if_missed_block');
 
-  if (missed.size() > 0)
+  if (missed.len() > 0)
   {
-    CLog::log("ReMiBcInv cycle(" + cycle + ") recursive Missed Blocks Invoker has " + QString::number(missed.size()) + " missed blocks(" + CUtils::dumpIt(missed) + ")", "app", "trace");
-    for(QString a_missed: missed)
+    CLog::log("ReMiBcInv cycle(" + cycle + ") recursive Missed Blocks Invoker has " + String::number(missed.len()) + " missed blocks(" + cutils::dumpIt(missed) + ")", "app", "trace");
+    for(String a_missed: missed)
     {
       //check if not already exist in parsing q
       QVDRecordsT existsInParsingQ = ParsingQHandler::searchParsingQ(
         {{"pq_code", a_missed}},
         {"pq_type", "pq_code"});
 
-      if (existsInParsingQ.size() == 0)
+      if (existsInParsingQ.len() == 0)
       {
         invokeBlock(a_missed);
         MissedBlocksHandler::increaseAttempNumber(a_missed);
@@ -250,38 +256,41 @@ pub fn do_missed_blocks_invoker()
     */
 }
 /*
-bool DAGMessageHandler::invokeBlock(const QString &block_hash)
+bool DAGMessageHandler::invokeBlock(const String &block_hash)
 {
-  CLog::log("invoking for block(" + CUtils::hash16c(block_hash) + ")", "app", "trace");
-  QJsonObject payload {
-    {"type", CConsts::MESSAGE_TYPES::DAG_INVOKE_BLOCK},
+  CLog::log("invoking for block(" + cutils::hash16c(block_hash) + ")", "app", "trace");
+  JSonObject payload {
+    {"type", constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK},
     {"mVer", "0.0.0"},
     {"bHash", block_hash}};
-  QString serialized_payload = CUtils::serializeJson(payload);
+  String serialized_payload = cutils::serializeJson(payload);
   CLog::log("invoked for keaves (" + block_hash + ")", "app", "trace");
 
   bool status = SendingQHandler::pushIntoSendingQ(
-    CConsts::MESSAGE_TYPES::DAG_INVOKE_BLOCK, // sqType
+    constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK, // sqType
     block_hash,  // sqCode
     serialized_payload,
-    "Invoke Block(" + CUtils::hash16c(block_hash) + ")");
+    "Invoke Block(" + cutils::hash16c(block_hash) + ")");
 
   return status;
 }
 
-
-QJsonObject DAGMessageHandler::getLastReceivedBlockTimestamp()
+*/
+pub fn getLastReceivedBlockTimestamp() -> JSonObject
 {
-  QString res = KVHandler::getValue("LAST_RECEIVED_BLOCK_TIMESTAMP");
-  if (res == "")
-    return QJsonObject {
-      {"last_block_type", "Genesis"},
-      {"last_block_hash", "-"},
-      {"last_block_receive_date", CMachine::getLaunchDate()}};
-  return CUtils::parseToJsonObj(res);
+    let res: String = get_value("LAST_RECEIVED_BLOCK_TIMESTAMP");
+    if res == "" {
+        return json!({
+        "last_block_type": "Genesis",
+       "last_block_hash": "-" ,
+       "last_block_receive_date": machine().get_launch_date()});
+    }
+    return cutils::parseToJsonObj(&res);
 }
 
-QString DAGMessageHandler::getMaybeAskForLatestBlocksFlag()
+/*
+
+String DAGMessageHandler::getMaybeAskForLatestBlocksFlag()
 {
   return KVHandler::getValue("maybe_ask_for_latest_blocks");
 }
@@ -289,14 +298,14 @@ QString DAGMessageHandler::getMaybeAskForLatestBlocksFlag()
 bool DAGMessageHandler::invokeLeaves()
 {
   CLog::log("Invoking for DAG leaves", "app", "trace");
-  QJsonObject payload {
-    {"type", CConsts::MESSAGE_TYPES::DAG_INVOKE_LEAVES},
+  JSonObject payload {
+    {"type", constants::MESSAGE_TYPES::DAG_INVOKE_LEAVES},
     {"mVer", "0.0.0"}};
-  QString serialized_payload = CUtils::serializeJson(payload);
+  String serialized_payload = cutils::serializeJson(payload);
 
   bool status = SendingQHandler::pushIntoSendingQ(
-    CConsts::MESSAGE_TYPES::DAG_INVOKE_LEAVES, // sqType
-    CUtils::getNowSSS(),  // sqCode
+    constants::MESSAGE_TYPES::DAG_INVOKE_LEAVES, // sqType
+    cutils::getNowSSS(),  // sqCode
     serialized_payload,
     "Invoking for DAG leaves");
 
@@ -305,69 +314,76 @@ bool DAGMessageHandler::invokeLeaves()
 
 void DAGMessageHandler::launchInvokeLeaves()
 {
-  QString shouldI = getMaybeAskForLatestBlocksFlag();
-  if (shouldI == CConsts::YES)
+  String shouldI = getMaybeAskForLatestBlocksFlag();
+  if (shouldI == constants::YES)
   {
     // TODO: needs control for latest invoke to not spaming network
     invokeLeaves();
-    setMaybeAskForLatestBlocksFlag(CConsts::NO);
+    setMaybeAskForLatestBlocksFlag(constants::NO);
   }
 }
-
-void DAGMessageHandler::setMaybeAskForLatestBlocksFlag(const QString& value)
+*/
+pub fn setMaybeAskForLatestBlocksFlag(value: &String)
 {
-  if (value == CConsts::YES)
-  {
-    // control last_received_leaves_info_timestamp flag
-    // if we currently asked for leave information, so do not flood the network with multiple asking
-    QString last_leave_invoke_response_str = KVHandler::getValue("last_received_leaves_info_timestamp");
-    if (last_leave_invoke_response_str == "")
-    {
-      KVHandler::setValue("maybe_ask_for_latest_blocks", value);
-      return;
+    if value == constants::YES {
+        // control last_received_leaves_info_timestamp flag
+        // if we currently asked for leave information, so do not flood the network with multiple asking
+        let last_leave_invoke_response_str: String = get_value("last_received_leaves_info_timestamp");
+        if last_leave_invoke_response_str == "" {
+            set_value("maybe_ask_for_latest_blocks", value, false);
+            return;
+        }
+
+        let last_leave_invoke_response: JSonObject = cutils::parseToJsonObj(&last_leave_invoke_response_str);
+        // TODO: tune the gap time
+        if cutils::time_diff(last_leave_invoke_response["receiveDate"].to_string(), cutils::get_now()).as_seconds < machine().getInvokeLeavesGap() {
+            return;
+        }
+
+        // control LAST_RECEIVED_BLOCK_TIMESTAMP flag
+        // if we are receiving continiuosly new blocks, it doesn't sence to ask for leave information.
+        // this case happends in runing a new machin in which the machine has to download entire DAG.
+        let last_block: JSonObject = getLastReceivedBlockTimestamp();
+        // TODO: tune the gap time
+        if cutils::time_diff(last_block["last_block_receive_date"].to_string(), cutils::get_now()).as_seconds < machine().getInvokeLeavesGap() {
+            return;
+        }
+
+        let machine_request_status: QVDRecordsT = search_in_kv(
+            &vec![&simple_eq_clause("kv_key", "maybe_ask_for_latest_blocks")],
+            &vec!["kv_last_modified"],
+            &vec![],
+            0);
+        if machine_request_status.len() > 0{
+            let invoke_age:TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
+            dlog(
+                &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().getInvokeLeavesGap()),
+                constants::Modules::App,
+                constants::SecLevel::Info);
+            if invoke_age < machine().getInvokeLeavesGap() {
+                return;
+            }
+        }
+        /*
+        // TODO: tune the gap time
+        launchInvokeLeaves();
+        */
     }
 
-    QJsonObject last_leave_invoke_response = CUtils::parseToJsonObj(last_leave_invoke_response_str);
-    // TODO: tune the gap time
-    if (CUtils::timeDiff(last_leave_invoke_response.value("receiveDate").to_string()).asSeconds < CMachine::getInvokeLeavesGap())
-      return;
-
-    // control LAST_RECEIVED_BLOCK_TIMESTAMP flag
-    // if we are receiving continiuosly new blocks, it doesn't sence to ask for leave information.
-    // this case happends in runing a new machin in which the machine has to download entire DAG.
-    QJsonObject last_block = getLastReceivedBlockTimestamp();
-    // TODO: tune the gap time
-    if (CUtils::timeDiff(last_block.value("last_block_receive_date").to_string()).asSeconds < CMachine::getInvokeLeavesGap())
-      return;
-
-    QVDRecordsT machine_request_status = KVHandler::serach(
-      {{"kv_key", "maybe_ask_for_latest_blocks"}},
-      {"kv_last_modified"});
-    if (machine_request_status.size() > 0)
-    {
-      TimeBySecT invoke_age = CUtils::timeDiff(machine_request_status[0].value("kv_last_modified").to_string()).asSeconds;
-      CLog::log("control if (invoke_age: " + QString::number(invoke_age) + ") < (invokeGap: " + QString::number(CMachine::getInvokeLeavesGap()) + ") ");
-      if (invoke_age < CMachine::getInvokeLeavesGap())
-          return;
-
-    }
-    // TODO: tune the gap time
-    launchInvokeLeaves();
-  }
-
-  KVHandler::setValue("maybe_ask_for_latest_blocks", value);
+    set_value("maybe_ask_for_latest_blocks", value, false);
 }
+/*
 
 
 
 std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
-  const QString& sender,
-  const QJsonObject& payload,
-  const QString& connection_type)
+  const String& sender,
+  const JSonObject& payload,
+  const String& connection_type)
 {
-  const CBlockHashT& block_hash = payload.value("bHash").to_string();
+  const CBlockHashT& block_hash = payload["bHash"].to_string();
 
-  QString short_hash = CUtils::hash8c(block_hash);
+  String short_hash = cutils::hash8c(block_hash);
   CLog::log("handle Block Invoke Req block(" + short_hash + ")", "app", "trace");
 
   // retrieve block from DAG
@@ -383,16 +399,16 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
     return {false, true};
   }
 
-  CLog::log("Broadcasting Replay to invoke for block(" + regenerated_json_block.value("bType").to_string() + " / " + CUtils::hash8c(block_hash) + ")", "app", "trace");
+  CLog::log("Broadcasting Replay to invoke for block(" + regenerated_json_block["bType"].to_string() + " / " + cutils::hash8c(block_hash) + ")", "app", "trace");
   Block* block = BlockFactory::create(regenerated_json_block);
   bool push_res = SendingQHandler::pushIntoSendingQ(
-    block->m_block_type,
+    block.m_block_type,
     block_hash,
     block->safeStringifyBlock(false),
-    "Replay to invoke for block(" + short_hash + ") type(" + block->m_block_type  + ")",
+    "Replay to invoke for block(" + short_hash + ") type(" + block.m_block_type  + ")",
     {sender});
 
-  CLog::log("invoke block push_res(" + CUtils::dumpIt(push_res) + ") block(" + short_hash + ") type(" + block->m_block_type  + ")", "app", "trace");
+  CLog::log("invoke block push_res(" + cutils::dumpIt(push_res) + ") block(" + short_hash + ") type(" + block.m_block_type  + ")", "app", "trace");
 
   return {true, true};
 }

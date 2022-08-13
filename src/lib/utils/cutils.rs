@@ -1,13 +1,12 @@
 #[allow(unused_imports)]
 use std::fmt::format;
-use chrono::Utc;
+use chrono::{FixedOffset, Utc};
 use chrono::{DateTime, TimeZone};
 use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
-
-use crate::lib::constants as CConsts;
-use crate::lib::custom_types::{CDateT, VVString};
+use crate::constants;
+use crate::lib::custom_types::{CCoinCodeT, CDateT, CDocHashT, COutputIndexT, JSonArray, JSonObject, TimeByMinutesT, TimeBySecT, VVString};
 
 #[allow(dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
@@ -34,16 +33,16 @@ pub fn left_padding(inp_str: String, length: u8) -> String {
     return str;
 }
 
-//old_name_was convertFloatto_string
-#[allow(dead_code)]
-pub fn convert_float_to_string(num: f64, precision: u32) -> String {
+//old_name_was convertFloatToString
+pub fn convert_float_to_string(num: f64, precision: u8) -> String {
     let mut num_per_10 = num.clone();
-    for _i in 0..precision {
-        num_per_10 = num_per_10 * 10.0;
-    }
+    num_per_10 = num_per_10 * 10_u32.pow(precision as u32) as f64;
+    // for _i in 0..precision {
+    //     num_per_10 = num_per_10 * 10.0;
+    // }
 
-    let num2: u64 = num_per_10 as u64;
-    let mut out = format!("{}", num2);
+    let num_per_10: u64 = num_per_10 as u64;
+    let mut out = num_per_10.to_string();
     let precision_as_usize = precision as usize;
     if out.len() <= precision_as_usize {
         for _i in 0..precision_as_usize - out.len() {
@@ -102,6 +101,25 @@ pub fn convert_float_to_string(num: f64, precision: u32) -> String {
 
 // - - - - - - time functions - - - - -
 
+
+//old_name_was getNow
+pub fn get_now() -> String {
+    Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
+
+pub fn get_since_epoch() -> i64 {
+    Utc::now().timestamp()
+}
+
+pub fn make_date_from_str(yyyymmddhhmmss_str: &str) -> DateTime<FixedOffset> {
+    DateTime::parse_from_str(yyyymmddhhmmss_str, "%Y-%m-%d %H:%M:%S").unwrap()
+}
+
+pub fn make_str_date_from_date_object(dt: DateTime<FixedOffset>) -> String {
+    dt.format("%Y-%m-%d %H:%M:%S").to_string()
+}
+
 //old name was isAmOrPm
 #[allow(dead_code)]
 pub fn is_am_or_pm(minutes: u32) -> String {
@@ -112,9 +130,9 @@ pub fn is_am_or_pm(minutes: u32) -> String {
 
 //old_name_was getCoinbaseCycleNumber
 #[allow(dead_code)]
-pub fn get_coinbase_cycle_number(c_date: CDateT) -> String {
+pub fn get_coinbase_cycle_number(c_date: &CDateT) -> String {
     let minutes: u32;
-    if c_date == "".to_string() {
+    if *c_date == "".to_string() {
         minutes = get_now_by_minutes();
     } else {
         let minutes_dtl1: Vec<&str> = c_date.split(" ").collect();
@@ -124,26 +142,57 @@ pub fn get_coinbase_cycle_number(c_date: CDateT) -> String {
     }
 
     let cycle_number: String;
-    if CConsts::TIME_GAIN == 1 {
+    if constants::TIME_GAIN == 1 {
         cycle_number = is_am_or_pm(minutes);
     } else {
-        cycle_number = format!("{}", minutes / get_cycle_by_minutes());
+        cycle_number = (minutes / get_cycle_by_minutes() as u32).to_string();
     }
     return cycle_number;
 }
 
 //old name was getCycleByMinutes
-pub fn get_cycle_by_minutes() -> u32 {
-    if CConsts::TIME_GAIN == 1 {
-        return CConsts::STANDARD_CYCLE_BY_MINUTES;
+pub fn get_cycle_by_minutes() -> TimeByMinutesT {
+    if constants::TIME_GAIN == 1 {
+        return constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
     }
-    return CConsts::TIME_GAIN as u32;
+    return constants::TIME_GAIN as TimeByMinutesT;
 }
 
-//old_name_was getNow
-#[allow(dead_code)]
-pub fn get_now() -> String {
-    Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
+//old_name_was getCycleBySeconds
+pub fn get_cycle_by_seconds() -> TimeBySecT
+{
+    return get_cycle_by_minutes() * 60;
+}
+
+
+pub fn getCoinbaseAgeByMinutes(c_date: &CDateT) -> TimeByMinutesT
+{
+    return time_diff(get_a_cycle_range(c_date, 0, 0).from, c_date.clone()).as_minutes;
+}
+
+
+pub fn getCoinbaseAgeBySecond(c_date: &CDateT) -> TimeBySecT
+{
+    return getCoinbaseAgeByMinutes(c_date) * 60;
+}
+
+pub fn get_now_sss() -> String {
+    Utc::now().format("%Y-%m-%d %H:%M:%S.zzz").to_string()
+}
+
+pub fn isGreaterThanNow(c_date: &CDateT) -> bool
+{
+    if c_date.to_string() > get_now()
+    {
+        return true;
+    }
+    return false;
+}
+
+//old_name_was getCurrentYear
+pub fn get_current_year() -> String
+{
+    return get_now().split("-").collect::<Vec<&str>>()[0].to_string();
 }
 
 //old name was getNowByMinutes
@@ -167,6 +216,11 @@ pub fn get_cycle_elapsed_by_minutes(c_date_: CDateT) -> u64 {
 
     let cycle_start_time: CDateT = get_a_cycle_range(&c_date.clone(), 0, 0).from;
     return time_diff(cycle_start_time, c_date).as_minutes;
+}
+
+pub fn isInCurrentCycle(c_date: &CDateT) -> bool
+{
+    c_date >= &get_coinbase_range(&get_now()).from
 }
 
 pub struct TimeRange
@@ -260,7 +314,7 @@ pub fn get_a_cycle_range(
         c_date = get_now();
     }
 
-    if CConsts::TIME_GAIN == 1
+    if constants::TIME_GAIN == 1
     {
         // one extra step to resolve +- summer time
         let h_: Vec<&str> = c_date.split(" ").collect();
@@ -274,15 +328,15 @@ pub fn get_a_cycle_range(
         } else {
             h = "06:00:00".to_string();
         }
-        let c_date_: Vec<&str> = c_date.split(" ").collect();
-        c_date = c_date_[0].to_string() + " " + &h;
+        let date_dtl: Vec<&str> = c_date.split(" ").collect();
+        c_date = date_dtl[0].to_string() + " " + &h;
     }
 
     let min_creation_date: String;
     if forward_by_cycle == 0 {
-        min_creation_date = minutes_before((back_by_cycle as u32 * get_cycle_by_minutes()) as u64, c_date);
+        min_creation_date = minutes_before((back_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, c_date);
     } else {
-        min_creation_date = minutes_after((forward_by_cycle as u32 * get_cycle_by_minutes()) as u64, c_date);
+        min_creation_date = minutes_after((forward_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, c_date);
     }
 
     let day: Vec<&str> = min_creation_date.split(" ").collect();
@@ -291,13 +345,13 @@ pub fn get_a_cycle_range(
     let time_details: String = time_details[1].to_string();
     let time_details: Vec<&str> = time_details.split(":").collect();
     let minutes_h: String = time_details[0].to_string();
-    let minutes_h: u32 = minutes_h.parse::<u32>().unwrap() * 60;
+    let minutes_h: TimeByMinutesT = minutes_h.parse::<TimeByMinutesT>().unwrap() * 60;
     let minutes_m: String = time_details[1].to_string();
-    let minutes_m: u32 = minutes_m.parse::<u32>().unwrap();
+    let minutes_m: TimeByMinutesT = minutes_m.parse::<TimeByMinutesT>().unwrap();
     // let minutes: u32 = (time_details[0].to_string().parse::<u32>().unwrap() * 60) + time_details[1].to_string().parse::<u32>().unwrap();
-    let minutes: u32 = minutes_h + minutes_m;
-    let start_minute: u32 = (minutes / get_cycle_by_minutes()) as u32 * get_cycle_by_minutes();
-    let end_minute: u32 = start_minute + get_cycle_by_minutes() - 1;
+    let minutes: TimeByMinutesT = minutes_h + minutes_m;
+    let start_minute: TimeByMinutesT = (minutes / get_cycle_by_minutes()) as TimeByMinutesT * get_cycle_by_minutes();
+    let end_minute: TimeByMinutesT = start_minute + get_cycle_by_minutes() - 1;
     return TimeRange {
         from: day.clone() + " " + &convert_minutes_to_hhmm(start_minute) + ":00",
         to: day.clone() + " " + &convert_minutes_to_hhmm(end_minute) + ":59",
@@ -306,15 +360,15 @@ pub fn get_a_cycle_range(
 
 
 //old_name_was convertMinutesToHHMM
-pub fn convert_minutes_to_hhmm(minutes: u32) -> String {
-    let h: u32 = minutes / 60;
+pub fn convert_minutes_to_hhmm(minutes: TimeByMinutesT) -> String {
+    let h: TimeByMinutesT = minutes / 60;
     let mut h: String = h.to_string();
     h = left_padding(h, 2);
 
-    let m: u32 = minutes % 60;
+    let m: TimeByMinutesT = minutes % 60;
     let mut m: String = m.to_string();
     m = left_padding(m, 2);
-    // return QString::number((minutes / 60) as u8).rightJustified(2, '0') + ':' + QString::number(minutes % 60).rightJustified(2, '0');
+    // return String::number((minutes / 60) as u8).rightJustified(2, '0') + ':' + String::number(minutes % 60).rightJustified(2, '0');
     return h + ":" + &m;
 }
 
@@ -334,7 +388,7 @@ pub fn minutes_before(back_in_time_by_minutes: u64, c_date: CDateT) -> String {
 }
 
 //old_name_was minutesAfter
-pub fn minutes_after(forward_in_time_by_minutes: u64, c_date: CDateT) -> String {
+pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: CDateT) -> String {
     let mut since_epoch: i64;
     if c_date == "" {
         since_epoch = Utc::now().timestamp();
@@ -349,19 +403,14 @@ pub fn minutes_after(forward_in_time_by_minutes: u64, c_date: CDateT) -> String 
 
 //old name was getCoinbaseRange
 #[allow(dead_code)]
-pub fn get_coinbase_range(c_date: CDateT) -> TimeRange {
-    return get_a_cycle_range(&c_date, 0, 0);
+pub fn get_coinbase_range(c_date: &CDateT) -> TimeRange {
+    return get_a_cycle_range(c_date, 0, 0);
 }
 
 //old_name_was getCoinbaseCycleStamp
-pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
-    let mut c_date = c_date_.clone();
-    if c_date == "" {
-        c_date = get_now();
-    }
-
-    if CConsts::TIME_GAIN == 1 {
-        return get_a_cycle_range(&c_date, 0, 0).from;
+pub fn get_coinbase_cycle_stamp(c_date: &CDateT) -> String {
+    if constants::TIME_GAIN == 1 {
+        return get_a_cycle_range(c_date, 0, 0).from;
     }
 
     let day: Vec<&str> = c_date.split(" ").collect();
@@ -371,14 +420,14 @@ pub fn get_coinbase_cycle_stamp(c_date_: CDateT) -> String {
 //old_name_was getCbUTXOsDateRange
 #[allow(dead_code)]
 pub fn get_cb_coins_date_range(c_date: &CDateT) -> TimeRange {
-    return get_a_cycle_range(c_date, CConsts::COINBASE_MATURATION_CYCLES, 0);
+    return get_a_cycle_range(c_date, constants::COINBASE_MATURATION_CYCLES, 0);
 }
 
 //old_name_was getCoinbaseInfo
 #[allow(dead_code)]
-pub fn get_coinbase_info(c_date: CDateT, cycle: String) -> (String, String, String, String, String) {
+pub fn get_coinbase_info(c_date: &CDateT, cycle: &str) -> (String, String, String, String, String) {
     if c_date != "" {
-        let the_range = get_coinbase_range(c_date.clone());
+        let the_range = get_coinbase_range(c_date);
         let from_hour: Vec<&str> = the_range.from.split(' ').collect();
         let from_hour: String = from_hour[1].to_string();
         let to_hour: Vec<&str> = the_range.to.split(' ').collect();
@@ -389,13 +438,13 @@ pub fn get_coinbase_info(c_date: CDateT, cycle: String) -> (String, String, Stri
             from_hour, to_hour
         );
     } else if cycle != "" {
-        let the_range = get_coinbase_range_by_cycle_stamp(cycle.clone());
+        let the_range = get_coinbase_range_by_cycle_stamp(cycle);
         let from_hour: Vec<&str> = the_range.from.split(' ').collect();
         let from_hour: String = from_hour[1].to_string();
         let to_hour: Vec<&str> = the_range.to.split(' ').collect();
         let to_hour: String = to_hour[1].to_string();
         return (
-            cycle.clone(),
+            cycle.to_string().clone(),
             the_range.from, the_range.to,
             from_hour, to_hour
         );
@@ -403,11 +452,26 @@ pub fn get_coinbase_info(c_date: CDateT, cycle: String) -> (String, String, Stri
     panic!("invalid input for get Coinbase Info");
 }
 
+pub fn yearsBefore(backInTimesByYears: u64, cDate: &CDateT) -> String
+{
+    let since_epoch: i64;
+    if cDate == ""
+    {
+        since_epoch = get_since_epoch();
+    } else {
+        let dt = make_date_from_str(cDate);
+        since_epoch = dt.timestamp();
+    }
+    since_epoch -= (backInTimesByYears * 31536000 as TimeBySecT) as i64; // 365Days * 24Hours * 60Minutes * 60Seconds
+    let dt = Utc.timestamp(since_epoch, 0);
+    return dt.format("%Y-%m-%d %H:%M:%S").to_string();
+}
+
 //old_name_was getCoinbaseRangeByCycleStamp
 #[allow(dead_code)]
-pub fn get_coinbase_range_by_cycle_stamp(cycle: String) -> TimeRange {
+pub fn get_coinbase_range_by_cycle_stamp(cycle: &str) -> TimeRange {
     let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
-    let cycle_dtl: Vec<&str> = cycle.split(" ").collect();
+    let cycle_dtl: Vec<&str> = cycle.to_string().split(" ").collect();
     if cycle_dtl[1].to_string() == "00:00:00" {
         res.from = cycle_dtl[0].to_string() + &" 00:00:00".to_string();
         res.to = cycle_dtl[0].to_string() + &" 11:59:59".to_string();
@@ -420,8 +484,13 @@ pub fn get_coinbase_range_by_cycle_stamp(cycle: String) -> TimeRange {
         let c_date: CDateT = minutes_after(
             cycle_dtl[1].to_string().parse::<u64>().unwrap() * (get_cycle_by_minutes() as u64),
             cycle_dtl[0].to_string() + &" 00:00:01");
-        return get_coinbase_range(c_date);
+        return get_coinbase_range(&c_date);
     }
+}
+
+pub fn getPrevCoinbaseInfo(c_date: &CDateT) -> (String, String, String, String, String)
+{
+    return get_coinbase_info(&get_a_cycle_range(c_date, 1, 0).from, "");
 }
 
 //old_name_was chunkString
@@ -438,7 +507,7 @@ pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
 
 
 //old_name_was chunkStringList
-//old_name_was chunkQStringList
+//old_name_was chunkStringList
 
 //old_name_was chunkStringList
 pub fn chunk_to_vvstring(values: Vec<String>, chunk_size: u64) -> VVString {
@@ -513,6 +582,28 @@ pub fn clone_vvec<T: Clone>(inp_vvec: &Vec<Vec<T>>) -> Vec<Vec<T>> {
     out
 }
 
+//old_name_was convertCommaSeperatedToArray
+pub fn convert_comma_separated_to_array(inp: &String, separator: &String) -> Vec<String>
+{
+    if inp == "" {
+        return vec![];
+    }
+
+    let mut out: Vec<String> = vec![];
+    let mut elements: Vec<String> = inp
+        .split(separator)
+        .collect::<Vec<&str>>()
+        .iter().map(|x| x.to_string())
+        .collect::<Vec<String>>();
+    for elm in elements {
+        if elm != "" {
+            out.push(elm);
+        }
+    }
+    out.sort();
+    out.dedup();
+    return out;
+}
 
 pub trait ExtendString {
     fn clone_me(&self) -> String;
@@ -573,4 +664,118 @@ pub fn hash64c(s: &String) -> String
 pub fn short_bech16(s: &String) -> String
 {
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
+}
+
+pub fn serializeJson(j_obj: &JSonObject) -> String
+{
+    serde_json::to_string(&j_obj).unwrap()
+}
+
+pub fn parseToJsonObj(serialized: &String) -> JSonObject
+{
+    return serde_json::from_str(serialized).unwrap();
+}
+
+
+pub fn sepNum(number: i64) -> String
+{
+    let mut str_number: String = number.to_string();
+    let mut sign = "";
+    if str_number.substring(0, 1) == "-"
+    {
+        str_number = str_number.substring(1, str_number.len()).to_string();
+        sign = "-";
+    }
+
+    let segments: Vec<String> = chunk_string(&left_padding(str_number, 30), 3);
+
+    str_number = segments.join(",");
+    while (str_number.substring(0, 1) == "0") || (str_number.substring(0, 1) == ",")
+    {
+        str_number = str_number.substring(1, str_number.len()).to_string();
+    }
+
+    if str_number == ""
+    {
+        return "0".to_string();
+    }
+
+    return sign.to_owned() + &str_number;
+}
+
+pub fn CFloor(v: f64) -> i64
+{
+    return v.floor() as i64;
+}
+
+pub fn customFloorFloat(number: f64, percision: u8) -> f64
+{
+    let the_gain: f64 = 10_i32.pow(percision as u32) as f64;
+    return (number * the_gain) / the_gain;
+}
+
+pub fn iFloorFloat(number: f64) -> f64
+{
+    return customFloorFloat(number, 11); // in order to keep maximum 11 digit after point
+}
+
+pub fn arrayDiff(superset: &Vec<String>, subset: &Vec<String>) -> Vec<String>
+{
+    let mut remined_values: Vec<String> = vec![];
+    for element in superset {
+        if !subset.contains(element) {
+            remined_values.push(element.clone());
+        }
+    }
+    return remined_values;
+}
+
+pub fn convertJSonArrayToStringVector(inp: &JSonArray) -> Vec<String> {
+    if !inp.is_array() {
+        return vec![];
+    }
+    let mut out: Vec<String> = vec![];
+    let mut inx: usize = 0;
+    while !inp[inx].is_null() {
+        out.push(inp[inx].to_string());
+        inx += 1;
+    }
+    return out;
+}
+
+pub fn parseToJsonArr(serialized: &String) -> JSonArray
+{
+    serde_json::from_str(serialized).unwrap()
+}
+
+
+pub fn arrayAdd(arr1: &Vec<String>, arr2: &Vec<String>) -> Vec<String>
+{
+    let mut out: Vec<String> = arr1.clone();
+    for elm in arr2
+    { out.push(elm.clone()); }
+    return out;
+}
+
+pub fn arrayUnique(inp_arr: &Vec<String>) -> Vec<String>
+{
+    let mut out_arr: Vec<String> = vec![];
+    for elm in inp_arr {
+        if !out_arr.contains(elm) {
+            out_arr.push(elm.clone());
+        }
+    }
+    out_arr
+}
+
+
+pub fn packCoinCode(ref_trx_hash: &CDocHashT, output_index: COutputIndexT) -> CCoinCodeT
+{
+    return vec![ref_trx_hash.to_string(), output_index.to_string()].join(":");
+}
+
+pub fn unpackCoinCode(coin: &CCoinCodeT) -> (String, COutputIndexT)
+{
+    let segments: Vec<&str> = coin.split(":").collect();
+    return (segments[0].to_string(), segments[1].parse::<COutputIndexT>().unwrap());
 }

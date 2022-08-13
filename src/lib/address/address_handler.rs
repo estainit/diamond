@@ -18,10 +18,10 @@ pub fn create_a_new_address<'a>(
         } else {
             return create_anew_basic_address(signature_mod, signature_version);
         }
-    } else if (signature_type == constants::signature_types::STRICT)
+    } else if signature_type == constants::signature_types::STRICT
     {
         return create_a_new_strict_address(signature_mod, signature_version);
-    } else if (signature_type == constants::signature_types::BITCOIN)
+    } else if signature_type == constants::signature_types::BITCOIN
     {
 //    return bitcoinAddressHandler.createANewBitcoinAddress(args);
     }

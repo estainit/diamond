@@ -260,7 +260,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     b_docs_count INT,    -- documents counts
     b_ancestors_count INT NOT NULL,    -- ancestors counts
     b_ancestors text NOT NULL,    -- comma seperated block ancestors
-    b_descendents text NULL,    -- comma seperated block descendents
+    b_descendants text NULL,    -- comma seperated block descendents
     b_body text NOT NULL,    -- stringify json block full body
     b_creation_date varchar(32) NOT NULL,    -- the block creation date which stated by block creator
     b_receive_date varchar(32) NOT NULL,    -- the block receive date in local, only for statistics
@@ -555,8 +555,8 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     mb_insert_date varchar(32) NOT NULL,    -- the datein which machine discovered she missed this block
     mb_invoke_attempts INT NULL,    -- invoke attempts, to avoid blocking on one block
     mb_last_invoke_date varchar(32) NOT NULL,
-    mb_descendents_count INT NULL,    -- number of blocks whom need this block (potential descendents)
-    mb_descendents text    -- potentially descendents hash
+    mb_descendants_count INT NULL,    -- number of blocks whom need this block (potential descendents)
+    mb_descendants text    -- potentially descendents hash
     );
 ",
         "

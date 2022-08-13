@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 use substring::Substring;
-
-// use crate::lib::constants as cconsts;
+use crate::constants;
 use crate::lib::custom_types::{VString, VVString};
 use crate::lib::utils::cutils as cutils;
 use crate::lib::ccrypto;
-use crate::lib::constants as cconsts;
 use crate::lib::dlog::dlog;
 use crate::lib::utils::dumper;
 
@@ -129,7 +127,7 @@ pub fn generate_m(
     };
     let mut elms_ = elms.iter().map(|x|x.clone()).collect::<Vec<String>>();
     while inx < needed_leaves as usize {
-        let the_elm:String = ("leave_".to_owned() + &format!("{}", inx + 1));
+        let the_elm:String = "leave_".to_owned() + &(inx + 1).to_string();
         elms_.push(the_elm.clone());
         inx += 1;
     }
@@ -174,7 +172,7 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
         return "h(".to_owned() + node_value + ")";
     } else {
         let err_msg = format!("Invalid hash algorithm for merkle!: {}", hash_algorithm);
-        dlog(&err_msg, cconsts::Modules::App, cconsts::SecLevel::Fatal);
+        dlog(&err_msg, constants::Modules::App, constants::SecLevel::Fatal);
         return err_msg.to_string();
     }
 }
@@ -215,12 +213,12 @@ pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: 
 
         if elms.len() % 2 == 1 {
             let err_msg = format!("FATAL ERROR ON MERKLE GENERATING: {}", dumper::dump_it(elms));
-            dlog(&err_msg, cconsts::Modules::App, cconsts::SecLevel::Fatal);
+            dlog(&err_msg, constants::Modules::App, constants::SecLevel::Fatal);
             panic!("{}", err_msg);
             // // adding parity right fake hash
-            // QString the_hash = elms[elms.len() - 1];
+            // String the_hash = elms[elms.len() - 1];
             // if (version > "0.0.0")
-            //     the_hash = CConsts::FAKE_RIGHT_HASH_PREFIX + the_hash;
+            //     the_hash = constants::FAKE_RIGHT_HASH_PREFIX + the_hash;
             // elms.push(the_hash);
         }
 
@@ -328,28 +326,28 @@ pub fn get_root_by_a_prove(
 }
 
 /*
-std::tuple<QString, MNodesMapT, QString, int, int> generate(QStringList elms, QString inputType = "hashed", QString hash_algorithm = "keccak256", QString version = MERKLE_VERSION);
+std::tuple<String, MNodesMapT, String, int, int> generate(StringList elms, String inputType = "hashed", String hash_algorithm = "keccak256", String version = MERKLE_VERSION);
 
-QString do_hash_a_node(const QString & node_value, const QString & hash_algorithm = "keccak256");
+String do_hash_a_node(const String & node_value, const String & hash_algorithm = "keccak256");
 
-std::tuple<QString, MNodesMapT, int, int> innerMerkle(
-QStringList elms,
-QString inputType = "hashed",
-QString hashAlgorithm = "keccak256",
-QString version = MERKLE_VERSION);
+std::tuple<String, MNodesMapT, int, int> innerMerkle(
+StringList elms,
+String inputType = "hashed",
+String hashAlgorithm = "keccak256",
+String version = MERKLE_VERSION);
 
 
 
-QString dumpAProof(const MerkleNodeData & a_proof);
-QString dumpProofs(const MNodesMapT & proofs);
+String dumpAProof(const MerkleNodeData & a_proof);
+String dumpProofs(const MNodesMapT & proofs);
 
 };
 
 
 
-QString dumpAProof(const MerkleNodeData& a_proof)
+String dumpAProof(const MerkleNodeData& a_proof)
 {
-  QString out = "";
+  String out = "";
   out += "\n Parent: " + a_proof.m_parent;
   out += "\n Proof Keys: " + a_proof.m_proof_keys.join(", ");
   out += "\n Left Hash: " + a_proof.m_left_hash;
@@ -357,10 +355,10 @@ QString dumpAProof(const MerkleNodeData& a_proof)
   return out;
 }
 
-QString dumpProofs(const MNodesMapT& proofs)
+String dumpProofs(const MNodesMapT& proofs)
 {
-  QString out = "";
-  for (QString a_leave_hash: proofs.into_keys().collect())
+  String out = "";
+  for (String a_leave_hash: proofs.into_keys().collect())
   {
     out += "\n\n The Proof for leave hash: " + a_leave_hash;
     out += dumpAProof(proofs[a_leave_hash]);

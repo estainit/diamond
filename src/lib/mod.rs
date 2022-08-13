@@ -1,6 +1,7 @@
 pub mod address;
 pub mod bech_32;
 pub mod block;
+pub mod block_utils;
 pub mod ccrypto;
 pub mod constants;
 pub mod custom_types;
@@ -21,3 +22,4 @@ pub mod threads_handler;
 pub mod transactions;
 pub mod utils;
 pub mod wallet;
+pub mod pgp;

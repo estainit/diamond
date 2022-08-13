@@ -44,11 +44,11 @@ pub fn create_a_new_strict_address<'a>(
             m_signature_key: public_key,
             m_permitted_to_pledge: constants::NO.to_string(),
             m_permitted_to_delegate: constants::NO.to_string(),
-            m_input_time_lock: 0,
-            m_output_time_lock: 0,
+            m_input_time_lock: 0.0,
+            m_output_time_lock: 0.0,
         };
 
-        a_sign_set.m_signer_id = cutils::padding_length_value(format!("{}", i), 7);
+        a_sign_set.m_signer_id = cutils::padding_length_value(i.to_string(), constants::LEN_PROP_LENGTH);
         if i == 0 {
             a_sign_set.m_permitted_to_pledge = constants::YES.to_string();  // only one signature permitted to pledge account
             a_sign_set.m_permitted_to_delegate = constants::YES.to_string();  // only one signature permitted to delegate
@@ -103,7 +103,7 @@ pub fn create_a_new_strict_address<'a>(
     {
         for inx in 0..an_unlock_set.m_signature_sets.len()
         {
-            let (status, signature_hex, signature) = ccrypto::ecdsa_sign_message(
+            let (status, signature_hex, _signature) = ccrypto::ecdsa_sign_message(
                 &unlock_info.m_private_keys.get(&an_unlock_set.m_salt).unwrap()[inx].to_string(),
                 &message);
             if !status

@@ -1,232 +1,280 @@
-/*
-#include "stable.h"
+use std::collections::HashMap;
+use crate::{constants, cutils, dlog, machine};
+use crate::lib::custom_types::{QVDRecordsT, VVString};
+use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::STBLDEV_SENDING_Q;
+use crate::lib::network::broadcast_logger::{addSentBlock, listSentBloksIds};
+use crate::lib::pgp::cpgp::encryptPGP;
+use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
 
-#include "lib/network/network_handler.h"
-#include "lib/parsing_q_handler/parsing_q_handler.h"
 
-#include "sending_q_handler.h"
-
-const QString SendingQHandler::stbl_sending_q = "c_sending_q";
-const QStringList SendingQHandler::stbl_sending_q_fields = {"sq_id", "sq_type", "sq_code", "sq_title", "sq_sender", "sq_receiver", "sq_connection_type", "sq_payload"};
-const QString SendingQHandler::stbldev_sending_q = "cdev_sending_q";
-
-SendingQHandler::SendingQHandler()
+pub fn preparePacketsForNeighbors(
+    sq_type: &str,
+    sq_code: &str,
+    sq_payload: &str,
+    sq_title: &str,
+    sq_receivers: &Vec<String>,
+    no_receivers: &Vec<String>,
+    denay_double_send_check: bool) -> VVString
 {
+    dlog(
+        &format!("prepare PacketsForNeighbors args: "),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
 
+    if sq_receivers.len() > 0
+    {
+        dlog(
+            &format!("targeted packet to {}", dump_it(sq_receivers)),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
+    }
+
+    if no_receivers.len() > 0
+    {
+        dlog(
+            &format!("no targeted packet to {}", dump_it(no_receivers)),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
+    }
+
+    let mut neighbors: QVDRecordsT = machine().getActiveNeighbors(&machine().getSelectedMProfile());
+    if sq_receivers.len() > 0
+    {
+        // keep only requested neighbors
+        let mut selectedNeighbors: QVDRecordsT = vec![];
+        for neighbor in neighbors
+        {
+            if sq_receivers.contains(&neighbor["n_email"].to_string()) {
+                selectedNeighbors.push(neighbor);
+            }
+        }
+        neighbors = selectedNeighbors;
+    }
+
+    if no_receivers.len() > 0
+    {
+        // keep only requested neighbors
+        let mut selectedNeighbors: QVDRecordsT = vec![];
+        for neighbor in neighbors
+        {
+            if !no_receivers.contains(&neighbor["n_email"].to_string())
+            {
+                selectedNeighbors.push(neighbor);
+            }
+        }
+        neighbors = selectedNeighbors;
+    }
+    dlog(
+        &format!("Finall Selected Neighbors= {}", dump_hashmap_of_QVDRecordsT(&neighbors)),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    if neighbors.len() == 0
+    {
+        dlog(
+            &format!("There is no neighbore to send prepare Packets For Neighbors"),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
+        return vec![];
+    }
+
+    // let pub_email_info: &EmailSettings = machine().getPubEmailInfo();
+    // let prive_email_info: &EmailSettings = machine().getPrivEmailInfo();
+
+    let mut packets: VVString = vec![];
+    let mut sender: String;
+    for neighbor in neighbors
+    {
+        let receiver_pub_key: String = neighbor["n_pgp_public_key"].to_string();
+        if receiver_pub_key == ""
+        { continue; }
+
+        let sender_priv_key: String;
+        let connection_type: String = neighbor["n_connection_type"].clone();
+        let receiver_email: String = neighbor["n_email"].clone();
+
+        if connection_type == constants::PRIVATE
+        {
+            sender = machine().getPrivEmailInfo().m_address.clone();
+            sender_priv_key = machine().getPrivEmailInfo().m_pgp_private_key.clone();
+        } else {
+            sender = machine().getPubEmailInfo().m_address.clone();
+            sender_priv_key = machine().getPubEmailInfo().m_pgp_private_key.clone();
+        }
+
+        let key: String = vec![sq_type, sq_code, &*sender, &receiver_email].join("");
+
+        if listSentBloksIds().contains(&key)
+        {
+            dlog(
+                &format!("already send packet! {}", key),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            if !denay_double_send_check
+            { continue; }
+        }
+
+        let (pgp_status, emailBody) = encryptPGP(
+            sq_payload,
+            &*sender_priv_key,
+            &*receiver_pub_key,
+            "",
+            "",
+            true,
+            true);
+        if !pgp_status
+        {
+            dlog(
+                &format!("failed in encrypt PGP"),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            continue;
+        }
+        // emailBody = cutils::breakByBR(emailBody);
+        // emailBody = wrapPGPEnvelope(emailBody);
+
+        // control output size
+        if emailBody.len() > constants::MAX_BLOCK_LENGTH_BY_CHAR
+        {
+            dlog(
+                &format!("excedded max packet size for packet type({}) code({})", sq_type, sq_code),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            continue;
+        }
+
+        packets.push(
+            vec![
+                connection_type.clone(),
+                sq_title.to_string(),
+                sq_type.to_string(),
+                sq_code.to_string(),
+                sender.clone(),
+                receiver_email.clone(),
+                emailBody,   //sqPyload
+            ]);
+
+
+        addSentBlock(&mut HashMap::from([
+            ("lb_type", sq_type),
+            ("lb_code", sq_code),
+            ("lb_title", sq_title),
+            ("lb_sender", sender.as_str()),
+            ("lb_receiver", receiver_email.as_str()),
+            ("lb_connection_type", connection_type.as_str())
+        ]));
+    }
+    return packets;
+
+    //TODO after successfull sending must save some part the result and change the email to confirmed
 }
 
 
-CListListT SendingQHandler::preparePacketsForNeighbors(
-    const QString& sq_type,
-    const QString& sq_code,
-    const QString& sq_payload,
-    const QString& sq_title,
-    const QStringList& sq_receivers,
-    const QStringList& no_receivers,
-    const bool& denay_double_send_check
-    )
+pub fn pushIntoSendingQ(
+    sq_type: &str,
+    sq_code: &str,
+    sq_payload: &str,
+    sq_title: &str,
+    sq_receivers: &Vec<String>,
+    no_receivers: &Vec<String>,
+    denay_double_send_check: bool,
+) -> bool
 {
-  CLog::log("prepare PacketsForNeighbors args: ", "app", "trace");
-
-  if (sq_receivers.size() > 0)
-     CLog::log("targeted packet to " + CUtils::dumpIt(sq_receivers), "app", "trace");
-
-  if (no_receivers.size() > 0 )
-     CLog::log("no targeted packet to " + CUtils::dumpIt(no_receivers));
-
-  QVDRecordsT neighbors = CMachine::get().getActiveNeighbors();
-  if (sq_receivers.size() > 0)
-  {
-    // keep only requested neighbors
-    QVDRecordsT selectedNeighbors;
-    for (QVDicT neighbor: neighbors)
-      if (sq_receivers.contains(neighbor.value("n_email").to_string()))
-        selectedNeighbors.push(neighbor);
-    neighbors = selectedNeighbors;
-  }
-
-  if (no_receivers.size() > 0)
-  {
-     // keep only requested neighbors
-     QVDRecordsT selectedNeighbors;
-     for (QVDicT neighbor: neighbors)
-         if (!no_receivers.contains(neighbor.value("n_email").to_string()))
-             selectedNeighbors.push(neighbor);
-     neighbors = selectedNeighbors;
-  }
-
-  CLog::log("Finall Selected Neighbors= " + CUtils::dumpIt(neighbors), "app", "trace");
-
-  if (neighbors.size() == 0)
-  {
-     CLog::log("There is no neighbore to send prepare Packets For Neighbors", "app", "trace");
-     return {};
-  }
-
-  EmailSettings pub_email_info = CMachine::getPubEmailInfo();
-  EmailSettings prive_email_info = CMachine::getPrivEmailInfo();
-
-  CListListT packets;
-  QString sender;
-  for (QVDicT neighbor: neighbors)
-  {
-    QString receiver_pub_key = neighbor.value("n_pgp_public_key", "").to_string();
-    if (receiver_pub_key == "")
-      continue;
-
-//     let params = {
-//         shouldSign: true,
-//         shouldCompress: true,
-//         message: args.sq_payload,
-//     };
-    QString sender_priv_key;
-    QString connection_type = neighbor.value("n_connection_type", "").to_string();
-    QString receiver_email = neighbor.value("n_email", "").to_string();
-    if (connection_type == CConsts::PRIVATE)
-    {
-      sender = prive_email_info.m_address;
-      sender_priv_key = prive_email_info.m_PGP_private_key;
-    } else {
-      sender = pub_email_info.m_address;
-      sender_priv_key = pub_email_info.m_PGP_private_key;
-    }
-
-    QString key = QStringList {sq_type, sq_code, sender, receiver_email}.join("");
-
-    if (BroadcastLogger::listSentBloksIds().contains(key))
-    {
-      CLog::log("already send packet! " + key, "app", "error");
-      if (!denay_double_send_check)
-        continue;
-    }
-
-    auto[pgp_status, emailBody] = CPGP::encryptPGP(sq_payload, sender_priv_key, receiver_pub_key);
-    if (!pgp_status)
-    {
-      CLog::log("failed in encrypt PGP", "app", "error");
-      continue;
-    }
-    emailBody = CUtils::breakByBR(emailBody);
-    emailBody = CPGP::wrapPGPEnvelope(emailBody);
-
-    // control output size
-    if (static_cast<uint64_t>(emailBody.length()) > CConsts::MAX_BLOCK_LENGTH_BY_CHAR)
-    {
-      CLog::log("excedded max packet size for packet type(" + sq_type + ") code(" + sq_code + ")", "app", "error");
-      continue;
-    }
-
-    packets.append(
-      QStringList{
-        connection_type,
-        sq_title,
+    let packets: VVString = preparePacketsForNeighbors(
         sq_type,
         sq_code,
-        sender,
-        receiver_email,
-        emailBody   //sqPyload
-    });
+        sq_payload,
+        sq_title,
+        sq_receivers,
+        no_receivers,
+        denay_double_send_check);
 
+    dlog(
+        &format!("prepare PacketsForNeighbors res packets: {:?}", packets),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
 
-    BroadcastLogger::addSentBlock({
-      {"lb_type", sq_type},
-      {"lb_code", sq_code},
-      {"lb_title", sq_title},
-      {"lb_sender", sender},
-      {"lb_receiver", receiver_email},
-      {"lb_connection_type", connection_type}
-    });
-  }
-  return packets;
-
-  //TODO after successfull sending must save some part the result and change the email to confirmed
-}
-
-
-bool SendingQHandler::pushIntoSendingQ(
-    const QString& sq_type,
-    const QString& sq_code,
-    const QString& sq_payload,
-    const QString& sq_title,
-    const QStringList& sq_receivers,
-    const QStringList& no_receivers,
-    const bool& denay_double_send_check
-    )
-{
-  CListListT packets = preparePacketsForNeighbors(
-    sq_type,
-    sq_code,
-    sq_payload,
-    sq_title,
-    sq_receivers,
-    no_receivers,
-    denay_double_send_check);
-
-  CLog::log("prepare PacketsForNeighbors res packets: " + CUtils::dumpIt(packets));
-
-  for (QStringList packet: packets)
-  {
-    CLog::log("inserting in '_sending_q' " + packet[2] +"-" + packet[3] + " for " + packet[5] + " " + packet[1]);
-    QueryRes dblChk = DbModel::select(
-      stbl_sending_q,
-      {"sq_type", "sq_code"},
-      {
-        {"sq_type", packet[2]},
-        {"sq_code", packet[3]},
-        {"sq_sender", packet[4]},
-        {"sq_receiver", packet[5]},
-      });
-    CLog::log("packet pushed to send(" + QString::number(dblChk.records.size()) + ") from " + packet[4] + " to " + packet[5] + " " + packet[2] + "(" + packet[3] + ")", "app", "trace");
-
-    if (dblChk.records.size() == 0)
+    for packet in packets
     {
-      QVDicT values {
-        {"sq_type", packet[2]},
-        {"sq_code", packet[3]},
-        {"sq_title", packet[1]},
-        {"sq_sender", packet[4]},
-        {"sq_receiver", packet[5]},
-        {"sq_connection_type", packet[0]},
-        {"sq_payload", packet[6]},
-        {"sq_send_attempts", 0},
-        {"sq_creation_date", CUtils::getNow()},
-        {"sq_last_modified", CUtils::getNow()}
-      };
-      DbModel::insert(
-        stbl_sending_q,
-        values,
-        false,
-        false);
+        dlog(
+            &format!("inserting in '_sending_q' {}-{} for {} {}", packet[2], packet[3], packet[5], packet[1]),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
 
-      if (CMachine::isDevelopMod())
-      {
-        QueryRes dblChk = DbModel::select(
-          stbldev_sending_q,
-          {"sq_type", "sq_code"},
-          {
-            {"sq_type", packet[2]},
-            {"sq_code", packet[3]},
-            {"sq_sender", packet[4]},
-            {"sq_receiver", packet[5]}});
 
-        if (dblChk.records.size() == 0)
-          DbModel::insert(
-            stbldev_sending_q,
-            values,
-            false,
-            false);
-      }
+        let (_status, records) = q_select(
+            STBLDEV_SENDING_Q,
+            &vec!["sq_type", "sq_code"],
+            &vec![
+                &simple_eq_clause("sq_type", &packet[2]),
+                &simple_eq_clause("sq_code", &packet[3]),
+                &simple_eq_clause("sq_sender", &packet[4]),
+                &simple_eq_clause("sq_receiver", &packet[5]),
+            ],
+            &vec![],
+            0,
+            true,
+        );
+        dlog(
+            &format!("packet pushed to send({}) from {} to {} {} ({})", records.len(), packet[4], packet[5], packet[2], packet[3]),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
+
+        if records.len() == 0
+        {
+            let now = cutils::get_now();
+            let values: HashMap<&str, &str> = HashMap::from([
+                ("sq_type", &*packet[2]),
+                ("sq_code", &*packet[3]),
+                ("sq_title", &*packet[1]),
+                ("sq_sender", &*packet[4]),
+                ("sq_receiver", &*packet[5]),
+                ("sq_connection_type", &*packet[0]),
+                ("sq_payload", &*packet[6]),
+                ("sq_send_attempts", "0"),
+                ("sq_creation_date", now.as_str()),
+                ("sq_last_modified", now.as_str())
+            ]);
+            q_insert(
+                STBLDEV_SENDING_Q,
+                &values,
+                false);
+
+            if machine().isDevelopMod()
+            {
+                let (_status, records) = q_select(
+                    STBLDEV_SENDING_Q,
+                    &vec!["sq_type", "sq_code"],
+                    &vec![
+                        &simple_eq_clause("sq_type", &packet[2]),
+                        &simple_eq_clause("sq_code", &packet[3]),
+                        &simple_eq_clause("sq_sender", &packet[4]),
+                        &simple_eq_clause("sq_receiver", &packet[5]),
+                    ],
+                    &vec![],
+                    0,
+                    true);
+
+                if records.len() == 0 {
+                    q_insert(
+                        STBLDEV_SENDING_Q,
+                        &values,
+                        false);
+                }
+            }
+        }
     }
-  }
-  return true;
+    return true;
 }
 
+/*
 QVDRecordsT SendingQHandler::fetchFromSendingQ(
-  QStringList fields,
+  StringList fields,
   ClausesT clauses,
   OrderT order)
 {
-  if (fields.size() == 0)
+  if (fields.len() == 0)
     fields = stbl_sending_q_fields;
 
   QueryRes cpackets = DbModel::select(
@@ -241,7 +289,7 @@ void SendingQHandler::cancelIvokeBlockRequest(const CBlockHashT& block_hash)
 {
   DbModel::dDelete(
     stbl_sending_q,
-    {{"sq_type", CConsts::MESSAGE_TYPES::DAG_INVOKE_BLOCK},
+    {{"sq_type", constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK},
     {"sq_code", block_hash}});
 }
 
@@ -251,29 +299,29 @@ void SendingQHandler::maybeCancelIvokeBlocksRequest()
   QueryRes existed = DbModel::select(
     stbl_sending_q,
     {"sq_code"},
-    {{"sq_type", CConsts::MESSAGE_TYPES::DAG_INVOKE_BLOCK}});
-  if(existed.records.size() == 0)
+    {{"sq_type", constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK}});
+  if(existed.records.len() == 0)
     return;
 
-  QStringList hashes;
+  StringList hashes;
   for (QVDicT elm: existed.records)
-    hashes.append(elm.value("sq_code").to_string());
-  CLog::log("Potentially block invoke requests(" + QString::number(existed.records.size()) + ")");
+    hashes.push(elm["sq_code"].to_string());
+  CLog::log("Potentially block invoke requests(" + String::number(existed.records.len()) + ")");
 
   QVDRecordsT existed_in_DAG = DAG::searchInDAG(
     {{"b_hash", hashes, "IN"}},
     {"b_hash"});
-  CLog::log("Potentially block invoke but existed In DAG(" + QString::number(existed_in_DAG.size()) + ")");
+  CLog::log("Potentially block invoke but existed In DAG(" + String::number(existed_in_DAG.len()) + ")");
   for (QVDicT a_block: existed_in_DAG)
-    cancelIvokeBlockRequest(a_block.value("b_hash").to_string());
+    cancelIvokeBlockRequest(a_block["b_hash"].to_string());
 
   // remove existed in parsing q
   QVDRecordsT existed_in_parsing_queue = ParsingQHandler::searchParsingQ(
     {{"pq_code", hashes, "IN"}},
     {"pq_code"});
-  CLog::log("Potentially block invoke but existed In Parsing queue(" + QString::number(existed_in_parsing_queue.size()) + ")");
+  CLog::log("Potentially block invoke but existed In Parsing queue(" + String::number(existed_in_parsing_queue.len()) + ")");
   for (QVDicT a_block: existed_in_parsing_queue)
-    cancelIvokeBlockRequest(a_block.value("pq_code").to_string());
+    cancelIvokeBlockRequest(a_block["pq_code"].to_string());
 
 }
 */
@@ -285,7 +333,7 @@ pub fn send_out_the_packet() -> bool
       maybeCancelIvokeBlocksRequest();
 
       QVDRecordsT cpackets = fetchFromSendingQ();
-      if (cpackets.size() == 0)
+      if (cpackets.len() == 0)
       {
         CLog::log("No packet in sending q to Send", "app", "trace");
         return true;
@@ -294,18 +342,18 @@ pub fn send_out_the_packet() -> bool
       // always pick the first pkt! TODO: maybe more intelligent solution needed
       QVDicT packet = cpackets[0];
       bool send_res = NetworkHandler::iPush(
-        packet.value("sq_title").to_string(),
-        packet.value("sq_payload").to_string(),
-        packet.value("sq_sender").to_string(),
-        packet.value("sq_receiver").to_string());
+        packet["sq_title"].to_string(),
+        packet["sq_payload"].to_string(),
+        packet["sq_sender"].to_string(),
+        packet["sq_receiver"].to_string());
 
       // remove packet from sending queue
       if (send_res)
         rmoveFromSendingQ({
-          {"sq_type", packet.value("sq_type")},
-          {"sq_code", packet.value("sq_code")},
-          {"sq_sender", packet.value("sq_sender")},
-          {"sq_receiver", packet.value("sq_receiver")}});
+          {"sq_type", packet["sq_type"]},
+          {"sq_code", packet["sq_code"]},
+          {"sq_sender", packet["sq_sender"]},
+          {"sq_receiver", packet["sq_receiver"]}});
     */
     return true;
 }
@@ -321,19 +369,19 @@ bool SendingQHandler::rmoveFromSendingQ(const ClausesT& clauses)
 
 void SendingQHandler::loopPullSendingQ()
 {
-  QString thread_prefix = "pull_from_sending_q_";
-  QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
+  String thread_prefix = "pull_from_sending_q_";
+  String thread_code = String::number((quint64)QThread::currentThread(), 16);
 
   while (CMachine::shouldLoopThreads())
   {
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     sendOutThePacket();
 
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getSendingQGap()));
   }
 
-  CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::STOPPED);
+  CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::STOPPED);
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Pull Sending Q");
 }
 

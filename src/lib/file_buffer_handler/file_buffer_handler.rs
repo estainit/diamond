@@ -1,5 +1,4 @@
 use crate::constants;
-use crate::lib::constants as cconsts;
 use crate::lib::file_handler as file_handler;
 
 
@@ -12,22 +11,22 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
     if !status || (bundle == "") { return false; };
 
     /*
-        QJsonObject DAGBundle = CUtils::parseToJsonObj(bundle);
-        QJsonArray blocks = DAGBundle.value("blocks").toArray();
-        QJsonObject ballots = DAGBundle.value("ballots").toObject();
+        JSonObject DAGBundle = cutils::parseToJsonObj(bundle);
+        JSonArray blocks = DAGBundle.value("blocks").toArray();
+        JSonObject ballots = DAGBundle.value("ballots").toObject();
 
-        CLog::log("Read & Dispatching (" + QString::number(blocks.size()) + ")blocks and (" + QString::number(ballots.keys().size()) + ")Ballots from DAGBundle");
+        CLog::log("Read & Dispatching (" + String::number(blocks.len()) + ")blocks and (" + String::number(ballots.keys().len()) + ")Ballots from DAGBundle");
         // normalizing/sanitize Ballots Receive Dates and upsert into kv
         try {
-        QJsonObject sanBallots {};
-        for (QString aBlt: ballots.keys())
+        JSonObject sanBallots {};
+        for (String aBlt: ballots.keys())
         {
-        QJsonObject a_ballot = ballots[aBlt].toObject();
-        sanBallots[aBlt] = QJsonObject {
-        {"baReceiveDate", CUtils::stripNonInDateString(a_ballot.value("baReceiveDate").to_string())},
+        JSonObject a_ballot = ballots[aBlt].toObject();
+        sanBallots[aBlt] = JSonObject {
+        {"baReceiveDate", cutils::stripNonInDateString(a_ballot.value("baReceiveDate").to_string())},
         {"baVoteRDiff", a_ballot.value("baVoteRDiff").toDouble()}};
         }
-        KVHandler::upsertKValue("ballotsReceiveDates", CUtils::serializeJson(sanBallots));
+        KVHandler::upsertKValue("ballotsReceiveDates", cutils::serializeJson(sanBallots));
         } catch (std::exception) {
         CLog::log("exception in reading DAGBundle", "sec", "error");
 
@@ -39,7 +38,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
         Dispatcher::dispatchMessage(
         "DAGBundle",
         aBlock.toObject(),
-        cconsts::PRIVATE);
+        constants::PRIVATE);
         }
 
         // Archive DAGBundle file in tmp folder
@@ -52,68 +51,69 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 //old_name_was readDAGBundleIfExist
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
+    let mut file_path: String = constants::HD_ROOT_FILES.to_string() + &"/";
     return file_handler::read(
-        &mut constants::HD_FILES.to_string(),
+        &mut file_path,
         &"DAGBundle.txt".to_string(),
         clone_id);
 }
 
 /*
 
-QStringList FileBufferHandler::listHardDiskInbox()
+StringList FileBufferHandler::listHardDiskInbox()
 {
-  QString inbox = CMachine::getInboxPath();
+  String inbox = CMachine::getInboxPath();
 
   CLog::log("reading inbox(" + inbox + ")", "app", "trace");
 
   QDir directory(inbox);
-  QStringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
 
-    if (files.size() == 0)
+    if (files.len() == 0)
     return {};
 
-  QStringList outs {};
+  StringList outs {};
   for(auto a_file: files)
-    outs.append(files[0]);
+    outs.push(files[0]);
 
   return outs;
 }
 
-QStringList FileBufferHandler::listHardDiskOutbox()
+StringList FileBufferHandler::listHardDiskOutbox()
 {
-  QString outbox = CMachine::getOutboxPath();
+  String outbox = CMachine::getOutboxPath();
 
   CLog::log("reading outbox(" + outbox + ")", "app", "trace");
 
   QDir directory(outbox);
-  QStringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
 
   // the live system never delet outbox, instead can delete outbox after parsing
-  if (files.size() == 0)
+  if (files.len() == 0)
     return {};
 
-  QStringList outs {};
+  StringList outs {};
   for(auto a_file: files)
-    outs.append(files[0]);
+    outs.push(files[0]);
 
   return outs;
 }
 
 void FileBufferHandler::loopReadAndParseHardDiskInbox()
 {
-  QString thread_prefix = "read_and_parse_hard_disk_inbox_";
-  QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
+  String thread_prefix = "read_and_parse_hard_disk_inbox_";
+  String thread_code = String::number((quint64)QThread::currentThread(), 16);
 
   while (CMachine::shouldLoopThreads())
   {
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     doReadAndParseHardDiskInbox();
 
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getHardDiskReadingGap()));
   }
 
-  CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::STOPPED);
+  CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::STOPPED);
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loopReadAndParseHardDiskInbox");
 }
 
@@ -135,7 +135,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         DbModel::insert(
           "cdev_inbox_logs",
           {
-            {"il_creation_date", CUtils::getNow()},
+            {"il_creation_date", cutils::get_now()},
             {"il_title", file_name}
           });
 
@@ -154,20 +154,20 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 
     //  listener.doCallSync('SPSH_after_parse_packet', { packet, parsePacketRes });
 
-      CLog::log("a cpacket received:" + CUtils::serializeJson(cpacket), "app", "trace");
+      CLog::log("a cpacket received:" + cutils::serializeJson(cpacket), "app", "trace");
 
       auto[dispatch_status, should_purge_file] = Dispatcher::dispatchMessage(
         sender,
         cpacket,
         connection_type);
 
-      CLog::log("Dispatch Message res: dispatch_status(" + CUtils::dumpIt(dispatch_status) + ") should_purge_file(" + CUtils::dumpIt(should_purge_file) + ") ", "app", "trace");
+      CLog::log("Dispatch Message res: dispatch_status(" + cutils::dumpIt(dispatch_status) + ") should_purge_file(" + cutils::dumpIt(should_purge_file) + ") ", "app", "trace");
 
       //should purge file?
       if (file_name != "")
       {
         if (should_purge_file == false) {
-            CLog::log("why should_purge_file == false? " + CUtils::serializeJson(cpacket), "sec", "error");;
+            CLog::log("why should_purge_file == false? " + cutils::serializeJson(cpacket), "sec", "error");;
         }
         maybePurgeMessage(file_name, should_purge_file);
       }
@@ -184,7 +184,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 }
 
 /*
-bool FileBufferHandler::maybePurgeMessage(const QString& full_path, const bool& should_purge_fessage)
+bool FileBufferHandler::maybePurgeMessage(const String& full_path, const bool& should_purge_fessage)
 {
   //should purge packet?
   bool is_expired = false;
@@ -219,17 +219,17 @@ bool FileBufferHandler::maybePurgeMessage(const QString& full_path, const bool& 
 //};
 
 
-std::tuple<bool, QString, QString, QString, QString> FileBufferHandler::readEmailFile()
+std::tuple<bool, String, String, String, String> FileBufferHandler::readEmailFile()
 {
-  QString inbox = CMachine::getInboxPath();
+  String inbox = CMachine::getInboxPath();
 
   CLog::log("reading inbox(" + inbox + ")", "app", "trace");
 
   QDir directory(inbox);
-  QStringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
 
   // the live system never delet outbox, instead can delete inbox after parsing
-  if (files.size() == 0)
+  if (files.len() == 0)
     return {
       true,
       "", // sender: '',
@@ -240,8 +240,8 @@ std::tuple<bool, QString, QString, QString, QString> FileBufferHandler::readEmai
 
 
 
-  QString file_name = files[0];
-  QString full_path = inbox + '/' + file_name;
+  String file_name = files[0];
+  String full_path = inbox + '/' + file_name;
   auto[status, content] = FileHandler::read(inbox, file_name);
   if (!status || (content == ""))
   {
@@ -257,19 +257,19 @@ std::tuple<bool, QString, QString, QString, QString> FileBufferHandler::readEmai
   }
 
   if (
-    content.contains(CConsts::MESSAGE_TAGS::senderStartTag) &&
-    content.contains(CConsts::MESSAGE_TAGS::senderEndTag) &&
-    content.contains(CConsts::MESSAGE_TAGS::receiverStartTag) &&
-    content.contains(CConsts::MESSAGE_TAGS::receiverEndTag) &&
-    content.contains(CConsts::MESSAGE_TAGS::iPGPStartEnvelope) &&
-    content.contains(CConsts::MESSAGE_TAGS::iPGPEndEnvelope)
+    content.contains(constants::MESSAGE_TAGS::senderStartTag) &&
+    content.contains(constants::MESSAGE_TAGS::senderEndTag) &&
+    content.contains(constants::MESSAGE_TAGS::receiverStartTag) &&
+    content.contains(constants::MESSAGE_TAGS::receiverEndTag) &&
+    content.contains(constants::MESSAGE_TAGS::iPGPStartEnvelope) &&
+    content.contains(constants::MESSAGE_TAGS::iPGPEndEnvelope)
   )
   {
-    QString sender = content.split(CConsts::MESSAGE_TAGS::senderStartTag)[1].split(CConsts::MESSAGE_TAGS::senderEndTag)[0];
-    QString receiver = content.split(CConsts::MESSAGE_TAGS::receiverStartTag)[1].split(CConsts::MESSAGE_TAGS::receiverEndTag)[0];
-    QString pure_content = content.split(CConsts::MESSAGE_TAGS::iPGPStartEnvelope)[1].split(CConsts::MESSAGE_TAGS::iPGPEndEnvelope)[0];
+    String sender = content.split(constants::MESSAGE_TAGS::senderStartTag)[1].split(constants::MESSAGE_TAGS::senderEndTag)[0];
+    String receiver = content.split(constants::MESSAGE_TAGS::receiverStartTag)[1].split(constants::MESSAGE_TAGS::receiverEndTag)[0];
+    String pure_content = content.split(constants::MESSAGE_TAGS::iPGPStartEnvelope)[1].split(constants::MESSAGE_TAGS::iPGPEndEnvelope)[0];
     if (pure_content != "")
-        pure_content = CUtils::stripBR(pure_content);
+        pure_content = cutils::stripBR(pure_content);
 
 //    FileHandler::deleteFile(full_path);
     return {

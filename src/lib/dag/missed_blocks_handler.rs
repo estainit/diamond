@@ -4,11 +4,11 @@
  *
  * @param {string} hashes an array of block hashes
  */
-bool MissedBlocksHandler::addMissedBlocksToInvoke(QStringList hashes)
+bool MissedBlocksHandler::addMissedBlocksToInvoke(StringList hashes)
 {
-  CLog::log("maybe add Missed Blocks To Invoke hashes: "+ CUtils::dumpIt(hashes), "app" "trace");
+  CLog::log("maybe add Missed Blocks To Invoke hashes: "+ cutils::dumpIt(hashes), "app" "trace");
 
-  if (hashes.size() == 0)
+  if (hashes.len() == 0)
     return true;
 
   // control if already exist in DAG
@@ -16,23 +16,22 @@ bool MissedBlocksHandler::addMissedBlocksToInvoke(QStringList hashes)
   {{"b_hash", hashes, "IN"}},
   {"b_hash"});
 
-  if (existed_in_DAG.size() > 0)
+  if (existed_in_DAG.len() > 0)
   {
-    QStringList existed_in_DAG_hashes = {};
+    StringList existed_in_DAG_hashes = {};
     for(QVDicT a_block: existed_in_DAG)
-      existed_in_DAG_hashes.append(a_block.value("b_hash").to_string());
+      existed_in_DAG_hashes.push(a_block["b_hash"].to_string());
 
-    CLog::log("The " + QString::number(existed_in_DAG_hashes.size()) + " of " + QString::number(hashes.size()) + " missed blocks already exist in DAG", "app", "trace");
-    hashes = CUtils::arrayDiff(hashes, existed_in_DAG_hashes);
+    CLog::log("The " + String::number(existed_in_DAG_hashes.len()) + " of " + String::number(hashes.len()) + " missed blocks already exist in DAG", "app", "trace");
+    hashes = cutils::arrayDiff(hashes, existed_in_DAG_hashes);
   }
 
   // control if already exist in missed block table
-  QStringList missedBlocks = getMissedBlocksToInvoke();
-  missedBlocks = CUtils::arrayUnique(missedBlocks);
-  if (missedBlocks.size() > 0)
+  missedBlocks = cutils::arrayUnique(missedBlocks);
+  if (missedBlocks.len() > 0)
   {
-    CLog::log("The " + QString::number(missedBlocks.size()) + " of " + QString::number(hashes.size()) + " missed blocks already exist in table missed blocks");
-    hashes = CUtils::arrayDiff(hashes, missedBlocks);
+    CLog::log("The " + String::number(missedBlocks.len()) + " of " + String::number(hashes.len()) + " missed blocks already exist in table missed blocks");
+    hashes = cutils::arrayDiff(hashes, missedBlocks);
   }
 
   // control if already exist in parsing q
@@ -40,45 +39,45 @@ bool MissedBlocksHandler::addMissedBlocksToInvoke(QStringList hashes)
     {{"pq_code", hashes, "IN"}},
     {"pq_code"});
 
-  if (existInParse.size() > 0)
+  if (existInParse.len() > 0)
   {
-    QStringList existed_hashes = {};
+    StringList existed_hashes = {};
     for(QVDicT elm: existInParse)
-      existed_hashes.append(elm.value("pq_code").to_string());
+      existed_hashes.push(elm["pq_code"].to_string());
 
     CLog::log(
-      "The " + QString::number(existInParse.size()) + " blocks of seemly missed blocks " +
-      QString::number(hashes.size()) + " already exist in table parsing queue",
+      "The " + String::number(existInParse.len()) + " blocks of seemly missed blocks " +
+      String::number(hashes.len()) + " already exist in table parsing queue",
       "app", "trace");
 
-    hashes = CUtils::arrayDiff(hashes, existed_hashes);
+    hashes = cutils::arrayDiff(hashes, existed_hashes);
   }
 
   CLog::log(
-    "going to insert missed blocks in miised queue: " + CUtils::dumpIt(hashes),
+    "going to insert missed blocks in miised queue: " + cutils::dumpIt(hashes),
     "app", "trace");
 
-  for (QString hash: hashes)
+  for (String hash: hashes)
   {
     if (hash == "")
       continue;
 
     QueryRes dbl = DbModel::select(
-      stbl_missed_blocks,
+      STBL_MISSED_BLOCKS,
       {"mb_block_hash"},
       {{"mb_block_hash", hash}});
 
-    if (dbl.records.size() > 0)
+    if (dbl.records.len() > 0)
       continue;
 
     DbModel::insert(
-      stbl_missed_blocks,
+      STBL_MISSED_BLOCKS,
       {
         {"mb_block_hash", hash},
-        {"mb_insert_date", CUtils::getNow()},
-        {"mb_last_invoke_date", CUtils::getNow()},
+        {"mb_insert_date", cutils::get_now()},
+        {"mb_last_invoke_date", cutils::get_now()},
         {"mb_invoke_attempts", 0},
-        {"mb_descendents_count", 0}
+        {"mb_descendants_count", 0}
       }
     );
   }
@@ -88,16 +87,16 @@ bool MissedBlocksHandler::addMissedBlocksToInvoke(QStringList hashes)
 
 
 QVDRecordsT MissedBlocksHandler::listMissedBlocks(
-  QStringList fields,
+  StringList fields,
   const ClausesT& clauses,
   const OrderT& order,
   const int& limit)
 {
-  if (fields.size() == 0)
-    fields = stbl_missed_blocks_fields;
+  if (fields.len() == 0)
+    fields = STBL_MISSED_BLOCKS_fields;
 
   QueryRes res = DbModel::select(
-    stbl_missed_blocks,
+    STBL_MISSED_BLOCKS,
     fields,
     clauses,
     order,
@@ -105,24 +104,31 @@ QVDRecordsT MissedBlocksHandler::listMissedBlocks(
 
   return res.records;
 }
+*/
+use crate::lib::database::abs_psql::q_customQuery;
+use crate::lib::database::tables::STBL_MISSED_BLOCKS;
 
-QStringList MissedBlocksHandler::getMissedBlocksToInvoke(const uint64_t& limit)
+pub fn getMissedBlocksToInvoke(limit: u64) -> Vec<String>
 {
-  QString complete_query = "SELECT mb_block_hash FROM " + stbl_missed_blocks + " ORDER BY mb_invoke_attempts, mb_descendents_count DESC, mb_last_invoke_date, mb_insert_date";
-  if (limit != 0) {
-    complete_query += " LIMIT " + QString::number(limit);
-  }
-  QueryRes missed_blocks_res = DbModel::customQuery("", complete_query, {"mb_block_hash"}, 0);
-  QStringList missed_hashes = {};
-  for(QVDicT a_row: missed_blocks_res.records)
-    missed_hashes.append(a_row.value("mb_block_hash").to_string());
-  return missed_hashes;
+    let mut complete_query:String = "SELECT mb_block_hash FROM ".to_owned() + STBL_MISSED_BLOCKS + " ORDER BY mb_invoke_attempts, mb_descendants_count DESC, mb_last_invoke_date, mb_insert_date";
+    if limit != 0 {
+        complete_query += &*(" LIMIT ".to_owned() + &limit.to_string());
+    }
+    let (_status, records) = q_customQuery(&complete_query, &vec![], true);
+    let mut missed_hashes: Vec<String> = vec![];
+    for a_row in records
+    {
+        missed_hashes.push(a_row["mb_block_hash"].to_string());
+    }
+    return missed_hashes;
 }
+
+/*
 
 bool MissedBlocksHandler::removeFromMissedBlocks(const CBlockHashT& block_hash)
 {
   DbModel::dDelete(
-    stbl_missed_blocks,
+    STBL_MISSED_BLOCKS,
     {{"mb_block_hash", block_hash}});
   return true;
 }
@@ -130,12 +136,12 @@ bool MissedBlocksHandler::removeFromMissedBlocks(const CBlockHashT& block_hash)
 bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
 {
   QueryRes attemps = DbModel::select(
-    stbl_missed_blocks,
+    STBL_MISSED_BLOCKS,
     {"mb_block_hash", "mb_invoke_attempts"},
     {{"mb_block_hash", block_hash}});
 
   uint attemps_count;
-  if (attemps.records.size() > 0)
+  if (attemps.records.len() > 0)
   {
     attemps_count = attemps.records[0]["mb_invoke_attempts"].toUInt();
   } else {
@@ -143,10 +149,10 @@ bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
   }
 
   DbModel::update(
-    stbl_missed_blocks,
+    STBL_MISSED_BLOCKS,
     {
       {"mb_invoke_attempts", attemps_count + 1},
-      {"mb_last_invoke_date", CUtils::getNow()}
+      {"mb_last_invoke_date", cutils::get_now()}
     },
     {{"mb_block_hash", block_hash}});
 
@@ -164,16 +170,16 @@ pub fn refresh_missed_block() -> bool
         {},
         {"pq_code", "pq_prerequisites"});
 
-      QStringList prerequisites = {};
-      QStringList existed_in_queue = {};
+      StringList prerequisites = {};
+      StringList existed_in_queue = {};
       for(QVDicT a_record: records)
       {
-        existed_in_queue.append(a_record.value("pq_code").to_string());
-        prerequisites = CUtils::arrayAdd(prerequisites, a_record.value("pq_prerequisites").to_string().split(","));
+        existed_in_queue.push(a_record["pq_code"].to_string());
+        prerequisites = cutils::arrayAdd(prerequisites, a_record["pq_prerequisites"].to_string().split(","));
       }
 
-      prerequisites = CUtils::arrayUnique(prerequisites);
-      prerequisites = CUtils::arrayDiff(prerequisites, existed_in_queue);
+      prerequisites = cutils::arrayUnique(prerequisites);
+      prerequisites = cutils::arrayDiff(prerequisites, existed_in_queue);
 
       // insert into missed
       addMissedBlocksToInvoke(prerequisites);

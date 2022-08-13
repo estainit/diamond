@@ -4,19 +4,22 @@ use std::collections::HashMap;
 use crate::{ccrypto, cutils};
 use crate::lib::constants::LAUNCH_DATE;
 // use crate::lib::constants as cconsts;
-use crate::lib::custom_types::{CDateT, QSDicT, TimeBySecT, VString};
+use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, init_db};
 use postgres::Client;
 use postgres::types::ToSql;
 use serde_json::json;
+use crate::constants::HD_ROOT_FILES;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
-use crate::lib::database::abs_psql::q_upsert;
-use crate::lib::database::tables::STBL_MACHINE_PROFILES;
+use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
+use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
-use crate::lib::k_v_handler::{get_value, set_value};
+use crate::lib::file_handler::{mkdir, path_exist};
+use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
 use crate::lib::machine::machine_neighbor::{NeighborInfo};
-use crate::lib::machine::machine_profile::{MachineProfile};
+use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile};
+use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
@@ -36,13 +39,14 @@ pub struct CMachine<'m> {
 
     // pub(crate) m_db_connection: Client,
     m_develop_launch_date: CDateT,
+
     /*
 
 
       bool m_machine_is_loaded = false;
-      bool m_is_GUI_connected = false;
-      QString m_selected_profile = "";
 */
+    s_dag_is_initialized: bool,
+    m_selected_profile: String,
     m_db_is_connected: bool,
     pub(crate) m_databases_are_created: bool,
     /*
@@ -50,24 +54,19 @@ pub struct CMachine<'m> {
       bool m_should_loop_threads = true;
       bool m_can_start_lazy_loadings = false;
 
-  const static QString stbl_machine_neighbors;
-
-  const static QString stb_machine_block_buffer;
-  const static QStringList stb_machine_block_buffer_fields;
-
-  static const QString stbl_machine_onchain_contracts;
-  static const QStringList stbl_machine_onchain_contracts_fields;
 
   Config* m_global_configs {};
   */
     pub(crate) m_recorded_blocks_in_db: u32,
     // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
     /*
-      QStringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
+      StringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
     QVDRecordsT m_cache_spendable_coins = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
-    QVDRecordsT m_DAG_cached_blocks; // TODO: optimize it ASAP
-    QStringList m_DAG_cached_block_hashes = {}; // TODO: optimize it ASAP
 */
+    pub m_dag_cached_blocks: QVDRecordsT,
+    // TODO: optimize it ASAP
+    pub m_dag_cached_block_hashes: Vec<String>,
+    // TODO: optimize it ASAP
     pub(crate) m_profile: MachineProfile<'m>,
 
 }
@@ -82,7 +81,7 @@ pub trait CMachineThreadGaps {
 
 impl<'m> CMachine<'m> {
     pub(crate) fn new() -> CMachine<'m> {
-        let (status, mut profile) = MachineProfile::get_profile(constants::DEFAULT);
+        let (_status, profile) = MachineProfile::get_profile(constants::DEFAULT);
         CMachine {
             m_dummy_m_lifetime_user: "",
             m_clone_id: 0,
@@ -99,43 +98,50 @@ impl<'m> CMachine<'m> {
 
             m_develop_launch_date: "".to_string(),
 
+            s_dag_is_initialized: false,
+            m_selected_profile: "".to_string(),
             m_db_is_connected: false,
             m_databases_are_created: false,
 
             /*
-            bool m_is_develop_mod = false;
+          const static String stb_machine_block_buffer;
+          const static StringList stb_machine_block_buffer_fields;
 
-          const static QString stbl_machine_neighbors;
-
-          const static QString stb_machine_block_buffer;
-          const static QStringList stb_machine_block_buffer_fields;
-
-          static const QString stbl_machine_onchain_contracts;
-          static const QStringList stbl_machine_onchain_contracts_fields;
+          static const String stbl_machine_onchain_contracts;
+          static const StringList stbl_machine_onchain_contracts_fields;
 
           Config* m_global_configs {};
           */
             m_recorded_blocks_in_db: 0, // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             /*
-              QStringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
+              StringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
             QVDRecordsT m_cache_spendable_coins = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
-            QVDRecordsT m_DAG_cached_blocks; // TODO: optimize it ASAP
-            QStringList m_DAG_cached_block_hashes = {}; // TODO: optimize it ASAP
+            QVDRecordsT m_dag_cached_blocks; // TODO: optimize it ASAP
+            StringList m_dag_cached_block_hashes = {}; // TODO: optimize it ASAP
 
             MachineProfile m_profile;
 
               */
+            m_dag_cached_blocks: vec![],
+            m_dag_cached_block_hashes: vec![],
             m_profile: profile,
         }
     }
 
-    pub fn init(&self) -> bool
+    pub fn init(&mut self) -> bool
     {
+        self.create_folders();
+
+        maybe_init_dag(self);
+
+        //launchThreads();
+
+        // doRegKeys();
         true
     }
 
     // func name was parseArgs
-    pub fn parse_args(&self, args: VString, manual_clone_id: i8)
+    pub fn parse_args(&mut self, args: VString, manual_clone_id: i8)
     {
         // println!("Env args: {:?}", args);
 
@@ -159,15 +165,10 @@ impl<'m> CMachine<'m> {
     }
 
     // func name was setCloneDev
-    pub fn set_clone_dev(&self, clone_id: i8, _is_develop_mod: bool) -> bool
+    pub fn set_clone_dev(&mut self, clone_id: i8, is_develop_mod: bool) -> bool
     {
-        // let singleton = CMachine::get_instance();
-        // let mut m_clone_id = singleton.m_clone_id.try_lock().unwrap();
-        // *m_clone_id = clone_id;
-        // println!("singleton init m_clone_id: {}", m_clone_id);
-        // println!("::::::::::clone dev >>>>>>>>>>>>>> {:?}",CMachine::get_instance().m_should_loop_threads.try_lock());
-
-        // CMachine::get_instance().m_is_develop_mod = Mutex::from(is_develop_mod);
+        self.m_clone_id = clone_id;
+        self.m_is_develop_mod = is_develop_mod;
         true
     }
 
@@ -199,25 +200,25 @@ impl<'m> CMachine<'m> {
         true
 
         /*
-        QString lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
+        String lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
         if (lastSyncStatus == "")
         {
             IinitLastSyncStatus();
-            QString
+            String
             lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
         }
-        QJsonObject
+        JSonObject
         lastSyncStatusObj = cutils::parseToJsonObj(lastSyncStatus);
 
         uint64_t
-        cycleByMinutes = CMachine::getCycleByMinutes();
+        cycleByMinutes = cutils::get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if (!force_to_control_based_on_DAG_status & &
-            (lastSyncStatusObj.value("checkDate").to_string() > cutils::minutesBefore((cycleByMinutes / 24))))
+            (lastSyncStatusObj.value("checkDate").to_string() > cutils::minutes_before((cycleByMinutes / 24))))
         {
             bool
-            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < cutils::minutesBefore(2 * cycleByMinutes);
-            setIsInSyncProcess(is_in_sync, cutils::getNow());
+            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < cutils::minutes_before(2 * cycleByMinutes);
+            setIsInSyncProcess(is_in_sync, cutils::get_now());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
@@ -227,15 +228,15 @@ impl<'m> CMachine<'m> {
             cutils::exiter("No block in DAG exit!!", 111);
 
             bool
-            is_in_sync_process = (blockRecord.m_creation_date < cutils::minutesBefore(2 * cycleByMinutes));
+            is_in_sync_process = (blockRecord.m_creation_date < cutils::minutes_before(2 * cycleByMinutes));
 
             lastSyncStatusObj.insert("isInSyncMode", is_in_sync_process? "Y": "N");
-            lastSyncStatusObj.insert("checkDate", cutils::getNow());
+            lastSyncStatusObj.insert("checkDate", cutils::get_now());
             lastSyncStatusObj.insert("lastDAGBlockCreationDate", blockRecord.m_creation_date);
             if (is_in_sync_process)
-            lastSyncStatusObj.insert("lastTimeMachineWasInSyncMode", cutils::getNow());
+            lastSyncStatusObj.insert("lastTimeMachineWasInSyncMode", cutils::get_now());
             KVHandler::upsertKValue("LAST_SYNC_STATUS", cutils::serializeJson(lastSyncStatusObj));
-            setIsInSyncProcess(is_in_sync_process, cutils::getNow());
+            setIsInSyncProcess(is_in_sync_process, cutils::get_now());
             return is_in_sync_process;
         }
         */
@@ -297,77 +298,58 @@ impl<'m> CMachine<'m> {
 
     struct CoinsVisibilityRes {
       bool status = false;
-      QStringList records = {};
+      StringList records = {};
       bool is_visible = false;
     };
 
       static void parseArgs(int argc, char *argv[], int manual_clone_id = 0);
       static void onAboutToQuit(MainWindow* w){ get().IonAboutToQuit(w); };
 
-      static void setLaunchDateAndCloneId(const CDateT& c_date, uint8_t clone_id = 0){return get().IsetLaunchDateAndCloneId(c_date, clone_id); };
 
 
       // machine_handler.cpp
       GenRes initDefaultProfile();
 
-      static void setDAGIsInitialized(bool status){get().s_DAG_is_initialized = status; }
+*/
+    pub fn setDAGIsInitialized(&mut self, status: bool) {
+        self.s_dag_is_initialized = status;
+    }
+    /*
       static bool getDAGIsInitialized(){ return get().s_DAG_is_initialized; }
 
       static std::tuple<bool, QVDRecordsT> cachedSpendableCoins(
-        const QString& action = "read",
+        const String& action = "read",
         const QVDRecordsT& coins = {},
         const CBlockHashT& visible_by = "",
         const CCoinCodeT& the_coin = "") { return get().IcachedSpendableCoins(action, coins, visible_by, the_coin); };
 
-      static std::tuple<bool, QVDRecordsT&> cachedBlocks(
-        const QString& action = "read",
-        const QVDRecordsT& blocks = {},
-        const QString& status = "") { return get().IcachedBlocks(action, blocks, status); };
-
-      static std::tuple<bool, QStringList&> cachedBlockHashes(
-        const QString& action = "read",
-        const QStringList& block_hashes = {}) { return get().IcachedBlockHashes(action, block_hashes); };
-
       static CoinsVisibilityRes cachedCoinsVisibility(
-        const QString& action = "read",
-        const QStringList& entries = {}){ return get().IcachedCoinsVisibility(action, entries); };
-
-      static bool setCloneDev(const uint8_t clone_id, const bool is_develop_mod){return get().IsetCloneDev(clone_id, is_develop_mod);}
-      static bool isDevelopMod(){ return get().IisDevelopMod();}
-
-      static bool createFolders(){return get().IcreateFolders();}
-      static QString getHDPath(){return get().IgetHDPath();}
-      static QString getReportsPath(){return get().IgetReportsPath();}
-      static QString getInboxPath(){return get().IgetInboxPath();}
-      static QString getOutboxPath(){return get().IgetOutboxPath();}
-      static QString getLogsPath(){return get().IgetLogsPath();}
-      static QString getDAGBackup(){return get().IgetDAGBackup();}
+        const String& action = "read",
+        const StringList& entries = {}){ return get().IcachedCoinsVisibility(action, entries); };
 
       static bool shouldLoopThreads(){return get().IshouldLoopThreads();}
       static void setShouldLoopThreads(const bool v){return get().IsetShouldLoopThreads(v); }
 
       static bool canStartLazyLoadings(){return get().IcanStartLazyLoadings();}
       static void setCanStartLazyLoadings(bool v){ get().IsetCanStartLazyLoadings(v);}
-      static QString mapThreadCodeToPrefix(const QString& code){ return get().ImapThreadCodeToPrefix(code);}
+      static String mapThreadCodeToPrefix(const String& code){ return get().ImapThreadCodeToPrefix(code);}
 
       static bool isGUIConnected(){ return get().IisGUIConnected(); }
       static void setIsGUIConnected(const bool status){ get().IsetIsGUIConnected(status); }
 
       bool loadSelectedProfile();
 
-      static std::tuple<bool, QString, UnlockSet, QStringList> signByMachineKey(
-        const QString& signMsg,
+      static std::tuple<bool, String, UnlockSet, StringList> signByMachineKey(
+        const String& signMsg,
         const CSigIndexT& unlockIndex = 0);
 
 
       static double getMinPollingTimeframeByHour();
       static TimeByHoursT getMinVotingTimeframe();
 
-      static QString getCachePath(QString appCloneId = "");
-
       static double getMachineServiceInterests(
-        const QString& dType,
-        const QString& dClass = "",
+        const String& dType,
+        const String& dClass = "",
         const DocLenT& dLen = 0,
         const DocLenT& extra_length = 0,
         const int& supported_P4P_trx_count = 1)
@@ -389,41 +371,34 @@ impl<'m> CMachine<'m> {
 
       //  -  -  -  -  -  neighbors handler
 
-      static QVDRecordsT getNeighbors(
-        const QString& neighbor_type = "",
-        const QString& connection_status = "",
-        const QString& mp_code = getSelectedMProfile(),
-        const QString& n_id = "",
-        const QString& n_email = ""){ return get().IgetNeighbors(neighbor_type, connection_status, mp_code, n_id, n_email); };
-
-      static QVDRecordsT getActiveNeighbors(const QString& mp_code = getSelectedMProfile());
 
 
 
-      static bool handshakeNeighbor(const QString& n_id, const QString& connection_type);
+
+      static bool handshakeNeighbor(const String& n_id, const String& connection_type);
 
       static std::tuple<bool, bool> parseHandshake(
-        const QString& sender_email,
-        const QJsonObject& message,
-        const QString& connection_type);
+        const String& sender_email,
+        const JSonObject& message,
+        const String& connection_type);
 
       static bool floodEmailToNeighbors(
-        const QString& email,
-        QString PGP_public_key = ""){ return get().IfloodEmailToNeighbors(email, PGP_public_key); };
+        const String& email,
+        String PGP_public_key = ""){ return get().IfloodEmailToNeighbors(email, PGP_public_key); };
 
-      static bool setAlreadyPresentedNeighbors(const QJsonArray& already_presented_neighbors){ return get().IsetAlreadyPresentedNeighbors(already_presented_neighbors); }
+      static bool setAlreadyPresentedNeighbors(const JSonArray& already_presented_neighbors){ return get().IsetAlreadyPresentedNeighbors(already_presented_neighbors); }
 
-      static QJsonArray getAlreadyPresentedNeighbors(){ return get().IgetAlreadyPresentedNeighbors(); }
+      static JSonArray getAlreadyPresentedNeighbors(){ return get().IgetAlreadyPresentedNeighbors(); }
 
       static bool deleteNeighbors(
-        const QString& n_id,
-        const QString& connection_type,
-        const QString& mp_code = getSelectedMProfile()){return get().IdeleteNeighbors(n_id, connection_type, mp_code);}
+        const String& n_id,
+        const String& connection_type,
+        const String& mp_code = getSelectedMProfile()){return get().IdeleteNeighbors(n_id, connection_type, mp_code);}
 
       static std::tuple<bool, bool> parseNiceToMeetYou(
-        const QString& sender_email,
-        const QJsonObject& message,
-        const QString& connection_type);
+        const String& sender_email,
+        const JSonObject& message,
+        const String& connection_type);
 
       //  -  -  -  accounts balances
       static MachineTransientBalances machineBalanceChk();
@@ -432,24 +407,24 @@ impl<'m> CMachine<'m> {
       //  -  -  -  block buffer part
       static QVDRecordsT searchBufferedDocs(
         const ClausesT& clauses = {},
-        const QStringList& fields = stb_machine_block_buffer_fields,
+        const StringList& fields = stb_machine_block_buffer_fields,
         const OrderT& order = {},
         const uint64_t limit = 0);
 
-      static std::tuple<bool, QString> pushToBlockBuffer(
+      static std::tuple<bool, String> pushToBlockBuffer(
         const Document* doc,
         const CMPAIValueT dp_cost,
-        const QString& mp_code = getSelectedMProfile());
+        const String& mp_code = getSelectedMProfile());
 
-      static std::tuple<bool, QString> broadcastBlock(
-        const QString& cost_pay_mode = "normal",
-        const QString& create_date_type = "");
+      static std::tuple<bool, String> broadcastBlock(
+        const String& cost_pay_mode = "normal",
+        const String& create_date_type = "");
 
-      static std::tuple<bool, bool, QString> fetchBufferedTransactions(
+      static std::tuple<bool, bool, String> fetchBufferedTransactions(
         Block* block,
         TransientBlockInfo& transient_block_info);
 
-      static std::tuple<bool, bool, QString> retrieveAndGroupBufferedDocuments(
+      static std::tuple<bool, bool, String> retrieveAndGroupBufferedDocuments(
         Block* block,
         TransientBlockInfo& transient_block_info);
 
@@ -457,32 +432,11 @@ impl<'m> CMachine<'m> {
 
 
       //  -  -  -  on-chain contracts part
-      static QJsonArray searchInMyOnchainContracts(
+      static JSonArray searchInMyOnchainContracts(
         const ClausesT& clauses,
-        const QStringList& fields = stbl_machine_onchain_contracts_fields,
+        const StringList& fields = stbl_machine_onchain_contracts_fields,
         const OrderT order = {},
         const uint64_t limit = 0);
-
-
-      void IsetLaunchDateAndCloneId(const CDateT& c_date, uint8_t clone_id = 0);
-      QString IgetBackerAddress();
-      UnlockDocument* IgetBackerDetails();
-      bool IsetPublicEmailAddress(const QString&  v);
-      bool IsetPublicEmailInterval(const QString&  v);
-      bool IsetPublicEmailIncomeHost(const QString&  v);
-      bool IsetPublicEmailPassword(const QString&  v);
-      bool IsetPublicEmailIncomeIMAP(const QString&  v);
-      bool IsetPublicEmailIncomePOP(const QString&  v);
-      bool IsetPublicEmailOutgoingSMTP(const QString&  v);
-      bool IsetPublicEmailOutgoingHost(const QString&  v);
-      bool IsetTermOfServices(const QString&  v);
-      bool ImaybeAddSeedNeighbors();
-
-      QString IgetSelectedMProfile();
-
-      QJsonObject IgetLastSyncStatus();
-      bool IinitLastSyncStatus();
-
 
       void IsetIsGUIConnected(const bool status)
       {
@@ -495,8 +449,8 @@ impl<'m> CMachine<'m> {
       }
 
       static double IgetMachineServiceInterests(
-        const QString& dType,
-        const QString& dClass = "",
+        const String& dType,
+        const String& dClass = "",
         const DocLenT& dLen = 0,
         const DocLenT& extra_length = 0,
         const int& supported_P4P_trx_count = 1);
@@ -530,100 +484,56 @@ impl<'m> CMachine<'m> {
         return self.m_databases_are_created;
     }
 
-    // pub fn set_db_connection(&mut self, db_conn: Client) {
-    //     self.m_db_connection = db_conn;
-    // }
 
-    // pub fn get_db_connection(&mut self) -> Client {
-    //     self.m_db_connection
-    // }
+    pub fn isDevelopMod(&self) -> bool
+    {
+        return self.m_is_develop_mod.clone();
+    }
 
+    pub fn getPubEmailInfo(&self) -> &EmailSettings {
+        return &self.m_profile.m_mp_settings.m_public_email;
+    }
+    pub fn getPrivEmailInfo(&self) -> &EmailSettings {
+        return &self.m_profile.m_mp_settings.m_private_email;
+    }
     /*
 
-      bool IcanStartLazyLoadings()
-      {
-        return m_can_start_lazy_loadings;
-      }
-
-      void IsetCanStartLazyLoadings(bool v)
-      {
-        m_can_start_lazy_loadings = v;
-      }
-
-      bool IisDevelopMod()
-      {
-        return m_is_develop_mod;
-      }
-
-      bool IsetCloneDev(const uint8_t clone_id, const bool is_develop_mod) //, MainWindow* mw
-      {
-    //    m_mw = mw;  //MainWindow* mw
-        m_clone_id = clone_id;
-        m_is_develop_mod = is_develop_mod;
-        return true;
-      }
-
-      bool IcreateFolders();
-      QString IgetReportsPath();
-      QString IgetHDPath();
-      QString IgetInboxPath();
-      QString IgetOutboxPath();
-      QString IgetLogsPath();
-      QString IgetDAGBackup();
-
-      EmailSettings IgetPubEmailInfo(){return m_profile.m_mp_settings.m_public_email;}
-      EmailSettings IgetPrivEmailInfo(){return m_profile.m_mp_settings.m_private_email;}
-
-      std::tuple<bool, QVDRecordsT&> IcachedBlocks(
-        const QString& action = "read",
-        const QVDRecordsT& blocks = {},
-        const QString& status = "");
-
-      std::tuple<bool, QStringList&> IcachedBlockHashes(
-        const QString& action = "read",
-        const QStringList& block_hashes = {});
 
       std::tuple<bool, QVDRecordsT> IcachedSpendableCoins(
-        const QString& action,
+        const String& action,
         const QVDRecordsT& coins = {},
         const CBlockHashT& visible_by = "",
         const CCoinCodeT& the_coin = "");
 
       CoinsVisibilityRes IcachedCoinsVisibility(
-        const QString& action,
-        const QStringList& entries);
+        const String& action,
+        const StringList& entries);
 
       //  -  -  -  -  -  neighbors handler
-      QVDRecordsT IgetNeighbors(
-        const QString& neighbor_type = "",
-        const QString& connection_status = "",
-        const QString& mp_code = getSelectedMProfile(),
-        const QString& n_id = "",
-        const QString& n_email = "");
 
       bool IfloodEmailToNeighbors(
-        const QString& email,
-        QString PGP_public_key = "");
+        const String& email,
+        String PGP_public_key = "");
 
-      QJsonArray IgetAlreadyPresentedNeighbors(){ return m_profile.m_mp_settings.m_already_presented_neighbors; }
-      bool IsetAlreadyPresentedNeighbors(const QJsonArray& already_presented_neighbors){ m_profile.m_mp_settings.m_already_presented_neighbors = already_presented_neighbors; return true; }
+      JSonArray IgetAlreadyPresentedNeighbors(){ return m_profile.m_mp_settings.m_already_presented_neighbors; }
+      bool IsetAlreadyPresentedNeighbors(const JSonArray& already_presented_neighbors){ m_profile.m_mp_settings.m_already_presented_neighbors = already_presented_neighbors; return true; }
       bool IdeleteNeighbors(
-        const QString& n_id,
-        const QString& connection_type,
-        const QString& mp_code = getSelectedMProfile());
+        const String& n_id,
+        const String& connection_type,
+        const String& mp_code = getSelectedMProfile());
 
       void IonAboutToQuit(MainWindow* w);
 
 
 
-      QString ImapThreadCodeToPrefix(const QString& code);
+      String ImapThreadCodeToPrefix(const String& code);
 
     };
 
     //  -  -  -  EmailSettings
-    QJsonObject EmailSettings::exportJson() const
+    JSonObject EmailSettings::exportJson() const
     {
-      return QJsonObject
+      return JSonObject
       {
         {"m_address", m_address},
         {"m_password", m_password},
@@ -638,7 +548,7 @@ impl<'m> CMachine<'m> {
       };
     }
 
-    void EmailSettings::importJson(const QJsonObject& obj)
+    void EmailSettings::importJson(const JSonObject& obj)
     {
       m_address = obj.value("m_address").to_string();
       m_password = obj.value("m_password").to_string();
@@ -656,22 +566,10 @@ impl<'m> CMachine<'m> {
 
 
     //  -  -  -  MPSetting
-    void MPSetting::importJson(const QJsonObject& obj)
-    {
-      m_machine_alias = obj.value("m_machine_alias").to_string();
-      m_language = obj.value("m_language").to_string();
-      m_term_of_services = obj.value("m_term_of_services").to_string();
-      m_machine_alias = obj.value("m_machine_alias").to_string();
-      m_already_presented_neighbors = obj.value("m_already_presented_neighbors").toArray();
-      m_backer_detail = new UnlockDocument();
-      m_backer_detail->importJson(obj.value("m_backer_detail").toObject());
-      m_public_email.importJson(obj.value("m_public_email").toObject());
-      m_private_email.importJson(obj.value("m_private_email").toObject());
-    }
 
-    QJsonObject MPSetting::exportJson() const
+    JSonObject MPSetting::exportJson() const
     {
-      return QJsonObject
+      return JSonObject
       {
         {"m_machine_alias", m_machine_alias},
         {"m_language", m_language},
@@ -685,29 +583,6 @@ impl<'m> CMachine<'m> {
     }
 
 
-
-
-
-
-
-
-
-
-
-    // -  -  -  -  -  -  CMachine  -  -  -  -
-
-    std::mutex mutex_cached_blocks; //m_DAG_cached_blocks
-    std::mutex mutex_cached_block_hashes;
-    std::mutex mutex_cached_spendable_coins;
-    std::mutex mutex_cached_coins_visibility;
-
-    CMachine CMachine::s_instance;
-    const QString CMachine::stbl_machine_neighbors = "c_machine_neighbors";
-
-    //CMachine& CMachine::get()
-    //{
-    //  return s_instance;
-    //}
 */
     //old_name_was getLaunchDate
     pub fn get_launch_date(&self) -> String
@@ -718,19 +593,18 @@ impl<'m> CMachine<'m> {
         return self.m_develop_launch_date.clone();
     }
 
-    /*
-        void CMachine::IsetLaunchDateAndCloneId(const CDateT& c_date, uint8_t clone_id)
-        {
-          m_develop_launch_date = c_date;
-          if (clone_id != 0)
-            m_clone_id = clone_id;
-        }
+    //old_name_was setLaunchDateAndCloneId
+    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i8)
+    {
+        self.m_develop_launch_date = c_date;
+        if clone_id != 0
+        { self.m_clone_id = clone_id; }
+    }
 
-*/
     //old_name_was initDefaultProfile
     pub fn init_default_profile(&mut self) -> (bool, String)
     {
-        let (status, profile) = MachineProfile::get_profile(&constants::DEFAULT);
+        let (_status, profile) = MachineProfile::get_profile(&constants::DEFAULT);
         self.m_profile = profile;
         if self.m_profile.m_mp_code == constants::DEFAULT
         { return (true, "The Default profile Already initialized".to_string()); }
@@ -823,7 +697,7 @@ impl<'m> CMachine<'m> {
             ("kv_last_modified", &self.m_profile.m_mp_last_modified[..]),
         ]);
         q_upsert(
-            "c_kvalue",
+            STBL_KVALUE,
             "kv_key",
             "SELECTED_PROFILE",
             &values,
@@ -839,7 +713,7 @@ impl<'m> CMachine<'m> {
                 &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_ver + &")".to_owned(),
             cutils::get_now(),
         );
-        let (status, msg) = insert_address(&w_address);
+        let (_status, _msg) = insert_address(&w_address);
 
         /*
 
@@ -848,10 +722,6 @@ impl<'m> CMachine<'m> {
                */
         return (true, "The Default profile initialized".to_string());
     }
-
-
-    /*
-        */
 
     //old_name_was bootMachine
     pub fn boot_machine(&mut self) -> bool
@@ -893,7 +763,7 @@ impl<'m> CMachine<'m> {
         // control DataBase
         if !self.m_db_is_connected
         {
-            let (status, msg) = init_db(self);
+            let (status, _msg) = init_db(self);
             self.m_db_is_connected = status;
 
             if !status {
@@ -906,14 +776,14 @@ impl<'m> CMachine<'m> {
         }
 
         // check if flag MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED is setted
-        let is_inited = get_value(&"MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED".to_string());
+        let is_inited = get_value("MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED");
         if is_inited != constants::YES
         {
             empty_db(self);  // machine didn't initialized successfully, so empty all tables and try from zero
             set_value("MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED", constants::NO, true);
         }
 
-        let (status, msg) = self.init_default_profile();
+        let (status, _msg) = self.init_default_profile();
         if status != true {
             return false;
         }
@@ -935,7 +805,7 @@ impl<'m> CMachine<'m> {
                   CLog::log("couldn't read from cached Spendable Coins!", "app", "fatal");
                 }
 
-                if (coins.size() < 500)
+                if (coins.len() < 500)
                 {
                   QueryRes exist_coins = DbModel::select(
                     "c_trx_utxos",
@@ -972,181 +842,221 @@ impl<'m> CMachine<'m> {
 
     }
 
-    QString CMachine::IgetHDPath()
+*/
+    //old_name_was getHDPath
+    pub fn get_clone_path(&self) -> String
     {
-      QString hd_files = "hd_files"; // constants::HD_FILES;
-      if (get_app_clone_id() > 0)
-        hd_files += QString::number(get_app_clone_id());
-      return hd_files;
+        if self.get_app_clone_id() == 0
+        {
+            return HD_ROOT_FILES.to_string();
+        }
+        return format!("{}/{}", HD_ROOT_FILES, self.get_app_clone_id());
     }
 
-    QString CMachine::IgetReportsPath()
+
+    //old_name_was getReportsPath
+    pub fn get_reports_path(&self) -> String
     {
-      return getHDPath() + "/reports";
+        return self.get_clone_path() + &"/reports";
     }
 
-    QString CMachine::IgetInboxPath()
+    //old_name_was getReportsPath
+    pub fn get_inbox_path(&self) -> String
     {
-      return getHDPath() + "/inbox";
+        return self.get_clone_path() + "/inbox";
     }
 
-    QString CMachine::IgetOutboxPath()
+    //old_name_was getReportsPath
+    pub fn get_outbox_path(&self) -> String
     {
-      return getHDPath() + "/outbox";
+        return self.get_clone_path() + "/outbox";
     }
 
-    QString CMachine::IgetLogsPath()
+    //old_name_was getReportsPath
+    pub fn get_logs_path(&self) -> String
     {
-      return getHDPath();
+        return self.get_clone_path();
     }
 
-    QString CMachine::IgetDAGBackup()
+    //old_name_was getCachePath
+    pub fn get_cache_path(&self) -> String
     {
-      return getHDPath() + "/dag_backup";
+        return self.get_clone_path() + "/cache_files";
     }
 
-    bool CMachine::IcreateFolders()
+    //old_name_was getDAGBackup
+    pub fn get_dag_backup(&self) -> String { return self.get_clone_path() + "/dag_backup"; }
+
+    //old_name_was createFolders
+    pub fn create_folders(&self) -> bool
     {
-      if (constants::HD_ROOT_PATHE != "")
-        if (!QDir(constants::HD_ROOT_PATHE).exists())
-          QDir().mkdir(constants::HD_ROOT_PATHE);
+        if constants::HD_ROOT_FILES != ""
+        {
+            if !path_exist(&constants::HD_ROOT_FILES.to_string())
+            { mkdir(&constants::HD_ROOT_FILES.to_string()); }
+        }
 
-      if (!QDir(getHDPath()).exists())
-        QDir().mkdir(getHDPath());
+        if !path_exist(&self.get_clone_path())
+        { mkdir(&self.get_clone_path()); }
 
-      if (!QDir(getReportsPath()).exists())
-        QDir().mkdir(getReportsPath());
+        if !path_exist(&self.get_reports_path())
+        { mkdir(&self.get_reports_path()); }
 
-      if (!QDir(getInboxPath()).exists())
-        QDir().mkdir(getInboxPath());
+        if !path_exist(&self.get_inbox_path())
+        { mkdir(&self.get_inbox_path()); }
 
-      if (!QDir(getOutboxPath()).exists())
-        QDir().mkdir(getOutboxPath());
+        if !path_exist(&self.get_outbox_path())
+        { mkdir(&self.get_outbox_path()); }
 
-      if (!QDir(getDAGBackup()).exists())
-        QDir().mkdir(getDAGBackup());
+        if !path_exist(&self.get_dag_backup())
+        { mkdir(&self.get_dag_backup()); }
 
-      QString cache_path = getCachePath();
-      if (get_app_clone_id() > 0)
-      if (!QDir(cache_path).exists())
-        QDir().mkdir(cache_path);
+        if !path_exist(&self.get_cache_path())
+        { mkdir(&self.get_cache_path()); }
 
-
-      return true;
+        return true;
     }
 
-    QString CMachine::IgetBackerAddress()
+    //old_name_was getBackerAddress
+    pub fn getBackerAddress(&self) -> CAddressT
     {
-      return m_profile.m_mp_settings.m_backer_detail->m_account_address;
+        self.m_profile.m_mp_settings.m_backer_detail.m_account_address.clone()
     }
 
-    UnlockDocument* CMachine::IgetBackerDetails()
+    //old_name_was getBackerDetails
+    pub fn getBackerDetails(&self) -> &UnlockDocument
     {
-      return m_profile.m_mp_settings.m_backer_detail;
+        return &self.m_profile.m_mp_settings.m_backer_detail;
     }
 
-    bool CMachine::loadSelectedProfile()
+    //old_name_was loadSelectedProfile
+    pub fn loadSelectedProfile(&'m mut self) -> bool
     {
-      QueryRes selected_prof = DbModel::select(
-        "c_kvalue",
-        QStringList {"kv_value"},     // fields
-        {ModelClause("kv_key", "SELECTED_PROFILE")}
-      );
-      if (selected_prof.records.size() != 1) {
-          return false;
-      }
+        let selected_prof = get_value("SELECTED_PROFILE");
+        if selected_prof == "" {
+            return false;
+        }
+
+        let mp: MachineProfile<'m> = self.read_profile(selected_prof);
+        self.m_profile = mp;
+        return true;
 
 
-      MachineProfile mp(selected_prof.records[0]["kv_value"].to_string());
-      m_profile = mp;
-      return true;
+        // importJson(&self, profile: MachineProfile)
+        // {
+        //     m_machine_alias = obj.value("m_machine_alias").to_string();
+        //     m_language = obj.value("m_language").to_string();
+        //     m_term_of_services = obj.value("m_term_of_services").to_string();
+        //     m_machine_alias = obj.value("m_machine_alias").to_string();
+        //     m_already_presented_neighbors = obj.value("m_already_presented_neighbors").toArray();
+        //     m_backer_detail = new UnlockDocument();
+        //     m_backer_detail->importJson(obj.value("m_backer_detail").toObject());
+        //     m_public_email.importJson(obj.value("m_public_email").toObject());
+        //     m_private_email.importJson(obj.value("m_private_email").toObject());
+        // }
     }
 
-    QString CMachine::IgetSelectedMProfile()
+    pub fn read_profile(&self, mp_code: String) -> MachineProfile<'m>
     {
-      if (m_selected_profile != "")
-        return m_selected_profile;
+        let (_status, records) = q_select(
+            STBL_MACHINE_PROFILES,
+            &vec!["mp_code", "mp_name", "mp_settings"],
+            &vec![
+                &simple_eq_clause("mp_code", &*mp_code)], &vec![],
+            0,
+            true,
+        );
+        if records.len() != 1
+        {
+            return MachineProfile::get_null();
+        }
 
-      QueryRes res = DbModel::select(
-        "c_kvalue",
-        {"kv_value"},
-        {{"kv_key", "SELECTED_PROFILE"}}
-      );
-      // console.log('resresresresres', res);
-      if (res.records.size() != 1) {
-        CLog::log("NoooOOOOOOOOOOOOOOooooooooooooo profile!", "app", "fatal");
-        exit(345);
-      }
-      m_selected_profile = res.records[0].value("kv_value").to_string();
-      return m_selected_profile;
+        let serialized_profile = records[0].get("mp_settings").unwrap().clone();
+        let profile: MachineProfile = serde_json::from_str(serialized_profile.as_str()).unwrap();
+        return profile;
     }
 
-    // - - - - - - cycle functions - - - - -
-    uint64_t CMachine::getCycleByMinutes()
+    pub fn getSelectedMProfile(&mut self) -> String
     {
-      if (constants::TIME_GAIN == 1){
-        return constants::STANDARD_CYCLE_BY_MINUTES;
-      }
-      return constants::TIME_GAIN;
+        if self.m_selected_profile != ""
+        {
+            return self.m_selected_profile.clone();
+        }
+
+        let mp_code: String = get_value("SELECTED_PROFILE");
+        // console.log('resresresresres', res);
+        if mp_code == "" {
+            dlog(
+                &format!("NoooOOOOOOOOOOOOOOooooooooooooo profile!"),
+                constants::Modules::App,
+                constants::SecLevel::Fatal);
+
+            panic!("NoooOOOOOOOOOOOOOOooooooooooooo profile!");
+        }
+        self.m_selected_profile = mp_code;
+        return self.m_selected_profile.clone();
     }
+
+    /*
+
 
     TimeByHoursT CMachine::getMinVotingTimeframe()
     {
-      TimeByHoursT voting_timeframe = (CMachine::getCycleByMinutes() * 2) / 60;   // at least 2 cycle for voting
+      TimeByHoursT voting_timeframe = (cutils::get_cycle_by_minutes() * 2) / 60;   // at least 2 cycle for voting
       if (voting_timeframe == static_cast<uint64_t>(voting_timeframe))
         return voting_timeframe;
       return cutils::customFloorFloat(static_cast<double>(voting_timeframe), 2);
     }
 
-    bool CMachine::IsetPublicEmailAddress(const QString&  v)
+    bool CMachine::IsetPublicEmailAddress(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_address = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailInterval(const QString&  v)
+    bool CMachine::IsetPublicEmailInterval(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_fetching_interval_by_minute = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailIncomeHost(const QString&  v)
+    bool CMachine::IsetPublicEmailIncomeHost(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_incoming_mail_server = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailPassword(const QString&  v)
+    bool CMachine::IsetPublicEmailPassword(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_password = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailIncomeIMAP(const QString&  v)
+    bool CMachine::IsetPublicEmailIncomeIMAP(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_income_imap = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailIncomePOP(const QString&  v)
+    bool CMachine::IsetPublicEmailIncomePOP(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_income_pop3 = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailOutgoingSMTP(const QString&  v)
+    bool CMachine::IsetPublicEmailOutgoingSMTP(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_outgoing_smtp = v;
       return true;
     }
 
-    bool CMachine::IsetPublicEmailOutgoingHost(const QString&  v)
+    bool CMachine::IsetPublicEmailOutgoingHost(const String&  v)
     {
       m_profile.m_mp_settings.m_public_email.m_outgoing_mail_server = v;
       return true;
     }
 
-    bool CMachine::IsetTermOfServices(const QString&  v)
+    bool CMachine::IsetTermOfServices(const String&  v)
     {
       m_profile.m_mp_settings.m_term_of_services = v;
       return true;
@@ -1167,7 +1077,7 @@ impl<'m> CMachine<'m> {
         if !status
         { return false; }
 
-        //   QString serialized_setting = cutils::serializeJson(m_profile.exportJson());
+        //   String serialized_setting = cutils::serializeJson(m_profile.exportJson());
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code[..]),
             ("mp_name", &self.m_profile.m_mp_name[..]),
@@ -1191,65 +1101,63 @@ impl<'m> CMachine<'m> {
       return true;
     }
 
-
-    QJsonObject CMachine::IgetLastSyncStatus()
+*/
+    pub fn getLastSyncStatus(&self) -> JSonObject
     {
-      QString lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
-      if (lastSyncStatus == "")
-      {
-        get().IinitLastSyncStatus();
-        lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
-      }
-      return cutils::parseToJsonObj(lastSyncStatus);
+        let mut lastSyncStatus: String = get_value("LAST_SYNC_STATUS");
+        if lastSyncStatus == ""
+        {
+            self.initLastSyncStatus();
+            lastSyncStatus = get_value("LAST_SYNC_STATUS");
+        }
+        return cutils::parseToJsonObj(&lastSyncStatus);
     }
 
-    bool CMachine::IinitLastSyncStatus()
+    pub fn initLastSyncStatus(&self) -> bool
     {
-        QJsonObject lastSyncStatus {
-          {"isInSyncMode", "Unknown"},
-          {"lastTimeMachineWasInSyncMode",
-            cutils::minutesBefore(CMachine::getCycleByMinutes() * 2)},
-          {"checkDate", cutils::minutesBefore(CMachine::getCycleByMinutes())},
-          {"lastDAGBlockCreationDate", "Unknown"}
-        };
-        return KVHandler::upsertKValue(
-          "LAST_SYNC_STATUS",
-          cutils::serializeJson(lastSyncStatus));
+        let lastSyncStatus: JSonObject = json!({
+              "isInSyncMode": "Unknown",
+              "lastTimeMachineWasInSyncMode":
+                          cutils::minutes_before(cutils::get_cycle_by_minutes() * 2, cutils::get_now()),
+              "checkDate": cutils::minutes_before(cutils::get_cycle_by_minutes(), cutils::get_now()),
+              "lastDAGBlockCreationDate": "Unknown"
+            });
+        return upsert_kvalue(
+            "LAST_SYNC_STATUS",
+            &cutils::serializeJson(&lastSyncStatus),
+            true);
     }
+    /*
 
 
-    /**
-     * @brief CMachine::signByMachineKey
-     * @param sign_message
-     * @param unlock_index
-     * @return {status, signer address, unlock set, signatures}
-     */
-    std::tuple<bool, QString, UnlockSet, QStringList> CMachine::signByMachineKey(
-      const QString& sign_message,
-      const CSigIndexT& unlock_index)
-    {
-      QString signer = getBackerAddress();
-      auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = Wallet::signByAnAddress(
-        signer,
-        sign_message,
-        unlock_index);
-      if (!sign_status)
-      {
-        return {false, "", {}, {}};
-      }
+        /**
+         * @brief CMachine::signByMachineKey
+         * @param sign_message
+         * @param unlock_index
+         * @return {status, signer address, unlock set, signatures}
+         */
+        std::tuple<bool, String, UnlockSet, StringList> CMachine::signByMachineKey(
+          const String& sign_message,
+          const CSigIndexT& unlock_index)
+        {
+          String signer = getBackerAddress();
+          auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = Wallet::signByAnAddress(
+            signer,
+            sign_message,
+            unlock_index);
+          if (!sign_status)
+          {
+            return {false, "", {}, {}};
+          }
 
-      UnlockSet uSet {};
-      uSet.importJson(sign_unlock_set);
-      return {true, signer, uSet, sign_signatures};
+          UnlockSet uSet {};
+          uSet.importJson(sign_unlock_set);
+          return {true, signer, uSet, sign_signatures};
 
-    }
+        }
+    */
 
-    QString CMachine::getCachePath(QString appCloneId)
-    {
-      if (appCloneId == "")
-        appCloneId = get_app_clone_idStr();
-      return constants::HD_FILES + appCloneId + "/" + "cache_files";
-    }
+    /*
 
     void CMachine::IonAboutToQuit(MainWindow* w)
     {
@@ -1257,7 +1165,7 @@ impl<'m> CMachine<'m> {
       bool any_thread_is_runing = true;
       int i = 0;
 
-      for (QString a_thread: m_threads_status.keys())
+      for (String a_thread: m_threads_status.keys())
         if (m_threads_status[a_thread] == constants::THREAD_STATE::SLEEPING)
           CLog::log("Gracefully stopped sleeping thread(" + a_thread + ")");
 
@@ -1266,7 +1174,7 @@ impl<'m> CMachine<'m> {
         i++;
         std::this_thread::sleep_for(std::chrono::seconds(1));
         any_thread_is_runing = false;
-        for (QString a_thread: m_threads_status.keys())
+        for (String a_thread: m_threads_status.keys())
           if (m_threads_status[a_thread] == constants::THREAD_STATE::RUNNING)
           {
             if ((i > 10) && (i%5==0))
@@ -1286,13 +1194,13 @@ impl<'m> CMachine<'m> {
 
       DbHandler::closeConnections(); //TODO: use delete &DbHandler::get();
 
-      m_cache_coins_visibility = QStringList {};
+      m_cache_coins_visibility = StringList {};
 
       CLog::log("Gracefully shouted down");
     }
 
 
-    QString CMachine::ImapThreadCodeToPrefix(const QString& code)
+    String CMachine::ImapThreadCodeToPrefix(const String& code)
     {
       if (m_map_thread_code_to_prefix.keys().contains(code))
         return m_map_thread_code_to_prefix.value(code);
@@ -1304,7 +1212,7 @@ impl<'m> CMachine<'m> {
     //  try {
     //    // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
     //    std::lock_guard<std::mutex> lck ();
-    //    m_DAG_cached_blocks.push(block);
+    //    m_dag_cached_blocks.push(block);
     //    return true;
     //  }
     //  catch (std::logic_error&) {
@@ -1313,182 +1221,177 @@ impl<'m> CMachine<'m> {
     //  }
     //}
 
-    std::tuple<bool, QVDRecordsT&> CMachine::IcachedBlocks(
-      const QString& action,
-      const QVDRecordsT& blocks,
-      const QString& status)
+*/
+    pub fn cachedBlocks(
+        &mut self,
+        action: &str,
+        blocks: QVDRecordsT,
+        status: &String) -> bool
     {
-      try {
-        // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-        std::lock_guard<std::mutex> lck (mutex_cached_blocks);
-
-        if (action == "assign")
         {
-          m_DAG_cached_blocks = blocks;
-        }
-
-        if (action == "append")
-        {
-          for (QVDicT a_block: blocks)
-            m_DAG_cached_blocks.push(a_block);
-        }
-
-        if (action == "update")
-        {
-          for (QVDicT a_block: blocks)
-            for (int i = 0 ; i < m_DAG_cached_blocks.size(); i++)
-              if (m_DAG_cached_blocks[i].value("b_hash").to_string() == a_block.value("b_hash").to_string())
-                m_DAG_cached_blocks[i]["b_utxo_imported"] = status;
-        }
-
-        return {true, m_DAG_cached_blocks};
-
-      }
-      catch (std::logic_error&)
-      {
-        QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
-        CLog::log("Failed in cached blocks action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-        std::cout << "[exception caught]\n";
-        return {false, m_DAG_cached_blocks};
-      }
-    }
-
-    std::tuple<bool, QStringList&> CMachine::IcachedBlockHashes(
-      const QString& action,
-      const QStringList& block_hashes)
-    {
-      try {
-        // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-        std::lock_guard<std::mutex> lck (mutex_cached_block_hashes);
-
-        if (action == "assign")
-        {
-          m_DAG_cached_block_hashes = block_hashes;
-        }
-
-        if (action == "append")
-        {
-          for (QString a_hash: block_hashes)
-            m_DAG_cached_block_hashes.push(a_hash);
-        }
-
-        return {true, m_DAG_cached_block_hashes};
-
-      }
-      catch (std::logic_error&)
-      {
-        QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
-        CLog::log("Failed in cached block hashes action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-        std::cout << "[exception caught]\n";
-        return {false, m_DAG_cached_block_hashes};
-      }
-    }
-
-    std::tuple<bool, QVDRecordsT> CMachine::IcachedSpendableCoins(
-      const QString& action,
-      const QVDRecordsT& coins,
-      const CBlockHashT& visible_by,
-      const CCoinCodeT& the_coin)
-    {
-      try {
-        // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-        std::lock_guard<std::mutex> lck (mutex_cached_spendable_coins);
-
-        if (action == "assign")
-        {
-          m_cache_spendable_coins = coins;
-        }
-
-        if (action == "append")
-        {
-          for (QVDicT coin: coins)
-            m_cache_spendable_coins.push(coin);
-        }
-
-        if (action == "remove")
-        {
-          QVDRecordsT remined_coins = {};
-          if ((visible_by != "") || (the_coin != ""))
-          {
-            for (QVDicT a_coin: m_cache_spendable_coins)
-            {
-              if ((visible_by != "") && (the_coin != ""))
-              {
-                if ((a_coin.value("ut_visible_by").to_string() != visible_by) || (a_coin.value("ut_coin").to_string() != the_coin))
-                  remined_coins.push(a_coin);
-
-              }
-              else if (visible_by != "")
-              {
-                if (a_coin.value("ut_visible_by").to_string() != visible_by)
-                  remined_coins.push(a_coin);
-              }
-              else if (the_coin != "")
-              {
-                if (a_coin.value("ut_coin").to_string() != the_coin)
-                  remined_coins.push(a_coin);
-              }
+            if action == "assign" {
+                self.m_dag_cached_blocks = blocks;
+            } else if action == "append" {
+                for a_block in blocks {
+                    self.m_dag_cached_blocks.push(a_block);
+                }
+            } else if action == "update" {
+                for a_block in blocks {
+                    for i in 0..self.m_dag_cached_blocks.len() {
+                        if self.m_dag_cached_blocks[i]["b_hash"].to_string() == a_block["b_hash"].to_string() {
+                            // self.m_dag_cached_blocks[i]["b_utxo_imported"] = status.to_string();
+                        }
+                    }
+                }
             }
-
-            m_cache_spendable_coins = remined_coins;
-          }
+            return true;
         }
-
-        return {true, m_cache_spendable_coins};
-
-      }
-      catch (std::logic_error&)
-      {
-        QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
-        CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-        std::cout << "[exception caught]\n";
-        return {false, m_cache_spendable_coins};
-      }
+        // catch (std::logic_error&)
+        // {
+        //     String thread_code = String::number((quint64)QThread::currentThread(), 16);
+        //     CLog::log("Failed in cached blocks action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+        //     std::cout << "[exception caught]\n";
+        //     return {false, m_dag_cached_blocks};
+        //   }
     }
 
-    CoinsVisibilityRes CMachine::IcachedCoinsVisibility(
-      const QString& action,
-      const QStringList& entries)
+    pub fn cachedBlockHashes(
+        &mut self,
+        action: &str,
+        block_hashes: &Vec<String>) -> bool
     {
-      try {
         // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-        std::lock_guard<std::mutex> lck (mutex_cached_coins_visibility);
+        // std::lock_guard<std::mutex> lck (mutex_cached_block_hashes);
 
-        bool contains = true;
-
-        if (action == "assign")
-        {
-          m_cache_coins_visibility = entries;
+        if action == "assign" {
+            self.m_dag_cached_block_hashes = block_hashes.clone();
         }
 
-        if (action == "append")
-        {
-          for (QString a_visiblity: entries)
-            m_cache_coins_visibility.push(a_visiblity);
+        if action == "append" {
+            for a_hash in block_hashes {
+                self.m_dag_cached_block_hashes.push(a_hash.clone());
+            }
         }
 
-        if (action == "contains")
-        {
-          contains = m_cache_coins_visibility.contains(entries[0]);
-        }
+        return true;
 
-        return CoinsVisibilityRes {true, m_cache_coins_visibility, contains};
-
-      }
-      catch (std::logic_error&)
-      {
-        QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
-        CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-        std::cout << "[exception caught]\n";
-        return CoinsVisibilityRes {false, m_cache_coins_visibility, false};
-      }
+        // catch (std::logic_error&)
+        // {
+        //          String thread_code = String::number((quint64)QThread::currentThread(), 16);
+        //          CLog::log("Failed in cached block hashes action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+        //          std::cout << "[exception caught]\n";
+        //          return {false, m_dag_cached_block_hashes};
+        //        }
     }
 
+    /*
 
-    double CMachine::getMinPollingTimeframeByHour()
-    {
-      return (getCycleByMinutes() * 2.0) / 60.0;
-    }
 
-     */
+       std::tuple<bool, QVDRecordsT> CMachine::IcachedSpendableCoins(
+         const String& action,
+         const QVDRecordsT& coins,
+         const CBlockHashT& visible_by,
+         const CCoinCodeT& the_coin)
+       {
+         try {
+           // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
+           std::lock_guard<std::mutex> lck (mutex_cached_spendable_coins);
+
+           if (action == "assign")
+           {
+             m_cache_spendable_coins = coins;
+           }
+
+           if (action == "append")
+           {
+             for (QVDicT coin: coins)
+               m_cache_spendable_coins.push(coin);
+           }
+
+           if (action == "remove")
+           {
+             QVDRecordsT remined_coins = {};
+             if ((visible_by != "") || (the_coin != ""))
+             {
+               for (QVDicT a_coin: m_cache_spendable_coins)
+               {
+                 if ((visible_by != "") && (the_coin != ""))
+                 {
+                   if ((a_coin.value("ut_visible_by").to_string() != visible_by) || (a_coin.value("ut_coin").to_string() != the_coin))
+                     remined_coins.push(a_coin);
+
+                 }
+                 else if (visible_by != "")
+                 {
+                   if (a_coin.value("ut_visible_by").to_string() != visible_by)
+                     remined_coins.push(a_coin);
+                 }
+                 else if (the_coin != "")
+                 {
+                   if (a_coin.value("ut_coin").to_string() != the_coin)
+                     remined_coins.push(a_coin);
+                 }
+               }
+
+               m_cache_spendable_coins = remined_coins;
+             }
+           }
+
+           return {true, m_cache_spendable_coins};
+
+         }
+         catch (std::logic_error&)
+         {
+           String thread_code = String::number((quint64)QThread::currentThread(), 16);
+           CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+           std::cout << "[exception caught]\n";
+           return {false, m_cache_spendable_coins};
+         }
+       }
+
+       CoinsVisibilityRes CMachine::IcachedCoinsVisibility(
+         const String& action,
+         const StringList& entries)
+       {
+         try {
+           // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
+           std::lock_guard<std::mutex> lck (mutex_cached_coins_visibility);
+
+           bool contains = true;
+
+           if (action == "assign")
+           {
+             m_cache_coins_visibility = entries;
+           }
+
+           if (action == "append")
+           {
+             for (String a_visiblity: entries)
+               m_cache_coins_visibility.push(a_visiblity);
+           }
+
+           if (action == "contains")
+           {
+             contains = m_cache_coins_visibility.contains(entries[0]);
+           }
+
+           return CoinsVisibilityRes {true, m_cache_coins_visibility, contains};
+
+         }
+         catch (std::logic_error&)
+         {
+           String thread_code = String::number((quint64)QThread::currentThread(), 16);
+           CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+           std::cout << "[exception caught]\n";
+           return CoinsVisibilityRes {false, m_cache_coins_visibility, false};
+         }
+       }
+
+
+       double CMachine::getMinPollingTimeframeByHour()
+       {
+         return (cutils::get_cycle_by_minutes() * 2.0) / 60.0;
+       }
+
+        */
 }

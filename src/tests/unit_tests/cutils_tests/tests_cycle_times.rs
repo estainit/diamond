@@ -1,21 +1,22 @@
 #[cfg(test)]
 pub mod tests_cycle_times {
+    use crate::constants;
     use crate::lib::constants as CConsts;
     use crate::lib::utils::cutils as cutils;
     use crate::lib::utils::version_handler;
     use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::{calc_coinbased_output_maturation_date};
 
     #[test]
-    pub fn test_ddd() {
-        assert!(1 == 1);
+    pub fn test_time_func_1() {
+        assert_eq!(cutils::make_str_date_from_date_object(cutilss::make_date_from_str("2020-01-01 00:00:00")), "2020-01-01 00:00:00");
     }
 
     #[test]
     pub fn tests_convert_float_to_string() {
-        assert!(cutils::convert_float_to_string(99.999999999989996, 11) == "99.99999999999");
-        assert!(cutils::convert_float_to_string(0.0035996328299999999, 11) == "0.00359963282");
-        assert!(cutils::convert_float_to_string(0.0, 11) == "0");
-        assert!(cutils::convert_float_to_string(0.00, 11) == "0");
+        assert!(cutils::convert_float_to_string(99.999999999989996, constants::FLOAT_LENGTH) == "99.99999999999");
+        assert!(cutils::convert_float_to_string(0.0035996328299999999, constants::FLOAT_LENGTH) == "0.00359963282");
+        assert!(cutils::convert_float_to_string(0.0, constants::FLOAT_LENGTH) == "0");
+        assert!(cutils::convert_float_to_string(0.00, constants::FLOAT_LENGTH) == "0");
     }
 
     #[test]
@@ -26,15 +27,15 @@ pub mod tests_cycle_times {
     #[test]
     pub fn tests_1() {
         //Should control coinbase date range is valid (12 hour per cycle)
-        if CConsts::TIME_GAIN == 1 {
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 00:00:01".to_string()), "00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 01:08:00".to_string()), "00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 07:08:00".to_string()), "00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 11:59:59".to_string()), "00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 12:00:00".to_string()), "12:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 12:00:01".to_string()), "12:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 13:08:00".to_string()), "12:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 23:59:59".to_string()), "12:00:00".to_string());
+        if constants::TIME_GAIN == 1 {
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 00:00:01"), "00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 01:08:00"), "00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 07:08:00"), "00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 11:59:59"), "00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 12:00:00"), "12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 12:00:01"), "12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 13:08:00"), "12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_number("2012-11-05 23:59:59"), "12:00:00".to_string());
 
             assert_eq!(cutils::get_cycle_elapsed_by_minutes("2012-11-05 00:00:00".to_string()), 0);
             assert_eq!(cutils::get_cycle_elapsed_by_minutes("2012-11-05 00:01:01".to_string()), 1);
@@ -54,12 +55,12 @@ pub mod tests_cycle_times {
             assert_eq!(cutils::get_coinbase_range("2012-11-05 23:59:59".to_string()).to, "2012-11-05 23:59:59".to_string());
 
 
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 00:00:00".to_string()), "2012-11-05 00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 00:00:01".to_string()), "2012-11-05 00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 11:59:59".to_string()), "2012-11-05 00:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 12:00:00".to_string()), "2012-11-05 12:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 12:00:01".to_string()), "2012-11-05 12:00:00".to_string());
-            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 23:59:59".to_string()), "2012-11-05 12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 00:00:00"), "2012-11-05 00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 00:00:01"), "2012-11-05 00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 11:59:59"), "2012-11-05 00:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 12:00:00"), "2012-11-05 12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 12:00:01"), "2012-11-05 12:00:00".to_string());
+            assert_eq!(cutils::get_coinbase_cycle_stamp("2012-11-05 23:59:59"), "2012-11-05 12:00:00".to_string());
         }
     }
 
@@ -85,7 +86,7 @@ pub mod tests_cycle_times {
     #[test]
     pub fn test_date_range()
     {
-        if CConsts::TIME_GAIN == 1 {
+        if constants::TIME_GAIN == 1 {
             assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 00:00:00".to_string()).from, "2017-07-21 00:00:00".to_string());
             assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 00:00:00".to_string()).to, "2017-07-21 11:59:59".to_string());
             assert_eq!(cutils::get_cb_coins_date_range(&"2017-07-22 11:59:59".to_string()).from, "2017-07-21 00:00:00".to_string());

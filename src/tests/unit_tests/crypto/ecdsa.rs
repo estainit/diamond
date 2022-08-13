@@ -86,7 +86,7 @@ pub mod tests_crypto_ecdsa {
     pub fn test_sign_verification()
     {
         {
-            let mut _msg = ccrypto::keccak256(&"5df1b8f3e190197cd317df102be85dda74acaddb741ed5f2cbb46d73dd79e01b".to_string()).substring(0, cconsts::SIGN_MSG_LENGTH as usize).to_string();
+            let mut _msg = ccrypto::keccak256(&"5df1b8f3e190197cd317df102be85dda74acaddb741ed5f2cbb46d73dd79e01b".to_string()).substring(0, constants::SIGN_MSG_LENGTH as usize).to_string();
             // println!("---------------------------------::: {}" ,msg);
             // let msg = "3f060510ab5dcdf8b0f8c2a427fc96a3".to_string();
             let _signature_hex = "7538349870784dc8da9b4d624905453db99cb08072dd0c264dc82696d77f01ce134ed738a09a98d53a4d34b40f01f099309d00662a99cb23f11211a5bd20bde0".to_string();

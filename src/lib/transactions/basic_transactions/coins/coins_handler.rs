@@ -1,6 +1,4 @@
 use std::thread;
-use std::thread::sleep;
-use std::time::Duration;
 use crate::lib::constants;
 use crate::lib::custom_types::CDateT;
 use crate::lib::dlog::dlog;
@@ -23,8 +21,7 @@ pub fn loop_coin_cleaner(c_date: &CDateT)
     //     constants::Modules::App,
     //     constants::SecLevel::Info);
 
-    while (machine().should_loop_threads())
-    {
+    while machine().should_loop_threads() {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_coin_clean(&"".to_string());
 
@@ -44,37 +41,35 @@ pub fn loop_coin_cleaner(c_date: &CDateT)
 //old_name_was doCoinClean
 pub fn do_coin_clean( c_date:&CDateT)
 {
-  /**
-  * remove from i_trx_utxo the the entries which are visible by blocks that are not "leave" any more and
-  * they are placed 4 level backward(or older) in history
-  * since it is a optional process to lightening DB loadness, it could be done for 8 level previous too
-  */
+  // * remove from i_trx_utxo the the entries which are visible by blocks that are not "leave" any more and
+  // * they are placed 4 level backward(or older) in history
+  // * since it is a optional process to lightening DB loadness, it could be done for 8 level previous too
 
   let minimum_date:CDateT = cutils::get_now();
-  // QJsonObject leaves = LeavesHandler::getLeaveBlocks();
+  // JSonObject leaves = LeavesHandler::getLeaveBlocks();
     /*
-  QStringList leaves_hashes = leaves.keys();
+  StringList leaves_hashes = leaves.keys();
   for (CBlockHashT a_key: leaves_hashes)
     if (minimum_date > leaves[a_key].toObject().value("bCDate").to_string())
       minimum_date = leaves[a_key].toObject().value("bCDate").to_string();
 
-  QStringList ancestors = DAG::getAncestors(leaves_hashes, 8);
-  if (ancestors.size()> 0)
+  StringList ancestors = DAG::getAncestors(leaves_hashes, 8);
+  if (ancestors.len()> 0)
   {
     // to be sure the visibility creation date is 2 cycles older than block creation date
-    CDateT min_creation_date = CUtils::getCbUTXOsDateRange(minimum_date).from;
+    CDateT min_creation_date = cutils::getCbUTXOsDateRange(minimum_date).from;
     QVDRecordsT block_records = DAG::searchInDAG(
       {{"b_hash", ancestors, "IN"},
       {"b_creation_date", min_creation_date, "<"}},
       {"b_hash"});
 
-    if (block_records.size()> 0)
+    if (block_records.len()> 0)
     {
       for(QVDicT row: block_records)
       {
         CBlockHashT block_hash = row.value("b_hash").to_string();
         CLog::log("removing coins which are visible_by " + block_hash, "app", "trace");
-        removeVisibleOutputsByBlocks(QStringList{block_hash}, false);
+        removeVisibleOutputsByBlocks(StringList{block_hash}, false);
       }
     }
   }
@@ -88,33 +83,33 @@ pub fn do_coin_clean( c_date:&CDateT)
 bool UTXOHandler::refreshVisibility(CDateT c_date)
 {
   if (c_date == "")
-    c_date = CUtils::getNow();
+    c_date = cutils::get_now();
 
-  QString full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + stbl_trx_utxos +
+  String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + stbl_trx_utxos +
   " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";
   QueryRes distinct_blocks = DbModel::customQuery(
     "db_comen_spendable_coins",
     full_query,
     {"ut_visible_by", "ut_creation_date"},
     0,
-    {{"ut_creation_date", CUtils::minutesBefore(CMachine::getCycleByMinutes() * 4, c_date)}},
+    {{"ut_creation_date", cutils::minutes_before(cutils::get_cycle_by_minutes() * 4, c_date)}},
     true,
     true);
 
   for (QVDicT a_visibility_entry: distinct_blocks.records)
   {
     CBlockHashT to_be_deleted_blcok = a_visibility_entry.value("ut_visible_by").to_string();
-    if (!CUtils::isValidHash(to_be_deleted_blcok))
+    if (!cutils::isValidHash(to_be_deleted_blcok))
     {
       CLog::log("Invalid block hash as to_be_deleted_blcok code! " + to_be_deleted_blcok, "sec", "fatal");
       return false;
     }
-    QStringList block_hashes = DAG::getDescendents(QStringList{to_be_deleted_blcok});  // first generation of descendents
-    block_hashes = CUtils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // second generation
-    block_hashes = CUtils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // third generation
-    block_hashes = CUtils::arrayUnique(block_hashes);
+    StringList block_hashes = DAG::getDescendents(StringList{to_be_deleted_blcok});  // first generation of descendents
+    block_hashes = cutils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // second generation
+    block_hashes = cutils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // third generation
+    block_hashes = cutils::arrayUnique(block_hashes);
     QVDRecordsT descendent_blocks = DAG::excludeFloatingBlocks(block_hashes); // exclude floating blocks
-    CLog::log("visible_bys after exclude floating signature blocks: " + CUtils::dumpIt(descendent_blocks), "trx", "trace");
+    CLog::log("visible_bys after exclude floating signature blocks: " + cutils::dumpIt(descendent_blocks), "trx", "trace");
 
     // avoid duplicate constraint error
     QueryRes candid_res = DbModel::select(
@@ -125,9 +120,9 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       0,
       false,
       false);
-    QStringList candid_coins = {};
+    StringList candid_coins = {};
     for(QVDicT a_coin: candid_res.records)
-      candid_coins.append(a_coin.value("ut_coin").to_string());
+      candid_coins.push(a_coin.value("ut_coin").to_string());
 
     for (QVDicT a_descendent_block: descendent_blocks)
     {
@@ -141,16 +136,16 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
         false,
         false);
 
-      QStringList existed_coins {};
+      StringList existed_coins {};
       for(QVDicT elm: existed_res.records)
-        existed_coins.append(elm.value("ut_coin").to_string());
+        existed_coins.push(elm.value("ut_coin").to_string());
 
-      QStringList updateables = CUtils::arrayDiff(candid_coins, existed_coins);
-      if (updateables.size() > 0)
+      StringList updateables = cutils::arrayDiff(candid_coins, existed_coins);
+      if (updateables.len() > 0)
       {
         // TODO: improve it
-        auto updateable_chunks = CUtils::chunkQStringList(updateables, 100);
-        for (QStringList a_chunk: updateable_chunks)
+        auto updateable_chunks = cutils::chunkStringList(updateables, 100);
+        for (StringList a_chunk: updateable_chunks)
         {
           DbModel::update(
             stbl_trx_utxos,
@@ -163,7 +158,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       }
     }
 
-    if (descendent_blocks.size() > 0)
+    if (descendent_blocks.len() > 0)
     {
       DbModel::dDelete(
         stbl_trx_utxos,
@@ -181,22 +176,22 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
 
 
 ClausesT UTXOHandler::prepareUTXOQuery(
-  const QStringList& coins,
-  const QStringList& visible_by)
+  const StringList& coins,
+  const StringList& visible_by)
 {
   ClausesT clauses = {};
 
-  if (coins.size() > 0)
+  if (coins.len() > 0)
     clauses.push({"ut_coin", coins, "IN"});
 
-  if (visible_by.size() > 0)
+  if (visible_by.len() > 0)
     clauses.push({"ut_visible_by", visible_by, "IN"});
 
   return clauses;
 }
 
 QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
-  const QStringList& coins)
+  const StringList& coins)
 {
   QVDRecordsT out {};
   auto[status, cachedSpendableCoins] = CMachine::cachedSpendableCoins();
@@ -212,18 +207,18 @@ QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
 
 QVDRecordsT UTXOHandler::searchInSpendableCoins(
   const ClausesT& clauses,
-  const QStringList& fields,
+  const StringList& fields,
   const OrderT& order,
   const uint64_t limit)
 {
-  QString complete_query = "SELECT DISTINCT (ut_coin) ut_coin ";
-  QStringList complete_fields {"ut_coin"};
+  String complete_query = "SELECT DISTINCT (ut_coin) ut_coin ";
+  StringList complete_fields {"ut_coin"};
 
-  if (fields.size() > 0)
+  if (fields.len() > 0)
   {
     complete_query += "," + fields.join(", ");
-    for(QString a_field: fields)
-      complete_fields.append(a_field);
+    for(String a_field: fields)
+      complete_fields.push(a_field);
   }
 
   complete_query += " FROM  " + stbl_trx_utxos + " ";
@@ -232,7 +227,7 @@ QVDRecordsT UTXOHandler::searchInSpendableCoins(
   complete_query += qElms.m_clauses;
 
   if (limit > 0 )
-    complete_query += " LIMIT " + QString::number(limit);
+    complete_query += " LIMIT " + String::number(limit);
 
   QueryRes res = DbModel::customQuery(
     "db_comen_spendable_coins",
@@ -253,9 +248,9 @@ QVDRecordsT UTXOHandler::searchInSpendableCoins(
  * to new entries which are visible_by new-block
  */
 void UTXOHandler::inheritAncestorsVisbility(
-  const QStringList& ancestor_blocks,
-  const QString& creation_date,
-  const QString& new_block_hash)
+  const StringList& ancestor_blocks,
+  const String& creation_date,
+  const String& new_block_hash)
 {
   // clog.trx.info(`inherit AncestorsVisbility: ${JSON.stringify(args)}`)
   // clog.trx.info(`ancestor_blocks==============================: ${ancestor_blocks}`)
@@ -289,7 +284,7 @@ bool UTXOHandler::addNewUTXO(
   const CMPAISValueT& coin_value,
   const CDateT& coin_creation_date)
 {
-  if (!CUtils::isValidHash(visible_by))
+  if (!cutils::isValidHash(visible_by))
   {
     CLog::log("Invalid block hash as visibility code! " + visible_by, "sec", "fatal");
     return false;
@@ -297,17 +292,17 @@ bool UTXOHandler::addNewUTXO(
 
   if ((coin_value < 0) || (coin_value > MAX_COIN_VALUE))
   {
-    CLog::log("Invalid coin value to insert! " + QString::number(coin_value), "sec", "fatal");
+    CLog::log("Invalid coin value to insert! " + String::number(coin_value), "sec", "fatal");
     return false;
   }
 
   {
     // remove this code block after implementing bloom filter
     // TODO: implement bloom filter in order to avoid select and reduce the db load ASAP
-    if (CMachine::cachedCoinsVisibility().records.size() == 0)
+    if (CMachine::cachedCoinsVisibility().records.len() == 0)
       assignCacheCoinsVisibility();
 
-    if (CMachine::cachedCoinsVisibility().records.size() == 0)
+    if (CMachine::cachedCoinsVisibility().records.len() == 0)
     {
       // why? hwo it dissapeared? BTW re-assign it
       assignCacheCoinsVisibility();
@@ -326,9 +321,9 @@ bool UTXOHandler::addNewUTXO(
     true,
     false);
 
-  if (dblChk.records.size() > 0)
+  if (dblChk.records.len() > 0)
   {
-//    CLog::log("The coin already imported. coin(" + CUtils::shortCoinRef(the_coin)+ ") already is visible by block(" + CUtils::hash8c(visible_by)+ ")", "trx", "trace");
+//    CLog::log("The coin already imported. coin(" + cutils::shortCoinRef(the_coin)+ ") already is visible by block(" + cutils::hash8c(visible_by)+ ")", "trx", "trace");
     return true;
   }
 
@@ -358,10 +353,10 @@ bool UTXOHandler::addNewUTXO(
  * @param {*} hashes
  * Only used for mitigate table load
  */
-bool UTXOHandler::removeVisibleOutputsByBlocks(const QStringList& block_hashes, const bool do_control)
+bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, const bool do_control)
 {
-  QStringList unremoveable_blocks = {};
-  QStringList unremoveable_coins = {};
+  StringList unremoveable_blocks = {};
+  StringList unremoveable_coins = {};
 
   for (CBlockHashT a_block: block_hashes)
   {
@@ -401,13 +396,13 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const QStringList& block_hashes, 
         true,
         false);
 
-      if (younger_visibility_of_coins.records.size()== 0)
+      if (younger_visibility_of_coins.records.len()== 0)
       {
         // security issue
-        QString msg = "The ut_coin which want to remove can not be seen by newer entries! " + CUtils::dumpIt(a_coin);
+        String msg = "The ut_coin which want to remove can not be seen by newer entries! " + cutils::dumpIt(a_coin);
         CLog::log(msg, "sec", "error");
-        unremoveable_blocks.append(a_block);
-        unremoveable_coins.append(a_coin.value("ut_coin").to_string());
+        unremoveable_blocks.push(a_block);
+        unremoveable_coins.push(a_coin.value("ut_coin").to_string());
         continue;
       }
       // clog.trx.info(`younger_visibility_of_coins res: ${utils.stringify(younger_visibility_of_coins)}`);
@@ -420,11 +415,11 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const QStringList& block_hashes, 
           continue;
 
         // retrieve whole ancestors of the utxo
-        QStringList all_ancestors_of_a_younger_block = DAG::returnAncestorsYoungerThan(
+        StringList all_ancestors_of_a_younger_block = DAG::returnAncestorsYoungerThan(
           {a_visibility.value("ut_visible_by").to_string()},
           a_coin.value("ut_creation_date").to_string());
 
-        if (all_ancestors_of_a_younger_block.size() == 0)
+        if (all_ancestors_of_a_younger_block.len() == 0)
           continue;
 
         if (all_ancestors_of_a_younger_block.contains(a_coin.value("ut_visible_by").to_string()))
@@ -433,10 +428,10 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const QStringList& block_hashes, 
       if (!is_visible_by_ancestors)
       {
         // security issue
-        QString msg = "The ut_coin which want to remove does not exist in history of newer entries! a_coin: " + CUtils::dumpIt(a_coin) + " younger Visibility Of RefLoc: " + CUtils::dumpIt(younger_visibility_of_coins.records);
+        String msg = "The ut_coin which want to remove does not exist in history of newer entries! a_coin: " + cutils::dumpIt(a_coin) + " younger Visibility Of RefLoc: " + cutils::dumpIt(younger_visibility_of_coins.records);
         CLog::log(msg, "sec", "error");
-        unremoveable_blocks.append(a_block);
-        unremoveable_coins.append(a_coin.value("ut_coin").to_string());
+        unremoveable_blocks.push(a_block);
+        unremoveable_coins.push(a_coin.value("ut_coin").to_string());
         continue;
       }
 
@@ -456,10 +451,10 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const QStringList& block_hashes, 
     }
   }
 
-  if ( (unremoveable_blocks.size() > 0) || (unremoveable_coins.size() > 0) )
+  if ( (unremoveable_blocks.len() > 0) || (unremoveable_coins.len() > 0) )
   {
-    unremoveable_blocks = CUtils::arrayUnique(unremoveable_blocks);
-    unremoveable_coins = CUtils::arrayUnique(unremoveable_coins);
+    unremoveable_blocks = cutils::arrayUnique(unremoveable_blocks);
+    unremoveable_coins = cutils::arrayUnique(unremoveable_coins);
     CLog::log("There are some unremovable blocks/coins! " + unremoveable_blocks.join(", ") + " " + unremoveable_coins.join(", "), "sec", "error");
     return false;
   }
@@ -480,7 +475,7 @@ void UTXOHandler::removeCoinFromCachedSpendableCoins(
 
 bool UTXOHandler::removeCoin(const CCoinCodeT& the_coin)
 {
-//  CLog::log("remove an spent coin(" + CUtils::shortCoinRef(the_coin) + ")", "trx", "trace");
+//  CLog::log("remove an spent coin(" + cutils::shortCoinRef(the_coin) + ")", "trx", "trace");
   DbModel::dDelete(
     stbl_trx_utxos,
     {{"ut_coin", the_coin}},
@@ -495,7 +490,7 @@ bool UTXOHandler::removeCoin(const CCoinCodeT& the_coin)
 
 bool UTXOHandler::removeUsedCoinsByBlock(const Block* block)
 {
-  CLog::log("remove spent UXTOs of Block(" + CUtils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
+  CLog::log("remove spent UXTOs of Block(" + cutils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
   for (Document* doc: block->getDocuments())
     for (TInput* input: doc->getInputs())
       removeCoin(input->getCoinCode());
@@ -525,7 +520,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
       utxos_dict[the_coin] = QVDicT {
         {"refLocCreationDate", a_coin.value("ut_ref_creation_date").to_string()},
         {"outValue", a_coin.value("ut_o_value").toDouble()},
-        {"visibleBy", QStringList{}}};
+        {"visibleBy", StringList{}}};
 
       utxos.push(QVDicT {
         {"refLoc", the_coin},
@@ -535,20 +530,20 @@ std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
       sum += a_coin.value("ut_o_value").toDouble();
     }
     auto tmp = utxos_dict[the_coin]["visibleBy"].toList();
-    tmp.append(a_coin.value("ut_visible_by"));
+    tmp.push(a_coin.value("ut_visible_by"));
     utxos_dict[the_coin]["visibleBy"] = tmp;
   }
   return {sum, utxos, utxos_dict };
 }
 
-QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const QStringList& addresses)
+QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const StringList& addresses)
 {
-  if (addresses.size() == 0)
+  if (addresses.len() == 0)
     return {};
 
   auto[clauses_, values_] = DbModel::clauses_query_generator({{"ut_o_address", addresses, "IN"}});
 
-  QString complete_query = "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date ";
+  String complete_query = "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date ";
   complete_query += "FROM " + stbl_trx_utxos + " WHERE " + clauses_;
   complete_query += "GROUP BY ut_coin, ut_o_address, ut_o_value ORDER BY min(ut_ref_creation_date), ut_o_address, ut_o_value";
 
@@ -574,7 +569,7 @@ QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const QStringList& addresses)
 
 QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
 {
-  QString complete_query = "SELECT DISTINCT ut_visible_by, ut_coin, ut_o_address, ut_o_value FROM " + stbl_trx_utxos + " ORDER BY ut_visible_by, ut_coin, ut_o_address, ut_o_value";
+  String complete_query = "SELECT DISTINCT ut_visible_by, ut_coin, ut_o_address, ut_o_value FROM " + stbl_trx_utxos + " ORDER BY ut_visible_by, ut_coin, ut_o_address, ut_o_value";
   QueryRes utxos = DbModel::customQuery(
     "db_comen_spendable_coins",
     complete_query,
@@ -585,8 +580,8 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
     false);
 
   QV2DicT visibility = {};
-  QHash<CBlockHashT, std::vector<QString> > coins_list = {};
-  QHash<CBlockHashT, std::vector<QString> > owners_list = {};
+  QHash<CBlockHashT, std::vector<String> > coins_list = {};
+  QHash<CBlockHashT, std::vector<String> > owners_list = {};
   QHash<CCoinCodeT, CMPAIValueT> map_coins_to_value = {};
 
   for (QVDicT a_row: utxos.records)
@@ -609,9 +604,9 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
   }
 
   // prepare block info
-  QStringList blocks_hashes = coins_list.keys();
+  StringList blocks_hashes = coins_list.keys();
   QV2DicT blocks_dict = {};
-  if (blocks_hashes.size() > 0)
+  if (blocks_hashes.len() > 0)
   {
     QVDRecordsT blocks_info = DAG::searchInDAG(
       {{"b_hash", blocks_hashes, "IN"}},
@@ -636,37 +631,37 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
     std::sort(coins_list[a_block].begin(), coins_list[a_block].end());
     auto last = std::unique(coins_list[a_block].begin(), coins_list[a_block].end());
     coins_list[a_block].erase(last, coins_list[a_block].end());
-    QString coins_str = "";
-    for(QString a_coin: coins_list[a_block])
+    String coins_str = "";
+    for(String a_coin: coins_list[a_block])
       coins_str += a_coin;
-    QString coins_hash = CCrypto::keccak256(coins_str);
+    String coins_hash = ccrypto::keccak256(coins_str);
 
     // unify and sort owners
     std::sort(owners_list[a_block].begin(), owners_list[a_block].end());
     auto last_o = std::unique(owners_list[a_block].begin(), owners_list[a_block].end());
     owners_list[a_block].erase(last_o, owners_list[a_block].end());
-    QString owners_str = "";
-    for(QString an_owner: owners_list[a_block])
+    String owners_str = "";
+    for(String an_owner: owners_list[a_block])
       owners_str += an_owner;
-    QString owners_hash = CCrypto::keccak256(owners_str);
+    String owners_hash = ccrypto::keccak256(owners_str);
 
 
-    QString the_key = blocks_dict[a_block]["block_creation_date"].to_string() + coins_hash + a_block;
+    String the_key = blocks_dict[a_block]["block_creation_date"].to_string() + coins_hash + a_block;
     visibility[the_key] = QVDicT {
       {"the_key", the_key},
       {"visible_by", a_block},
       {"block_type", blocks_dict[a_block]["block_type"]},
       {"block_creation_date", blocks_dict[a_block]["block_creation_date"]},
-      {"coins_count", QVariant::fromValue(coins_list[a_block].size())},
+      {"coins_count", QVariant::fromValue(coins_list[a_block].len())},
       {"coins_hash", coins_hash},
-      {"owners_count", QVariant::fromValue(owners_list[a_block].size())},
-      {"owners_hash", CCrypto::keccak256(owners_hash)},
-      {"coins_value", QString::number(coins_value)}};
+      {"owners_count", QVariant::fromValue(owners_list[a_block].len())},
+      {"owners_hash", ccrypto::keccak256(owners_hash)},
+      {"coins_value", String::number(coins_value)}};
   }
   QVDRecordsT out = {};
-  QStringList keys = visibility.keys();
+  StringList keys = visibility.keys();
   keys.sort();
-  for(QString key: keys)
+  for(String key: keys)
     out.push(visibility[key]);
 
   return out;
@@ -677,7 +672,7 @@ void UTXOHandler::assignCacheCoinsVisibility()
   QueryRes existed = DbModel::select(
     stbl_trx_utxos,
     {"ut_coin", "ut_visible_by"});
-  QString tmp_vis_coin = "";
+  String tmp_vis_coin = "";
   for (QVDicT elm: existed.records)
   {
     tmp_vis_coin = elm.value("ut_coin").to_string() + elm.value("ut_visible_by").to_string();

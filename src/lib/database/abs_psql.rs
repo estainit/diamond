@@ -1,12 +1,10 @@
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use postgres::Row;
-use postgres::row::RowIndex;
-use postgres::types::{FromSql, ToSql};
-use crate::{cutils, dbhandler, machine};
+use postgres::types::{ToSql};
+use crate::{dbhandler};
 use crate::cutils::remove_dbl_spaces;
 use crate::lib::constants;
-use crate::lib::custom_types::{ClausesT, OrderT, QUDicT, QVDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::dlog::dlog;
 use crate::lib::utils::dumper::dump_clauses;
 
@@ -26,7 +24,7 @@ pub struct OrderModifier<'l>
 {
     pub m_field: &'l str,
     pub m_order: &'l str,
-    // OrderModifier( const QString & field, const QString & order);
+    // OrderModifier( const String & field, const String & order);
 }
 
 pub struct ModelClause<'l>
@@ -38,9 +36,9 @@ pub struct ModelClause<'l>
     // "=";
     pub m_field_multi_values: Vec<&'l str>,
 
-    // ModelClause(const QString & fieldName, const QVariant & fieldValue);
-    // ModelClause(const QString & fieldName, const QVariant & fieldValue, const QString & clause_operand);
-    // ModelClause(const QString & fieldName, const QStringList & fieldValues, const QString & clause_operand = "IN");
+    // ModelClause(const String & fieldName, const QVariant & fieldValue);
+    // ModelClause(const String & fieldName, const QVariant & fieldValue, const String & clause_operand);
+    // ModelClause(const String & fieldName, const StringList & fieldValues, const String & clause_operand = "IN");
 }
 
 // impl fmt::Debug for ModelClause<'static> {
@@ -54,13 +52,22 @@ pub struct ModelClause<'l>
 //     }
 // }
 
+pub fn simple_eq_clause<'s>(field_name: &'s str, single_value: &'s str) -> ModelClause<'s> {
+    return ModelClause {
+        m_field_name: field_name.clone(),
+        m_field_single_str_value: single_value.clone(),
+        m_clause_operand: "=",
+        m_field_multi_values: vec![],
+    };
+}
+
 pub struct ModelParams<'l>
 {
     pub m_table: &'l str,
     pub m_clauses: ClausesT<'l>,
     pub m_fields: Vec<&'l str>,
     pub m_order: OrderT<'l>,
-    pub m_limit: i8,
+    pub m_limit: LimitT,
 }
 
 // pub struct PTRRes
@@ -76,20 +83,20 @@ pub struct ModelParams<'l>
 // }
 
 /*
-ModelClause::ModelClause(const QString& field_name, const QVariant& field_value, const QString& clause_operand)
+ModelClause::ModelClause(const String& field_name, const QVariant& field_value, const String& clause_operand)
 {
   m_field_name = field_name;
   m_field_single_str_value = field_value;
   m_clause_operand = clause_operand;
 }
 
-ModelClause::ModelClause(const QString& field_name, const QVariant& field_value)
+ModelClause::ModelClause(const String& field_name, const QVariant& field_value)
 {
   m_field_name = field_name;
   m_field_single_str_value = field_value;
 }
 
-ModelClause::ModelClause(const QString& field_name, const QStringList& field_values, const QString& clause_operand)
+ModelClause::ModelClause(const String& field_name, const StringList& field_values, const String& clause_operand)
 {
   m_field_name = field_name;
   m_field_single_str_value = "";
@@ -111,34 +118,34 @@ const QSDicT DbModel::s_map_table_to_db = {
 
 */
 
-#[derive(Debug)]
-pub struct QUnion {
-    pub su: String, // selected member
-    pub i: i64,
-    pub f: f64,
-    pub b: bool,
-    pub s: String,
-}
-
-impl QUnion{
-    pub fn from_string(s:String)->QUnion{
-        return QUnion{
-            su: "".to_string(),
-            i: 0,
-            f: 0.0,
-            b: false,
-            s
-        };
-
-    }
-}
+// #[derive(Debug)]
+// pub struct QUnion {
+//     pub su: String, // selected member
+//     pub i: i64,
+//     pub f: f64,
+//     pub b: bool,
+//     pub s: String,
+// }
+//
+// impl QUnion{
+//     pub fn from_string(s:String)->QUnion{
+//         return QUnion{
+//             su: "".to_string(),
+//             i: 0,
+//             f: 0.0,
+//             b: false,
+//             s
+//         };
+//
+//     }
+// }
 
 pub fn q_select(
     table: &str,
     fields: &Vec<&str>,
     clauses: &ClausesT,
     order: &OrderT,
-    limit: i8,
+    limit: LimitT,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     return exec_query(
@@ -154,7 +161,7 @@ pub fn prepare_to_select(
     fields: &Vec<&str>,
     clauses: &ClausesT,
     order: &OrderT,
-    limit: i8) -> QueryElements
+    limit: LimitT) -> QueryElements
 {
     let mut query_elements: QueryElements = pre_query_generator(0, clauses, order, limit);
     let mut complete_query: String = "SELECT ".to_owned() + &fields.join(", ") + " FROM " + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
@@ -165,25 +172,25 @@ pub fn prepare_to_select(
 
 /*
 QueryRes DbModel::dDelete(
-  const QString& table,
+  const String& table,
   const ClausesT& clauses,
   const bool& is_transactional,
   const bool& do_log)
 {
-  QString database_name = s_map_table_to_db.keys().contains(table) ? s_map_table_to_db[table] : "db_comen_general";
+  String database_name = s_map_table_to_db.keys().contains(table) ? s_map_table_to_db[table] : "db_comen_general";
 
   PTRRes r = prepareToDelete(table, clauses);
   return DbModel::exec_query(database_name, r.complete_query, clauses, {}, {}, is_transactional, do_log);
 }
 
 PTRRes DbModel::prepareToDelete(
-  const QString& table,
+  const String& table,
   const ClausesT& clauses)
 {
   QueryElements query_elements = pre_query_generator(clauses);
-  QString complete_query = "DELETE FROM " + table + query_elements.m_clauses + query_elements.m_order + query_elements.m_limit;
+  String complete_query = "DELETE FROM " + table + query_elements.m_clauses + query_elements.m_order + query_elements.m_limit;
   complete_query = complete_query.trimmed();
-  complete_query = CUtils::removeDblSpaces(complete_query);
+  complete_query = cutils::removeDblSpaces(complete_query);
   return {complete_query, query_elements};
 }
 */
@@ -197,7 +204,7 @@ pub fn clauses_query_generator(
 
     let mut values_: Vec<String> = vec![];
     let mut clauses_: String = "".to_string();
-    let val_arr: Vec<String>;
+    let _val_arr: Vec<String>;
 
     if clauses.len() > 0 {
         let mut tmp: Vec<String> = vec![];
@@ -206,7 +213,7 @@ pub fn clauses_query_generator(
         for a_clause_tuple in clauses
         {
             placeholder_index += 1;
-            let mut key = a_clause_tuple.m_field_name;
+            let key = a_clause_tuple.m_field_name;
             if db_model::S_SINGLE_OPERANDS.contains(&a_clause_tuple.m_clause_operand)
             {
                 tmp.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &format!(" ${placeholder_index} ) "));
@@ -252,7 +259,7 @@ pub fn pre_query_generator(
     placeholder_offset: u8,
     clauses_: &ClausesT,
     order_: &OrderT,
-    limit_: i8) -> QueryElements
+    limit_: LimitT) -> QueryElements
 {
     let (mut clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
     if clauses.len() > 0 {
@@ -281,206 +288,162 @@ pub fn pre_query_generator(
         m_complete_query: "".to_string(),
     };
 }
-/*
 
-QueryRes DbModel::customQuery(
-  const QString& database_name,
-  const QString& complete_query,
-  const QStringList& fields,
-  const int& field_count,
-  const QVDicT& to_bind_values,
-  const bool& is_transactional,
-  const bool& do_log)
+pub fn q_customQuery(
+    complete_query: &String,
+    params: &Vec<&str>,
+    do_log: bool) -> (bool, QVDRecordsT)
 {
-  if (CConsts::DATABASAE_AGENT == "psql")
-    return customPSQLQuery(database_name, complete_query, fields, field_count, to_bind_values, is_transactional, do_log);
-
-  Q_UNUSED(is_transactional);
-  QSqlQuery query(DbHandler::getDB(database_name));
-  query.setForwardOnly(true);
-  if (do_log)
-    CLog::log(complete_query, "sql", "trace");
-
-  query.prepare(complete_query);
-
-  for (QString aKey : to_bind_values.keys())
-    query.bindValue(":"+aKey, to_bind_values[aKey]);
-
-  QMap<QString, QVariant> sqlIterator(query.boundValues());
-  QStringList bound_list_for_log;
-  for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
-  {
-    bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
-  }
-  if (do_log)
-    CLog::log("Query Values: [" + bound_list_for_log.join(", ") + "]", "sql", "trace");
-
-  QVDRecordsT records;
-  if (!query.exec())
-  {
-    QString err_text = query.lastError().databaseText();
-    if (uniqueConstraintFailed(err_text))
-      return {true, records};
-
-    CLog::log(err_text, "sql", "fatal");
-    CLog::log("SQL failed query1: " + complete_query, "sql", "fatal");
-    CLog::log("SQL failed values1: " + CUtils::dumpIt(to_bind_values), "sql", "fatal");
-    QString executed_query = query.executedQuery();
-    CLog::log("SQL failed executed_query: " + executed_query, "sql", "fatal");
-    CLog::log("SQL failed clauses2: " + err_text, "sql", "fatal");
-
-    bool res = handleMaybeDbLock(query);
-    if (!res)
-      return {false, records};
-  }
-
-  while (query.next())
-  {
-    QVDicT a_row;
-    if (fields.size() > 0)
-    {
-      for ( QString a_filed: fields)
-      {
-        a_row[a_filed] = query.value(a_filed);
-      }
-
-    }else{
-      // return results by position
-      for(int i=0; i < field_count; i++)
-        a_row[QString::number(i)] = query.value(i);
-
+    if do_log {
+        dlog(
+            &complete_query.to_string(),
+            constants::Modules::Sql,
+            constants::SecLevel::Trace);
     }
-    records.push(a_row);
 
-    QMap<QString, QVariant> sqlIterator(query.boundValues());
-    QStringList bound_list_for_log;
-    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
-    {
-      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
-    }
-  }
+    let mut out_rows: QVDRecordsT = vec![];
+    let params_: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
 
-  if (query.isSelect())
-  {
-    if (do_log)
-      CLog::log("Results: [" + QString("%1").arg(records.size()) + " rows] returned", "sql", "trace");
-  }
-  else if (query.numRowsAffected() > 0)
-  {
-    CLog::log("Affected: [" + QString("%1").arg(query.numRowsAffected()) + " rows] afected", "sql", "trace");
-  }
+    return match dbhandler().m_db.query(
+        complete_query,
+        &params_[..]) {
+        Ok(rows) => {
+            if do_log {
+                dlog(
+                    &format!("Query executed successfully: "),
+                    constants::Modules::Sql,
+                    constants::SecLevel::Trace);
+            }
+
+            if rows.len() == 0
+            {
+                // let _res: Vec<Row> = vec![];
+                return (true, out_rows);
+            }
+
+            let mut res_cols_info: Vec<(String, String)> = vec![];
+            for a_col in &*rows[0].columns() {
+                res_cols_info.push((a_col.name().to_string(), a_col.type_().to_string()));
+            }
+
+            for a_row in &rows {
+                let mut a_row_dict: HashMap<String, String> = HashMap::new();
+                for col_inx in 0..a_row.len() {
+                    let (col_name, _col_type) = &res_cols_info[col_inx];
+                    let col_value: String = Row::get(a_row, col_inx);
+                    a_row_dict.insert(col_name.clone(), col_value);
+                }
+                out_rows.push(a_row_dict);
+            }
+            //println!(">>> out_dict: {:?}", out_rows);
+            (true, out_rows)
+        }
+        Err(e) => {
+            dlog(
+                &format!("Failed in cQ e: {:?} ", e),
+                constants::Modules::Sql,
+                constants::SecLevel::Error);
+            dlog(
+                &format!("Failed in cQ query: {} ", complete_query),
+                constants::Modules::Sql,
+                constants::SecLevel::Error);
+            dlog(
+                &format!("Failed in cQ params: [{:?}] ", params),
+                constants::Modules::Sql,
+                constants::SecLevel::Error);
+            (true, vec![])
+        }
+    };
+
+    /*
+        let mut    bound_list_for_log:Vec<String>=vec![];
+            exec_res;
+        if (to_bind_values.len() > 0)
+        {
+            query -> prepare(complete_query);
+            for (String aKey : to_bind_values.keys())
+            query->addBindValue(to_bind_values[aKey]);
+
+            QMap < String, QVariant > sqlIterator(query->boundValues());
+            for (auto i = sqlIterator.begin(); i != sqlIterator.end(); + + i)
+            {
+                bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
+            }
+
+            exec_res = query -> exec();
+        } else {
+            exec_res = query -> exec(complete_query);
+        }
 
 
-  query.finish();
+        if (do_log)
+        CLog::log("Query Values: [" + bound_list_for_log.join(", ") + "]", "sql", "trace");
 
-  return {true, records};
+        QVDRecordsT
+        records;
+        if (!exec_res)
+        {
+            String
+            err_text = query -> lastError().databaseText();
+            if (uniqueConstraintFailed(err_text))
+            return { true, records };
+
+            CLog::log(err_text, "sql", "fatal");
+            CLog::log("PSQL failed query1: " + complete_query, "sql", "fatal");
+            CLog::log("PSQL failed values1: " + cutils::dumpIt(to_bind_values), "sql", "fatal");
+            String
+            executed_query = query -> executedQuery();
+            CLog::log("PSQL failed executed_query: " + executed_query, "sql", "fatal");
+            CLog::log("PSQL failed clauses2: " + err_text, "sql", "fatal");
+            return { false, records };
+        }
+
+        while (query -> next())
+        {
+            QVDicT
+            a_row;
+            if (fields.len() > 0)
+            {
+                for (String a_filed: fields)
+                {
+                    a_row[a_filed] = query -> value(a_filed);
+                }
+            } else {
+                // return results by position
+                for (int i=0; i < field_count; i+ +)
+                a_row[String::number(i)] = query->value(i);
+            }
+            records.push(a_row);
+
+            QMap < String, QVariant > sqlIterator(query->boundValues());
+    //    StringList bound_list_for_log;
+    //    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
+    //      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
+        }
+
+        if (query -> isSelect())
+        {
+            if (do_log)
+            CLog::log("Results: [" + format!(records.len()) + " rows] returned", "sql", "trace");
+        }
+        else if (query -> numRowsAffected() > 0)
+        {
+            CLog::log("Affected: [" + format!(query->numRowsAffected()) + " rows] afected", "sql", "trace");
+        }
+
+        query -> finish();
+        delete
+        query;
+
+        return { true, records };
+        */
 }
-
-QueryRes DbModel::customPSQLQuery(
-  const QString& database_name,
-  const QString& complete_query,
-  const QStringList& fields,
-  const int& field_count,
-  const QVDicT& to_bind_values,
-  const bool& is_transactional,
-  const bool& do_log)
-{
-  Q_UNUSED(is_transactional);
-  QSqlQuery* query = new QSqlQuery(*DbHandler::getPSQLDB(database_name));
-  query->setForwardOnly(true);
-
-  if (do_log)
-    CLog::log(complete_query, "sql", "trace");
-
-  QStringList bound_list_for_log;
-  bool exec_res;
-  if (to_bind_values.size() > 0)
-  {
-    query->prepare(complete_query);
-    for (QString aKey : to_bind_values.keys())
-      query->addBindValue(to_bind_values[aKey]);
-
-    QMap<QString, QVariant> sqlIterator(query->boundValues());
-    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
-    {
-      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
-    }
-
-    exec_res = query->exec();
-
-  } else {
-    exec_res = query->exec(complete_query);
-
-  }
-
-
-  if (do_log)
-    CLog::log("Query Values: [" + bound_list_for_log.join(", ") + "]", "sql", "trace");
-
-  QVDRecordsT records;
-  if (!exec_res)
-  {
-    QString err_text = query->lastError().databaseText();
-    if (uniqueConstraintFailed(err_text))
-      return {true, records};
-
-    CLog::log(err_text, "sql", "fatal");
-    CLog::log("PSQL failed query1: " + complete_query, "sql", "fatal");
-    CLog::log("PSQL failed values1: " + CUtils::dumpIt(to_bind_values), "sql", "fatal");
-    QString executed_query = query->executedQuery();
-    CLog::log("PSQL failed executed_query: " + executed_query, "sql", "fatal");
-    CLog::log("PSQL failed clauses2: " + err_text, "sql", "fatal");
-    return {false, records};
-  }
-
-  while (query->next())
-  {
-    QVDicT a_row;
-    if (fields.size() > 0)
-    {
-      for ( QString a_filed: fields)
-      {
-        a_row[a_filed] = query->value(a_filed);
-      }
-
-    }else{
-      // return results by position
-      for(int i=0; i < field_count; i++)
-        a_row[QString::number(i)] = query->value(i);
-
-    }
-    records.push(a_row);
-
-    QMap<QString, QVariant> sqlIterator(query->boundValues());
-//    QStringList bound_list_for_log;
-//    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
-//      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
-
-  }
-
-  if (query->isSelect())
-  {
-    if (do_log)
-      CLog::log("Results: [" + QString("%1").arg(records.size()) + " rows] returned", "sql", "trace");
-  }
-  else if (query->numRowsAffected() > 0)
-  {
-    CLog::log("Affected: [" + QString("%1").arg(query->numRowsAffected()) + " rows] afected", "sql", "trace");
-  }
-
-  query->finish();
-  delete query;
-
-  return {true, records};
-}
-
-*/
 
 pub fn exec_query(
     query_elements: &QueryElements,
-    clauses: &ClausesT,
-    fields: &Vec<&str>,
-    upd_values: &HashMap<&str, &str>,
+    _clauses: &ClausesT,
+    _fields: &Vec<&str>,
+    _upd_values: &HashMap<&str, &str>,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     if do_log {
@@ -511,83 +474,21 @@ pub fn exec_query(
 
             if rows.len() == 0
             {
-                let res: Vec<Row> = vec![];
+                // let res: Vec<Row> = vec![];
                 return (true, out_rows);
             }
 
-            let rr = Row::columns(&rows[0]);
+            // let rr = Row::columns(&rows[0]);
             let mut res_cols_info: Vec<(String, String)> = vec![];
             for a_col in &*rows[0].columns() {
                 res_cols_info.push((a_col.name().to_string(), a_col.type_().to_string()));
             }
 
-            for mut a_row in &rows {
-                let mut a_row_dict: QUDicT = HashMap::new();
+            for a_row in &rows {
+                let mut a_row_dict: HashMap<String, String> = HashMap::new();
                 for col_inx in 0..a_row.len() {
-                    let (col_name, col_type) = &res_cols_info[col_inx];
-                    let col_value: QUnion = match &*col_type.clone() {
-                        ("real" | "double precision") => {
-                            let col_value: f64 = Row::get(a_row, col_inx);
-                            QUnion {
-                                su: "f".to_string(),
-                                i: 0,
-                                f: col_value,
-                                b: false,
-                                s: "".to_string(),
-                            }
-                        }
-                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial") => {
-                            let col_value: i64 = Row::get(a_row, col_inx);
-                            QUnion {
-                                su: "i".to_string(),
-                                i: col_value,
-                                f: 0.0,
-                                b: false,
-                                s: "".to_string(),
-                            }
-                        }
-                        ("varchar") => {
-                            let col_value: String = Row::get(a_row, col_inx);
-                            QUnion {
-                                su: "s".to_string(),
-                                i: 0,
-                                f: 0.0,
-                                b: false,
-                                s: col_value,
-                            }
-                        }
-                        ("text") => {
-                            let col_value: String = Row::get(a_row, col_inx);
-                            QUnion {
-                                su: "s".to_string(),
-                                i: 0,
-                                f: 0.0,
-                                b: false,
-                                s: col_value,
-                            }
-                        }
-                        ("bool") => {
-                            let col_value: bool = Row::get(a_row, col_inx);
-                            QUnion {
-                                su: "b".to_string(),
-                                i: 0,
-                                f: 0.0,
-                                b: col_value,
-                                s: "".to_string(),
-                            }
-                        }
-                        (_) => {
-                            let col_value: String = Row::get(a_row, col_inx);
-                            println!("UUUUU Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
-                            QUnion {
-                                su: "s".to_string(),
-                                i: 0,
-                                f: 0.0,
-                                b: false,
-                                s: col_value,
-                            }
-                        }
-                    };
+                    let (col_name, _col_type) = &res_cols_info[col_inx];
+                    let col_value: String = Row::get(a_row, col_inx);
                     a_row_dict.insert(col_name.clone(), col_value);
                 }
                 out_rows.push(a_row_dict);
@@ -617,7 +518,7 @@ pub fn exec_query(
 
 bool DbModel::handleMaybeDbLock(QSqlQuery& query)
 {
-  QString dummeyLockErrMsg = "database is locked";
+  String dummeyLockErrMsg = "database is locked";
   if (query.lastError().databaseText() != dummeyLockErrMsg)
     return false;
 
@@ -630,11 +531,11 @@ bool DbModel::handleMaybeDbLock(QSqlQuery& query)
       return true;
 
     }else{
-      CLog::log("handle Maybe Db Lock failed Thread: " + QString::number((quint64)QThread::currentThread(), 16), "sql", "fatal");
+      CLog::log("handle Maybe Db Lock failed Thread: " + String::number((quint64)QThread::currentThread(), 16), "sql", "fatal");
       CLog::log("handle Maybe Db Lock" + query.lastError().databaseText(), "sql", "fatal");
-      QString executed_query = query.executedQuery();
+      String executed_query = query.executedQuery();
       CLog::log("SQL failed executed_query: " + executed_query, "sql", "fatal");
-      QString err_text = query.lastError().databaseText();
+      String err_text = query.lastError().databaseText();
       CLog::log("SQL failed clauses2: " + err_text, "sql", "fatal");
       if (err_text != dummeyLockErrMsg)
         return false;
@@ -646,14 +547,14 @@ bool DbModel::handleMaybeDbLock(QSqlQuery& query)
 }
 
 
-const QString UNIQUE_ERR_MSG_PREFIX1 = "UNIQUE constraint failed";
-const QString UNIQUE_ERR_MSG_PREFIX2 = "ERROR:  duplicate key value violates unique constraint";
+const String UNIQUE_ERR_MSG_PREFIX1 = "UNIQUE constraint failed";
+const String UNIQUE_ERR_MSG_PREFIX2 = "ERROR:  duplicate key value violates unique constraint";
 
-bool DbModel::uniqueConstraintFailed(const QString& msg)
+bool DbModel::uniqueConstraintFailed(const String& msg)
 {
-  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX1.length()).to_string() == UNIQUE_ERR_MSG_PREFIX1)
+  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX1.len()).to_string() == UNIQUE_ERR_MSG_PREFIX1)
     return true;
-  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX2.length()).to_string() == UNIQUE_ERR_MSG_PREFIX2)
+  if (msg.midRef(0, UNIQUE_ERR_MSG_PREFIX2.len()).to_string() == UNIQUE_ERR_MSG_PREFIX2)
     return true;
   return false;
 }
@@ -687,7 +588,7 @@ pub fn insert_to_psql(
     // let keys = values.iter().map(|(&k, &v)| k).collect::<Vec<_>>(); //values.keys();
     let placeholders = placeholders.join(", ");
     let the_keys = the_keys.join(", ");
-    let mut complete_query: String = "INSERT INTO ".to_owned() + table + " (" + &*the_keys + ") VALUES (" + &*placeholders + "); "; //BEGIN; COMMIT;
+    let complete_query: String = "INSERT INTO ".to_owned() + table + " (" + &*the_keys + ") VALUES (" + &*placeholders + "); "; //BEGIN; COMMIT;
 
     if do_log {
         dlog(
@@ -696,11 +597,11 @@ pub fn insert_to_psql(
             constants::SecLevel::Info);
     }
 
-    let log_values: Vec<&str> = vec![];
+    let _log_values: Vec<&str> = vec![];
 
     let params: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
     return match dbhandler().m_db.execute(&complete_query, &params) {
-        Ok(v) => { true }
+        Ok(_v) => { true }
         Err(e) => {
             dlog(
                 &format!("failed in insert {:?}", e),
@@ -726,12 +627,7 @@ pub fn q_upsert(
     values: &HashMap<&str, &str>,
     do_log: bool) -> bool
 {
-    let only_clause = ModelClause {
-        m_field_name: controlled_field,
-        m_field_single_str_value: controlled_value,
-        m_clause_operand: "=",
-        m_field_multi_values: vec![],
-    };
+    let only_clause = simple_eq_clause(controlled_field, controlled_value);
     let clauses: ClausesT = vec![&only_clause];
 
     // controll if the record already existed
@@ -805,7 +701,7 @@ pub fn q_update(
     do_log: bool) -> bool
 {
     let query_elements = prepare_to_update(table, update_values, update_clauses);
-    let upd_res = exec_query(
+    let _upd_res = exec_query(
         &query_elements,
         update_clauses,
         &vec![],
@@ -817,7 +713,7 @@ pub fn q_update(
 /*
 
 
-    bool DbModel::clauseContains(const ClausesT& clauses, const QString& filed_name)   //legacy queryHas
+    bool DbModel::clauseContains(const ClausesT& clauses, const String& filed_name)   //legacy queryHas
     {
       for (ModelClause a_clause : clauses)
       {

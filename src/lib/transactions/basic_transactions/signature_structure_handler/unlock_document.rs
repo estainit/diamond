@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
-use crate::{constants, cutils};
+use crate::{constants};
 use crate::lib::custom_types::CAddressT;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
@@ -10,7 +10,7 @@ pub struct UnlockDocument {
     pub m_merkle_root: String,
     pub m_account_address: CAddressT,
     pub m_merkle_version: String,
-    pub m_private_keys: HashMap<String, Vec<String>>,//QHash<QString, QStringList>
+    pub m_private_keys: HashMap<String, Vec<String>>,//QHash<String, StringList>
 }
 
 impl UnlockDocument {
@@ -56,12 +56,12 @@ pub fn dump_vec_of_unlock_sets(custom_data: &Vec<UnlockSet>) -> String {
 }
 
 /*
-  std::tuple<bool, QJsonObject> exportUnlockSet(const uint32_t unlock_index) const;  // uSet
-  QJsonObject exportJson() const;
-  void importJson(const QJsonObject &obj);
+  std::tuple<bool, JSonObject> exportUnlockSet(const uint32_t unlock_index) const;  // uSet
+  JSonObject exportJson() const;
+  void importJson(const JSonObject &obj);
 };
 
-void UnlockDocument::importJson(const QJsonObject &obj)
+void UnlockDocument::importJson(const JSonObject &obj)
 {
   m_merkle_root = obj.value("m_merkle_root").to_string();
   m_account_address = obj.value("m_account_address").to_string();
@@ -74,10 +74,10 @@ void UnlockDocument::importJson(const QJsonObject &obj)
     m_unlock_sets.push(uO);
   }
   m_private_keys = {};
-  QJsonObject private_keys = obj.value("the_private_keys").toObject();
-  for (QString a_salt: private_keys.keys())
+  JSonObject private_keys = obj.value("the_private_keys").toObject();
+  for (String a_salt: private_keys.keys())
   {
-    QStringList priv_keys{};
+    StringList priv_keys{};
     for (QJsonValueRef a_ky: private_keys[a_salt].toArray())
     {
       priv_keys.push(a_ky.to_string());
@@ -86,26 +86,26 @@ void UnlockDocument::importJson(const QJsonObject &obj)
   }
 }
 
-QJsonObject UnlockDocument::exportJson() const
+JSonObject UnlockDocument::exportJson() const
 {
-  QJsonArray unlock_sets{};
+  JSonArray unlock_sets{};
   for (UnlockSet a_u_set: m_unlock_sets)
   {
     unlock_sets.push(a_u_set.exportToJson());
   }
 
-  QJsonObject private_keys;
-  for (QString a_salt: m_private_keys.keys())
+  JSonObject private_keys;
+  for (String a_salt: m_private_keys.keys())
   {
-    QJsonArray priv_keys{};
-    for (QString a_ky: m_private_keys[a_salt])
+    JSonArray priv_keys{};
+    for (String a_ky: m_private_keys[a_salt])
     {
       priv_keys.push(a_ky);
     }
     private_keys.insert(a_salt, priv_keys);
   }
 
-  return QJsonObject {
+  return JSonObject {
     {"m_merkle_root", m_merkle_root},
     {"m_account_address", m_account_address},
     {"m_merkle_version", m_merkle_version},
@@ -114,9 +114,9 @@ QJsonObject UnlockDocument::exportJson() const
   };
 }
 
-std::tuple<bool, QJsonObject> UnlockDocument::exportUnlockSet(const uint32_t unlock_index) const
+std::tuple<bool, JSonObject> UnlockDocument::exportUnlockSet(const uint32_t unlock_index) const
 {
-  if (unlock_index >= static_cast<uint32_t>(m_unlock_sets.size()))
+  if (unlock_index >= static_cast<uint32_t>(m_unlock_sets.len()))
     return {false, {}};
   auto unlock_set = m_unlock_sets[unlock_index];
   return {true, unlock_set.exportToJson()};

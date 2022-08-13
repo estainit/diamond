@@ -1,31 +1,80 @@
-/*
-
-QString TInput::dumpMe() const
-{
-  QString out = "\nCoin Code: " + m_transaction_hash + ":" + QString::number(m_output_index);
-  out += "\nOwner: " + m_owner;
-  out += "\nAmount: " + QString::number(m_amount);
-  out += "\nUnlockset: " + cutils::serializeJson(m_unlock_set);
-//  out += "\nPrivate keys: " + m_private_keys.join(", ");
-  return out;
-}
-
-CCoinCodeT TInput::getCoinCode()
-{
-  return cutils::packCoinCode(m_transaction_hash, m_output_index);
-}
-
-
-*/
-
 use std::collections::HashMap;
 use rand::Rng;
-use serde_json::Value;
+use serde_json::{json};
+use serde::{Serialize, Deserialize};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::{ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{generate_m, get_root_by_a_prove};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject};
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TInput
+{
+    pub(crate) m_transaction_hash: CDocHashT,
+    // the reffered transaction hash
+    pub(crate) m_output_index: COutputIndexT,
+
+    pub(crate) m_owner: CAddressT,
+    pub(crate) m_amount: CMPAIValueT,
+    pub(crate) m_private_keys: Vec<String>,
+    // they are need to sign the coin in order to spend it
+    pub(crate) m_unlock_set: JSonObject,
+}
+
+impl TInput {
+    pub fn getCoinCode(&self) -> CCoinCodeT
+    {
+        return cutils::packCoinCode(&self.m_transaction_hash, self.m_output_index);
+    }
+
+    pub fn dump(&self) -> String
+    {
+        let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
+        out += &*("\nOwner: ".to_owned() + &self.m_owner.clone());
+        out += &*("\nAmount: ".to_owned() + &self.m_amount.to_string());
+        out += &*("\nUnlockset: ".to_owned() + &cutils::serializeJson(&self.m_unlock_set));
+        //  out += "\nPrivate keys: " + m_private_keys.join(", ");
+        return out;
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TOutput
+{
+    pub(crate) m_address: CAddressT,
+    pub(crate) m_amount: CMPAIValueT,
+    pub(crate) m_output_charachter: String,
+    pub(crate) m_output_index: COutputIndexT,// = - 1;
+}
+
+impl TOutput {
+    pub fn new() -> TOutput {
+        TOutput {
+            m_address: "".to_string(),
+            m_amount: 0,
+            m_output_charachter: constants::OUTPUT_NORMAL.to_string(),
+            m_output_index: 0,
+        }
+    }
+
+    pub fn dump(&self) -> String {
+        let mut out: String = "\nTrx output: m_address".to_owned() + &self.m_address;
+        out += &*("\nm_amount: ".to_owned() + &self.m_amount.to_string());
+        out += &*("\nm_output_charachter: ".to_owned() + &self.m_output_charachter);
+        out += &*("\nm_output_index: ".to_owned() + &self.m_output_index.to_string());
+        //  out += "\nPrivate keys: " + m_private_keys.join(", ");
+        return out.to_string();
+    }
+}
+
+/*
+
+
+
+
+*/
 
 pub fn my_get<'a>(the_map: &'a HashMap<&str, &str>, the_key: &'a str, default_value: &'a str) -> &'a str {
     if the_map.contains_key(the_key) {
@@ -136,8 +185,7 @@ pub fn create_m_of_n_merkle<'a>(
 
         // adding random salt to obsecure/unpredictable final address
         // TODO: maybe use crypto secure random generator
-        if (custom_salts.contains_key(&custom_key))
-        {
+        if custom_salts.contains_key(&custom_key) {
             an_unlock_set.m_salt = custom_salts[&custom_key].clone();
         } else {
             an_unlock_set.m_salt = cutils::hash16c(
@@ -151,7 +199,7 @@ pub fn create_m_of_n_merkle<'a>(
         }
         leave_hash = calc_unlock_hash(an_unlock_set, &hash_algorithm);
         hashed_unlocks.push(leave_hash.clone());
-        tmp_unlockers.insert(leave_hash,an_unlock_set);
+        tmp_unlockers.insert(leave_hash, an_unlock_set);
     }
 
     let (merkle_root, m_verifies, m_version, _levels, _leaves) = generate_m(
@@ -233,12 +281,12 @@ pub fn calc_unlock_hash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 
 /*
 
-UnlockSet convertJsonUSetToStruct(const QJsonObject& unlockSet)
+UnlockSet convertJsonUSetToStruct(const JSonObject& unlockSet)
 {
   QVector<IndividualSignature> sSets;
   for(QJsonValueRef an_s_set: unlockSet.value("sSets").toArray())
   {
-    QJsonObject an_s_setJ = an_s_set.toObject();
+    JSonObject an_s_setJ = an_s_set.toObject();
     IndividualSignature an_s_setDoc {
       an_s_setJ.value("sKey").to_string(),
       an_s_setJ.value("pPledge").to_string(),
@@ -262,74 +310,81 @@ UnlockSet convertJsonUSetToStruct(const QJsonObject& unlockSet)
     unlockSet.value("sType").to_string(),
     unlockSet.value("sVer").to_string(),
     unlockSet.value("lHash").to_string(),
-    cutils::convertJSonArrayToQStringList(unlockSet.value("mProof").toArray())
+    cutils::convertJSonArrayToStringVector(unlockSet.value("mProof").toArray())
   };
 
   return out;
 }
 
-QString stringifyInputs(const QJsonArray inputs)
+String stringify_inputs(const JSonArray inputs)
 {
-  QStringList inputs_list = {};
+  StringList inputs_list = {};
   for(auto an_input: inputs)
-    inputs_list.append("[\"" + an_input[0].to_string() + "\"," + QString::number(an_input[1].toDouble()) + "]");
-  QString inputs_string = "[" + inputs_list.join(",") + "]";
+    inputs_list.push("[\"" + an_input[0].to_string() + "\"," + String::number(an_input[1].toDouble()) + "]");
+  String inputs_string = "[" + inputs_list.join(",") + "]";
   return inputs_string;
 }
-
-QString stringifyInputs(const std::vector<TInput*> inputs)
+*/
+pub fn stringify_inputs(inputs: &Vec<TInput>) -> String
 {
-  QStringList inputs_list = {};
-  for(TInput* an_input: inputs)
-    inputs_list.append("[\"" + an_input->m_transaction_hash+ "\"," + QString::number(an_input->m_output_index) + "]");
-  QString inputs_string = "[" + inputs_list.join(",") + "]";
-  return inputs_string;
+    let mut inputs_list: Vec<String> = vec![];
+    for an_input in inputs
+    {
+        inputs_list.push("[\"".to_owned() + &an_input.m_transaction_hash + &"\"," + &*an_input.m_output_index.to_string() + "]");
+    }
+    let inputs_string: String = "[".to_owned() + &inputs_list.join(",") + "]";
+    return inputs_string;
 }
 
-QString stringifyOutputs(const QJsonArray outputs)
+/*
+
+String stringify_outputs(const JSonArray outputs)
 {
-  QStringList outputs_list = {};
+  StringList outputs_list = {};
   for(auto an_input: outputs)
-    outputs_list.append("[\"" + an_input[0].to_string() + "\"," + QString::number(an_input[1].toDouble()) + "]");
-  QString outputs_string = "[" + outputs_list.join(",") + "]";
+    outputs_list.push("[\"" + an_input[0].to_string() + "\"," + String::number(an_input[1].toDouble()) + "]");
+  String outputs_string = "[" + outputs_list.join(",") + "]";
   return outputs_string;
 }
-
-QString stringifyOutputs(const std::vector<TOutput*> outputs)
+*/
+pub fn stringify_outputs(outputs: &Vec<TOutput>) -> String
 {
-  QStringList outputs_list = {};
-  for(TOutput* an_output: outputs)
-    outputs_list.append("[\"" + an_output->m_address + "\"," + QString::number(an_output->m_amount) + "]");
-  QString outputs_string = "[" + outputs_list.join(",") + "]";
-  return outputs_string;
+    let mut outputs_list: Vec<String> = vec![];
+    for an_output in outputs
+    {
+        outputs_list.push("[\"".to_owned() + &an_output.m_address + "\"," + &an_output.m_amount.to_string() + "]");
+    }
+    let outputs_string: String = "[".to_owned() + &outputs_list.join(",") + "]";
+    return outputs_string;
 }
+/*
 
-QJsonObject compactUnlocker(const QJsonObject& u_set)
+JSonObject compactUnlocker(const JSonObject& u_set)
 {
-  QStringList optional_attributes_string = {"pPledge", "pDelegate"};
-  QStringList optional_attributes_int = {"iTLockSt", "iTLock", "oTLock"};
+  StringList optional_attributes_string = {"pPledge", "pDelegate"};
+  StringList optional_attributes_int = {"iTLockSt", "iTLock", "oTLock"};
 
-  QJsonArray new_sign_sets {};
+  JSonArray new_sign_sets {};
 
   for (auto a_sign_set_: u_set["sSets"].toArray())
   {
-    QJsonObject a_sign_set = a_sign_set_.toObject();
-    QStringList a_sign_set_keys = a_sign_set.keys();
-    QJsonObject a_new_sign_set {
+    JSonObject a_sign_set = a_sign_set_.toObject();
+    StringList a_sign_set_keys = a_sign_set.keys();
+    JSonObject a_new_sign_set {
       {"sKey", a_sign_set["sKey"]}
     };
 
-    for (QString a_key: optional_attributes_string)
+    for (String a_key: optional_attributes_string)
       if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != ""))
         a_new_sign_set[a_key] = a_sign_set[a_key];
 
-    for (QString a_key: optional_attributes_int)
+    for (String a_key: optional_attributes_int)
       if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != 0))
         a_new_sign_set[a_key] = a_sign_set[a_key];
 
     new_sign_sets.push(a_new_sign_set);
   }
-  QJsonObject new_u_set {
+  JSonObject new_u_set {
     {"lHash", u_set["lHash"]},
     {"mProof", u_set["mProof"]},
     {"sSets", new_sign_sets},
@@ -340,47 +395,54 @@ QJsonObject compactUnlocker(const QJsonObject& u_set)
   return new_u_set;
 }
 
-QJsonArray compactUnlockersArray(const QJsonArray& dExtInfo)
+*/
+
+pub fn compactUnlockersArray(dExtInfo: &JSonObject) -> JSonObject
 {
-  QJsonArray new_doc_ext_info {};
-  for (auto an_ext: dExtInfo)
-  {
-    QJsonObject unlock_doc = an_ext.toObject();
-    QJsonObject new_unlock_doc {};
-    for (QString a_key: unlock_doc.keys())
+    let new_doc_ext_info: JSonObject = json!({});
+    for an_ext in dExtInfo.as_array().unwrap()
     {
-      if (a_key == "uSet")
-      {
-        QJsonObject u_set = unlock_doc["uSet"].toObject();
-        QJsonObject new_u_set = compactUnlocker(u_set);
-        new_unlock_doc[a_key] = new_u_set;
-      }else{
-        new_unlock_doc[a_key] = unlock_doc[a_key];
-      }
+        println!("compacting an_ext: {:?}", an_ext);
+        /*
+        JSonObject unlock_doc = an_ext.toObject();
+        JSonObject new_unlock_doc {};
+        for (String a_key: unlock_doc.keys())
+        {
+          if (a_key == "uSet")
+          {
+            JSonObject u_set = unlock_doc["uSet"].toObject();
+            JSonObject new_u_set = compactUnlocker(u_set);
+            new_unlock_doc[a_key] = new_u_set;
+          }else{
+            new_unlock_doc[a_key] = unlock_doc[a_key];
+          }
+        }
+        new_doc_ext_info.push(new_unlock_doc);
+         */
     }
-    new_doc_ext_info.push(new_unlock_doc);
-  }
-  return new_doc_ext_info;
+
+    return new_doc_ext_info;
 }
 
-QString safeStringifySigntureSets(const QJsonArray& signture_sets)
+/*
+String safeStringifySigntureSets(const JSonArray& signture_sets)
 {
-  QStringList sets_str;
+  StringList sets_str;
   for(QJsonValue an_s_set: signture_sets)
   {
-    QJsonObject an_s_setJ = an_s_set.toObject();
+    JSonObject an_s_setJ = an_s_set.toObject();
 
-    QString a_set = "{";
+    String a_set = "{";
     a_set += "\"sKey\":\"" + an_s_setJ.value("sKey").to_string() + "\"";
 
     if (an_s_setJ.keys().contains("iTLock") && (an_s_setJ["iTLock"].toDouble() > 0))
-      a_set += ",\"iTLock\":" + QString::number(an_s_setJ.value("iTLock").toDouble());
+      a_set += ",\"iTLock\":" + String::number(an_s_setJ.value("iTLock").toDouble());
 
     if (an_s_setJ.keys().contains("iTLockSt") && (an_s_setJ["iTLockSt"].toDouble() > 0))
-      a_set += ",\"iTLockSt\":" + QString::number(an_s_setJ.value("iTLockSt").toDouble()) ;
+      a_set += ",\"iTLockSt\":" + String::number(an_s_setJ.value("iTLockSt").toDouble()) ;
 
     if (an_s_setJ.keys().contains("oTLock") && (an_s_setJ["oTLock"].toDouble() > 0))
-      a_set += ",\"oTLock\":" + QString::number(an_s_setJ.value("oTLock").toDouble());
+      a_set += ",\"oTLock\":" + String::number(an_s_setJ.value("oTLock").toDouble());
 
     if(an_s_setJ.value("pDelegate").to_string() != "")
       a_set += ",\"pDelegate\":\"" + an_s_setJ.value("pDelegate").to_string() + "\"";
@@ -390,22 +452,22 @@ QString safeStringifySigntureSets(const QJsonArray& signture_sets)
 
     a_set += "}";
 
-    sets_str.append(a_set);
+    sets_str.push(a_set);
   }
-  QString out = "[" + sets_str.join(",") + "]";
+  String out = "[" + sets_str.join(",") + "]";
   return out;
 }
 
-QString safeStringifyUnlockSet(const QJsonObject& unlockSet)
+String safeStringifyUnlockSet(const JSonObject& unlockSet)
 {
-  QString out = "{";
+  String out = "{";
   if (unlockSet.value("lHash").to_string() == "")
   {
     out += "\"lHash\":\"\",";
   }else{
     out += "\"lHash\":\"" + unlockSet.value("lHash").to_string() + "\",";
   }
-  if (unlockSet.value("mProof").toArray().size() > 0)
+  if (unlockSet.value("mProof").toArray().len() > 0)
   {
     out += "\"mProof\":" + cutils::serializeJson(unlockSet.value("mProof").toArray()) + ",";
   }else{
@@ -544,12 +606,10 @@ pub fn validate_structure_restrictions(
 
     if unlock_set.m_signature_type == constants::signature_types::STRICT
     {
-        /**
-         * this strict type of signature MUST have and ONLY have these 3 features
-         * sKey: can be a public key(and later can be also another bech32 address, after implementing nested signature feature)
-         * pPledge: means the signer Permitted to Pleadge this account
-         * pDelegate: means the signer Permited to Delegate some rights (binded to this address) to others
-         */
+        //  * this strict type of signature MUST have and ONLY have these 3 features
+        //  * sKey: can be a public key(and later can be also another bech32 address, after implementing nested signature feature)
+        //  * pPledge: means the signer Permitted to Pleadge this account
+        //  * pDelegate: means the signer Permited to Delegate some rights (binded to this address) to others
 
         if cutils::hash16c(&ccrypto::keccak256(&custom_stringify_signature_sets(&unlock_set.m_signature_sets))) != unlock_set.m_salt
         {

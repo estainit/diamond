@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use substring::Substring;
-use warp::body::form;
 use crate::{ccrypto, cutils};
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
@@ -29,7 +28,7 @@ pub fn create_anew_basic_address<'a>(
     for i in 0..n_signatures_count
     {
         let (status, private_key, public_key) = ccrypto::ecdsa_generate_key_pair();
-        if (!status)
+        if !status
         {
             dlog(
                 &format!("Couldn't create Strict ECDSA key pair"),
@@ -46,10 +45,10 @@ pub fn create_anew_basic_address<'a>(
             m_signature_key: public_key,
             m_permitted_to_pledge: constants::NO.to_string(),
             m_permitted_to_delegate: constants::NO.to_string(),
-            m_input_time_lock: 0,
-            m_output_time_lock: 0,
+            m_input_time_lock: 0.0,
+            m_output_time_lock: 0.0,
         };
-        a_sign_set.m_signer_id = cutils::padding_length_value(format!("{}", i), 7);
+        a_sign_set.m_signer_id = cutils::padding_length_value(i.to_string(), constants::LEN_PROP_LENGTH);
         individuals_signing_sets.insert(a_sign_set.m_signer_id.clone(), a_sign_set);
     }
 
@@ -112,7 +111,7 @@ pub fn create_anew_basic_address<'a>(
     {
         for inx in 0..an_unlock_set.m_signature_sets.len()
         {
-            let (status, signature_hex, signature) = ccrypto::ecdsa_sign_message(
+            let (status, signature_hex, _signature) = ccrypto::ecdsa_sign_message(
                 &unlock_info.m_private_keys.get(&an_unlock_set.m_salt).unwrap()[inx].to_string(),
                 &message);
             if !status

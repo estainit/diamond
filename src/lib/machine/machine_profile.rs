@@ -1,5 +1,5 @@
 use crate::lib::constants;
-use crate::lib::database::abs_psql::{ModelClause, q_select};
+use crate::lib::database::abs_psql::{q_select, simple_eq_clause};
 use crate::lib::machine::machine_neighbor::{ NeighborInfo};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
@@ -32,7 +32,7 @@ use crate::lib::database::tables::STBL_MACHINE_PROFILES;
  */
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct MachineProfile<'m>
 {
     m_dummy_m_lifetime_user: &'m str,
@@ -45,16 +45,11 @@ pub(crate) struct MachineProfile<'m>
 impl <'m>MachineProfile<'m> {
     pub fn get_profile(mp_code: &str) -> (bool, MachineProfile)
     {
-        let (status, records) = q_select(
+        let (_status, records) = q_select(
             STBL_MACHINE_PROFILES,
             &vec!["mp_code", "mp_name", "mp_settings"],
             &vec![
-                &ModelClause {
-                    m_field_name: "mp_code",
-                    m_field_single_str_value: mp_code,
-                    m_clause_operand: "=",
-                    m_field_multi_values: vec![],
-                }],
+                &simple_eq_clause("mp_code", mp_code)],
             &vec![],   // order
             1,
             true,
@@ -86,7 +81,7 @@ impl <'m>MachineProfile<'m> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct MPSetting<'m>
 {
     m_dummy_m_lifetime_user: &'m str,
@@ -116,7 +111,7 @@ impl <'m>MPSetting<'m> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EmailSettings {
     pub(crate) m_address: String,
     pub(crate) m_password: String,

@@ -7,10 +7,6 @@ use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
-use log4rs::append::console::ConsoleAppender;
-use log4rs::Config;
-use log4rs::config::{Appender, Root};
-use serde_json::{json, Value};
 
 
 // use substring::Substring;
@@ -56,8 +52,11 @@ static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::ne
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 
+/*
 #[tokio::main]
-async fn main() {
+async
+*/
+fn main() {
     //! # Diamond, the Community Maker Engine
     //! ```
     //! fn main()
@@ -72,13 +71,12 @@ async fn main() {
 
     initialize_log();
 
-
     dlog(
         &format!("Running Diamond Node (version 0.0.0). started at {}", cutils::get_now()),
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    // let john: Value = json!({
+    // let john: JSonT = json!({
     //     "name": "John Doe",
     //     "age": 43,
     //     "phones": [
@@ -102,13 +100,9 @@ async fn main() {
     machine().boot_machine();
 
 
+    machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
+
     /*
-
-      InitCCrypto::init();
-
-      CMachine::setLaunchDateAndCloneId("2021-03-02 00:20:00", manual_clone_id);
-
-      w.initMachineEnvironment();
 
       if (true)
       {
@@ -116,13 +110,12 @@ async fn main() {
       }
          */
 
-    let res = get_value(&"SELECTED_PROFILE".to_string());
-    println!("res res res: {}", res);
-    tokio::join!(
-            lib::rest::apis::run_web_server(),
-            run_loops()
-        );
-    // launch_giga_loop(false);//    launch_threads();
+
+    // tokio::join!(
+    //         lib::rest::apis::run_web_server(),
+    //         run_loops()
+    //     );
+    launch_giga_loop(false);//    launch_threads();
 }
 
 async fn run_loops() {

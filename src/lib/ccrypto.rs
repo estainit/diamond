@@ -9,8 +9,8 @@ use rsa::{RsaPrivateKey, RsaPublicKey,
 
 use base64::{encode, decode};
 use std::str;
+use crate::constants;
 
-use crate::lib::constants as cconsts;
 use crate::lib::utils::cutils as cutils;
 use crate::lib::bech_32;
 use crate::lib::dlog::dlog;
@@ -24,7 +24,7 @@ pub fn is_valid_bech32(inp_str: &str) -> bool
 //old_name_was bech32Encode
 pub fn bech32_encode(str: &str) -> String
 {
-    bech_32::comen_encode(str, cconsts::SOCIETY_NAME)
+    bech_32::comen_encode(str, constants::SOCIETY_NAME)
 }
 
 pub fn keccak256(msg: &str) -> String {
@@ -81,16 +81,16 @@ using std::cout, std::endl;
 
 //  -  -  -  general
 
-std::tuple<bool, QString> CCrypto::AESencrypt(
-    const QString &clear_text,
-    const QString &secret_key,
-    const QString &initialization_vector,
-    const QString &aes_version)
+std::tuple<bool, String> ccrypto::AESencrypt(
+    const String &clear_text,
+    const String &secret_key,
+    const String &initialization_vector,
+    const String &aes_version)
 {
   if (aes_version == "0.0.0")
   {
     // no encryption
-    //    QString out = "{";
+    //    String out = "{";
     //    out += "\"aesVersion\":\"" + aes_version + "\",";
     //    out += "\"encrypted\":\"" + base64Encode(clear_text) + "\"}";
     return {true, base64Encode(clear_text)};
@@ -109,11 +109,11 @@ std::tuple<bool, QString> CCrypto::AESencrypt(
   return {false, ""};
 }
 
-std::tuple<bool, QString> CCrypto::AESencrypt020(
-    const QString &clear_text,
-    const QString &secret_key,
-    const QString &initialization_vector,
-    const QString &aes_version)
+std::tuple<bool, String> ccrypto::AESencrypt020(
+    const String &clear_text,
+    const String &secret_key,
+    const String &initialization_vector,
+    const String &aes_version)
 {
   Q_UNUSED(aes_version);
   using namespace CryptoPP;
@@ -128,9 +128,9 @@ std::tuple<bool, QString> CCrypto::AESencrypt020(
 
     // stub for how you really get it, e.g. reading it from a file, off of a
     //   network socket encrypted with an asymmetric cipher, or whatever
-    //  read_key(aes_key, aes_key.size());
+    //  read_key(aes_key, aes_key.len());
     std::string secret_key_ = secret_key.toStdString();
-    for (uint i = 0; i < secret_key_.length(); i++)
+    for (uint i = 0; i < secret_key_.len(); i++)
     {
       aes_key[i] = secret_key_[i];
     }
@@ -140,7 +140,7 @@ std::tuple<bool, QString> CCrypto::AESencrypt020(
     //   to use the same IV as well as the same key
     //  read_initialization_vector(iv);
     std::string initialization_vector_ = initialization_vector.toStdString();
-    for (uint i = 0; i < initialization_vector_.length(); i++)
+    for (uint i = 0; i < initialization_vector_.len(); i++)
     {
       ivF[i] = initialization_vector_[i];
     }
@@ -156,21 +156,21 @@ std::tuple<bool, QString> CCrypto::AESencrypt020(
                                                         new StringSink(cipher), true, 64) // Base64Encoder
                                                     )                                     // StreamTransformationFilter
     );                                                                                    // StringSource
-    return {true, QString::fromStdString(cipher)};
+    return {true, String::fromStdString(cipher)};
   }
   catch (const CryptoPP::Exception &ex)
   {
     std::cerr << ex.what() << endl;
-    CUtils::exiter("failed in AESencrypt 0.2.0", 908);
+    cutils::exiter("failed in AESencrypt 0.2.0", 908);
     return {false, ""};
   }
 }
 
-std::tuple<bool, QString> CCrypto::AESdecrypt(
-    const QString &cipher,
-    const QString &secret_key,
-    const QString &initialization_vector,
-    const QString &aes_version)
+std::tuple<bool, String> ccrypto::AESdecrypt(
+    const String &cipher,
+    const String &secret_key,
+    const String &initialization_vector,
+    const String &aes_version)
 {
   if (aes_version == "0.0.0")
   {
@@ -191,11 +191,11 @@ std::tuple<bool, QString> CCrypto::AESdecrypt(
   return {false, ""};
 }
 
-std::tuple<bool, QString> CCrypto::AESdecrypt020(
-    const QString &cipher,
-    const QString &secret_key,
-    const QString &initialization_vector,
-    const QString &aes_version)
+std::tuple<bool, String> ccrypto::AESdecrypt020(
+    const String &cipher,
+    const String &secret_key,
+    const String &initialization_vector,
+    const String &aes_version)
 {
   using namespace CryptoPP;
   AutoSeededRandomPool prng;
@@ -209,13 +209,13 @@ std::tuple<bool, QString> CCrypto::AESdecrypt020(
     SecByteBlock ivF(NULL, 16);
 
     std::string secret_key_ = secret_key.toStdString();
-    for (uint i = 0; i < secret_key_.length(); i++)
+    for (uint i = 0; i < secret_key_.len(); i++)
     {
       aes_key[i] = secret_key_[i];
     }
 
     std::string initialization_vector_ = initialization_vector.toStdString();
-    for (uint i = 0; i < initialization_vector_.length(); i++)
+    for (uint i = 0; i < initialization_vector_.len(); i++)
     {
       ivF[i] = initialization_vector_[i];
     }
@@ -229,7 +229,7 @@ std::tuple<bool, QString> CCrypto::AESdecrypt020(
                         )                                                         // base64
     );                                                                            // StringSource
 
-    return {true, QString::fromStdString(recovered)};
+    return {true, String::fromStdString(recovered)};
   }
   catch (const CryptoPP::Exception &e)
   {
@@ -238,56 +238,56 @@ std::tuple<bool, QString> CCrypto::AESdecrypt020(
   }
 }
 
-QString CCrypto::getRandomNumber(int len)
+String ccrypto::getRandomNumber(int len)
 {
   // FIXME: maybe use more random source (e.g. open ssl)
   srand(time(NULL));
-  QString res = QString::number(rand());
-  while (res.length() < len)
-    res += QString::number(rand());
+  String res = String::number(rand());
+  while (res.len() < len)
+    res += String::number(rand());
 
   return res.midRef(0, len).to_string();
 }
 
 
 
-QString CCrypto::sha256Dbl(const QString &msg)
+String ccrypto::sha256Dbl(const String &msg)
 {
   return sha256(sha256(msg));
 }
 
 
 
-QString CCrypto::base64Encode(const QString &decoded)
+String ccrypto::base64Encode(const String &decoded)
 {
   QByteArray ba;
-  ba.append(decoded);
-  return QString(ba.toBase64());
+  ba.push(decoded);
+  return String(ba.toBase64());
 }
 
-QString CCrypto::base64Decode(const QString &encoded)
+String ccrypto::base64Decode(const String &encoded)
 {
   QByteArray ba;
-  ba.append(encoded);
-  return QString(QByteArray::fromBase64(ba));
+  ba.push(encoded);
+  return String(QByteArray::fromBase64(ba));
 }
 
-QString CCrypto::bech32_encode(const QString &str)
+String ccrypto::bech32_encode(const String &str)
 {
   return bech32::ComenEncode(str, "im");
 }
 
-bool CCrypto::isValidBech32(const QString &str)
+bool ccrypto::isValidBech32(const String &str)
 {
   return bech32::ComenIsValid(str.toStdString());
 }
 
-std::pair<std::string, std::vector<uint8_t> > CCrypto::bech32Decode(const QString &str)
+std::pair<std::string, std::vector<uint8_t> > ccrypto::bech32Decode(const String &str)
 {
   return bech32::Decode(str.toStdString());
 }
 
-std::tuple<bool, std::string> CCrypto::stripHeaderAndFooter(const std::string &s, const std::string &header, const std::string &footer)
+std::tuple<bool, std::string> ccrypto::stripHeaderAndFooter(const std::string &s, const std::string &header, const std::string &footer)
 {
 
   size_t pos1, pos2;
@@ -300,7 +300,7 @@ std::tuple<bool, std::string> CCrypto::stripHeaderAndFooter(const std::string &s
     return {false, ""};
 
   // Start position and length
-  pos1 = pos1 + header.length();
+  pos1 = pos1 + header.len();
   pos2 = pos2 - pos1;
   return {true, s.substr(pos1, pos2)};
 }
@@ -389,7 +389,7 @@ pub fn ecdsa_verify_signature(public_key: &String, message: &String, signature_s
 
 // - - - - - - - - native RSA key managements - - - - - - -
 
-bool CCrypto::VerifyMessage(const CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA256>::PublicKey &key, const std::string &message, const std::string &signature)
+bool ccrypto::VerifyMessage(const CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA256>::PublicKey &key, const std::string &message, const std::string &signature)
 {
   using namespace CryptoPP;
   bool result = false;
@@ -412,14 +412,14 @@ bool CCrypto::VerifyMessage(const CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA25
 
 
 /*
-// QString signMsg(const QString& message, const QString& private_key)
+// String signMsg(const String& message, const String& private_key)
 //{
 //   // FIXME: implement it
 //   return "";
 
 //}
 
-// bool verifySignature(const QString& signed_message, const QString& signature, const QString&  public_key)
+// bool verifySignature(const String& signed_message, const String& signature, const String&  public_key)
 //{
 //   // FIXME: implement it
 //   return true;
@@ -458,7 +458,7 @@ pub fn rsa_generate_key_pair() -> (bool, String, String) {
     //         the_pub.clone()
     //     },
     //     Err(e)=>{
-    //         dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+    //         dlog(&format!("Failed in public convert to pem: {}", e), constants::Modules::App, constants::SecLevel::Error);
     //         "".to_string()
     //     },
     // };
@@ -484,7 +484,7 @@ pub fn rsa_is_valid_prv_key(pem_prv_key: &String) -> bool
             true
         }
         Err(e) => {
-            dlog(&format!("Failed in regenerate prv key from pem(RSA) {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in regenerate prv key from pem(RSA) {}", e), constants::Modules::App, constants::SecLevel::Error);
             false
         }
     };
@@ -503,7 +503,7 @@ pub fn rsa_is_valid_pub_key(pem_pub_key: &String) -> bool
             true
         }
         Err(e) => {
-            dlog(&format!("Failed in regenerate pub key from pem(RSA) {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in regenerate pub key from pem(RSA) {}", e), constants::Modules::App, constants::SecLevel::Error);
             false
         }
     };
@@ -524,7 +524,7 @@ pub fn rsa_convert_prv_obj_to_pem_str(private_key: RsaPrivateKey) -> String {
     //         sparkle_heart.to_string().clone()
     //     }
     //     Err(e) => {
-    //         dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+    //         dlog(&format!("Failed in public convert to pem: {}", e), constants::Modules::App, constants::SecLevel::Error);
     //         "".to_string()
     //     }
     // }
@@ -536,7 +536,7 @@ pub fn rsa_convert_pub_obj_to_pem_str(public_key: RsaPublicKey) -> String {
             the_pub.clone()
         }
         Err(e) => {
-            dlog(&format!("Failed in public convert to pem: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in public convert to pem: {}", e), constants::Modules::App, constants::SecLevel::Error);
             "".to_string()
         }
     }
@@ -553,7 +553,7 @@ pub fn rsa_sign(pem_prv_key: &String, msg: &String) -> (bool, String) {
             (true, hex::encode(sig_vec).clone().to_string())
         }
         Err(e) => {
-            dlog(&format!("Failed in RSA signing: {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in RSA signing: {}", e), constants::Modules::App, constants::SecLevel::Error);
             (false, "".to_string())
         }
     }
@@ -571,7 +571,7 @@ pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &
             return true;
         }
         Err(e) => {
-            dlog(&format!("Failed in verifying RSA signature {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in verifying RSA signature {}", e), constants::Modules::App, constants::SecLevel::Error);
             return false;
         }
     }
@@ -620,7 +620,7 @@ pub fn rsa_decrypt_with_prv_key_64(prv_key: &RsaPrivateKey, cipher: &String) -> 
             return (true, decoded.clone().to_string());
         }
         Err(e) => {
-            dlog(&format!("Failed in decrypt by RSA private key {}", e), cconsts::Modules::App, cconsts::SecLevel::Error);
+            dlog(&format!("Failed in decrypt by RSA private key {}", e), constants::Modules::App, constants::SecLevel::Error);
             return (false, "".to_string());
         }
     }
@@ -628,7 +628,7 @@ pub fn rsa_decrypt_with_prv_key_64(prv_key: &RsaPrivateKey, cipher: &String) -> 
 
 /*
 
-void CCrypto::CPEM_LoadPublicKey(CryptoPP::BufferedTransformation &src, CryptoPP::X509PublicKey &key, bool subjectInfo)
+void ccrypto::CPEM_LoadPublicKey(CryptoPP::BufferedTransformation &src, CryptoPP::X509PublicKey &key, bool subjectInfo)
 {
   using namespace CryptoPP;
   X509PublicKey &pk = dynamic_cast<X509PublicKey &>(key);
@@ -646,7 +646,7 @@ void CCrypto::CPEM_LoadPublicKey(CryptoPP::BufferedTransformation &src, CryptoPP
 #endif
 }
 
-void CCrypto::CPEM_Base64Decode(CryptoPP::BufferedTransformation &source, CryptoPP::BufferedTransformation &dest)
+void ccrypto::CPEM_Base64Decode(CryptoPP::BufferedTransformation &source, CryptoPP::BufferedTransformation &dest)
 {
   using namespace CryptoPP;
   Base64Decoder decoder(new Redirector(dest));
@@ -654,7 +654,7 @@ void CCrypto::CPEM_Base64Decode(CryptoPP::BufferedTransformation &source, Crypto
   decoder.MessageEnd();
 }
 
-void CCrypto::CPEM_Base64Encode(CryptoPP::BufferedTransformation &source, CryptoPP::BufferedTransformation &dest)
+void ccrypto::CPEM_Base64Encode(CryptoPP::BufferedTransformation &source, CryptoPP::BufferedTransformation &dest)
 {
   using namespace CryptoPP;
   Base64Encoder encoder(new Redirector(dest), true, 64);
@@ -664,7 +664,7 @@ void CCrypto::CPEM_Base64Encode(CryptoPP::BufferedTransformation &source, Crypto
 
 
 
-void CCrypto::CPEM_LoadPrivateKey(CryptoPP::BufferedTransformation &src, CryptoPP::PKCS8PrivateKey &key, bool subjectInfo)
+void ccrypto::CPEM_LoadPrivateKey(CryptoPP::BufferedTransformation &src, CryptoPP::PKCS8PrivateKey &key, bool subjectInfo)
 {
   using namespace CryptoPP;
   if (subjectInfo)
@@ -683,7 +683,7 @@ void CCrypto::CPEM_LoadPrivateKey(CryptoPP::BufferedTransformation &src, CryptoP
 
 
 
-QString CCrypto::decryptStringWithPrivateKey(const QString &privateKeyStr, const QString &toDecrypt)
+String ccrypto::decryptStringWithPrivateKey(const String &privateKeyStr, const String &toDecrypt)
 {
   using namespace CryptoPP;
   auto [isValid, privateKey] = rsa_read_pem_prv_key(privateKeyStr.toStdString());
@@ -702,7 +702,7 @@ QString CCrypto::decryptStringWithPrivateKey(const QString &privateKeyStr, const
                                               new StringSink(recovered)) // PK_DecryptorFilter
                        ));                                               // StringSource
 
-  return QString::fromStdString(recovered);
+  return String::fromStdString(recovered);
 };
 
 

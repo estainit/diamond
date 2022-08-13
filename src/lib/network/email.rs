@@ -71,20 +71,20 @@ bool EmailHandler::popPublicEmail()
 
 void EmailHandler::loopEmailPoper()
 {
-  QString thread_prefix = "email_poper_";
-  QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
+  String thread_prefix = "email_poper_";
+  String thread_code = String::number((quint64)QThread::currentThread(), 16);
 
   while (CMachine::shouldLoopThreads())
   {
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     popPrivateEmail();
     popPublicEmail();
 
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getPopEmailGap()));
   }
 
-  CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::STOPPED);
+  CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::STOPPED);
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Email Poper");
 }
 */
@@ -104,35 +104,35 @@ pub fn send_public_email()->bool
 /*
 void EmailHandler::loopEmailSender()
 {
-  QString thread_prefix = "email_sender_";
-  QString thread_code = QString::number((quint64)QThread::currentThread(), 16);
+  String thread_prefix = "email_sender_";
+  String thread_code = String::number((quint64)QThread::currentThread(), 16);
 
   while (CMachine::shouldLoopThreads())
   {
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::RUNNING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     sendPrivateEmail();
     sendPublicEmail();
 
-    CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::SLEEPING);
+    CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getSendEmailGap()));
   }
 
-  CMachine::reportThreadStatus(thread_prefix, thread_code, CConsts::THREAD_STATE::STOPPED);
+  CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::STOPPED);
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Email Sender");
 }
 
 
 bool EmailHandler::sendEmailWrapper(
-  const QString& sender_,
-  const QString& title,
-  const QString& message,
-  const QString& receiver)
+  const String& sender_,
+  const String& title,
+  const String& message,
+  const String& receiver)
 {
   CLog::log("send EmailWrapper args: sender(" + sender_ + ") receiver(" + receiver + ") title(" + title + ")" , "app", "trace");
   EmailSettings machine_public_email = CMachine::getPubEmailInfo();
   EmailSettings machine_private_email = CMachine::getPrivEmailInfo();
 
-  QString sender, pass, host;
+  String sender, pass, host;
   uint16_t port;
 
   if (machine_private_email.m_address == sender_)
@@ -151,12 +151,12 @@ bool EmailHandler::sendEmailWrapper(
 }
 
 bool EmailHandler::sendMail(
-  const QString& host_,
-  const QString& sender_,
-  const QString& password_,
-  const QString& subject_,
-  const QString& message_,
-  const QString& recipient_,
+  const String& host_,
+  const String& sender_,
+  const String& password_,
+  const String& subject_,
+  const String& message_,
+  const String& recipient_,
   uint16_t port)
 {
   std::string subject = subject_.toStdString();

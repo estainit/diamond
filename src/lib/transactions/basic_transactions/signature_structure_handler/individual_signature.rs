@@ -25,8 +25,8 @@ impl IndividualSignature {
             m_signature_key: "".to_string(),
             m_permitted_to_pledge: "".to_string(),
             m_permitted_to_delegate: "".to_string(),
-            m_input_time_lock: 0,
-            m_output_time_lock: 0,
+            m_input_time_lock: 0.0,
+            m_output_time_lock: 0.0,
         };
     }
 
@@ -65,14 +65,14 @@ pub fn dump_vec_of_ind_sig(custom_data: &Vec<IndividualSignature>) -> String {
   IndividualSignature(){};
 
   IndividualSignature(
-    const QString& signature_key,
-    const QString& permitted_to_pledge = "",
-    const QString& permitted_to_delegate = "",
+    const String& signature_key,
+    const String& permitted_to_pledge = "",
+    const String& permitted_to_delegate = "",
     const TimeByHoursT input_time_lock_strict = 0);
 
-  QJsonObject exportJson() const
+  JSonObject exportJson() const
   {
-    return QJsonObject {
+    return JSonObject {
       {"sKey", m_signature_key},
       {"pPledge", m_permitted_to_pledge},
       {"pDelegate", m_permitted_to_delegate},
@@ -82,7 +82,7 @@ pub fn dump_vec_of_ind_sig(custom_data: &Vec<IndividualSignature>) -> String {
     };
   }
 
-  void importJson(const QJsonObject& obj)
+  void importJson(const JSonObject& obj)
   {
     m_signature_key = obj.value("sKey").to_string();
     m_permitted_to_pledge = obj.value("pPledge").to_string();
@@ -98,9 +98,9 @@ pub fn dump_vec_of_ind_sig(custom_data: &Vec<IndividualSignature>) -> String {
 
 
 IndividualSignature::IndividualSignature(
-  const QString& signature_key,
-  const QString& permitted_to_pledge,
-  const QString& permitted_to_delegate,
+  const String& signature_key,
+  const String& permitted_to_pledge,
+  const String& permitted_to_delegate,
   const TimeByHoursT input_time_lock_strict)
 {
   m_signer_id = "";
