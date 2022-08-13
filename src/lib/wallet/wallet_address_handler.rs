@@ -42,20 +42,17 @@ pub fn search_wallet_addresses(
     fields: Vec<&str>) -> (bool, QVDRecordsT)
 {
     let mut clauses: ClausesT = vec![];
-    let clause_1: ModelClause;
     if mp_code != constants::ALL
     {
-        clause_1 = simple_eq_clause("wa_mp_code",&*mp_code);
-        clauses.push(&clause_1);
+        clauses.push(simple_eq_clause("wa_mp_code", &*mp_code));
     }
 
-    let clause_2: ModelClause = ModelClause {
+    clauses.push(ModelClause {
         m_field_name: "wa_address",
         m_field_single_str_value: "",
         m_clause_operand: "IN",
         m_field_multi_values: addresses,
-    };
-    clauses.push(&clause_2);
+    });
 
     let (status, records) = q_select(
         STBL_MACHINE_WALLET_ADDRESSES,

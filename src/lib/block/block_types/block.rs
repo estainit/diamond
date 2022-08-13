@@ -724,7 +724,7 @@ impl Block {
             STBL_BLOCKS,
             &vec!["b_hash"],     // fields
             &vec![
-                &simple_eq_clause("b_hash", &self.m_block_hash),
+                simple_eq_clause("b_hash", &self.m_block_hash),
             ],
             &vec![
                 &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },

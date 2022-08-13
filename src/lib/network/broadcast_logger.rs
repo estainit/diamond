@@ -20,7 +20,7 @@ pub fn listSentBlocks(after_that_: &CDateT, fields: &Vec<&str>) -> QVDRecordsT
     let (status, records) = q_select(
         STBL_LOGS_BROADCAST,
         fields,
-        &vec![&ModelClause {
+        &vec![ModelClause {
             m_field_name: "lb_send_date",
             m_field_single_str_value: &*after_that,
             m_clause_operand: ">=",

@@ -184,9 +184,9 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
         // retrieve prev cycle coinbases
         let prvCoinbaseBlocks: QVDRecordsT = searchInDAG(
             &vec![
-                &simple_eq_clause("b_type", constants::block_types::Coinbase),
-                &simple_eq_clause("b_cycle", &cycle_stamp),
-                &ModelClause {
+                simple_eq_clause("b_type", constants::block_types::Coinbase),
+                simple_eq_clause("b_cycle", &cycle_stamp),
+                ModelClause {
                     m_field_name: "b_creation_date",
                     m_field_single_str_value: &*from,
                     m_clause_operand: ">=",
@@ -219,9 +219,9 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
 
         let fSWBlocks: QVDRecordsT = searchInDAG(
             &vec![
-                &simple_eq_clause("b_type", constants::block_types::FSign),
-                &simple_eq_clause("b_cycle", &cycle_stamp),
-                &ModelClause {
+                simple_eq_clause("b_type", constants::block_types::FSign),
+                simple_eq_clause("b_cycle", &cycle_stamp),
+                ModelClause {
                     m_field_name: "b_creation_date",
                     m_field_single_str_value: &*from,
                     m_clause_operand: ">=",
@@ -279,7 +279,7 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
     } else {
         // machine is in init cycle, so there is no floating signture
         let genesis: QVDRecordsT = searchInDAG(
-            &vec![&simple_eq_clause("b_type", constants::block_types::Genesis)],
+            &vec![simple_eq_clause("b_type", constants::block_types::Genesis)],
             &vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],
             &vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },

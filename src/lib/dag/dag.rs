@@ -15,7 +15,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
             let (_status, records) = q_select(
                 STBL_BLOCKS,
                 &vec!["b_hash", "b_descendants"],
-                &vec![&c1],
+                &vec![c1],
                 &vec![],
                 1,
                 false);
@@ -41,7 +41,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
                 q_update(
                     STBL_BLOCKS,
                     &update_values,
-                    &vec![&c1],
+                    &vec![c1],
                     true);
             }
         }
@@ -810,8 +810,8 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
 
     let current_coinbases_in_dag: QVDRecordsT = searchInDAG(
         &vec![
-            &simple_eq_clause("b_type", constants::block_types::Coinbase),
-            &ModelClause {
+            simple_eq_clause("b_type", constants::block_types::Coinbase),
+            ModelClause {
                 m_field_name: "b_creation_date",
                 m_field_single_str_value: &*coinbase_from,
                 m_clause_operand: ">=",

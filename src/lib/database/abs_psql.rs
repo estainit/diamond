@@ -628,7 +628,7 @@ pub fn q_upsert(
     do_log: bool) -> bool
 {
     let only_clause = simple_eq_clause(controlled_field, controlled_value);
-    let clauses: ClausesT = vec![&only_clause];
+    let clauses: ClausesT = vec![only_clause];
 
     // controll if the record already existed
     let (status, records) = q_select(

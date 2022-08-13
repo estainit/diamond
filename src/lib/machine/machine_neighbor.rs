@@ -46,9 +46,9 @@ impl<'m> CMachine<'m> {
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_mp_code", "n_email"],
             &vec![
-                &simple_eq_clause("n_mp_code", &*mp_code),
-                &simple_eq_clause("n_connection_type", &*connection_type),
-                &simple_eq_clause("n_email", &*neighbor_email),
+                simple_eq_clause("n_mp_code", &*mp_code),
+                simple_eq_clause("n_connection_type", &*connection_type),
+                simple_eq_clause("n_email", &*neighbor_email),
             ],
             &vec![],
             0,
@@ -64,10 +64,11 @@ impl<'m> CMachine<'m> {
                     ("n_pgp_public_key", &*neighbor_public_key),
                     ("n_last_modified", &*now),
                 ]);
-                let c1 = simple_eq_clause("n_mp_code", &*mp_code);
-                let c2 = simple_eq_clause("n_connection_type", &*connection_type);
-                let c3 = simple_eq_clause("n_email", &*neighbor_email);
-                let clauses: ClausesT = vec![&c1, &c2, &c3];
+                let clauses: ClausesT = vec![
+                    simple_eq_clause("n_mp_code", &*mp_code),
+                    simple_eq_clause("n_connection_type", &*connection_type),
+                    simple_eq_clause("n_email", &*neighbor_email)
+                ];
 
                 q_update(
                     STBL_MACHINE_NEIGHBORS,
@@ -143,8 +144,8 @@ impl<'m> CMachine<'m> {
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_email", "n_pgp_public_key", "n_connection_type"],
             &vec![
-                &simple_eq_clause("n_is_active", constants::YES),
-                &simple_eq_clause("n_mp_code", mp_code)],
+                simple_eq_clause("n_is_active", constants::YES),
+                simple_eq_clause("n_mp_code", mp_code)],
             &vec![&OrderModifier { m_field: "n_connection_type", m_order: "DESC" }],
             0,
             true,
@@ -162,34 +163,24 @@ impl<'m> CMachine<'m> {
     {
         let mut clauses: ClausesT = vec![];
 
-        let c1: ModelClause;
-        let c2: ModelClause;
-        let c3: ModelClause;
-        let c4: ModelClause;
-        let c5: ModelClause;
         if connection_status != "" {
-            c1 = simple_eq_clause("n_is_active", connection_status);
-            clauses.push(&c1);
+            clauses.push(simple_eq_clause("n_is_active", connection_status));
         }
 
         if neighbor_type != "" {
-            c2 = simple_eq_clause("n_connection_type", neighbor_type);
-            clauses.push(&c2);
+            clauses.push(simple_eq_clause("n_connection_type", neighbor_type));
         }
 
         if mp_code != "" {
-            c3 = simple_eq_clause("n_mp_code", mp_code);
-            clauses.push(&c3);
+            clauses.push(simple_eq_clause("n_mp_code", mp_code));
         }
 
         if n_id != "" {
-            c4 = simple_eq_clause("n_id", n_id);
-            clauses.push(&c4);
+            clauses.push(simple_eq_clause("n_id", n_id));
         }
 
         if n_email != "" {
-            c5 = simple_eq_clause("n_email", n_email);
-            clauses.push(&c5);
+            clauses.push(simple_eq_clause("n_email", n_email));
         }
 
         let (_status, records) = q_select(

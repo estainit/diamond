@@ -462,8 +462,8 @@ pub fn doesDAGHasMoreConfidenceCB() -> bool
 
     let already_recorded_coinbase_blocks: QVDRecordsT = searchInDAG(
         &vec![
-            &simple_eq_clause("b_type", constants::block_types::Coinbase),
-            &ModelClause {
+            simple_eq_clause("b_type", constants::block_types::Coinbase),
+            ModelClause {
                 m_field_name: "b_creation_date",
                 m_field_single_str_value: &*current_cycle_range_from,
                 m_clause_operand: ">=",
@@ -817,8 +817,8 @@ pub fn tryCreateCoinbaseBlock()
         // try to remove repayBack blocks
         let existed_RpBlocks: QVDRecordsT = searchInDAG(
             &vec![
-                &simple_eq_clause("b_type", constants::block_types::RpBlock),
-                &ModelClause {
+                simple_eq_clause("b_type", constants::block_types::RpBlock),
+                ModelClause {
                     m_field_name: "b_hash",
                     m_field_single_str_value: "",
                     m_clause_operand: "IN",

@@ -59,24 +59,23 @@ pub fn retrieveProperBlocks(c_date_: &CDateT) -> QVDRecordsT
     { c_date = cutils::get_now(); }
 
     //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
-    let minCreationDate = cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, c_date);
+    let min_creation_date = cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, c_date);
     dlog(
-        &format!("importing matured UTXOs(Nornam Block) before({})", minCreationDate),
+        &format!("importing matured UTXOs(Nornam Block) before({})", min_creation_date.clone()),
         constants::Modules::Trx,
         constants::SecLevel::Trace);
 
-    let mut
-    clauses: ClausesT = vec![
-        &ModelClause {
+    let mut clauses: ClausesT = vec![
+        ModelClause {
             m_field_name: "b_type",
             m_field_single_str_value: "",
             m_clause_operand: "IN",
             m_field_multi_values: vec![constants::block_types::Normal],
         },
-        &simple_eq_clause("b_utxo_imported",constants::NO),
-        &ModelClause {
+        simple_eq_clause("b_utxo_imported", constants::NO),
+        ModelClause {
             m_field_name: "b_creation_date",
-            m_field_single_str_value: &*minCreationDate.clone(),
+            m_field_single_str_value: min_creation_date.as_str(),
             m_clause_operand: "<=",
             m_field_multi_values: vec![],
         },
@@ -97,9 +96,9 @@ pub fn retrieveProperBlocks(c_date_: &CDateT) -> QVDRecordsT
 
         if lastSyncStatus["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, cutils::get_now())
         {
-            clauses.push(&ModelClause {
+            clauses.push(ModelClause {
                 m_field_name: "b_receive_date",
-                m_field_single_str_value: &*minCreationDate,
+                m_field_single_str_value: &*min_creation_date,
                 m_clause_operand: "<",
                 m_field_multi_values: vec![],
             });

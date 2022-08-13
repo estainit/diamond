@@ -100,7 +100,7 @@ pub mod b_genesis {
         let c1 = simple_eq_clause("pr_hash", &*proposal_hash);
         DNAProposalDocument::update_proposal(
             &update_values,
-            &vec![&c1],
+            &vec![c1],
             false);
 
         // conclude the polling
@@ -116,7 +116,7 @@ pub mod b_genesis {
         let c1 = simple_eq_clause("pll_ref", &*proposal_hash);
         update_polling(
             &pollingUpdValues,
-            &vec![&c1],
+            &vec![c1],
             false);
 
         // also insert in db DNA initiate shares

@@ -76,7 +76,7 @@ pub type QVector<QV2DicT>       QV2DRecordsT;
 pub type QVector<JSonObject>   JORecordsT;
 pub type QVector<JSonArray>    JARecordsT;
 */
-pub type ClausesT<'l> = Vec<&'l ModelClause<'l>>;
+pub type ClausesT<'l> = Vec<ModelClause<'l>>;
 pub type OrderT<'l> = Vec<&'l OrderModifier<'l>>;
 pub type LimitT = u32;
 

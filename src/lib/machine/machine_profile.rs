@@ -49,7 +49,7 @@ impl <'m>MachineProfile<'m> {
             STBL_MACHINE_PROFILES,
             &vec!["mp_code", "mp_name", "mp_settings"],
             &vec![
-                &simple_eq_clause("mp_code", mp_code)],
+                simple_eq_clause("mp_code", mp_code)],
             &vec![],   // order
             1,
             true,
