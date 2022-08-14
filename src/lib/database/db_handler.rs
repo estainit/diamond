@@ -75,7 +75,6 @@ pub fn init_db<'a>(machine: &mut CMachine) -> (bool, String)
     {
         if !machine.databases_are_created()
         {
-            println!("check if databases_ are_ created ");
             let are_created: bool = match dbhandler().m_db.query("SELECT * FROM c_blocks limit 1;", &[]) {
                 Ok(rows) => {
                     true
@@ -85,6 +84,8 @@ pub fn init_db<'a>(machine: &mut CMachine) -> (bool, String)
                     false
                 }
             };
+            println!("check if databases_ are_ created ({})", are_created);
+
 
             if !are_created
             {
@@ -213,7 +214,7 @@ pub fn empty_db(machine: &mut CMachine) -> bool
 {
     for a_table in psql_tables_list()
     {
-        let mut query_string = format!("DELETE FROM {}", a_table);
+        let query_string = format!("DELETE FROM {}", a_table);
         dlog(
             &format!("Cleaning table: {}", a_table),
             constants::Modules::Sql,

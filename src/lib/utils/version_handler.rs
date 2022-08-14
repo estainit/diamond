@@ -15,8 +15,18 @@ pub fn is_older_than(v1: String, v_ref: String) -> i8 {
 pub fn convert_ver_to_val(version: String) -> i64 {
     let v_seg: Vec<&str> = version.split(".").collect();
     let mut version_segments: Vec<i64> = vec![];
-    for a_seg in v_seg.iter()
+    for &a_seg in v_seg.iter()
     {
+        let seg_int2 = match a_seg.to_string().parse::<i64>(){
+            Ok(i)=>{i},
+            Err(e)=>{
+                println!("convert_ver_to_val version, {:?}", version);
+                println!("convert_ver_to_val v_seg, {:?}", v_seg);
+                println!("convert_ver_to_val FAILED, {}", e);
+                0
+            }
+        };
+        // let ddseg_int = a_seg.to_string().parse::<i64>();
         let seg_int = a_seg.to_string().parse::<i64>().unwrap();
         if seg_int < 0 {
             return -1;

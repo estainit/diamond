@@ -106,7 +106,7 @@ pub fn addToLeaveBlocks(
 pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
 {
     // the leaves younger than two cylce (24 hours) old
-    let  leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
+    let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
 
     dlog(
         &format!("current leaves: {}", serde_json::to_string(&leaves).unwrap()),
@@ -144,8 +144,6 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
 //old_name_was hasFreshLeaves
 pub fn has_fresh_leaves() -> bool
 {
-    true
-    // let freshLeaves = get_fresh_leaves();
-    // return (freshLeaves.keys().len() > 0);
+    get_fresh_leaves().keys().len() > 0
 }
 

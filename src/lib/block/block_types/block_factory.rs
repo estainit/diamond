@@ -1,11 +1,20 @@
+use crate::{constants, dlog};
 use crate::lib::custom_types::JSonObject;
 use crate::lib::block::block_types::block::Block;
 
-pub fn load_block(obj: &JSonObject) -> Block
+pub fn load_block(obj: &JSonObject) -> (bool, Block)
 {
     let mut block: Block = Block::new();
-    let _status = block.setByJsonObj(obj);
-    return block;
+    let status = block.setByJsonObj(obj);
+    if !status{
+        println!("Failed in set block by JSON obj: {}", serde_json::to_string(&obj).unwrap());
+
+        dlog(
+            &format!("Failed in set block by JSON obj: {}", serde_json::to_string(&obj).unwrap()),
+            constants::Modules::CB,
+            constants::SecLevel::Error);
+    }
+    return (status, block);
 }
 
 

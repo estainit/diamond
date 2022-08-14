@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::genesis_calc_block_hash;
 use crate::lib::block::document_types::document::Document;
@@ -136,57 +137,53 @@ impl BlockApprovedDocument {
 #[derive(Serialize, Deserialize)]
 pub struct Block
 {
-    pub m_net: String,
-    pub m_type: String,
-    pub m_block_descriptions: String,
+    pub m_block_net: String,
     pub m_block_length: BlockLenT,
     pub m_block_hash: String,
     pub m_block_type: String,
     pub m_block_version: String,
-    pub m_ancestors: Vec<String>,
-    pub m_descendants: Vec<String>,
-    pub m_signals: JSonObject,
+    pub m_block_ancestors: Vec<String>,
+    pub m_block_descendants: Vec<String>,
+    pub m_block_signals: JSonObject,
     pub m_block_backer: String,
     pub m_block_confidence: f64,
     pub m_block_creation_date: String,
     pub m_block_receive_date: String,
     pub m_block_confirm_date: String,
-    pub m_descriptions: String,
-    pub m_documents_root_hash: String,
+    pub m_block_descriptions: String,
+    pub m_block_documents_root_hash: String,
     pub m_block_ext_root_hash: String,
-    pub m_documents: Vec<Document>,
+    pub m_block_documents: Vec<Document>,
     pub m_block_ext_info: Vec<Vec<JSonObject>>,
-    // fixed different type of objects
+    pub m_block_floating_votes: JSonArray, // TODO: to be implemented later
+
     pub m_if_coinbase_block: CoinbaseBlock,
-    pub m_floating_votes: JSonArray, // TODO: to be implemented later
 }
 
 impl Block {
     pub fn new() -> Block {
         Block {
-            m_net: constants::SOCIETY_NAME.to_string(),
-            m_type: "".to_string(),
+            m_block_net: constants::SOCIETY_NAME.to_string(),
             m_block_descriptions: "".to_string(),
             m_block_length: 0,
             m_block_hash: "".to_string(),
             m_block_type: "".to_string(),
             m_block_version: constants::DEFAULT_BLOCK_VERSION.to_string(),
-            m_ancestors: vec![],
-            m_descendants: vec![],
-            m_signals: json!({}),
+            m_block_ancestors: vec![],
+            m_block_descendants: vec![],
+            m_block_signals: json!({}),
             m_block_backer: "".to_string(),
             m_block_confidence: 0.0,
             m_block_creation_date: "".to_string(),
             m_block_receive_date: "".to_string(),
             m_block_confirm_date: "".to_string(),
-            m_descriptions: "".to_string(),
-            m_documents_root_hash: "".to_string(),
-            m_block_ext_root_hash: "".to_string(),
-            m_documents: vec![],
-
+            m_block_documents: vec![],
+            m_block_documents_root_hash: "".to_string(),
             m_block_ext_info: vec![],
+            m_block_ext_root_hash: "".to_string(),
+            m_block_floating_votes: json!([]),
+
             m_if_coinbase_block: CoinbaseBlock::new(),
-            m_floating_votes: json!([]),
         }
     }
 
@@ -267,101 +264,99 @@ impl Block {
 
     pub fn setByJsonObj(&mut self, obj: &JSonObject) -> bool
     {
-        if obj["local_receive_date"].to_string() != "" {
-            self.m_block_receive_date = obj["local_receive_date"].to_string();
+        if !obj["local_receive_date"].is_null() {
+            self.m_block_receive_date = remove_quotes(&obj["local_receive_date"].to_string());
         }
 
-        if obj["net"].to_string() != "" {
-            self.m_net = obj["net"].to_string();
+        if !obj["net"].is_null() {
+            self.m_block_net = remove_quotes(&obj["net"].to_string());
         }
-        if obj["bVer"].to_string() != "" {
-            self.m_block_version = obj["bVer"].to_string();
+        if !obj["bVer"].is_null() {
+            self.m_block_version = remove_quotes(&obj["bVer"].to_string());
         }
-        /*
 
-                if obj["bType"].to_string() != "" {
-                    self.m_block_type = obj["bType"].to_string();
+        if !obj["bType"].is_null() {
+            self.m_block_type = remove_quotes(&obj["bType"].to_string());
+        }
+
+        if !obj["bDescriptions"].is_null() {
+            self.m_block_descriptions = remove_quotes(&obj["bDescriptions"].to_string());
+        }
+
+        // if obj["bConfidence"].to_string() != "" {
+        //     println!("iiiiiiiiiiii {}", obj["bConfidence"]);
+        //     self.m_block_confidence = remove_quotes(&obj["bConfidence"].to_string().parse::<f64>().unwrap());
+        // }
+
+        if !obj["bLen"].is_null() {
+            let b_len = obj["bLen"].to_string().parse::<BlockLenT>();
+            let (status, b_len) = match obj["bLen"].to_string().parse::<BlockLenT>() {
+                Ok(l) => { (true, l) }
+                Err(e) => {
+                    dlog(
+                    &format!("Invalid bLen {:?} in received JSon Obj {:?}", obj["bLen"], e),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                    (false, 0)
                 }
+            };
+            if !status {
+                return false;
+            }
+            self.m_block_length = b_len;
+        }
 
-                if obj["descriptions"].to_string() != "" {
-                    self.m_block_descriptions = obj["descriptions"].to_string();
-                }
+        if !obj["bHash"].is_null() {
+            self.m_block_hash = remove_quotes(&obj["bHash"].to_string());
+        }
 
-                if object_keys.contains("confidence") {
-                    self.m_block_confidence = obj["confidence"].toDouble();
-                }
+        // if !obj["bAncestors"].toAis_null( > 0 {
+        //     self.m_block_ancestors = cutils::convertJSonArrayToStringVector(obj["bAncestors"].toArray());
+        // }
 
-                // JS backward compatibility
-                if obj["blockLength"].to_string() != "" {
-                    self.m_block_length = static_cast < BlockLenT > (cutils::convertPaddedStringToInt(obj["blockLength"].to_string()));
-                }
+        // if !obj["signals"].toOis_null(len() > 0 {
+        //     self.m_signals = remove_quotes(&obj["signals"].toObject());
+        // }
 
-                if obj["bLen"].to_string() != "" {
-                    self.m_block_length = static_cast < BlockLenT > (cutils::convertPaddedStringToInt(obj["bLen"].to_string()));
-                }
-
-                // JS backward compatibility
-                if obj["blockHash"].to_string() != "" {
-                    self.m_block_hash = obj["blockHash"].to_string();
-                }
-
-                if obj["bHash"].to_string() != "" {
-                    self.m_block_hash = obj["bHash"].to_string();
-                }
-
-                if obj["ancestors"].toArray().len() > 0 {
-                    self.m_ancestors = cutils::convertJSonArrayToStringVector(obj["ancestors"].toArray());
-                }
-
-                if obj["signals"].toObject().keys().len() > 0 {
-                    self.m_signals = obj["signals"].toObject();
-                }
-
-                //JS backward
-                if obj["creationDate"].to_string() != "" {
-                    self.m_block_creation_date = obj["creationDate"].to_string();
-                }
-
-                if obj["bCDate"].to_string() != "" {
-                    self.m_block_creation_date = obj["bCDate"].to_string();
-                }
+        if !obj["bCDate"].is_null() {
+            self.m_block_creation_date = remove_quotes(&obj["bCDate"].to_string());
+        }
 
 
-                if obj["bDocsRootHash"].to_string() != "" {
-                    self.m_documents_root_hash = obj["bDocsRootHash"].to_string();
-                }
+        if !obj["bDocsRootHash"].is_null() {
+            self.m_block_documents_root_hash = remove_quotes(&obj["bDocsRootHash"].to_string());
+        }
 
-                if obj["bExtHash"].to_string() != "" {
-                    self.m_block_ext_root_hash = obj["bExtHash"].to_string();
-                }
+        if !obj["bExtHash"].is_null() {
+            self.m_block_ext_root_hash = remove_quotes(&obj["bExtHash"].to_string());
+        }
 
-                if obj.keys().contains("bExtInfo") {
-                    self.m_block_ext_info = obj["bExtInfo"].toArray();
-                }
+        if !obj["bExtInfo"].is_null() {
+            // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);
+        }
 
-                if object_keys.contains("docs") {
-                    createDocuments(obj["docs"]);
-                }
+        if !obj["bDocs"].is_null() {
+            // createDocuments(obj["bDocs"]);
+        }
 
-                if obj["cycle"].to_string() != "" {
-                    self.m_cycle = obj["cycle"].to_string();
-                }
+        // if !obj["cycle"].to_is_null( {
+        //     self.m_block_cycle = remove_quotes(&obj["cycle"].to_string());
+        // }
 
-                if obj["backer"].to_string() != "" {
-                    self.m_block_backer = obj["backer"].to_string();
-                }
+        if !obj["bBacker"].is_null() {
+            self.m_block_backer = remove_quotes(&obj["bBacker"].to_string());
+        }
 
-                if obj["fVotes"].to_string() != "" {
-                    self.m_floating_votes = obj["fVotes"].toArray();
-                }
-        */
+        if !obj["bFVotes"].is_null() {
+            // self.m_floating_votes = obj["bFVotes"].toArray();
+        }
 
 
-        let block_type = obj["bType"].to_string();
+        let block_type = remove_quotes(&obj["bType"].to_string());
         if block_type == constants::block_types::Normal {
             return true;
         } else if block_type == constants::block_types::Coinbase {
-            self.m_if_coinbase_block.setByJsonObj(obj);
+            return self.m_if_coinbase_block.setByJsonObj(obj);
         } else if block_type == constants::block_types::RpBlock
         {} else if block_type == constants::block_types::FSign
         {} else if block_type == constants::block_types::FVote
@@ -369,7 +364,13 @@ impl Block {
         {} else if block_type == constants::block_types::Genesis
         {}
 
-        return true;
+        println!("Invalid block type1 {:?} in received JSon Obj {:?}", block_type, serde_json::to_string(&obj).unwrap());
+        println!("Invalid block type2 {} in received JSon Obj {}", block_type, serde_json::to_string(&obj).unwrap());
+        dlog(
+            &format!("Invalid block type {} in received JSon Obj {}", block_type, serde_json::to_string(&obj).unwrap()),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return false;
     }
 
     /*
@@ -418,7 +419,7 @@ impl Block {
                 constants::SecLevel::Trace);
         }
         let mut block_ext_info: Vec<Vec<JSonObject>> = vec![];
-        for a_doc in &self.m_documents {
+        for a_doc in &self.m_block_documents {
             block_ext_info.push(a_doc.m_doc_ext_info.clone());
         }
         let out = serde_json::to_string(&block_ext_info).unwrap();
@@ -500,7 +501,7 @@ impl Block {
     pub fn exportDocumentsToJSon(&self, ext_info_in_document: bool) -> Vec<JSonObject>
     {
         let mut documents: Vec<JSonObject> = vec![];
-        for a_doc in &self.m_documents {
+        for a_doc in &self.m_block_documents {
             documents.push(a_doc.exportDocToJson(ext_info_in_document));
         }
         return documents;
@@ -509,7 +510,7 @@ impl Block {
     pub fn exportBlockToJSon(&self, ext_info_in_document: bool) -> JSonObject
     {
         let mut out: JSonObject = json!({
-            "bAncestors": self.m_ancestors,
+            "bAncestors": self.m_block_ancestors,
             "bCDate": self.m_block_creation_date,
             "bExtHash": self.m_block_ext_root_hash,
             "bExtInfo": self.m_block_ext_info,
@@ -518,10 +519,10 @@ impl Block {
             "bType": self.m_block_type,
             "bVer": self.m_block_version,
             "bDocs": self.exportDocumentsToJSon(ext_info_in_document),
-            "bDocsRootHash": self.m_documents_root_hash,
-            "bFVotes": self.m_floating_votes,
-            "bNet": self.m_net,
-            "bSignals": self.m_signals});
+            "bDocsRootHash": self.m_block_documents_root_hash,
+            "bFVotes": self.m_block_floating_votes,
+            "bNet": self.m_block_net,
+            "bSignals": self.m_block_signals});
 
         if self.m_block_backer != "" {
             out["bBacker"] = self.m_block_backer.clone().into();
@@ -684,12 +685,12 @@ impl Block {
 
     pub fn calc_block_hash(&self) -> CBlockHashT {
         if self.m_block_type == constants::block_types::Genesis {
-            genesis_calc_block_hash(self);
+            return genesis_calc_block_hash(self);
         } else if self.m_block_type == constants::block_types::Coinbase {
             return self.m_if_coinbase_block.calc_block_hash(self);
         }
 
-        panic!("no wayyyy");
+        panic!("Undefined block type: {}", self.m_block_type);
     }
 
     pub fn setBlockHash(&mut self, hash: &CBlockHashT)
@@ -751,19 +752,19 @@ impl Block {
 
         // insert into DB
         let confidence = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
-        let signals = cutils::serializeJson(&self.m_signals);
+        let signals = cutils::serializeJson(&self.m_block_signals);
         let body = wrapSafeContentForDB(&self.safeStringifyBlock(false), constants::WRAP_SAFE_VERION.to_string()).content;
-        let docs_count = self.m_documents.len().to_string();
-        let ancestors = self.m_ancestors.join(",");
-        let ancestors_count = self.m_ancestors.len().to_string();
-        let descendants = self.m_descendants.join(",");
+        let docs_count = self.m_block_documents.len().to_string();
+        let ancestors = self.m_block_ancestors.join(",");
+        let ancestors_count = self.m_block_ancestors.len().to_string();
+        let descendants = self.m_block_descendants.join(",");
         let cycle = cutils::get_coinbase_cycle_stamp(&self.m_block_creation_date);
         let values: HashMap<&str, &str> = HashMap::from([
             ("b_hash", &*self.m_block_hash),
             ("b_type", &*self.m_block_type),
             ("b_confidence", confidence.as_str()),
             ("b_body", body.as_str()),
-            ("b_docs_root_hash", &self.m_documents_root_hash),
+            ("b_docs_root_hash", &self.m_block_documents_root_hash),
             ("b_ext_root_hash", &self.m_block_ext_root_hash),
             ("b_signals", signals.as_str()),
             ("b_trxs_count", "0"),
@@ -803,19 +804,19 @@ impl Block {
         }
 
         // adjusting leave blocks
-        removeFromLeaveBlocks(&self.m_ancestors);
+        removeFromLeaveBlocks(&self.m_block_ancestors);
         addToLeaveBlocks(&self.m_block_hash, &self.m_block_creation_date, &self.m_block_type);
 
         // insert block signals
         logSignals(&self);
 
-        if self.m_documents.len() > 0
+        if self.m_block_documents.len() > 0
         {
-            for doc_inx in 0..self.m_documents.len()
+            for doc_inx in 0..self.m_block_documents.len()
             {
                 //FIXME: implement suspicious docs filtering!
 
-                let a_doc: &Document = &self.m_documents[doc_inx];
+                let a_doc: &Document = &self.m_block_documents[doc_inx];
                 a_doc.apply_doc_first_impact(self);
 
                 // connect documents and blocks
@@ -824,7 +825,7 @@ impl Block {
         }
 
         // update ancestor's descendent info
-        appendDescendents(&self.m_ancestors, &vec![self.m_block_hash.clone()]);
+        appendDescendents(&self.m_block_ancestors, &vec![self.m_block_hash.clone()]);
 
         // sceptical_dag_integrity_controls
         let (status, _msg) = controls_of_new_block_insertion(&self.m_block_hash);

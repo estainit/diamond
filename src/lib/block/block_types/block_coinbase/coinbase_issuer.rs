@@ -62,7 +62,7 @@ struct TmpHolder {
 pub fn createCBCore(
     cycle_: &str,
     mode: &str,
-    version: &str) -> Block
+    version: &str) -> (bool, Block)
 {
     dlog(
         &format!("create CBCore cycle({cycle_}) mode({mode})"),
@@ -190,21 +190,30 @@ pub fn createCBCore(
     // let doc: Document = load_document(&doc, &Block::new(), 0);
     doc.m_doc_hash = doc.calc_doc_hash(); // trxHashHandler.doHashTransaction(trx)
 
-    let mut block: Block = load_block(&json!({
-        "net": constants::SOCIETY_NAME.to_string(),
-        "bType": constants::block_types::Coinbase.to_string()
+    let (status, mut block) = load_block(&json!({
+        "bNet": constants::SOCIETY_NAME,
+        "bType": constants::block_types::Coinbase,
+        "bLen": 12,
     }));
+    if !status {
+        dlog(
+            &format!("Failed in load block from predefined JSON obj: {:?}", serde_json::to_string(&block).unwrap()),
+            constants::Modules::CB,
+            constants::SecLevel::Error);
+        return (false, block);
+    }
+
     block.m_block_version = version.to_string();
 
     block.m_if_coinbase_block.m_cycle = cycle.clone();
 
     let (root, _verifies, _merkle_version, _levels, _leaves) =
         generate_m(vec![doc.m_doc_hash.clone()], &"hashed".to_string(), &"".to_string(), &"".to_string());
-    block.m_documents = vec![doc];
-    block.m_documents_root_hash = root;
+    block.m_block_documents = vec![doc];
+    block.m_block_documents_root_hash = root;
     block.m_block_creation_date = block_creation_date;
 
-    return block;
+    return (true, block);
 }
 
 /*
@@ -232,7 +241,14 @@ pub fn doGenerateCoinbaseBlock(
     let (_cycleStamp, from, to, _from_hour, _to_hour) =
         cutils::get_coinbase_info(&cutils::get_now(), cycle);
 
-    let mut block: Block = createCBCore(cycle, mode, version);
+    let (status, mut block) = createCBCore(cycle, mode, version);
+    if !status {
+        dlog(
+            &format!("Failed in create CB Core cycle({cycle}),  mode({mode}),  version({version})"),
+            constants::Modules::CB,
+            constants::SecLevel::Error);
+        return (false, block);
+    }
 
 // connecting to existed leaves as ancestors
     let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&from);
@@ -273,7 +289,7 @@ pub fn doGenerateCoinbaseBlock(
         return (false, block);
     }
 
-    block.m_ancestors = leaves_hashes.clone();
+    block.m_block_ancestors = leaves_hashes.clone();
     dlog(
         &format!("do GenerateCoinbaseBlock block.ancestors: {}", leaves_hashes.join(",")),
         constants::Modules::CB,
@@ -724,20 +740,24 @@ pub fn passedCertainTimeOfCycleToRecordInDAG(c_date: &CDateT) -> bool
 }
 
 //old_name_was maybeCreateCoinbaseBlock
-pub fn maybe_create_coinbase_block()
+pub fn maybe_create_coinbase_block() -> bool
 {
     let can_issue_new_cb = control_coinbase_issuance_criteria();
     if !can_issue_new_cb {
-        return;
+        return true;
     }
-    tryCreateCoinbaseBlock();
+    return tryCreateCoinbaseBlock();
 }
 
 
-pub fn tryCreateCoinbaseBlock()
+pub fn tryCreateCoinbaseBlock() -> bool
 {
-    let (_coinbase_cycle_stamp, coinbase_from, coinbase_to, _coinbase_from_hour, _coinbase_to_hour) =
-        cutils::get_coinbase_info(&cutils::get_now(), "");
+    let (
+        _coinbase_cycle_stamp,
+        coinbase_from,
+        coinbase_to,
+        _coinbase_from_hour,
+        _coinbase_to_hour) = cutils::get_coinbase_info(&cutils::get_now(), "");
 // listener.doCallAsync('APSH_create_coinbase_block', { cbInfo });
 
     dlog(
@@ -754,7 +774,7 @@ pub fn tryCreateCoinbaseBlock()
             &format!("Due to an error, can not create a coinbase block for range ({}, {})", coinbase_from, coinbase_to),
             constants::Modules::CB,
             constants::SecLevel::Fatal);
-        return;
+        return false;
     }
 
 
@@ -810,7 +830,7 @@ pub fn tryCreateCoinbaseBlock()
     }
 
     let mut ancestors_diff: Vec<String> = cutils::arrayDiff(
-        &block.m_ancestors,
+        &block.m_block_ancestors,
         &tmp_dag_ancestors);
     if ancestors_diff.len() > 0
     {
@@ -844,7 +864,7 @@ pub fn tryCreateCoinbaseBlock()
     {
         dlog(
             &format!("More ancestors: local coinbase({}) has more ancestors({:?} than DAG({}) in cycle range ({}, {})",
-                     cutils::hash8c(&block.m_block_hash.to_string()), block.m_ancestors, dump_vec_of_str(&tmp_dag_ancestors), coinbase_from, coinbase_to),
+                     cutils::hash8c(&block.m_block_hash.to_string()), block.m_block_ancestors, dump_vec_of_str(&tmp_dag_ancestors), coinbase_from, coinbase_to),
             constants::Modules::CB,
             constants::SecLevel::Trace);
     }
@@ -900,7 +920,7 @@ pub fn tryCreateCoinbaseBlock()
                 constants::Modules::CB,
                 constants::SecLevel::Trace);
 
-            return;
+            return true;
         }
     } else if passedCertainTimeOfCycleToRecordInDAG(&cutils::get_now()) && !atleast_one_coinbase_block_exist
     {
@@ -926,7 +946,7 @@ pub fn tryCreateCoinbaseBlock()
                          cutils::hash8c(&block.m_block_hash), &machine().getPubEmailInfo().m_address, &coinbase_from, &coinbase_to),
                 constants::Modules::CB,
                 constants::SecLevel::Trace);
-            return;
+            return true;
         }
     } else {
         dlog(
@@ -934,7 +954,8 @@ pub fn tryCreateCoinbaseBlock()
                      cutils::hash8c(&block.m_block_hash), &machine().getPubEmailInfo().m_address, coinbase_from, coinbase_to),
             constants::Modules::CB,
             constants::SecLevel::Trace);
-        return;
+        return true;
     }
+    true
 }
 

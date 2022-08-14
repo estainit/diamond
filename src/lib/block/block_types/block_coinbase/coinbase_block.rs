@@ -150,14 +150,14 @@ impl CoinbaseBlock {
         // in order to have almost same hash! we sort the attribiutes alphabeticaly
         let mut block_hashables: String = format!(
             "bAncestors:{},bCDate:{},bDocsRootHash:{},bLen:{},bType:{},bVer:{},cycle:{},net:{}",
-            serde_json::to_string(&block.m_ancestors).unwrap(),
+            serde_json::to_string(&block.m_block_ancestors).unwrap(),
             block.m_block_creation_date,
-            block.m_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
+            block.m_block_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
             block.m_block_length,
             block.m_block_type,
             block.m_block_version,
             self.m_cycle,
-            block.m_net
+            block.m_block_net
         );
         return block_hashables;
     }

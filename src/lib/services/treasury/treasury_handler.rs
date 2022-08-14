@@ -30,10 +30,11 @@ pub fn calcTreasuryIncomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
     let mut complete_query: String = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
     {
-        complete_query = "SELECT SUM(tr_value) incomes_ FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
+        complete_query = "SELECT CAST(SUM(tr_value) AS varchar) AS incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
+        // complete_query = "SELECT tr_value AS incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
-        complete_query = "SELECT SUM(tr_value) incomes_ FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
+        complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
     }
 
     let (status, records) = q_customQuery(
@@ -41,16 +42,17 @@ pub fn calcTreasuryIncomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
         &vec![],
         true);
     dlog(
-        &format!("calc Treasury Incomes WHERE creation_date between ({},{}) -> incomes: {}",
-                 the_range.from, the_range.to, dump_hashmap_of_QVDRecordsT(&records)),
+        &format!("calc Treasury Incomes WHERE creation_date between ({},{}) -> incomes: {:?}",
+                 the_range.from, the_range.to, &records),
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-
     let mut income_value: CMPAIValueT = 0;
-    if records[0]["incomes_"].parse::<CMPAIValueT>().unwrap() > 0
-    {
-        income_value = records[0]["incomes_"].parse::<CMPAIValueT>().unwrap();
+    if records[0]["incomes_amount"] != "" {
+        if records[0]["incomes_amount"].parse::<CMPAIValueT>().unwrap() > 0
+        {
+            income_value = records[0]["incomes_amount"].parse::<CMPAIValueT>().unwrap();
+        }
     }
 
     return (

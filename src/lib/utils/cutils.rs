@@ -5,8 +5,12 @@ use chrono::{DateTime, TimeZone};
 use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
-use crate::constants;
+use crate::{constants, dlog};
 use crate::lib::custom_types::{CCoinCodeT, CDateT, CDocHashT, COutputIndexT, JSonArray, JSonObject, TimeByMinutesT, TimeBySecT, VVString};
+
+pub fn remove_quotes(inp_str: &String) -> String {
+    inp_str.substring(1, inp_str.len() - 1).to_string()
+}
 
 #[allow(dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
@@ -35,8 +39,12 @@ pub fn left_padding(inp_str: String, length: u8) -> String {
 
 //old_name_was convertFloatToString
 pub fn convert_float_to_string(num: f64, precision: u8) -> String {
+    if num == 0.0 {
+        return "0.0".to_string();
+    }
+
     let mut num_per_10 = num.clone();
-    num_per_10 = num_per_10 * 10_u32.pow(precision as u32) as f64;
+    num_per_10 = num_per_10 * 10_u64.pow(precision as u32) as f64;
     // for _i in 0..precision {
     //     num_per_10 = num_per_10 * 10.0;
     // }
@@ -90,9 +98,40 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
 
     if (segments.len() == 2) && (segments[1].chars().last().unwrap() == '0') {
         // try to remove 0 from right side of floating part (if exist) e.g. 99.96353346750 => 99.9635334675
-        while segments[1].chars().last().unwrap() == '0' {
-            segments[1] = &segments[1][0..segments[1].len() - 1];
+        let tt = segments[1].chars().last();
+        let mut should_loop = true;
+        while should_loop {
+            should_loop = match segments[1].chars().last() {
+                Some(l) => {
+                    if l == '0' {
+                        true
+                    } else {
+
+                        dlog(
+                            &format!("failed in convert_ float_ to_ string1 = {:?}", segments),
+                            constants::Modules::App,
+                            constants::SecLevel::Fatal);
+                        // panic!("failed in convert_ float_ to_ string1 = {:?}", segments);
+                        false
+                    }
+                }
+                _ => {
+                    dlog(
+                        &format!("failed in convert_ float_ to_ string2 = {:?}", segments),
+                        constants::Modules::App,
+                        constants::SecLevel::Fatal);
+                    // panic!("failed in convert_ float_ to_ string2 = {:?}", segments);
+                    false
+                }
+            };
+            if should_loop {
+                segments[1] = &segments[1][0..segments[1].len() - 1];
+            }
         }
+
+        // while segments[1].chars().last().unwrap() == '0' {
+        //     segments[1] = &segments[1][0..segments[1].len() - 1];
+        // }
         out = segments[0].to_string() + "." + segments[1];
     }
 
@@ -112,8 +151,14 @@ pub fn get_since_epoch() -> i64 {
     Utc::now().timestamp()
 }
 
-pub fn make_date_from_str(yyyymmddhhmmss_str: &str) -> DateTime<FixedOffset> {
-    DateTime::parse_from_str(yyyymmddhhmmss_str, "%Y-%m-%d %H:%M:%S").unwrap()
+pub fn make_date_from_str(yyyymmddhhmmss: &CDateT) -> DateTime<FixedOffset> {
+    return match DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(yyyymmddhhmmss.clone()), "%Y-%m-%d %H:%M:%S%.3f %z") {
+        Ok(dt) => { dt }
+        Err(e) => {
+            println!("Failed in time creating {} {}", yyyymmddhhmmss.clone(), e);
+            panic!("Failed in time creating {} {}", yyyymmddhhmmss.clone(), e);
+        }
+    };
 }
 
 pub fn make_str_date_from_date_object(dt: DateTime<FixedOffset>) -> String {
@@ -284,8 +329,8 @@ pub fn time_diff(from_t_: CDateT, to_t_: CDateT) -> TimeDiff {
     if to_t == "" { to_t = get_now(); }
 
     let mut res: TimeDiff = TimeDiff::new();
-    let start_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(from_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
-    let end_t = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(to_t), "%Y-%m-%d %H:%M:%S%.3f %z").unwrap();
+    let start_t = make_date_from_str(&from_t);
+    let end_t = make_date_from_str(&to_t);
     let gap_duration = end_t - start_t;
 
     res.as_seconds = gap_duration.num_seconds() as u64; // entire gap by seconds
@@ -379,8 +424,8 @@ pub fn minutes_before(back_in_time_by_minutes: u64, c_date: CDateT) -> String {
         // since_epoch = QDateTime::currentDateTimeUtc().toSecsSinceEpoch();
         since_epoch = Utc::now().timestamp();
     } else {
-        let dt = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(c_date), "%Y-%m-%d %H:%M:%S%.3f %z");
-        since_epoch = dt.unwrap().timestamp();
+        let dt = make_date_from_str(&c_date);
+        since_epoch = dt.timestamp();
     }
     since_epoch -= (back_in_time_by_minutes * 60) as i64;
     let dt = Utc.timestamp(since_epoch, 0);
@@ -393,8 +438,9 @@ pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: CDateT)
     if c_date == "" {
         since_epoch = Utc::now().timestamp();
     } else {
-        let dt = DateTime::parse_from_str(&add_fff_zzzz_to_yyyymmdd(c_date), "%Y-%m-%d %H:%M:%S%.3f %z");
-        since_epoch = dt.unwrap().timestamp();
+        let t_ = add_fff_zzzz_to_yyyymmdd(c_date.clone());
+        let dt =  make_date_from_str(&c_date);
+        since_epoch = dt.timestamp();
     }
     since_epoch += (forward_in_time_by_minutes * 60) as i64;
     let dt = Utc.timestamp(since_epoch, 0);
@@ -471,19 +517,19 @@ pub fn yearsBefore(backInTimesByYears: u64, cDate: &CDateT) -> String
 #[allow(dead_code)]
 pub fn get_coinbase_range_by_cycle_stamp(cycle: &str) -> TimeRange {
     let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
-    let cycle_dtl  = cycle
+    let cycle_dtl = cycle
         .to_string()
         .clone()
         .split(" ")
         .collect::<Vec<&str>>()
         .iter()
-        .map(|x|x.to_string())
+        .map(|x| x.to_string())
         .collect::<Vec<String>>();
     if cycle_dtl[1] == "00:00:00".to_string() {
         res.from = cycle_dtl[0].to_owned() + &" 00:00:00".to_string();
         res.to = cycle_dtl[0].to_owned() + &" 11:59:59".to_string();
         return res;
-    } else if cycle_dtl[1] == "12:00:00"{
+    } else if cycle_dtl[1] == "12:00:00" {
         return TimeRange { from: cycle_dtl[0].to_owned() + " 12:00:00", to: cycle_dtl[0].to_owned() + " 23:59:59" };
     } else {
         // develop mod
@@ -716,7 +762,7 @@ pub fn CFloor(v: f64) -> i64
 
 pub fn customFloorFloat(number: f64, percision: u8) -> f64
 {
-    let the_gain: f64 = 10_i32.pow(percision as u32) as f64;
+    let the_gain: f64 = 10_i64.pow(percision as u32) as f64;
     return (number * the_gain) / the_gain;
 }
 

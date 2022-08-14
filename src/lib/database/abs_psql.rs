@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use postgres::Row;
-use postgres::types::{ToSql};
+use postgres::types::{ToSql, Type, FromSql};
 use crate::{dbhandler};
-use crate::cutils::remove_dbl_spaces;
+use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::dlog::dlog;
@@ -327,15 +327,53 @@ pub fn q_customQuery(
             }
 
             for a_row in &rows {
+                // println!(">>> a_row: {:?}", a_row);
                 let mut a_row_dict: HashMap<String, String> = HashMap::new();
                 for col_inx in 0..a_row.len() {
-                    let (col_name, _col_type) = &res_cols_info[col_inx];
-                    let col_value: String = Row::get(a_row, col_inx);
-                    a_row_dict.insert(col_name.clone(), col_value);
+                    let (col_name, col_type) = &res_cols_info[col_inx];
+                    // let col_value: String = Row::get(a_row, col_inx);
+                    let the_col_value: String = match &*col_type.clone() {
+                        ("real" | "double precision") => {
+                            let col_value: f64 = Row::get(a_row, col_inx);
+                            convert_float_to_string(col_value, 11)
+                        }
+                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8") => {
+                            let col_value: i64 = Row::get(a_row, col_inx);
+                            col_value.to_string()
+                        }
+                        ("numeric") => {
+                            let col_value: i64 = Row::get(a_row, col_inx);
+                            println!("failed on casting psql numeric to Rust i64!!!{:?}", col_value);
+                            col_value.to_string()
+                        }
+                        ("varchar") => {
+                            let col_value: Option<String> = Row::get(a_row, col_inx);
+                            if col_value.is_some() {
+                                col_value.unwrap().to_string()
+                            } else {
+                                "".to_string()
+                            }
+                        }
+                        ("text") => {
+                            let col_value: String = Row::get::<_, String>(a_row, col_inx);
+                            col_value
+                        }
+                        ("bool") => {
+                            let col_value: bool = Row::get(a_row, col_inx);
+                            col_value.to_string()
+                        }
+                        (_) => {
+                            println!("UUUUU Unsetted col type {} {} ", col_type.clone(), col_name.clone());
+                            let col_value: String = Row::get(a_row, col_inx);
+                            println!("UUUUU Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
+                            col_value.to_string()
+                        }
+                    };
+                    a_row_dict.insert(col_name.clone(), the_col_value);
                 }
                 out_rows.push(a_row_dict);
             }
-            //println!(">>> out_dict: {:?}", out_rows);
+            println!(">>> out_dict: {:?}", out_rows);
             (true, out_rows)
         }
         Err(e) => {

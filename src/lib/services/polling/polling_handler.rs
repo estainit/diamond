@@ -1,5 +1,8 @@
 use std::collections::HashMap;
+use serde::Deserializer;
+use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
@@ -56,7 +59,7 @@ pub mod vote_counting_methods {
 
 pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> bool
 {
-    if is_older_than(params["dVer"].to_string(), "0.0.8".to_string()) == 1 {
+    if is_older_than(remove_quotes(&params["dVer"].to_string()), "0.0.8".to_string()) == 1 {
         params["dVer"] = "0.0.0".into();
     }
 
@@ -76,7 +79,20 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
     let doc: Document = load_document(params, block, 0);
     let pll_hash = doc.m_if_polling_doc.calc_doc_hash(&doc); //old name was calcHashDPolling
 
-    let voting_timeframe: f64 = params["pTimeframe"].clone().as_f64().unwrap();
+    println!("pTime frame.h: {}", params["pTimeframe"]);
+    let voting_timeframe: f64 = match remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>() {
+        Ok(t) => t,
+        Err(e) => {
+            println!("Failed in pooling Time frame(pTimeframe) value {} {}", &params["pTimeframe"].to_string(), e);
+            dlog(
+                &format!("Failed in pooling Time frame(pTimeframe) value {} {}", &params["pTimeframe"].to_string(), e),
+                constants::Modules::App,
+                constants::SecLevel::Fatal);
+            0.0
+        }
+    };
+    // let voting_timeframe: f64 = remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>().unwrap();
+    println!("voting_timeframe__h: {}", voting_timeframe);
     let abs_no_timeframe_by_minutes: TimeByMinutesT = (voting_timeframe.clone() * 60.0 * 1.5) as u64; // 90 = 60 minute + 30 minute => 1.5 * yesTime
     dlog(
         &format!("abs and no timeframe by minutes = {}", abs_no_timeframe_by_minutes),
@@ -85,7 +101,7 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
 
     let pll_end_date: CDateT = cutils::minutes_after(
         abs_no_timeframe_by_minutes,
-        params["startDate"].to_string());
+        remove_quotes(&params["startDate"].to_string()));
 
     let pll_creator = params["dCreator"].to_string();
     let pll_type = params["dType"].to_string();
@@ -94,11 +110,11 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
     let pll_ref_type = params["dRefType"].to_string();
     let pll_ref_class = params["dRefClass"].to_string();
     let pll_start_date = params["startDate"].to_string();
-    let pll_timeframe=voting_timeframe.to_string();
-    let pll_version=params["dVer"].to_string();
-    let pll_comment=params["dComment"].to_string();
+    let pll_timeframe = voting_timeframe.to_string();
+    let pll_version = params["dVer"].to_string();
+    let pll_comment = params["dComment"].to_string();
     let ZERO = "0";
-    let pll_status=params["status"].to_string();
+    let pll_status = params["status"].to_string();
     let values: HashMap<&str, &str> = HashMap::from([
         ("pll_creator", pll_creator.as_str()),
         ("pll_type", pll_type.as_str()),

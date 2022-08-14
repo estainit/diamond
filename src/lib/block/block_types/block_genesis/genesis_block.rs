@@ -12,7 +12,7 @@ pub mod b_genesis {
     pub fn initGenesisBlock(machine: &mut CMachine) -> (bool, String)
     {
         let mut block: Block = Block::new();
-        block.m_ancestors = vec![",".to_string()];
+        block.m_block_ancestors = vec![",".to_string()];
         block.m_block_type = constants::block_types::Genesis.to_string();
         block.m_block_creation_date = machine.get_launch_date();
 
@@ -42,8 +42,8 @@ pub mod b_genesis {
         doc.m_if_proposal_doc = dna;
         doc.m_doc_hash = doc.m_if_proposal_doc.calc_doc_hash(&doc);
 
-        block.m_documents_root_hash = doc.get_doc_hash(); // since the genesis block has only 1 document // "fb20e4323d695db7728eabcf3a44a1c0516d23362622fa3093e7cf887ef88396";
-        block.m_documents.push(doc);
+        block.m_block_documents_root_hash = doc.get_doc_hash(); // since the genesis block has only 1 document // "fb20e4323d695db7728eabcf3a44a1c0516d23362622fa3093e7cf887ef88396";
+        block.m_block_documents.push(doc);
         block.m_block_hash = block.calc_block_hash();//"7a2e58190452d3764afd690ffd13a1360193fdf30f932fc1b2572e834b72c291";
         block.m_block_backer = constants::HU_DNA_SHARE_ADDRESS.to_string();
 
@@ -86,7 +86,7 @@ pub mod b_genesis {
             (5 * cutils::get_cycle_by_minutes()) as u64,
             machine.get_launch_date());
 
-        let initial_proposal: &Document = &block.m_documents[0];
+        let initial_proposal: &Document = &block.m_block_documents[0];
         let proposal_hash: String = initial_proposal.get_doc_hash();
 
         // update proposal status in DB
@@ -155,8 +155,8 @@ pub mod b_genesis {
             block.m_block_length,
             block.m_block_type,
             block.m_block_version,
-            block.m_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
-            block.m_net
+            block.m_block_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
+            block.m_block_net
         );
         return hashable_block;
     }
