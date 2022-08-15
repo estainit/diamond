@@ -8,15 +8,27 @@ pub mod tests_cycle_times {
 
     #[test]
     pub fn test_time_func_1() {
-        assert_eq!(cutils::make_str_date_from_date_object(cutilss::make_date_from_str("2020-01-01 00:00:00")), "2020-01-01 00:00:00");
+        assert_eq!(cutils::make_str_date_from_date_object(cutils::make_date_from_str(&"2020-01-01 00:00:00".to_string())), "2020-01-01 00:00:00");
     }
 
     #[test]
-    pub fn tests_convert_float_to_string() {
+    pub fn tests_convert_float_to_string1() {
         assert!(cutils::convert_float_to_string(99.999999999989996, constants::FLOAT_LENGTH) == "99.99999999999");
-        assert!(cutils::convert_float_to_string(0.0035996328299999999, constants::FLOAT_LENGTH) == "0.00359963282");
-        assert!(cutils::convert_float_to_string(0.0, constants::FLOAT_LENGTH) == "0");
-        assert!(cutils::convert_float_to_string(0.00, constants::FLOAT_LENGTH) == "0");
+    }
+
+    #[test]
+    pub fn tests_convert_float_to_string2() {
+        assert!(cutils::convert_float_to_string(0.003_599_632_829_999_999_9, constants::FLOAT_LENGTH) == "0.00359963283");
+    }
+
+    #[test]
+    pub fn tests_convert_float_to_string3() {
+        assert!(cutils::convert_float_to_string(0.0, constants::FLOAT_LENGTH) == "0.0");
+    }
+
+    #[test]
+    pub fn tests_convert_float_to_string4() {
+        assert!(cutils::convert_float_to_string(0.00, constants::FLOAT_LENGTH) == "0.0");
     }
 
     #[test]

@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
-use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::genesis_calc_block_hash;
+use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_setByJsonObj};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::node_signals_handler::logSignals;
@@ -20,56 +20,56 @@ use crate::lib::database::tables::{STBL_BLOCK_EXTINFOS, STBL_BLOCKS};
 use crate::lib::file_handler::f_write;
 
 
-struct BlockRecord
-{
-    m_id: u64,
-    m_hash: String,
-    // block root hash
-    m_type: String,
-    // block type (genesis/coinbase/normal)
-    m_cycle: String,
-    // the coin base cycle
-    m_confidence: f64,
-    // if the block is coinbase it denots to percentage of share of signers
-    m_ext_root_hash: String,
-    // it was ext_infos_root_hash segwits/zippedInfo... root hashes
-    m_documents_root_hash: String,
-    // it was docs_root_hash documents root hash
-    m_signals: String,
-    // block signals
-    m_trxs_count: u64,
-    // transaction counts
-    m_docs_count: u64,
-    // documents counts
-    m_ancestors_count: u64,
-    // ancestors counts
-    m_ancestors: Vec<String>,
-    // comma seperated block ancestors
-    m_descendents: Vec<String>,
-    // comma seperated block descendents
-    m_body: String,
-    // stringified json block full body(except block ext info)
-    m_creation_date: String,
-    // the block creation date which stated by block creator
-    m_receive_date: String,
-    // the block receive date in local, only for statistics
-    m_confirm_date: String,
-    // the block confirmation date in local node
-    m_block_backer: String,
-    // the BECH32 address of who got paid because of creating this block
-    m_utxo_imported: String, // does UTXO imported to i_trx_utxo table?
-
-    /*
-
-      BlockRecord(const QVDicT& values = {})
-      {
-        if (values.keys().len() > 0)
-          setByRecordDict(values);
-      };
-      bool setByRecordDict(const QVDicT& values = {});
-
-    */
-}
+// struct BlockRecord
+// {
+//     m_id: u64,
+//     m_hash: String,
+//     // block root hash
+//     m_type: String,
+//     // block type (genesis/coinbase/normal)
+//     m_cycle: String,
+//     // the coin base cycle
+//     m_confidence: f64,
+//     // if the block is coinbase it denots to percentage of share of signers
+//     m_ext_root_hash: String,
+//     // it was ext_infos_root_hash segwits/zippedInfo... root hashes
+//     m_documents_root_hash: String,
+//     // it was docs_root_hash documents root hash
+//     m_signals: String,
+//     // block signals
+//     m_trxs_count: u64,
+//     // transaction counts
+//     m_docs_count: u64,
+//     // documents counts
+//     m_ancestors_count: u64,
+//     // ancestors counts
+//     m_ancestors: Vec<String>,
+//     // comma seperated block ancestors
+//     m_descendents: Vec<String>,
+//     // comma seperated block descendents
+//     m_body: String,
+//     // stringified json block full body(except block ext info)
+//     m_creation_date: String,
+//     // the block creation date which stated by block creator
+//     m_receive_date: String,
+//     // the block receive date in local, only for statistics
+//     m_confirm_date: String,
+//     // the block confirmation date in local node
+//     m_block_backer: String,
+//     // the BECH32 address of who got paid because of creating this block
+//     m_utxo_imported: String, // does UTXO imported to i_trx_utxo table?
+//
+//     /*
+//
+//       BlockRecord(const QVDicT& values = {})
+//       {
+//         if (values.keys().len() > 0)
+//           setByRecordDict(values);
+//       };
+//       bool setByRecordDict(const QVDicT& values = {});
+//
+//     */
+// }
 
 
 pub struct TransientBlockInfo
@@ -363,7 +363,9 @@ impl Block {
         {} else if block_type == constants::block_types::FVote
         {} else if block_type == constants::block_types::POW
         {} else if block_type == constants::block_types::Genesis
-        {}
+        {
+            return genesis_setByJsonObj(self, obj);
+        }
 
         println!("Invalid block type1 {:?} in received JSon Obj {:?}", block_type, serde_json::to_string(&obj).unwrap());
         println!("Invalid block type2 {} in received JSon Obj {}", block_type, serde_json::to_string(&obj).unwrap());

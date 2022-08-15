@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests_crypto_ecdsa {
     use substring::Substring;
-    use crate::lib::constants as cconsts;
+    use crate::constants;
     // use crate::lib::utils::cutils as cutils;
     use crate::lib::ccrypto;
 

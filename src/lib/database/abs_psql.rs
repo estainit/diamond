@@ -528,9 +528,13 @@ pub fn exec_query(
                 for col_inx in 0..a_row.len() {
                     let (col_name, col_type) = &res_cols_info[col_inx];
                     let the_col_value: String = match &*col_type.clone() {
-                        ("real" | "double precision") => {
+                        ("real" | "double precision" | "float8") => {
                             let col_value: f64 = Row::get(a_row, col_inx);
                             convert_float_to_string(col_value, 11)
+                        }
+                        ( "int4" ) => {
+                            let col_value: i32 = Row::get(a_row, col_inx);
+                            col_value.to_string()
                         }
                         ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8") => {
                             let col_value: i64 = Row::get(a_row, col_inx);

@@ -5,7 +5,7 @@ pub mod b_genesis {
     use crate::lib::block::block_types::block::Block;
     use crate::lib::block::document_types::dna_proposal_document::{DNAProposalDocument};
     use crate::lib::block::document_types::document::Document;
-    use crate::lib::custom_types::{CBlockHashT, CDateT};
+    use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject};
     use crate::lib::database::abs_psql::{simple_eq_clause};
     use crate::lib::services::dna::dna_handler::insertAShare;
     use crate::lib::services::polling::polling_handler::update_polling;
@@ -71,16 +71,14 @@ pub mod b_genesis {
         m_block_confidence = 100.0;
     }
 
-    bool GenesisBlock::setByJsonObj(const JSonObject &obj)
-    {
-      Block::setByJsonObj(obj);
-
-      // custom settings for Genesis block
-      m_block_type = constants::BLOCK_TYPES::Genesis;
-
-      return true;
-    }
 */
+    pub fn genesis_setByJsonObj(block: &mut Block, obj: &JSonObject) -> bool
+    {
+        // custom settings for Genesis block
+        block.m_block_type = constants::block_types::Genesis.to_string();
+        return true;
+    }
+
     pub fn initShares(machine: &CMachine, block: &Block) -> (bool, String)
     {
         let startVotingDate: String = cutils::minutes_before(
@@ -92,7 +90,7 @@ pub mod b_genesis {
 
         // update proposal status in DB
         let conclude_date = machine.get_launch_date();
-        let pr_approved=constants::YES.to_string();
+        let pr_approved = constants::YES.to_string();
         let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("pr_start_voting_date", &startVotingDate as &(dyn ToSql + Sync)),
             ("pr_conclude_date", &conclude_date as &(dyn ToSql + Sync)),
@@ -107,8 +105,8 @@ pub mod b_genesis {
 
         // conclude the polling
         let pll_end_date = cutils::minutes_after(
-                36 * 60,
-                &startVotingDate.clone());
+            36 * 60,
+            &startVotingDate.clone());
         let pollingUpdValues: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("pll_start_date", &startVotingDate as &(dyn ToSql + Sync)),
             ("pll_end_date", &pll_end_date as &(dyn ToSql + Sync)),

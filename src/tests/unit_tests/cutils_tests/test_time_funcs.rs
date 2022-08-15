@@ -7,7 +7,7 @@ pub mod tests_cycle_times {
 
     #[test]
     pub fn test_time_func_1() {
-        assert_eq!(cutils::make_str_date_from_date_object(cutilss::make_date_from_str("2020-01-01 00:00:00")), "2020-01-01 00:00:00");
+        assert_eq!(cutils::make_str_date_from_date_object(cutils::make_date_from_str(&"2020-01-01 00:00:00".to_string())), "2020-01-01 00:00:00");
     }
 
     #[test]

@@ -2,7 +2,6 @@
 pub mod merkel_tests_3 {
     use substring::Substring;
     use crate::cmerkle;
-    use crate::lib::ccrypto;
 
     #[test]
     pub fn test_3_leaves_a() {
