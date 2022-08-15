@@ -52,12 +52,8 @@ pub fn do_import_coins(c_date_: &CDateT)
 //      outputTimeLockHandler.importTimeLocked();
 }
 
-pub fn retrieveProperBlocks(c_date_: &CDateT) -> QVDRecordsT
+pub fn retrieveProperBlocks(c_date: &CDateT) -> QVDRecordsT
 {
-    let mut c_date = c_date_.to_string();
-    if c_date == ""
-    { c_date = cutils::get_now(); }
-
     //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
     let min_creation_date = cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, c_date);
     dlog(
@@ -94,7 +90,7 @@ pub fn retrieveProperBlocks(c_date_: &CDateT) -> QVDRecordsT
             constants::Modules::Trx,
             constants::SecLevel::Trace);
 
-        if lastSyncStatus["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, cutils::get_now())
+        if lastSyncStatus["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, &cutils::get_now())
         {
             clauses.push(ModelClause {
                 m_field_name: "b_receive_date",
@@ -117,12 +113,8 @@ pub fn retrieveProperBlocks(c_date_: &CDateT) -> QVDRecordsT
 }
 
 //old_name_was importNormalBlockUTXOs
-pub fn import_normal_block_coins(c_date_: &CDateT)
+pub fn import_normal_block_coins(c_date: &CDateT)
 {
-    let mut c_date: String = c_date_.clone();
-    if c_date == "" {
-        c_date = cutils::get_now();
-    }
     dlog(
         &format!("Importing Normal block Coins at {}", c_date),
         constants::Modules::Trx,

@@ -161,13 +161,10 @@ pub fn import_coinbased_coins(c_date: &CDateT)
 
 //old_name_was calcCoinbasedOutputMaturationDate
 #[allow(dead_code)]
-pub fn calc_coinbased_output_maturation_date(c_date_: CDateT) -> CDateT {
-    let mut c_date = c_date_.clone();
-    if c_date == "" {
-        c_date = cutils::get_now();
-    }
-
-    let mature_date: String = cutils::minutes_after(constants::COINBASE_MATURATION_CYCLES as u64 * cutils::get_cycle_by_minutes() as u64, c_date);
+pub fn calc_coinbased_output_maturation_date(c_date: &CDateT) -> CDateT {
+    let mature_date: String = cutils::minutes_after(
+        constants::COINBASE_MATURATION_CYCLES as u64 * cutils::get_cycle_by_minutes() as u64,
+        c_date);
     return cutils::get_coinbase_range(&mature_date).from;
 }
 

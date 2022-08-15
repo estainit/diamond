@@ -156,7 +156,7 @@ pub fn getDNAActiveDateRange(cDate: &CDateT) -> (String, String)
     {
         the_range.from = cutils::yearsBefore(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
     } else {
-        the_range.from = cutils::minutes_before(100 * cutils::get_cycle_by_minutes(), the_range.from);
+        the_range.from = cutils::minutes_before(100 * cutils::get_cycle_by_minutes(), &the_range.from);
     }
     return (the_range.from, the_range.to);
 }

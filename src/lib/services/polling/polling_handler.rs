@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use serde::Deserializer;
-use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
@@ -102,7 +100,7 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
 
     let pll_end_date: CDateT = cutils::minutes_after(
         abs_no_timeframe_by_minutes,
-        remove_quotes(&params["startDate"].to_string()));
+        &remove_quotes(&params["startDate"].to_string()));
 
     let pll_creator = params["dCreator"].to_string();
     let pll_type = params["dType"].to_string();

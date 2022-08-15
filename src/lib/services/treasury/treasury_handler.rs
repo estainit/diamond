@@ -3,7 +3,6 @@ use crate::cutils::TimeRange;
 use crate::lib::custom_types::{CDateT, CMPAIValueT};
 use crate::lib::database::abs_psql::q_customQuery;
 use crate::lib::database::tables::STBL_TREASURY;
-use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT};
 
 /*
 

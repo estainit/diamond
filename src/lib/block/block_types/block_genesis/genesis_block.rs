@@ -20,7 +20,7 @@ pub mod b_genesis {
         let mut doc = Document::new();
         let proposal_creation_date: CDateT = cutils::minutes_before(
             (cutils::get_cycle_by_minutes() * 2) as u64,
-            machine.get_launch_date());
+            &machine.get_launch_date());
         doc.m_doc_type = constants::document_types::DNAProposal.to_string();
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
@@ -85,7 +85,7 @@ pub mod b_genesis {
     {
         let startVotingDate: String = cutils::minutes_before(
             (5 * cutils::get_cycle_by_minutes()) as u64,
-            machine.get_launch_date());
+            &machine.get_launch_date());
 
         let initial_proposal: &Document = &block.m_block_documents[0];
         let proposal_hash: String = initial_proposal.get_doc_hash();
@@ -108,7 +108,7 @@ pub mod b_genesis {
         // conclude the polling
         let pll_end_date = cutils::minutes_after(
                 36 * 60,
-                startVotingDate.clone());
+                &startVotingDate.clone());
         let pollingUpdValues: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("pll_start_date", &startVotingDate as &(dyn ToSql + Sync)),
             ("pll_end_date", &pll_end_date as &(dyn ToSql + Sync)),

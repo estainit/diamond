@@ -3,9 +3,8 @@ use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
 use crate::lib::custom_types::{CDateT, ClausesT, QVDRecordsT};
-use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
+use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::STBL_MACHINE_NEIGHBORS;
-use crate::lib::utils::dumper::dump_hashmap_of_str;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NeighborInfo {
@@ -68,7 +67,7 @@ impl CMachine {
                 let clauses: ClausesT = vec![
                     simple_eq_clause("n_mp_code", &*mp_code),
                     simple_eq_clause("n_connection_type", &*connection_type),
-                    simple_eq_clause("n_email", &*neighbor_email)
+                    simple_eq_clause("n_email", &*neighbor_email),
                 ];
 
                 q_update(

@@ -342,12 +342,12 @@ pub fn q_customQuery(
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        ("numeric") => {
+                        "numeric" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             println!("failed on casting psql numeric to Rust i64!!!{:?}", col_value);
                             col_value.to_string()
                         }
-                        ("varchar") => {
+                        "varchar" => {
                             let col_value: Option<String> = Row::get(a_row, col_inx);
                             if col_value.is_some() {
                                 col_value.unwrap().to_string()
@@ -536,12 +536,12 @@ pub fn exec_query(
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        ("numeric") => {
+                        "numeric" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             println!("failed2 on casting psql numeric to Rust i64!!!{:?}", col_value);
                             col_value.to_string()
                         }
-                        ("varchar") => {
+                        "varchar" => {
                             let col_value: Option<String> = Row::get(a_row, col_inx);
                             if col_value.is_some() {
                                 col_value.unwrap().to_string()
@@ -549,15 +549,15 @@ pub fn exec_query(
                                 "".to_string()
                             }
                         }
-                        ("text") => {
+                        "text" => {
                             let col_value: String = Row::get::<_, String>(a_row, col_inx);
                             col_value
                         }
-                        ("bool") => {
+                        "bool" => {
                             let col_value: bool = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        (_) => {
+                        _ => {
                             println!("UUUUU2 Unsetted col type {} {} ", col_type.clone(), col_name.clone());
                             let col_value: String = Row::get(a_row, col_inx);
                             println!("UUUUU2 Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());

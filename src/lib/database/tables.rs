@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 pub const STBL_KVALUE: &str = "c_kvalue";
 pub const STBL_MACHINE_NEIGHBORS: &str = "c_machine_neighbors";
 pub const STBL_MACHINE_PROFILES: &str = "c_machine_profiles";
@@ -13,30 +11,6 @@ pub const STBL_MACHINE_WALLET_FUNDS_FIELDS: [&str; 11] = ["wf_id", "wf_mp_code",
 
 pub const STBL_BLOCKS: &str = "c_blocks";
 pub const STBL_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendents", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
-
-// pub fn get_field_types_map<'f>() -> HashMap<&'f str, &'f str> {
-//     let STBL_BLOCKS_FIELDS: HashMap<&str, &str> = HashMap::from([
-//         ("b_id", "bigint"),
-//         ("b_hash", "text"),
-//         ("b_type", "text"),
-//         ("b_cycle", "text"),
-//         ("b_confidence", "float"),
-//         ("b_ext_root_hash", "text"),
-//         ("b_docs_root_hash", "text"),
-//         ("b_signals", "text"),
-//         ("b_trxs_count", "int"),
-//         ("b_docs_count", "int"),
-//         ("b_ancestors_count", "int"),
-//         ("b_ancestors", "text"),
-//         ("b_descendants", "text"),
-//         ("b_body", "text"),
-//         ("b_creation_date", "text"),
-//         ("b_receive_date", "text"),
-//         ("b_confirm_date", "text"),
-//         ("b_backer", "text"),
-//         ("b_utxo_imported", "text")]);
-//     return STBL_BLOCKS_FIELDS;
-// }
 
 pub const STBL_BLOCK_EXTINFOS: &str = "c_block_extinfos";
 pub const STBL_BLOCK_EXTINFOS_FIELDS: [&str; 3] = ["x_block_hash", "x_detail", "x_creation_date"];

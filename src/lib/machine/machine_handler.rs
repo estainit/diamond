@@ -6,7 +6,6 @@ use crate::lib::constants::LAUNCH_DATE;
 // use crate::lib::constants as cconsts;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, init_db};
-use postgres::Client;
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::constants::HD_ROOT_FILES;
@@ -1117,8 +1116,8 @@ impl CMachine {
         let lastSyncStatus: JSonObject = json!({
               "isInSyncMode": "Unknown",
               "lastTimeMachineWasInSyncMode":
-                          cutils::minutes_before(cutils::get_cycle_by_minutes() * 2, cutils::get_now()),
-              "checkDate": cutils::minutes_before(cutils::get_cycle_by_minutes(), cutils::get_now()),
+                          cutils::minutes_before(cutils::get_cycle_by_minutes() * 2, &cutils::get_now()),
+              "checkDate": cutils::minutes_before(cutils::get_cycle_by_minutes(), &cutils::get_now()),
               "lastDAGBlockCreationDate": "Unknown"
             });
         return upsert_kvalue(

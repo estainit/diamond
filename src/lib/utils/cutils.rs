@@ -378,9 +378,9 @@ pub fn get_a_cycle_range(
 
     let min_creation_date: String;
     if forward_by_cycle == 0 {
-        min_creation_date = minutes_before((back_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, c_date);
+        min_creation_date = minutes_before((back_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, &c_date);
     } else {
-        min_creation_date = minutes_after((forward_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, c_date);
+        min_creation_date = minutes_after((forward_by_cycle as TimeByMinutesT * get_cycle_by_minutes()) as TimeByMinutesT, &c_date);
     }
 
     let day: Vec<&str> = min_creation_date.split(" ").collect();
@@ -417,7 +417,7 @@ pub fn convert_minutes_to_hhmm(minutes: TimeByMinutesT) -> String {
 }
 
 //old name was minutesBefore
-pub fn minutes_before(back_in_time_by_minutes: u64, c_date: CDateT) -> String {
+pub fn minutes_before(back_in_time_by_minutes: u64, c_date: &CDateT) -> String {
     let mut since_epoch: i64;
     if c_date == "" {
         // since_epoch = QDateTime::currentDateTimeUtc().toSecsSinceEpoch();
@@ -432,7 +432,7 @@ pub fn minutes_before(back_in_time_by_minutes: u64, c_date: CDateT) -> String {
 }
 
 //old_name_was minutesAfter
-pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: CDateT) -> String {
+pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT) -> String {
     let mut since_epoch: i64;
     if c_date == "" {
         since_epoch = Utc::now().timestamp();
@@ -534,7 +534,7 @@ pub fn get_coinbase_range_by_cycle_stamp(cycle: &str) -> TimeRange {
         // develop mod
         let c_date: CDateT = minutes_after(
             cycle_dtl[1].to_string().parse::<u64>().unwrap() * (get_cycle_by_minutes() as u64),
-            cycle_dtl[0].to_string() + &" 00:00:01");
+            &(cycle_dtl[0].to_string() + &" 00:00:01"));
         return get_coinbase_range(&c_date);
     }
 }
