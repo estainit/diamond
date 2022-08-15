@@ -555,11 +555,11 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
   {
     JSonObject block = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock["b_body"].to_string()).content);
 
-    if (calculated_coinbase.contains(block["cycle"].to_string()))
+    if (calculated_coinbase.contains(block["bCycle"].to_string()))
       continue;
 
     if (block["bType"].to_string() == constants::BLOCK_TYPES::Coinbase)
-        calculated_coinbase.push(block["cycle"].to_string());
+        calculated_coinbase.push(block["bCycle"].to_string());
 
     // analyze outputs
     JSonObject doc = block["docs"].toArray()[0].toObject();

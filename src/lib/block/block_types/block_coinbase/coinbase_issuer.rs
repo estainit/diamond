@@ -39,7 +39,7 @@ struct TmpHolder {
 //         "dHash": "",
 //         "dType": constants::doc_types::Coinbase,
 //         "dVer": "0.0.0",
-//         "cycle": "", // 'yyyy-mm-dd am' / 'yyyy-mm-dd pm'
+//         "dCycle": "", // 'yyyy-mm-dd am' / 'yyyy-mm-dd pm'
 //         "treasuryFrom": "", // incomes from date
 //         "treasuryTo": "", // incomes to date
 //         "treasuryIncomes": 0, // incomes value

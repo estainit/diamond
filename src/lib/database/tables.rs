@@ -10,7 +10,7 @@ pub const STBL_MACHINE_WALLET_FUNDS: &str = "c_machine_wallet_funds";
 pub const STBL_MACHINE_WALLET_FUNDS_FIELDS: [&str; 11] = ["wf_id", "wf_mp_code", "wf_address", "wf_block_hash", "wf_trx_type", "wf_trx_hash", "wf_o_index", "wf_o_value", "wf_creation_date", "wf_mature_date", "wf_last_modified"];
 
 pub const STBL_BLOCKS: &str = "c_blocks";
-pub const STBL_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendents", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
+pub const STBL_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendants", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
 
 pub const STBL_BLOCK_EXTINFOS: &str = "c_block_extinfos";
 pub const STBL_BLOCK_EXTINFOS_FIELDS: [&str; 3] = ["x_block_hash", "x_detail", "x_creation_date"];

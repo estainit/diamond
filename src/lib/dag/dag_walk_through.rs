@@ -1,27 +1,37 @@
 use std::collections::HashMap;
-use crate::{CMachine, machine};
+use crate::{CMachine, constants, dlog, machine};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::block::block_types::block_factory::{load_block, load_block_by_db_record};
 use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT};
+use crate::lib::dag::dag::searchInDAG;
+use crate::lib::database::abs_psql::OrderModifier;
+use crate::lib::database::tables::STBL_BLOCKS_FIELDS;
 
-/*
 
 //returns latest block which is already recorded in DAG
-std::tuple<bool, BlockRecord> DAG::getLatestBlockRecord()
+pub fn getLatestBlockRecord() -> (bool, Block)
 {
-  QVDRecordsT lastBLockRecord = searchInDAG(
-    {},
-    {"b_hash", "b_creation_date"},
-    {{"b_creation_date", "DESC"}},
-    1
-  );
-  if (lastBLockRecord.len() == 0)
-  {
-    CLog::log("The DAG hasn't any node!", "sec", "fatal");
-    BlockRecord b;
-    return {false, b};
-  }
-  BlockRecord blockRecord(lastBLockRecord[0]);
-  return {false, blockRecord};
+    let last_recorded_bLock: QVDRecordsT = searchInDAG(
+        &vec![],
+        &STBL_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
+        1,
+        true,
+    );
+    if last_recorded_bLock.len() == 0 {
+        dlog(
+            &format!("The DAG hasn't any node!"),
+            constants::Modules::Sec,
+            constants::SecLevel::Fatal);
+
+        let b: Block = Block::new();
+        return (false, b);
+    }
+
+    return load_block_by_db_record(&last_recorded_bLock[0]);
 }
+
+/*
 
 std::tuple<bool, CBlockHashT, CDateT> DAG::getLatestBlock()
 {

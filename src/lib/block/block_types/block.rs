@@ -269,8 +269,8 @@ impl Block {
             self.m_block_receive_date = remove_quotes(&obj["local_receive_date"].to_string());
         }
 
-        if !obj["net"].is_null() {
-            self.m_block_net = remove_quotes(&obj["net"].to_string());
+        if !obj["bNet"].is_null() {
+            self.m_block_net = remove_quotes(&obj["bNet"].to_string());
         }
         if !obj["bVer"].is_null() {
             self.m_block_version = remove_quotes(&obj["bVer"].to_string());
@@ -340,8 +340,8 @@ impl Block {
             // createDocuments(obj["bDocs"]);
         }
 
-        // if !obj["cycle"].to_is_null( {
-        //     self.m_block_cycle = remove_quotes(&obj["cycle"].to_string());
+        // if !obj["bCycle"].to_is_null( {
+        //     self.m_block_cycle = remove_quotes(&obj["bCycle"].to_string());
         // }
 
         if !obj["bBacker"].is_null() {
@@ -401,10 +401,6 @@ impl Block {
 
       return true;
 
-    }
-
-    void Block::doHashObject()
-    {
     }
 
 */
@@ -762,6 +758,8 @@ impl Block {
         let descendants = self.m_block_descendants.join(",");
         let cycle = cutils::get_coinbase_cycle_stamp(&self.m_block_creation_date);
         let b_trxs_count = 0;
+        let b_receive_date = cutils::get_now();
+        let b_confirm_date = cutils::get_now();
         let b_utxo_imported = constants::NO.to_string();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("b_hash", &self.m_block_hash as &(dyn ToSql + Sync)),
@@ -781,6 +779,8 @@ impl Block {
             ("b_confirm_date", &self.m_block_confirm_date as &(dyn ToSql + Sync)),
             ("b_cycle", &cycle as &(dyn ToSql + Sync)),
             ("b_backer", &self.m_block_backer as &(dyn ToSql + Sync)),
+            ("b_receive_date", &b_receive_date as &(dyn ToSql + Sync)),
+            ("b_confirm_date", &b_confirm_date as &(dyn ToSql + Sync)),
             ("b_utxo_imported", &b_utxo_imported as &(dyn ToSql + Sync))]);
 
         dlog(

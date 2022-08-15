@@ -155,7 +155,7 @@ JSonObject FloatingSignatureBlock::exportBlockToJSon(const bool ext_info_in_docu
   block.remove("bDocsRootHash");
 
   block["confidence"] = m_block_confidence;
-  block["cycle"] = m_cycle;
+  block["bCycle"] = m_cycle;
 
   block["bLen"] = cutils::padding_length_value(calcBlockLength(block));
 

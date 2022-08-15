@@ -615,7 +615,7 @@ pub fn do_conclude_treatment(
         {
           auto[status_, lastWBLock] = DAG::getLatestBlockRecord();
           Q_UNUSED(status_);
-          CDateT oldestDate = cutils::getACycleRange(lastWBLock.m_creation_date, 10).from;
+          CDateT oldestDate = cutils::getACycleRange(lastWBLocHashMap<&str, &(dyn ToSql + Sync)>, 10).from;
           clauses.push({"pll_end_date", oldestDate, ">="});
         }
 

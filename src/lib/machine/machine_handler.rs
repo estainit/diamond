@@ -11,6 +11,7 @@ use serde_json::json;
 use crate::constants::HD_ROOT_FILES;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
+use crate::lib::dag::dag_walk_through::getLatestBlockRecord;
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
 use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
@@ -24,7 +25,7 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
-pub struct CMachine{
+pub struct CMachine {
     m_clone_id: i8,
     m_should_loop_threads: bool,
 
@@ -182,61 +183,58 @@ impl CMachine {
      * @param {*} args
      */
     //old_name_was isInSyncProcess
-    pub fn is_in_sync_process(&self, _force_to_control_based_on_dag_status: bool) -> bool
+    pub fn is_in_sync_process(&mut self, force_to_control_based_on_dag_status: bool) -> bool
     {
-        return false;//FIXME: remove this line after finishing develop
+        // return false;//FIXME: remove this line after finishing develop
         //  put LAST_SYNC_STATUS in CMachine as a static member
         if !self.m_is_in_sync_process {
             return false;
         }
 
-        if cutils::time_diff(self.m_last_sync_status_check.clone(), "".to_string()).as_minutes < 2 {
+        if cutils::time_diff(
+            self.m_last_sync_status_check.clone(),
+            "".to_string()).as_minutes < 2 {
             return self.m_is_in_sync_process;
         }
 
-        true
-
-        /*
-        String lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
-        if (lastSyncStatus == "")
-        {
-            IinitLastSyncStatus();
-            String
-            lastSyncStatus = KVHandler::getValue("LAST_SYNC_STATUS");
+        let mut lastSyncStatus = get_value("LAST_SYNC_STATUS");
+        if lastSyncStatus == "" {
+            self.initLastSyncStatus();
+            lastSyncStatus = get_value("LAST_SYNC_STATUS");
         }
-        JSonObject
-        lastSyncStatusObj = cutils::parseToJsonObj(lastSyncStatus);
+        let mut lastSyncStatusObj: JSonObject = cutils::parseToJsonObj(&lastSyncStatus);
 
-        uint64_t
-        cycleByMinutes = cutils::get_cycle_by_minutes();
+
+        let cycleByMinutes = cutils::get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
-        if (!force_to_control_based_on_DAG_status & &
-            (lastSyncStatusObj.value("checkDate").to_string() > cutils::minutes_before((cycleByMinutes / 24))))
-        {
-            bool
-            is_in_sync = lastSyncStatusObj.value("lastDAGBlockCreationDate").to_string() < cutils::minutes_before(2 * cycleByMinutes);
-            setIsInSyncProcess(is_in_sync, cutils::get_now());
+        if !force_to_control_based_on_dag_status &&
+            (lastSyncStatusObj["checkDate"].to_string() > cutils::minutes_before((cycleByMinutes / 24), &cutils::get_now())) {
+            let is_in_sync: bool = lastSyncStatusObj["lastDAGBlockCreationDate"].to_string() < cutils::minutes_before(2 * cycleByMinutes, &cutils::get_now());
+            self.set_is_in_sync_process(is_in_sync, &cutils::get_now());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
-            auto
-            [status, blockRecord] = DAG::getLatestBlockRecord();
-            if (status)
-            cutils::exiter("No block in DAG exit!!", 111);
+            let (status, block) = getLatestBlockRecord();
+            if !status {
+                panic!("No block in DAG exit!!");
+            }
 
-            bool
-            is_in_sync_process = (blockRecord.m_creation_date < cutils::minutes_before(2 * cycleByMinutes));
+            let is_in_sync_process: bool = block.m_block_creation_date < cutils::minutes_before(2 * cycleByMinutes, &cutils::get_now());
 
-            lastSyncStatusObj.insert("isInSyncMode", is_in_sync_process? "Y": "N");
-            lastSyncStatusObj.insert("checkDate", cutils::get_now());
-            lastSyncStatusObj.insert("lastDAGBlockCreationDate", blockRecord.m_creation_date);
-            if (is_in_sync_process)
-            lastSyncStatusObj.insert("lastTimeMachineWasInSyncMode", cutils::get_now());
-            KVHandler::upsertKValue("LAST_SYNC_STATUS", cutils::serializeJson(lastSyncStatusObj));
-            setIsInSyncProcess(is_in_sync_process, cutils::get_now());
+            if is_in_sync_process {
+                lastSyncStatusObj["isInSyncMode"] = "Y".into();
+            } else {
+                lastSyncStatusObj["isInSyncMode"] = "N".into();
+            }
+            lastSyncStatusObj["checkDate"] = cutils::get_now().into();
+            lastSyncStatusObj["lastDAGBlockCreationDate"] = block.m_block_creation_date.into();
+            if is_in_sync_process {
+                lastSyncStatusObj["lastTimeMachineWasInSyncMode"] = cutils::get_now().into();
+            }
+            upsert_kvalue("LAST_SYNC_STATUS", &cutils::serializeJson(&lastSyncStatusObj), false);
+            self.set_is_in_sync_process(is_in_sync_process, &cutils::get_now());
             return is_in_sync_process;
         }
-        */
     }
 
     //old_name_was setIsInSyncProcess
@@ -547,16 +545,16 @@ impl CMachine {
 
     void EmailSettings::importJson(const JSonObject& obj)
     {
-      m_address = obj.value("m_address").to_string();
-      m_password = obj.value("m_password").to_string();
-      m_income_imap = obj.value("m_income_imap").to_string();
-      m_income_pop3 = obj.value("m_income_pop3").to_string();
-      m_incoming_mail_server = obj.value("m_incoming_mail_server").to_string();
-      m_outgoing_mail_server = obj.value("m_outgoing_mail_server").to_string();
-      m_outgoing_smtp = obj.value("m_outgoing_smtp").to_string();
-      m_fetching_interval_by_minute = obj.value("m_fetching_interval_by_minute").to_string();
-      m_pgp_private_key = obj.value("m_pgp_private_key").to_string();
-      m_pgp_public_key = obj.value("m_pgp_public_key").to_string();
+      m_address = obj["m_address"].to_string();
+      m_password = obj["m_password"].to_string();
+      m_income_imap = obj["m_income_imap"].to_string();
+      m_income_pop3 = obj["m_income_pop3"].to_string();
+      m_incoming_mail_server = obj["m_incoming_mail_server"].to_string();
+      m_outgoing_mail_server = obj["m_outgoing_mail_server"].to_string();
+      m_outgoing_smtp = obj["m_outgoing_smtp"].to_string();
+      m_fetching_interval_by_minute = obj["m_fetching_interval_by_minute"].to_string();
+      m_pgp_private_key = obj["m_pgp_private_key"].to_string();
+      m_pgp_public_key = obj["m_pgp_public_key"].to_string();
     }
 
 
@@ -941,15 +939,15 @@ impl CMachine {
 
         // importJson(&self, profile: MachineProfile)
         // {
-        //     m_machine_alias = obj.value("m_machine_alias").to_string();
-        //     m_language = obj.value("m_language").to_string();
-        //     m_term_of_services = obj.value("m_term_of_services").to_string();
-        //     m_machine_alias = obj.value("m_machine_alias").to_string();
-        //     m_already_presented_neighbors = obj.value("m_already_presented_neighbors").toArray();
+        //     m_machine_alias = obj["m_machine_alias"].to_string();
+        //     m_language = obj["m_language"].to_string();
+        //     m_term_of_services = obj["m_term_of_services"].to_string();
+        //     m_machine_alias = obj["m_machine_alias"].to_string();
+        //     m_already_presented_neighbors = obj["m_already_presented_neighbors"].toArray();
         //     m_backer_detail = new UnlockDocument();
-        //     m_backer_detail->importJson(obj.value("m_backer_detail").toObject());
-        //     m_public_email.importJson(obj.value("m_public_email").toObject());
-        //     m_private_email.importJson(obj.value("m_private_email").toObject());
+        //     m_backer_detail->importJson(obj["m_backer_detail"].toObject());
+        //     m_public_email.importJson(obj["m_public_email"].toObject());
+        //     m_private_email.importJson(obj["m_private_email"].toObject());
         // }
     }
 
@@ -1315,18 +1313,18 @@ impl CMachine {
                {
                  if ((visible_by != "") && (the_coin != ""))
                  {
-                   if ((a_coin.value("ut_visible_by").to_string() != visible_by) || (a_coin.value("ut_coin").to_string() != the_coin))
+                   if ((a_coin["ut_visible_by"].to_string() != visible_by) || (a_coin["ut_coin"].to_string() != the_coin))
                      remined_coins.push(a_coin);
 
                  }
                  else if (visible_by != "")
                  {
-                   if (a_coin.value("ut_visible_by").to_string() != visible_by)
+                   if (a_coin["ut_visible_by"].to_string() != visible_by)
                      remined_coins.push(a_coin);
                  }
                  else if (the_coin != "")
                  {
-                   if (a_coin.value("ut_coin").to_string() != the_coin)
+                   if (a_coin["ut_coin"].to_string() != the_coin)
                      remined_coins.push(a_coin);
                  }
                }

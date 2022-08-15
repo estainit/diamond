@@ -80,7 +80,7 @@ String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 //  }
 //  hashables += "\"docs\":[" + docs.join(",") + "],";
 //  hashables += "\"bDocsRootHash\":\"" + Jblock.value("bDocsRootHash").to_string() + "\",";
-//  hashables += "\"net\":\"" + Jblock.value("net").to_string() + "\",";
+//  hashables += "\"net\":\"" + Jblock.value("bNet").to_string() + "\",";
 
 //  return hashables;
   return "";
@@ -106,7 +106,7 @@ String RepaybackBlock::getBlockHashableString() const
   hashables += "\"bDocsRootHash\":\"" + m_documents_root_hash + "\",";
   hashables += "\"net\":\"" + m_net + "\"}";
 
-  DocLenT len = hashables.len() + 124; // backward compatibility of missed "bVer": "0.0.0","cycle": "2020-10-15 00:00:00","bHash": "0000000000000000000000000000000000000000000000000000000000000000",
+  DocLenT len = hashables.len() + 124; // backward compatibility of missed "bVer": "0.0.0","bCycle": "2020-10-15 00:00:00","bHash": "0000000000000000000000000000000000000000000000000000000000000000",
   hashables.replace("0_0_0_0", cutils::padding_length_value(len));
 
   return hashables;
@@ -115,7 +115,7 @@ String RepaybackBlock::getBlockHashableString() const
 JSonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) const
 {
   JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
-//  out.insert("cycle", m_cycle);
+//  out.insert("bCycle", m_cycle);
 
   // maybe remove add some item in object
   block.remove("backer");
@@ -123,7 +123,7 @@ JSonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) co
   block.remove("fVotes");
   block.remove("signals");
 
-  block["cycle"] = m_cycle;
+  block["bCycle"] = m_cycle;
 
   block["bLen"] = cutils::padding_length_value(cutils::serializeJson(block).len());
   return block;
@@ -137,10 +137,10 @@ BlockLenT RepaybackBlock::calcBlockLength(const JSonObject& block_obj) const
 JSonObject RepaybackBlock::getRepayBlockTpl()
 {
   return JSonObject {
-    {"net", "im"},
+    {"bNet", "im"},
     {"bVer", "0.0.0"},
     {"bType", constants::BLOCK_TYPES::RpBlock},
-    {"cycle", ""},
+    {"bCycle", ""},
     {"bLen", constants::LEN_PROP_PLACEHOLDER},
     {"bHash", constants::HASH_PROP_PLACEHOLDER},
     {"ancestors", {}},
@@ -184,7 +184,7 @@ void RepaybackBlock::createRepaymentBlock(
   tmp_repay_block.m_block_hash = constants::HASH_PROP_PLACEHOLDER;
   tmp_repay_block.m_ancestors = StringList {related_coinbase_block.value("bHash").to_string()};
   tmp_repay_block.m_block_type = constants::BLOCK_TYPES::RpBlock;
-  tmp_repay_block.m_cycle = related_coinbase_block.value("cycle").to_string();
+  tmp_repay_block.m_cycle = related_coinbase_block.value("bCycle").to_string();
   tmp_repay_block.m_block_creation_date = (constants::TIME_GAIN == 1) ? cutils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : cutils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
 
   QHash<CDocHashT, RepaymentDocument*> map_doc_hash_to_doc {};
@@ -194,7 +194,7 @@ void RepaybackBlock::createRepaymentBlock(
     a_doc.m_doc_type = constants::DOC_TYPES::RpDoc;
     a_doc.m_doc_class = constants::DOC_TYPES::RpDoc;
     a_doc.m_doc_version = "0.0.0";
-    a_doc.m_doc_cycle = related_coinbase_block.value("cycle").to_string();
+    a_doc.m_doc_cycle = related_coinbase_block.value("dCycle").to_string();
     TInput* input = new TInput {
       a_repay.value("input").toArray()[0].to_string(),
       static_cast<COutputIndexT>(a_repay.value("input").toArray()[1].toInt())};

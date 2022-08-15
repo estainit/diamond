@@ -204,7 +204,7 @@ impl CoinbaseBlock {
       if (block.keys().contains("backer"))
         block.remove("backer");
 
-      block.insert("cycle", m_cycle);
+      block.insert("bCycle", m_cycle);
       block["bLen"] = cutils::padding_length_value(calcBlockLength(block));
       return block;
     }
