@@ -226,6 +226,7 @@ use crate::{constants, cutils, dlog, get_value, machine};
 use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::database::abs_psql::simple_eq_clause;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
+use crate::lib::sending_q_handler::sending_q_handler::pushIntoSendingQ;
 
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
@@ -288,49 +289,55 @@ pub fn getLastReceivedBlockTimestamp() -> JSonObject
     return cutils::parseToJsonObj(&res);
 }
 
-/*
 
-String DAGMessageHandler::getMaybeAskForLatestBlocksFlag()
+pub fn getMaybeAskForLatestBlocksFlag() -> String
 {
-  return KVHandler::getValue("maybe_ask_for_latest_blocks");
+    return get_value("maybe_ask_for_latest_blocks");
 }
 
-bool DAGMessageHandler::invokeLeaves()
+pub fn invokeLeaves() -> bool
 {
-  CLog::log("Invoking for DAG leaves", "app", "trace");
-  JSonObject payload {
-    {"type", constants::MESSAGE_TYPES::DAG_INVOKE_LEAVES},
-    {"mVer", "0.0.0"}};
-  String serialized_payload = cutils::serializeJson(payload);
+    dlog(
+        &format!("Invoking for DAG leaves"),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+    let payload: JSonObject = json!({
+        "type": constants::message_types::DAG_INVOKE_LEAVES,
+        "mVer": "0.0.0"});
+    let serialized_payload = cutils::serializeJson(&payload);
 
-  bool status = SendingQHandler::pushIntoSendingQ(
-    constants::MESSAGE_TYPES::DAG_INVOKE_LEAVES, // sqType
-    cutils::getNowSSS(),  // sqCode
-    serialized_payload,
-    "Invoking for DAG leaves");
+    let status = pushIntoSendingQ(
+        constants::message_types::DAG_INVOKE_LEAVES, // sqType
+        &cutils::get_now_sss(),  // sqCode
+        &serialized_payload,
+        "Invoking for DAG leaves",
+        &vec![],
+        &vec![],
+        false,
+    );
 
-  return status;
+    return status;
 }
 
-void DAGMessageHandler::launchInvokeLeaves()
+pub fn launchInvokeLeaves()
 {
-  String shouldI = getMaybeAskForLatestBlocksFlag();
-  if (shouldI == constants::YES)
-  {
-    // TODO: needs control for latest invoke to not spaming network
-    invokeLeaves();
-    setMaybeAskForLatestBlocksFlag(constants::NO);
-  }
+    let shouldI = getMaybeAskForLatestBlocksFlag();
+    if shouldI == constants::YES
+    {
+        // TODO: needs control for latest invoke to not spaming network
+        invokeLeaves();
+        setMaybeAskForLatestBlocksFlag(constants::NO);
+    }
 }
-*/
-pub fn setMaybeAskForLatestBlocksFlag(value: &String)
+
+pub fn setMaybeAskForLatestBlocksFlag(value: &str)
 {
     if value == constants::YES {
         // control last_received_leaves_info_timestamp flag
         // if we currently asked for leave information, so do not flood the network with multiple asking
         let last_leave_invoke_response_str: String = get_value("last_received_leaves_info_timestamp");
         if last_leave_invoke_response_str == "" {
-            set_value("maybe_ask_for_latest_blocks", value, false);
+            set_value("maybe_ask_for_latest_blocks", &value.to_string(), false);
             return;
         }
 
@@ -354,8 +361,8 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &String)
             &vec!["kv_last_modified"],
             vec![],
             0);
-        if machine_request_status.len() > 0{
-            let invoke_age:TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
+        if machine_request_status.len() > 0 {
+            let invoke_age: TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
             dlog(
                 &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().getInvokeLeavesGap()),
                 constants::Modules::App,

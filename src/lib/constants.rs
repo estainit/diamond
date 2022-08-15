@@ -594,20 +594,21 @@ pub mod signature_types
       pub const directMsgToNeighbor = "directMsgToNeighbor";
   };
 
-  namespace MESSAGE_TYPES
-  {
-    pub const HANDSHAKE = "handshake";
-    pub const NICETOMEETYOU = "niceToMeetYou";
-    pub const HEREISNEWNEIGHBOR = "hereIsNewNeighbor";
+*/
+
+pub mod message_types
+{
+    pub const HANDSHAKE: &str = "handshake";
+    pub const NICETOMEETYOU: &str = "niceToMeetYou";
+    pub const HEREISNEWNEIGHBOR: &str = "hereIsNewNeighbor";
 
     // TODO: move these commands to GQL format
-    pub const DAG_INVOKE_LEAVES = "dagInvokeLeaves";
-    pub const DAG_LEAVES_INFO = "dagLeavesInfo";
-    pub const DAG_INVOKE_BLOCK = "dagInvokeBlock";
-    pub const DAG_INVOKE_DESCENDENTS = "dagInvokeDescendents";
-  };
+    pub const DAG_INVOKE_LEAVES: &str = "dagInvokeLeaves";
+    pub const DAG_LEAVES_INFO: &str = "dagLeavesInfo";
+    pub const DAG_INVOKE_BLOCK: &str = "dagInvokeBlock";
+    pub const DAG_INVOKE_DESCENDENTS: &str = "dagInvokeDescendents";
+}
 
-*/
 pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";
 pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";

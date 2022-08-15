@@ -647,7 +647,7 @@ pub fn control_coinbase_issuance_criteria() -> bool
             &format!("Machine hasn't fresh leaves!"),
             constants::Modules::CB,
             constants::SecLevel::Info);
-        setMaybeAskForLatestBlocksFlag(&constants::YES.to_string());
+        setMaybeAskForLatestBlocksFlag(constants::YES);
         return false;
     }
     // control if already exist in DAG a more confidence Coinbase Block than what machine can create?

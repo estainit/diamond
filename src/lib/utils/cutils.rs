@@ -106,7 +106,6 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
                     if l == '0' {
                         true
                     } else {
-
                         dlog(
                             &format!("failed in convert_ float_ to_ string1 = {:?}", segments),
                             constants::Modules::App,
@@ -438,7 +437,7 @@ pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT
         since_epoch = Utc::now().timestamp();
     } else {
         let t_ = add_fff_zzzz_to_yyyymmdd(c_date.clone());
-        let dt =  make_date_from_str(&c_date);
+        let dt = make_date_from_str(&c_date);
         since_epoch = dt.timestamp();
     }
     since_epoch += (forward_in_time_by_minutes * 60) as i64;
