@@ -150,9 +150,6 @@ pub fn q_select(
 {
     return exec_query(
         &prepare_to_select(table, fields, clauses, order, limit),
-        clauses,
-        fields,
-        &HashMap::new(),
         do_log);//, lockDb, log);
 }
 
@@ -480,9 +477,6 @@ pub fn q_customQuery(
 
 pub fn exec_query(
     query_elements: &QueryElements,
-    _clauses: &ClausesT,
-    _fields: &Vec<&str>,
-    _upd_values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     if do_log {
@@ -786,9 +780,6 @@ pub fn q_update(
     let query_elements = prepare_to_update(table, update_values, update_clauses);
     let _upd_res = exec_query(
         &query_elements,
-        update_clauses,
-        &vec![],
-        update_values,
         do_log);
 
     return true;
