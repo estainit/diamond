@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
 use crate::lib::custom_types::{CDateT, ClausesT, QVDRecordsT};
@@ -50,7 +51,7 @@ impl CMachine {
                 simple_eq_clause("n_connection_type", &*connection_type),
                 simple_eq_clause("n_email", &*neighbor_email),
             ],
-            &vec![],
+            vec![],
             0,
             true, );
 
@@ -60,9 +61,9 @@ impl CMachine {
             {
                 //update pgp key
                 let now = cutils::get_now();
-                let values: HashMap<&str, &str> = HashMap::from([
-                    ("n_pgp_public_key", &*neighbor_public_key),
-                    ("n_last_modified", &*now),
+                let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+                    ("n_pgp_public_key", &neighbor_public_key as &(dyn ToSql + Sync)),
+                    ("n_last_modified", &now as &(dyn ToSql + Sync)),
                 ]);
                 let clauses: ClausesT = vec![
                     simple_eq_clause("n_mp_code", &*mp_code),
@@ -100,18 +101,18 @@ impl CMachine {
         { return (false, "Failed in serialization neighbor_info".to_string()); }
 
         let now = cutils::get_now();
-        let values: HashMap<&str, &str> = HashMap::from([
-            ("n_mp_code", &*mp_code),
-            ("n_email", &*neighbor_email),
-            ("n_pgp_public_key", &*neighbor_public_key),
-            ("n_is_active", &*is_active),
-            ("n_connection_type", &*connection_type),
-            ("n_creation_date", &*creation_date),
-            ("n_info", &*serialized_neighbor_info),
-            ("n_last_modified", &*now)
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("n_mp_code", &mp_code as &(dyn ToSql + Sync)),
+            ("n_email", &neighbor_email as &(dyn ToSql + Sync)),
+            ("n_pgp_public_key", &neighbor_public_key as &(dyn ToSql + Sync)),
+            ("n_is_active", &is_active as &(dyn ToSql + Sync)),
+            ("n_connection_type", &connection_type as &(dyn ToSql + Sync)),
+            ("n_creation_date", &creation_date as &(dyn ToSql + Sync)),
+            ("n_info", &serialized_neighbor_info as &(dyn ToSql + Sync)),
+            ("n_last_modified", &now as &(dyn ToSql + Sync))
         ]);
         dlog(
-            &format!("goint to add new Neighbor: {:?}", dump_hashmap_of_str(&values)),
+            &format!("goint to add new Neighbor: {:?}", &values),
             constants::Modules::App,
             constants::SecLevel::Info);
 
@@ -146,7 +147,7 @@ impl CMachine {
             &vec![
                 simple_eq_clause("n_is_active", constants::YES),
                 simple_eq_clause("n_mp_code", mp_code)],
-            &vec![&OrderModifier { m_field: "n_connection_type", m_order: "DESC" }],
+            vec![&OrderModifier { m_field: "n_connection_type", m_order: "DESC" }],
             0,
             true,
         );
@@ -187,7 +188,7 @@ impl CMachine {
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_id", "n_email", "n_pgp_public_key", "n_connection_type"],
             &clauses,
-            &vec![
+            vec![
                 &OrderModifier { m_field: "n_connection_type", m_order: "DESC" },
             ],
             0,

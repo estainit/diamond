@@ -194,7 +194,7 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
                 },
             ],
             &vec!["b_hash"],
-            &vec![
+            vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },
                 &OrderModifier { m_field: "b_hash", m_order: "ASC" },
             ],
@@ -228,7 +228,7 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
                     m_field_multi_values: vec![],
                 }], // TODO add a max Date to reduce results
             &vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],
-            &vec![
+            vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },
                 &OrderModifier { m_field: "b_hash", m_order: "ASC" },
             ],
@@ -281,7 +281,7 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
         let genesis: QVDRecordsT = searchInDAG(
             &vec![simple_eq_clause("b_type", constants::block_types::Genesis)],
             &vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],
-            &vec![
+            vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },
                 &OrderModifier { m_field: "b_hash", m_order: "ASC" },
             ],

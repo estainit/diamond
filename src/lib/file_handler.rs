@@ -1,7 +1,7 @@
 // use std::fs::{File, OpenOptions, remove_file};
 use std::fs::{File};
 // use std::io::{Write, Read};
-use std::io::Read;
+use std::io::{Read, Write};
 use crate::lib::constants::{Modules, SecLevel};
 use crate::lib::dlog::dlog;
 use std::path::Path;
@@ -100,7 +100,12 @@ pub fn write_( file_path:&String,  content:&String)->bool
     dlog(
         &format!("wirting file: {}", file_path),
         constants::Modules::App,
-        constants::SecLevel::Error);
+        constants::SecLevel::Info);
+
+    let mut file = File::create(file_path)
+        .expect("Error encountered while creating file!");
+    file.write_all(content.as_ref())
+        .expect("Error while writing to file");
 
     /*
     QFile f(file_path);

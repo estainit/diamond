@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, dlog};
 use crate::lib::custom_types::{ClausesT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
@@ -58,7 +59,7 @@ pub fn search_wallet_addresses(
         STBL_MACHINE_WALLET_ADDRESSES,
         &fields,
         &clauses,
-        &vec![],
+        vec![],
         0,
         true,
     );
@@ -188,10 +189,32 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
         &format!("Insert new address to machine wallet {:?}", dump_hashmap_of_str_string(&values)),
         constants::Modules::App,
         constants::SecLevel::Trace);
-    let mut values_: HashMap<&str, &str> = HashMap::new();
-    for (k, v) in &values {
-        values_.insert(*k, v.as_str().clone());
+    // let mut values_: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::new();
+    // for (k, v) in &values {
+    //     values_.insert(*k, &v as &(dyn ToSql + Sync));
+    // }
+
+    let (status, serialized_res) = match serde_json::to_string(&w_address.m_unlock_doc) {
+        Ok(ser) => { (true, ser) }
+        Err(e) => {
+            dlog(
+                &format!("Failed in serialization m_unlock_doc {:?}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, "".to_string())
+        }
+    };
+    if !status {
+        return (false, "Failed in serialization m_unlock_doc".to_string());
     }
+    let mut values_: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("wa_mp_code", &w_address.m_mp_code as &(dyn ToSql + Sync)),
+        ("wa_address", &w_address.m_address as &(dyn ToSql + Sync)),
+        ("wa_title", &w_address.m_title as &(dyn ToSql + Sync)),
+        ("wa_creation_date", &w_address.m_creation_date as &(dyn ToSql + Sync)),
+        ("wa_detail", &serialized_res as &(dyn ToSql + Sync)),
+    ]);
+
     q_insert(
         STBL_MACHINE_WALLET_ADDRESSES,
         &values_,

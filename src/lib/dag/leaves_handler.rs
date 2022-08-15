@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use crate::{constants, cutils, dlog};
 use crate::lib::custom_types::{CBlockHashT, CDateT, TimeByMinutesT};
@@ -29,9 +30,9 @@ pub fn removeFromLeaveBlocks(leaves: &Vec<String>) -> (bool, String)
 
     // update db
     let kv_last_modified = cutils::get_now();
-    let values: HashMap<&str, &str> = HashMap::from([
-        ("kv_value", &*serialized_leaves),
-        ("kv_last_modified", kv_last_modified.as_str()),
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("kv_value", &serialized_leaves as &(dyn ToSql + Sync)),
+        ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
     ]);
 
     q_upsert(
@@ -87,9 +88,9 @@ pub fn addToLeaveBlocks(
 
     let kv_value = serde_json::to_string(&current_leaves).unwrap();
     let kv_last_modified = cutils::get_now();
-    let update_values: HashMap<&str, &str> = HashMap::from([
-        ("kv_value", kv_value.as_str()),
-        ("kv_last_modified", kv_last_modified.as_str()),
+    let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("kv_value", &kv_value as &(dyn ToSql + Sync)),
+        ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
     ]);
 
     q_upsert(

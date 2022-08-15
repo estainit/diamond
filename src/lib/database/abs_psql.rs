@@ -12,9 +12,9 @@ pub mod db_model {
     pub const S_SINGLE_OPERANDS: [&str; 14] = ["=", "<", ">", "<=", "=<", ">=", "like", "LIKE", "ilike", "ILIKE", "not like", "NOT LIKE", "not ilike", "NOT ILIKE"];
 }
 
-pub struct QueryElements {
+pub struct QueryElements<'e> {
     pub m_clauses: String,
-    pub m_params: Vec<String>,
+    pub m_params: Vec<&'e (dyn ToSql + Sync)>,
     pub m_order: String,
     pub m_limit: String,
     pub m_complete_query: String,
@@ -144,7 +144,7 @@ pub fn q_select(
     table: &str,
     fields: &Vec<&str>,
     clauses: &ClausesT,
-    order: &OrderT,
+    order: OrderT,
     limit: LimitT,
     do_log: bool) -> (bool, QVDRecordsT)
 {
@@ -156,12 +156,12 @@ pub fn q_select(
         do_log);//, lockDb, log);
 }
 
-pub fn prepare_to_select(
-    table: &str,
-    fields: &Vec<&str>,
-    clauses: &ClausesT,
-    order: &OrderT,
-    limit: LimitT) -> QueryElements
+pub fn prepare_to_select<'e>(
+    table: &'e str,
+    fields: &'e Vec<&str>,
+    clauses: &'e ClausesT,
+    order: OrderT,
+    limit: LimitT) -> QueryElements<'e>
 {
     let mut query_elements: QueryElements = pre_query_generator(0, clauses, order, limit);
     let mut complete_query: String = "SELECT ".to_owned() + &fields.join(", ") + " FROM " + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
@@ -195,19 +195,19 @@ PTRRes DbModel::prepareToDelete(
 }
 */
 
-pub fn clauses_query_generator(
+pub fn clauses_query_generator<'e>(
     placeholder_offset: u8,
-    clauses: &ClausesT,
-) -> (String, Vec<String>)
+    clauses: &'e ClausesT,
+) -> (String, Vec<&'e (dyn ToSql + Sync)>)
 {
     // println!("in clauses_ query_ generator clauses: {:?}", dump_clauses(clauses));
 
-    let mut values_: Vec<String> = vec![];
+    let mut values_: Vec<&(dyn ToSql + Sync)> = vec![];
     let mut clauses_: String = "".to_string();
     let _val_arr: Vec<String>;
 
     if clauses.len() > 0 {
-        let mut tmp: Vec<String> = vec![];
+        let mut clauses_list: Vec<String> = vec![];
 
         let mut placeholder_index = placeholder_offset;
         for a_clause_tuple in clauses
@@ -216,8 +216,8 @@ pub fn clauses_query_generator(
             let key = a_clause_tuple.m_field_name;
             if db_model::S_SINGLE_OPERANDS.contains(&a_clause_tuple.m_clause_operand)
             {
-                tmp.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &format!(" ${placeholder_index} ) "));
-                values_.push(a_clause_tuple.m_field_single_str_value.parse().unwrap());
+                clauses_list.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &format!(" ${placeholder_index} ) "));
+                values_.push(&a_clause_tuple.m_field_single_str_value as &(dyn ToSql + Sync));
             } else if (a_clause_tuple.m_clause_operand == "IN") || (a_clause_tuple.m_clause_operand == "NOT IN")
             {
                 if a_clause_tuple.m_field_multi_values.len() == 0
@@ -232,11 +232,12 @@ pub fn clauses_query_generator(
                 let mut tmp_placeholders: Vec<String> = vec![];
                 for i in 0..a_clause_tuple.m_field_multi_values.len()
                 {
-                    placeholder_index += 1;
                     tmp_placeholders.push(format!("${}", placeholder_index));
-                    values_.push(a_clause_tuple.m_field_multi_values[i].clone().to_string());
+                    values_.push(&a_clause_tuple.m_field_multi_values[i] as &(dyn ToSql + Sync));
+                    placeholder_index += 1;
                 }
-                tmp.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &" (".to_owned() + &tmp_placeholders.join(", ") + ")) ");
+                placeholder_index -= 1;
+                clauses_list.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &" (".to_owned() + &tmp_placeholders.join(", ") + ")) ");
             } else if a_clause_tuple.m_clause_operand == "LIKE:OR"
             {
                 panic!("LIKE:OR NOT IMPLEMENTED YET!");
@@ -244,8 +245,8 @@ pub fn clauses_query_generator(
         }
 
 
-        if (tmp.len() > 0) && (values_.len() > 0) {
-            clauses_ = tmp.join(" AND ");
+        if (clauses_list.len() > 0) && (values_.len() > 0) {
+            clauses_ = clauses_list.join(" AND ");
         }
     }
 
@@ -255,11 +256,11 @@ pub fn clauses_query_generator(
 
 */
 
-pub fn pre_query_generator(
+pub fn pre_query_generator<'e>(
     placeholder_offset: u8,
-    clauses_: &ClausesT,
-    order_: &OrderT,
-    limit_: LimitT) -> QueryElements
+    clauses_: &'e ClausesT,
+    order_: OrderT,
+    limit_: LimitT) -> QueryElements<'e>
 {
     let (mut clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
     if clauses.len() > 0 {
@@ -481,7 +482,7 @@ pub fn exec_query(
     query_elements: &QueryElements,
     _clauses: &ClausesT,
     _fields: &Vec<&str>,
-    _upd_values: &HashMap<&str, &str>,
+    _upd_values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     if do_log {
@@ -493,15 +494,15 @@ pub fn exec_query(
 
     if do_log {
         dlog(
-            &format!("Query Values: [{}] ", query_elements.m_params.join(", ")),
+            &format!("Query Values: [{:?}] ", query_elements.m_params),
             constants::Modules::Sql,
             constants::SecLevel::Trace);
     }
     let mut out_rows: QVDRecordsT = vec![];
-    let params: Vec<_> = query_elements.m_params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
+    // let params: Vec<_> = query_elements.m_params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
     return match dbhandler().m_db.query(
         &query_elements.m_complete_query,
-        &params[..]) {
+        &query_elements.m_params[..]) {
         Ok(rows) => {
             if do_log {
                 dlog(
@@ -525,9 +526,48 @@ pub fn exec_query(
             for a_row in &rows {
                 let mut a_row_dict: HashMap<String, String> = HashMap::new();
                 for col_inx in 0..a_row.len() {
-                    let (col_name, _col_type) = &res_cols_info[col_inx];
-                    let col_value: String = Row::get(a_row, col_inx);
-                    a_row_dict.insert(col_name.clone(), col_value);
+                    let (col_name, col_type) = &res_cols_info[col_inx];
+                    let the_col_value: String = match &*col_type.clone() {
+                        ("real" | "double precision") => {
+                            let col_value: f64 = Row::get(a_row, col_inx);
+                            convert_float_to_string(col_value, 11)
+                        }
+                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8") => {
+                            let col_value: i64 = Row::get(a_row, col_inx);
+                            col_value.to_string()
+                        }
+                        ("numeric") => {
+                            let col_value: i64 = Row::get(a_row, col_inx);
+                            println!("failed2 on casting psql numeric to Rust i64!!!{:?}", col_value);
+                            col_value.to_string()
+                        }
+                        ("varchar") => {
+                            let col_value: Option<String> = Row::get(a_row, col_inx);
+                            if col_value.is_some() {
+                                col_value.unwrap().to_string()
+                            } else {
+                                "".to_string()
+                            }
+                        }
+                        ("text") => {
+                            let col_value: String = Row::get::<_, String>(a_row, col_inx);
+                            col_value
+                        }
+                        ("bool") => {
+                            let col_value: bool = Row::get(a_row, col_inx);
+                            col_value.to_string()
+                        }
+                        (_) => {
+                            println!("UUUUU2 Unsetted col type {} {} ", col_type.clone(), col_name.clone());
+                            let col_value: String = Row::get(a_row, col_inx);
+                            println!("UUUUU2 Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
+                            col_value.to_string()
+                        }
+                    };
+                    a_row_dict.insert(col_name.clone(), the_col_value);
+
+                    // let col_value: String = Row::get(a_row, col_inx);
+                    // a_row_dict.insert(col_name.clone(), col_value);
                 }
                 out_rows.push(a_row_dict);
             }
@@ -544,7 +584,7 @@ pub fn exec_query(
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Failed in Q params: [{}] ", query_elements.m_params.join(", ")),
+                &format!("Failed in Q params: [{:?}] ", query_elements.m_params),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             (true, vec![])
@@ -600,7 +640,7 @@ bool DbModel::uniqueConstraintFailed(const String& msg)
 */
 pub fn q_insert(
     table: &str,
-    values: &HashMap<&str, &str>,
+    values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> bool
 {
     return insert_to_psql(table, values, do_log);
@@ -609,19 +649,19 @@ pub fn q_insert(
 
 pub fn insert_to_psql(
     table: &str,
-    values: &HashMap<&str, &str>,
+    values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> bool
 {
     let mut position: u8 = 0;
     let mut placeholders: Vec<String> = vec![];
     let mut the_keys: Vec<&str> = vec![];
-    let mut params: Vec<&str> = vec![];
+    let mut params: Vec<&(dyn ToSql + Sync)> = vec![];
     for (k, v) in values {
         position += 1;
         let pos = format!("${}", position);
         placeholders.push(pos);
         the_keys.push(k);
-        params.push(v);
+        params.push(*v);
     }
     // let keys = values.iter().map(|(&k, &v)| k).collect::<Vec<_>>(); //values.keys();
     let placeholders = placeholders.join(", ");
@@ -637,7 +677,7 @@ pub fn insert_to_psql(
 
     let _log_values: Vec<&str> = vec![];
 
-    let params: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
+    // let params: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
     return match dbhandler().m_db.execute(&complete_query, &params) {
         Ok(_v) => { true }
         Err(e) => {
@@ -646,11 +686,11 @@ pub fn insert_to_psql(
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Query: {:?}", complete_query),
+                &format!("Query in PSQL: {:?}", complete_query),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Params: {:?}", params),
+                &format!("Params in PSQL: {:?}", params),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             false
@@ -662,7 +702,7 @@ pub fn q_upsert(
     table: &str,
     controlled_field: &str,
     controlled_value: &str,
-    values: &HashMap<&str, &str>,
+    values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> bool
 {
     let only_clause = simple_eq_clause(controlled_field, controlled_value);
@@ -673,7 +713,7 @@ pub fn q_upsert(
         table,
         &vec![controlled_field],     // fields
         &clauses, //clauses
-        &vec![],   // order
+        vec![],   // order
         1,   // limit
         do_log,
     );
@@ -693,7 +733,7 @@ pub fn q_upsert(
 
     // insert new entry
     let mut insert_values = values.clone();
-    insert_values.insert(controlled_field, controlled_value);
+    insert_values.insert(controlled_field, &controlled_value as &(dyn ToSql + Sync));
     return q_insert(
         table,     // table
         &insert_values, // values to insert
@@ -701,26 +741,27 @@ pub fn q_upsert(
     );
 }
 
-pub fn prepare_to_update(
-    table: &str,
-    upd_values: &HashMap<&str, &str>,
-    clauses: &ClausesT) -> QueryElements
+pub fn prepare_to_update<'e >(
+    table: &'e str,
+    upd_values: &'e HashMap<&str, &(dyn ToSql + Sync)>,
+    clauses: &'e ClausesT) -> QueryElements<'e >
 {
-    let mut query_elements: QueryElements = pre_query_generator(upd_values.len() as u8, clauses, &vec![], 0);
+    let ord_=vec![];
+    let mut query_elements: QueryElements = pre_query_generator(upd_values.len() as u8, clauses, ord_, 0);
 
     let mut updates: Vec<String> = vec![];
     let mut position = 0;
-    let mut finall_upd_values: Vec<String> = vec![]; //query_elements.m_params
-    for (a_key, a_value) in upd_values
+    let mut finall_upd_values: Vec<&(dyn ToSql + Sync)> = vec![]; //query_elements.m_params
+    for (a_key, &a_value) in upd_values
     {
         position += 1;
         let the_key = a_key.clone();
         let the_single_update = (the_key.to_owned() + &format!("= ${}", position)).clone();
         updates.push(the_single_update);
-        finall_upd_values.push(a_value.to_string());
+        finall_upd_values.push(a_value);
     }
-    for a_value in &query_elements.m_params {
-        finall_upd_values.push(a_value.to_string());
+    for &a_value in &query_elements.m_params {
+        finall_upd_values.push(a_value);
     }
     query_elements.m_params = finall_upd_values;
 
@@ -734,7 +775,7 @@ pub fn prepare_to_update(
 
 pub fn q_update(
     table: &str,
-    update_values: &HashMap<&str, &str>,
+    update_values: &HashMap<&str, &(dyn ToSql + Sync)>,
     update_clauses: &ClausesT,
     do_log: bool) -> bool
 {

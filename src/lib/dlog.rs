@@ -7,6 +7,7 @@ use log4rs::Config;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::filter::threshold::ThresholdFilter;
+use crate::{constants, machine};
 use crate::constants::{Modules, SecLevel};
 
 pub fn initialize_log(){
@@ -24,7 +25,7 @@ pub fn initialize_log(){
                     Box::new(
                         RollingFileAppender::builder()
                             .encoder(Box::new(PatternEncoder::new("{d} {l}::{m}{n}")))
-                            .build("/Users/silver/IdeaProjects/diamond/logs/dlog.log", Box::new(compound_policy)).unwrap(),
+                            .build(machine().get_logs_path()+&"/dlog.log", Box::new(compound_policy)).unwrap(),
                     ),
                 ),
         )

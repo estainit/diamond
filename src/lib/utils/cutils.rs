@@ -110,7 +110,7 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
                         dlog(
                             &format!("failed in convert_ float_ to_ string1 = {:?}", segments),
                             constants::Modules::App,
-                            constants::SecLevel::Fatal);
+                            constants::SecLevel::Info);
                         // panic!("failed in convert_ float_ to_ string1 = {:?}", segments);
                         false
                     }
@@ -119,7 +119,7 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
                     dlog(
                         &format!("failed in convert_ float_ to_ string2 = {:?}", segments),
                         constants::Modules::App,
-                        constants::SecLevel::Fatal);
+                        constants::SecLevel::Info);
                     // panic!("failed in convert_ float_ to_ string2 = {:?}", segments);
                     false
                 }
@@ -146,6 +146,9 @@ pub fn get_now() -> String {
     Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+pub fn get_now_sss() -> String {
+    Utc::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string()
+}
 
 pub fn get_since_epoch() -> i64 {
     Utc::now().timestamp()
@@ -219,10 +222,6 @@ pub fn getCoinbaseAgeByMinutes(c_date: &CDateT) -> TimeByMinutesT
 pub fn getCoinbaseAgeBySecond(c_date: &CDateT) -> TimeBySecT
 {
     return getCoinbaseAgeByMinutes(c_date) * 60;
-}
-
-pub fn get_now_sss() -> String {
-    Utc::now().format("%Y-%m-%d %H:%M:%S.zzz").to_string()
 }
 
 pub fn isGreaterThanNow(c_date: &CDateT) -> bool

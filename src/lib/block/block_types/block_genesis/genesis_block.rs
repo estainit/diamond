@@ -1,5 +1,6 @@
 pub mod b_genesis {
     use std::collections::HashMap;
+    use postgres::types::ToSql;
     use crate::{ccrypto, CMachine, constants, cutils, dlog};
     use crate::lib::block::block_types::block::Block;
     use crate::lib::block::document_types::dna_proposal_document::{DNAProposalDocument};
@@ -24,18 +25,18 @@ pub mod b_genesis {
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
         doc.m_doc_tags = "initialize, DNA".to_string();
-        doc.m_doc_comment = "imagine's contributors time & effort is recorded here".to_string();
+        doc.m_doc_comment = "Imagine all the people living life in peace".to_string();
 
         let mut dna = DNAProposalDocument::new();
         dna.m_project_hash = ccrypto::convert_title_to_hash(&"imagine".to_string());
-        dna.m_help_hours = 1000_000;
+        dna.m_help_hours = 1_000_000;
         dna.m_help_level = 1;
-        dna.m_shares = 1000_000;
+        dna.m_shares = 1_000_000;
         dna.m_contributor_account = constants::HU_DNA_SHARE_ADDRESS.to_string();
         dna.m_approval_date = proposal_creation_date;
         dna.m_polling_profile = "Basic".to_string();
         dna.m_voting_timeframe = 24.0;
-        dna.m_votes_yes = 1000000;
+        dna.m_votes_yes = 1_000_000;
         dna.m_votes_abstain = 0;
         dna.m_votes_no = 0;
 
@@ -91,10 +92,11 @@ pub mod b_genesis {
 
         // update proposal status in DB
         let conclude_date = machine.get_launch_date();
-        let update_values: HashMap<&str, &str> = HashMap::from([
-            ("pr_start_voting_date", startVotingDate.as_str()),
-            ("pr_conclude_date", conclude_date.as_str()),
-            ("pr_approved", constants::YES),
+        let pr_approved=constants::YES.to_string();
+        let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("pr_start_voting_date", &startVotingDate as &(dyn ToSql + Sync)),
+            ("pr_conclude_date", &conclude_date as &(dyn ToSql + Sync)),
+            ("pr_approved", &pr_approved as &(dyn ToSql + Sync)),
         ]);
 
         let c1 = simple_eq_clause("pr_hash", &*proposal_hash);
@@ -107,11 +109,11 @@ pub mod b_genesis {
         let pll_end_date = cutils::minutes_after(
                 36 * 60,
                 startVotingDate.clone());
-        let pollingUpdValues: HashMap<&str, &str> = HashMap::from([
-            ("pll_start_date", startVotingDate.as_str()),
-            ("pll_end_date", pll_end_date.as_str()),
-            ("pll_status", &*constants::CLOSE),
-            ("pll_ct_done", &*constants::YES),
+        let pollingUpdValues: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("pll_start_date", &startVotingDate as &(dyn ToSql + Sync)),
+            ("pll_end_date", &pll_end_date as &(dyn ToSql + Sync)),
+            ("pll_status", &constants::CLOSE as &(dyn ToSql + Sync)),
+            ("pll_ct_done", &constants::YES as &(dyn ToSql + Sync)),
         ]);
         let c1 = simple_eq_clause("pll_ref", &*proposal_hash);
         update_polling(

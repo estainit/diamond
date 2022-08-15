@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{constants, cutils, dlog};
@@ -712,19 +713,18 @@ pub fn mapDocToBlock(
     block_hash: &CBlockHashT,
     doc_index: CDocIndexT)
 {
-    let dbm_doc_index = doc_index.to_string();
+    let dbm_doc_index = doc_index;
     let dbm_last_control = cutils::get_now();
-    let values: HashMap<&str, &str> = HashMap::from([
-        ("dbm_block_hash", block_hash.as_str()),
-        ("dbm_doc_index", dbm_doc_index.as_str()),
-        ("dbm_doc_hash", doc_hash.as_str()),
-        ("dbm_last_control", dbm_last_control.as_str())]);
-
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("dbm_block_hash", &block_hash as &(dyn ToSql + Sync)),
+        ("dbm_doc_index", &dbm_doc_index as &(dyn ToSql + Sync)),
+        ("dbm_doc_hash", &doc_hash as &(dyn ToSql + Sync)),
+        ("dbm_last_control", &dbm_last_control as &(dyn ToSql + Sync))]);
     dlog(
         &format!("--- connecting Doc({}) to Block({})",
                  cutils::hash8c(doc_hash), cutils::hash8c(block_hash)),
         constants::Modules::App,
-        constants::SecLevel::Error);
+        constants::SecLevel::Info);
     q_insert(
         STBL_DOCS_BLOCKS_MAP,     // table
         &values, // values to insert

@@ -691,8 +691,8 @@ impl CMachine {
 
         // set selected profile=default
         let values = HashMap::from([
-            ("kv_value", &self.m_profile.m_mp_code[..]),
-            ("kv_last_modified", &self.m_profile.m_mp_last_modified[..]),
+            ("kv_value", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
+            ("kv_last_modified", &self.m_profile.m_mp_last_modified as &(dyn ToSql + Sync)),
         ]);
         q_upsert(
             STBL_KVALUE,
@@ -873,7 +873,7 @@ impl CMachine {
     //old_name_was getReportsPath
     pub fn get_logs_path(&self) -> String
     {
-        return self.get_clone_path();
+        return self.get_clone_path() + &"/logs";
     }
 
     //old_name_was getCachePath
@@ -960,7 +960,8 @@ impl CMachine {
             STBL_MACHINE_PROFILES,
             &vec!["mp_code", "mp_name", "mp_settings"],
             &vec![
-                simple_eq_clause("mp_code", &*mp_code)], &vec![],
+                simple_eq_clause("mp_code", &*mp_code)],
+            vec![],
             0,
             true,
         );
@@ -1077,10 +1078,10 @@ impl CMachine {
 
         //   String serialized_setting = cutils::serializeJson(m_profile.exportJson());
         let values = HashMap::from([
-            ("mp_code", &self.m_profile.m_mp_code[..]),
-            ("mp_name", &self.m_profile.m_mp_name[..]),
-            ("mp_settings", &serialized_settings[..]),
-            ("mp_last_modified", &self.m_profile.m_mp_last_modified[..]),
+            ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
+            ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
+            ("mp_settings", &serialized_settings as &(dyn ToSql + Sync)),
+            ("mp_last_modified", &self.m_profile.m_mp_last_modified as &(dyn ToSql + Sync)),
         ]);
 
         return q_upsert(

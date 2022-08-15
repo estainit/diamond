@@ -49,7 +49,7 @@ impl MachineProfile {
             &vec!["mp_code", "mp_name", "mp_settings"],
             &vec![
                 simple_eq_clause("mp_code", mp_code)],
-            &vec![],   // order
+            vec![],   // order
             1,
             true,
         );

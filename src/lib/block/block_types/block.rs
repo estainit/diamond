@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
@@ -294,9 +295,9 @@ impl Block {
                 Ok(l) => { (true, l) }
                 Err(e) => {
                     dlog(
-                    &format!("Invalid bLen {:?} in received JSon Obj {:?}", obj["bLen"], e),
-                    constants::Modules::App,
-                    constants::SecLevel::Error);
+                        &format!("Invalid bLen {:?} in received JSon Obj {:?}", obj["bLen"], e),
+                        constants::Modules::App,
+                        constants::SecLevel::Error);
                     (false, 0)
                 }
             };
@@ -727,7 +728,7 @@ impl Block {
             &vec![
                 simple_eq_clause("b_hash", &self.m_block_hash),
             ],
-            &vec![
+            vec![
                 &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
                 &OrderModifier { m_field: "b_id", m_order: "ASC" },
             ],
@@ -751,33 +752,36 @@ impl Block {
         //TODO: implementing atomicity(transactional) either in APP or DB
 
         // insert into DB
-        let confidence = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
+        let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
+        let confidence_float = confidence_string.parse::<f64>().unwrap();
         let signals = cutils::serializeJson(&self.m_block_signals);
         let body = wrapSafeContentForDB(&self.safeStringifyBlock(false), constants::WRAP_SAFE_VERION.to_string()).content;
-        let docs_count = self.m_block_documents.len().to_string();
+        let docs_count = self.m_block_documents.len() as i32;
         let ancestors = self.m_block_ancestors.join(",");
-        let ancestors_count = self.m_block_ancestors.len().to_string();
+        let ancestors_count = self.m_block_ancestors.len() as i32;
         let descendants = self.m_block_descendants.join(",");
         let cycle = cutils::get_coinbase_cycle_stamp(&self.m_block_creation_date);
-        let values: HashMap<&str, &str> = HashMap::from([
-            ("b_hash", &*self.m_block_hash),
-            ("b_type", &*self.m_block_type),
-            ("b_confidence", confidence.as_str()),
-            ("b_body", body.as_str()),
-            ("b_docs_root_hash", &self.m_block_documents_root_hash),
-            ("b_ext_root_hash", &self.m_block_ext_root_hash),
-            ("b_signals", signals.as_str()),
-            ("b_trxs_count", "0"),
-            ("b_docs_count", docs_count.as_str()),
-            ("b_ancestors", ancestors.as_str()),
-            ("b_ancestors_count", ancestors_count.as_str()),
-            ("b_descendants", descendants.as_str()),
-            ("b_creation_date", &self.m_block_creation_date),
-            ("b_receive_date", &self.m_block_receive_date),
-            ("b_confirm_date", &self.m_block_confirm_date),
-            ("b_cycle", cycle.as_str()),
-            ("b_backer", &self.m_block_backer),
-            ("b_utxo_imported", constants::NO)]);
+        let b_trxs_count = 0;
+        let b_utxo_imported = constants::NO.to_string();
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("b_hash", &self.m_block_hash as &(dyn ToSql + Sync)),
+            ("b_type", &self.m_block_type as &(dyn ToSql + Sync)),
+            ("b_confidence", &confidence_float as &(dyn ToSql + Sync)),
+            ("b_body", &body as &(dyn ToSql + Sync)),
+            ("b_docs_root_hash", &self.m_block_documents_root_hash as &(dyn ToSql + Sync)),
+            ("b_ext_root_hash", &self.m_block_ext_root_hash as &(dyn ToSql + Sync)),
+            ("b_signals", &signals as &(dyn ToSql + Sync)),
+            ("b_trxs_count", &b_trxs_count as &(dyn ToSql + Sync)),
+            ("b_docs_count", &docs_count as &(dyn ToSql + Sync)),
+            ("b_ancestors", &ancestors as &(dyn ToSql + Sync)),
+            ("b_ancestors_count", &ancestors_count as &(dyn ToSql + Sync)),
+            ("b_descendants", &descendants as &(dyn ToSql + Sync)),
+            ("b_creation_date", &self.m_block_creation_date as &(dyn ToSql + Sync)),
+            ("b_receive_date", &self.m_block_receive_date as &(dyn ToSql + Sync)),
+            ("b_confirm_date", &self.m_block_confirm_date as &(dyn ToSql + Sync)),
+            ("b_cycle", &cycle as &(dyn ToSql + Sync)),
+            ("b_backer", &self.m_block_backer as &(dyn ToSql + Sync)),
+            ("b_utxo_imported", &b_utxo_imported as &(dyn ToSql + Sync))]);
 
         dlog(
             &format!("--- recording block in DAG Block({})", cutils::hash8c(&self.m_block_hash)),
@@ -963,7 +967,7 @@ impl Block {
     pub fn searchInBlockExtInfo(
         clauses: &ClausesT,
         fields: &Vec<&str>,
-        order: &OrderT,
+        order: OrderT,
         limit: u32) -> QVDRecordsT
     {
         let (_status, records) = q_select(
@@ -1184,10 +1188,10 @@ impl Block {
         let cntnt = wrapSafeContentForDB(
             serializedBextInfo,
             constants::DEFAULT_CONTENT_VERSION.to_string());
-        let values: HashMap<&str, &str> = HashMap::from([
-            ("x_block_hash", block_hash.as_str()),
-            ("x_detail", cntnt.content.as_str()),
-            ("x_creation_date", creation_date.as_str())
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("x_block_hash", &block_hash as &(dyn ToSql + Sync)),
+            ("x_detail", &cntnt.content as &(dyn ToSql + Sync)),
+            ("x_creation_date", &creation_date as &(dyn ToSql + Sync))
         ]);
         dlog(
             &format!("--- recording bExtInfo in DAG Block({})", cutils::hash8c(block_hash)),

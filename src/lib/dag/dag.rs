@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, cutils};
 use crate::cutils::{arrayAdd, arrayUnique};
 use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
@@ -16,7 +17,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
                 STBL_BLOCKS,
                 &vec!["b_hash", "b_descendants"],
                 &vec![c1],
-                &vec![],
+                vec![],
                 1,
                 false);
 
@@ -34,8 +35,8 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
                 );
 
                 let b_descendants = final_descendants.join(",");
-                let update_values: HashMap<&str, &str> = HashMap::from([
-                    ("b_descendants", b_descendants.as_str())
+                let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+                    ("b_descendants", &b_descendants as &(dyn ToSql + Sync))
                 ]);
                 let c1 = simple_eq_clause("b_hash", &*a_block_hash);
                 q_update(
@@ -96,7 +97,7 @@ std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
 pub fn searchInDAG(
     clauses: &ClausesT,
     fields: &Vec<&str>,
-    order: &OrderT,
+    order: OrderT,
     limit: u32,
     do_log: bool) -> QVDRecordsT
 {
@@ -468,7 +469,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
     let latest_blocks: QVDRecordsT = searchInDAG(
         &vec![],
         &vec!["b_creation_date"],
-        &vec![
+        vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,
         false);
@@ -819,7 +820,7 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
             },
         ],
         &vec!["b_hash", "b_confidence", "b_ancestors"],
-        &vec![&OrderModifier { m_field: "b_confidence", m_order: "DESC" }],
+        vec![&OrderModifier { m_field: "b_confidence", m_order: "DESC" }],
         0,
         true);
 

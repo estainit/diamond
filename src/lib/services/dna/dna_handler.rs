@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::cutils::isGreaterThanNow;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::block::document_types::document::Document;
@@ -41,7 +42,7 @@ pub fn insertAShare(doc: &Document) -> (bool, String)
         STBL_DNA_SHARES,
         &vec!["dn_doc_hash"],
         &vec![simple_eq_clause("dn_doc_hash", single_value.as_str())],
-        &vec![],
+        vec![],
         1,
         false);
     if records.len() > 0
@@ -62,20 +63,20 @@ pub fn insertAShare(doc: &Document) -> (bool, String)
     let dn_votes_a= doc.m_if_proposal_doc.m_votes_abstain.to_string();
     let dn_votes_n= doc.m_if_proposal_doc.m_votes_no.to_string();
 
-    let values: HashMap<&str, &str> = HashMap::from([
-        ("dn_doc_hash", doc.m_doc_hash.as_str()),
-        ("dn_shareholder", doc.m_if_proposal_doc.m_contributor_account.as_str()),
-        ("dn_project_hash", doc.m_if_proposal_doc.m_project_hash.as_str()),
-        ("dn_help_hours", dn_help_hours.as_str()),
-        ("dn_help_level", dn_help_level.as_str()),
-        ("dn_shares", dn_shares.as_str()),
-        ("dn_title", doc.m_doc_title.as_str()),
-        ("dn_descriptions", doc.m_doc_comment.as_str()),
-        ("dn_tags", doc.m_doc_tags.as_str()),
-        ("dn_votes_y", dn_votes_y.as_str()),
-        ("dn_votes_a", dn_votes_a.as_str()),
-        ("dn_votes_n", dn_votes_n.as_str()),
-        ("dn_creation_date", doc.m_doc_creation_date.as_str())
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("dn_doc_hash", &doc.m_doc_hash as &(dyn ToSql + Sync)),
+        ("dn_shareholder", &doc.m_if_proposal_doc.m_contributor_account as &(dyn ToSql + Sync)),
+        ("dn_project_hash", &doc.m_if_proposal_doc.m_project_hash as &(dyn ToSql + Sync)),
+        ("dn_help_hours", &dn_help_hours as &(dyn ToSql + Sync)),
+        ("dn_help_level", &dn_help_level as &(dyn ToSql + Sync)),
+        ("dn_shares", &dn_shares as &(dyn ToSql + Sync)),
+        ("dn_title", &doc.m_doc_title as &(dyn ToSql + Sync)),
+        ("dn_descriptions", &doc.m_doc_comment as &(dyn ToSql + Sync)),
+        ("dn_tags", &doc.m_doc_tags as &(dyn ToSql + Sync)),
+        ("dn_votes_y", &dn_votes_y as &(dyn ToSql + Sync)),
+        ("dn_votes_a", &dn_votes_a as &(dyn ToSql + Sync)),
+        ("dn_votes_n", &dn_votes_n as &(dyn ToSql + Sync)),
+        ("dn_creation_date", &doc.m_doc_creation_date as &(dyn ToSql + Sync))
     ]);
 
     dlog(

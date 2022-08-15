@@ -19,7 +19,7 @@ pub type CMPAISValueT = i64;
 pub type CBlockHashT = String;
 pub type CDocHashT = String;
 pub type CAddressT = String;
-pub type CDocIndexT = i64;
+pub type CDocIndexT = i32;
 /*
 typedef String  CDocHashT;
 

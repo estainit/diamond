@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 pub const STBL_KVALUE: &str = "c_kvalue";
 pub const STBL_MACHINE_NEIGHBORS: &str = "c_machine_neighbors";
 pub const STBL_MACHINE_PROFILES: &str = "c_machine_profiles";
@@ -10,7 +12,31 @@ pub const STBL_MACHINE_WALLET_FUNDS: &str = "c_machine_wallet_funds";
 pub const STBL_MACHINE_WALLET_FUNDS_FIELDS: [&str; 11] = ["wf_id", "wf_mp_code", "wf_address", "wf_block_hash", "wf_trx_type", "wf_trx_hash", "wf_o_index", "wf_o_value", "wf_creation_date", "wf_mature_date", "wf_last_modified"];
 
 pub const STBL_BLOCKS: &str = "c_blocks";
-pub const STBL_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendants", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
+pub const STBL_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendents", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
+
+// pub fn get_field_types_map<'f>() -> HashMap<&'f str, &'f str> {
+//     let STBL_BLOCKS_FIELDS: HashMap<&str, &str> = HashMap::from([
+//         ("b_id", "bigint"),
+//         ("b_hash", "text"),
+//         ("b_type", "text"),
+//         ("b_cycle", "text"),
+//         ("b_confidence", "float"),
+//         ("b_ext_root_hash", "text"),
+//         ("b_docs_root_hash", "text"),
+//         ("b_signals", "text"),
+//         ("b_trxs_count", "int"),
+//         ("b_docs_count", "int"),
+//         ("b_ancestors_count", "int"),
+//         ("b_ancestors", "text"),
+//         ("b_descendants", "text"),
+//         ("b_body", "text"),
+//         ("b_creation_date", "text"),
+//         ("b_receive_date", "text"),
+//         ("b_confirm_date", "text"),
+//         ("b_backer", "text"),
+//         ("b_utxo_imported", "text")]);
+//     return STBL_BLOCKS_FIELDS;
+// }
 
 pub const STBL_BLOCK_EXTINFOS: &str = "c_block_extinfos";
 pub const STBL_BLOCK_EXTINFOS_FIELDS: [&str; 3] = ["x_block_hash", "x_detail", "x_creation_date"];
@@ -54,7 +80,7 @@ pub const STBL_SENDING_Q_FIELDS: [&str; 8] = ["sq_id", "sq_type", "sq_code", "sq
 pub const STBLDEV_SENDING_Q: &str = "cdev_sending_q";
 
 pub const STBL_MACHINE_BLOCK_BUFFER: &str = "c_machine_block_buffer";
-pub const STBL_MACHINE_BLOCK_BUFFER_FIELDS: [&str; 9] = ["bd_id", "bd_mp_code", "bd_insert_date"," bd_doc_hash", "bd_doc_type", "bd_doc_class", "bd_payload", "bd_dp_cost", "bd_doc_len"];
+pub const STBL_MACHINE_BLOCK_BUFFER_FIELDS: [&str; 9] = ["bd_id", "bd_mp_code", "bd_insert_date", " bd_doc_hash", "bd_doc_type", "bd_doc_class", "bd_payload", "bd_dp_cost", "bd_doc_len"];
 
 pub const STBL_MACHINE_ONCHAIN_CONTRACTS: &str = "c_machine_onchain_contracts";
 pub const STBL_MACHINE_ONCHAIN_CONTRACTS_FIELDS: [&str; 6] = ["lc_id", "lc_type", "lc_class", "lc_ref_hash", "lc_descriptions", "lc_body"];

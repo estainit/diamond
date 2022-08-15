@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::cutils;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
@@ -11,7 +12,7 @@ pub fn get_value(kv_key: &str) -> String
         STBL_KVALUE,
         &vec!["kv_value"],
         &vec![simple_eq_clause("kv_key", kv_key)],
-        &vec![],
+        vec![],
         0,
         true,
     );
@@ -38,7 +39,7 @@ bool KVHandler::deleteKey(const String &kvKey)
 pub fn search_in_kv(
     clauses: &ClausesT,
     fields: &Vec<&str>,
-    order: &OrderT,
+    order: OrderT,
     limit: LimitT) -> QVDRecordsT
 {
     let (status, records) = q_select(
@@ -76,9 +77,9 @@ pub fn upsert_kvalue(
     log: bool) -> bool
 {
     let dt = cutils::get_now();
-    let values: HashMap<&str, &str> =
-        [("kv_value", value),
-            ("kv_last_modified", &dt)]
+    let values: HashMap<&str, &(dyn ToSql + Sync)> =
+        [("kv_value", &value as &(dyn ToSql + Sync)),
+            ("kv_last_modified", &dt as &(dyn ToSql + Sync))]
             .iter().cloned().collect();
 
     return q_upsert(

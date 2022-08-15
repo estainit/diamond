@@ -487,7 +487,7 @@ pub fn doesDAGHasMoreConfidenceCB() -> bool
             },
         ],
         &vec!["b_hash", "b_confidence", "b_ancestors"],
-        &vec![],
+        vec![],
         0,
         false,
     );
@@ -846,7 +846,7 @@ pub fn tryCreateCoinbaseBlock() -> bool
                 },
             ],
             &vec!["b_hash"],
-            &vec![],
+            vec![],
             0,
             true);
         if existed_RpBlocks.len() > 0

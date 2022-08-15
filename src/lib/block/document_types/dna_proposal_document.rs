@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, constants, cutils, dlog};
@@ -16,9 +17,9 @@ pub struct DNAProposalDocument
     // "";//58be4875eaa3736f60622e26bda746fb81812e8d7ecad50a2c3f97f0605a662c
     pub m_approval_date: CDateT,
     pub m_contributor_account: CAddressT,
-    pub m_help_hours: u64,
-    pub m_help_level: u64,
-    pub m_shares: u64,
+    pub m_help_hours: i64,
+    pub m_help_level: i64,
+    pub m_shares: i64,
     pub m_votes_yes: u64,
     pub m_votes_abstain: u64,
     pub m_votes_no: u64,
@@ -47,8 +48,8 @@ impl DNAProposalDocument {
 
     pub fn setByJsonObj(&mut self, obj: &JSonObject) -> bool
     {
-        self.m_help_hours = obj["helpHours"].to_string().parse::<u64>().unwrap();
-        self.m_help_level = obj["helpLevel"].to_string().parse::<u64>().unwrap();
+        self.m_help_hours = obj["helpHours"].to_string().parse::<i64>().unwrap();
+        self.m_help_level = obj["helpLevel"].to_string().parse::<i64>().unwrap();
         self.m_project_hash = obj["projectHash"].to_string();
         self.m_contributor_account = obj["contributor"].to_string();
         self.m_polling_profile = obj["pollingProfile"].to_string();
@@ -443,7 +444,7 @@ impl DNAProposalDocument {
 
 
     pub fn update_proposal(
-        upd_values: &HashMap<&str, &str>,
+        upd_values: &HashMap<&str, &(dyn ToSql + Sync)>,
         clauses: &ClausesT,
         is_transactional: bool) -> (bool, String)
     {
@@ -479,7 +480,7 @@ impl DNAProposalDocument {
             STBL_PROPOSALS,
             &vec!["pr_hash"],
             &vec![simple_eq_clause("pr_hash", &*doc.m_doc_hash)],
-            &vec![],
+            vec![],
             0,
             true,
         );
@@ -491,26 +492,28 @@ impl DNAProposalDocument {
                 constants::SecLevel::Error);
         }
 
-        let pr_help_level = doc.m_if_proposal_doc.m_help_level.to_string();
-        let pr_help_hours=doc.m_if_proposal_doc.m_help_hours.to_string();
-        let pr_voting_timeframe=doc.m_if_proposal_doc.m_voting_timeframe.to_string();
-        let values: HashMap<&str, &str> = HashMap::from([
-            ("pr_hash", &*doc.m_doc_hash),
-            ("pr_type", &*doc.m_doc_type),
-            ("pr_class", &*doc.m_doc_class),
-            ("pr_version", &*doc.m_doc_version),
-            ("pr_title", &*doc.m_doc_title),
-            ("pr_descriptions", &*doc.m_doc_comment),
-            ("pr_tags", &*doc.m_doc_tags),
-            ("pr_project_id", &*doc.m_if_proposal_doc.m_project_hash),
-            ("pr_help_hours", pr_help_hours.as_str()),
-            ("pr_help_level", pr_help_level.as_str()),
-            ("pr_voting_timeframe", pr_voting_timeframe.as_str()),
-            ("pr_polling_profile", &*doc.m_if_proposal_doc.m_polling_profile),
-            ("pr_contributor_account", &*doc.m_if_proposal_doc.m_contributor_account),
-            ("pr_start_voting_date", &*block.m_block_creation_date),
-            ("pr_conclude_date", ""),
-            ("pr_approved", constants::NO)
+        let pr_help_level = doc.m_if_proposal_doc.m_help_level;
+        let pr_help_hours=doc.m_if_proposal_doc.m_help_hours;
+        let pr_voting_timeframe=doc.m_if_proposal_doc.m_voting_timeframe;
+        let pr_conclude_date="".to_string();
+        let pr_approved=constants::NO.to_string();
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("pr_hash", &doc.m_doc_hash as &(dyn ToSql + Sync)),
+            ("pr_type", &doc.m_doc_type as &(dyn ToSql + Sync)),
+            ("pr_class", &doc.m_doc_class as &(dyn ToSql + Sync)),
+            ("pr_version", &doc.m_doc_version as &(dyn ToSql + Sync)),
+            ("pr_title", &doc.m_doc_title as &(dyn ToSql + Sync)),
+            ("pr_descriptions", &doc.m_doc_comment as &(dyn ToSql + Sync)),
+            ("pr_tags", &doc.m_doc_tags as &(dyn ToSql + Sync)),
+            ("pr_project_id", &doc.m_if_proposal_doc.m_project_hash as &(dyn ToSql + Sync)),
+            ("pr_help_hours", &pr_help_hours as &(dyn ToSql + Sync)),
+            ("pr_help_level", &pr_help_level as &(dyn ToSql + Sync)),
+            ("pr_voting_timeframe", &pr_voting_timeframe as &(dyn ToSql + Sync)),
+            ("pr_polling_profile", &doc.m_if_proposal_doc.m_polling_profile as &(dyn ToSql + Sync)),
+            ("pr_contributor_account", &doc.m_if_proposal_doc.m_contributor_account as &(dyn ToSql + Sync)),
+            ("pr_start_voting_date", &block.m_block_creation_date as &(dyn ToSql + Sync)),
+            ("pr_conclude_date", &pr_conclude_date as &(dyn ToSql + Sync)),
+            ("pr_approved", &pr_approved as &(dyn ToSql + Sync))
         ]);
 
         q_insert(

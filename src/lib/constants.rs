@@ -51,7 +51,7 @@ namespace CConsts
   */
   pub const SOCIETY_NAME = "im";
   */
-pub(crate) const LAUNCH_DATE: &str = "2023-08-14 12:00:01";
+pub(crate) const LAUNCH_DATE: &str = "2023-08-15 12:00:01";
 /*
   const uint8_t TIME_GAIN = 10;  // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
    */

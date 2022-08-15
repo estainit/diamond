@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{QVDRecordsT, VVString};
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
@@ -157,15 +158,14 @@ pub fn preparePacketsForNeighbors(
 
 
         addSentBlock(&mut HashMap::from([
-            ("lb_type", sq_type),
-            ("lb_code", sq_code),
-            ("lb_title", sq_title),
-            ("lb_sender", sender.as_str()),
-            ("lb_send_date", cutils::get_now().as_str()),
-            ("lb_receiver", receiver_email.as_str()),
-            ("lb_connection_type", connection_type.as_str())
+            ("lb_type", &sq_type as &(dyn ToSql + Sync)),
+            ("lb_code", &sq_code as &(dyn ToSql + Sync)),
+            ("lb_title", &sq_title as &(dyn ToSql + Sync)),
+            ("lb_sender", &sender as &(dyn ToSql + Sync)),
+            ("lb_send_date", &cutils::get_now() as &(dyn ToSql + Sync)),
+            ("lb_receiver", &receiver_email as &(dyn ToSql + Sync)),
+            ("lb_connection_type", &connection_type as &(dyn ToSql + Sync))
         ]));
-
     }
     return packets;
 
@@ -214,7 +214,7 @@ pub fn pushIntoSendingQ(
                 simple_eq_clause("sq_sender", &packet[4]),
                 simple_eq_clause("sq_receiver", &packet[5]),
             ],
-            &vec![],
+            vec![],
             0,
             true,
         );
@@ -226,17 +226,18 @@ pub fn pushIntoSendingQ(
         if records.len() == 0
         {
             let now = cutils::get_now();
-            let values: HashMap<&str, &str> = HashMap::from([
-                ("sq_type", &*packet[2]),
-                ("sq_code", &*packet[3]),
-                ("sq_title", &*packet[1]),
-                ("sq_sender", &*packet[4]),
-                ("sq_receiver", &*packet[5]),
-                ("sq_connection_type", &*packet[0]),
-                ("sq_payload", &*packet[6]),
-                ("sq_send_attempts", "0"),
-                ("sq_creation_date", now.as_str()),
-                ("sq_last_modified", now.as_str())
+            let sq_send_attempts = "0".to_string();
+            let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+                ("sq_type", &packet[2] as &(dyn ToSql + Sync)),
+                ("sq_code", &packet[3] as &(dyn ToSql + Sync)),
+                ("sq_title", &packet[1] as &(dyn ToSql + Sync)),
+                ("sq_sender", &packet[4] as &(dyn ToSql + Sync)),
+                ("sq_receiver", &packet[5] as &(dyn ToSql + Sync)),
+                ("sq_connection_type", &packet[0] as &(dyn ToSql + Sync)),
+                ("sq_payload", &packet[6] as &(dyn ToSql + Sync)),
+                ("sq_send_attempts", &sq_send_attempts as &(dyn ToSql + Sync)),
+                ("sq_creation_date", &now as &(dyn ToSql + Sync)),
+                ("sq_last_modified", &now as &(dyn ToSql + Sync))
             ]);
             q_insert(
                 STBLDEV_SENDING_Q,
@@ -254,7 +255,7 @@ pub fn pushIntoSendingQ(
                         simple_eq_clause("sq_sender", &packet[4]),
                         simple_eq_clause("sq_receiver", &packet[5]),
                     ],
-                    &vec![],
+                    vec![],
                     0,
                     true);
 

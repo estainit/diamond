@@ -252,7 +252,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     b_hash varchar(256) UNIQUE NOT NULL,    -- block root hash
     b_type varchar(32) NOT NULL,    -- block type (genesis/coinbase/normal)
     b_cycle varchar(32) NOT NULL,    -- the coin base cycle
-    b_confidence decimal NULL,    -- if the block is coinbase it denots to percentage of share of signers
+    b_confidence DOUBLE PRECISION NULL,    -- if the block is coinbase it denots to percentage of share of signers
     b_ext_root_hash varchar(256) NULL,    -- it was ext_infos_root_hash segwits/zippedInfo... root hashes
     b_docs_root_hash varchar(256) NULL,    -- it was docs_root_hash documents root hash
     b_signals text NULL,    -- comma seperated signals
@@ -350,8 +350,8 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     pr_descriptions TEXT NULL,
     pr_tags TEXT NULL,
     pr_project_id varchar(256) NOT NULL,
-    pr_help_hours INT NOT NULL,
-    pr_help_level INT NOT NULL,
+    pr_help_hours INT8 NOT NULL,
+    pr_help_level INT8 NOT NULL,
     pr_voting_timeframe DOUBLE PRECISION NOT NULL,    --by hours
     pr_polling_profile varchar(32) NOT NULL,    -- vote counting method(Plurality, ...)
     pr_contributor_account varchar(128) NOT NULL,

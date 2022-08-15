@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
@@ -26,7 +27,7 @@ pub fn listSentBlocks(after_that_: &CDateT, fields: &Vec<&str>) -> QVDRecordsT
             m_clause_operand: ">=",
             m_field_multi_values: vec![],
         }],
-        &vec![],
+        vec![],
         0,
         true);
     if !status {
@@ -53,10 +54,10 @@ pub fn listSentBloksIds() -> Vec<String>
 }
 
 
-pub fn addSentBlock(values: &mut HashMap<&str, &str>) -> bool
+pub fn addSentBlock(values: &mut HashMap<&str, &(dyn ToSql + Sync)>) -> bool
 {
     dlog(
-        &format!("add SentBlock: {}", dump_hashmap_of_str_str(&values)),
+        &format!("add SentBlock: {:?}", &values),
         constants::Modules::App,
         constants::SecLevel::Trace);
 

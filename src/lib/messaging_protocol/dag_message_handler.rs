@@ -352,7 +352,7 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &String)
         let machine_request_status: QVDRecordsT = search_in_kv(
             &vec![simple_eq_clause("kv_key", "maybe_ask_for_latest_blocks")],
             &vec!["kv_last_modified"],
-            &vec![],
+            vec![],
             0);
         if machine_request_status.len() > 0{
             let invoke_age:TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
