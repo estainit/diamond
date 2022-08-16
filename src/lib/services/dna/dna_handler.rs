@@ -41,7 +41,7 @@ pub fn insertAShare(doc: &Document) -> (bool, String)
     let (_status, records) = q_select(
         STBL_DNA_SHARES,
         &vec!["dn_doc_hash"],
-        &vec![simple_eq_clause("dn_doc_hash", single_value.as_str())],
+        vec![simple_eq_clause("dn_doc_hash", single_value.as_str())],
         vec![],
         1,
         false);

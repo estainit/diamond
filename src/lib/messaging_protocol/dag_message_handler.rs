@@ -362,7 +362,7 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &str)
         }
 
         let machine_request_status: QVDRecordsT = search_in_kv(
-            &vec![simple_eq_clause("kv_key", "maybe_ask_for_latest_blocks")],
+            vec![simple_eq_clause("kv_key", "maybe_ask_for_latest_blocks")],
             &vec!["kv_last_modified"],
             vec![],
             0);

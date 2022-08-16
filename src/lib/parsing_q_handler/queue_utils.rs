@@ -174,7 +174,7 @@ use crate::lib::database::abs_psql::{pre_query_generator, q_customQuery, q_selec
 use crate::lib::database::tables::STBL_PARSING_Q;
 
 pub fn searchParsingQ(
-    clauses: &ClausesT,
+    clauses: ClausesT,
     fields: &Vec<&str>,
     order: OrderT,
     limit: LimitT) -> QVDRecordsT

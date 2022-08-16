@@ -45,7 +45,7 @@ impl CMachine {
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_mp_code", "n_email"],
-            &vec![
+            vec![
                 simple_eq_clause("n_mp_code", &*mp_code),
                 simple_eq_clause("n_connection_type", &*connection_type),
                 simple_eq_clause("n_email", &*neighbor_email),
@@ -73,7 +73,7 @@ impl CMachine {
                 q_update(
                     STBL_MACHINE_NEIGHBORS,
                     &values,
-                    &clauses,
+                    clauses,
                     true);
                 return (true, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) updated"));
             } else {
@@ -143,7 +143,7 @@ impl CMachine {
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_email", "n_pgp_public_key", "n_connection_type"],
-            &vec![
+            vec![
                 simple_eq_clause("n_is_active", constants::YES),
                 simple_eq_clause("n_mp_code", mp_code)],
             vec![&OrderModifier { m_field: "n_connection_type", m_order: "DESC" }],
@@ -186,7 +186,7 @@ impl CMachine {
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
             &vec!["n_id", "n_email", "n_pgp_public_key", "n_connection_type"],
-            &clauses,
+            clauses,
             vec![
                 &OrderModifier { m_field: "n_connection_type", m_order: "DESC" },
             ],

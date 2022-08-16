@@ -101,7 +101,7 @@ pub fn retrieveProperBlocks(c_date: &CDateT) -> QVDRecordsT
         }
     }
     let records: QVDRecordsT = searchInDAG(
-        &clauses,
+        clauses,
         &vec!["b_hash", "b_body"],
         vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },

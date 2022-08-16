@@ -208,7 +208,9 @@ impl CMachine {
         let cycleByMinutes = cutils::get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if !force_to_control_based_on_dag_status &&
-            (lastSyncStatusObj["checkDate"].to_string() > cutils::minutes_before((cycleByMinutes / 24), &cutils::get_now())) {
+            (lastSyncStatusObj["checkDate"].to_string() > cutils::minutes_before(
+                cycleByMinutes / 24,
+                &cutils::get_now())) {
             let is_in_sync: bool = lastSyncStatusObj["lastDAGBlockCreationDate"].to_string() < cutils::minutes_before(2 * cycleByMinutes, &cutils::get_now());
             self.set_is_in_sync_process(is_in_sync, &cutils::get_now());
             return is_in_sync;
@@ -949,7 +951,7 @@ impl CMachine {
         let (_status, records) = q_select(
             STBL_MACHINE_PROFILES,
             &vec!["mp_code", "mp_name", "mp_settings"],
-            &vec![
+            vec![
                 simple_eq_clause("mp_code", &*mp_code)],
             vec![],
             0,
@@ -1082,18 +1084,18 @@ impl CMachine {
             true);
     }
 
-    pub fn addSeedNeighbors(&self)->bool
+    pub fn addSeedNeighbors(&self) -> bool
     {
         self.add_a_new_neighbor(
-          "seed1@seed.pro".to_string(),
-          constants::PUBLIC.to_string(),
-          "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
-          constants::DEFAULT.to_string(),
-          constants::YES.to_string(),
-          NeighborInfo::new(),
-          cutils::get_now());
+            "seed1@seed.pro".to_string(),
+            constants::PUBLIC.to_string(),
+            "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
+            constants::DEFAULT.to_string(),
+            constants::YES.to_string(),
+            NeighborInfo::new(),
+            cutils::get_now());
 
-      return true;
+        return true;
     }
 
     pub fn getLastSyncStatus(&self) -> JSonObject

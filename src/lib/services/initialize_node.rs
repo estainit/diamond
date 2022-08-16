@@ -14,7 +14,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
     let (status, records) = q_select(
         STBL_BLOCKS,
         &vec!["b_id", "b_hash"],     // fields
-        &vec![
+        vec![
             simple_eq_clause( "b_type", constants::block_types::Genesis)],
         vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },

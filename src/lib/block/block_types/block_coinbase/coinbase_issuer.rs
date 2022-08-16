@@ -477,7 +477,7 @@ pub fn doesDAGHasMoreConfidenceCB() -> bool
     let current_cycle_range_from: CDateT = cutils::get_coinbase_range(&cutils::get_now()).from;
 
     let already_recorded_coinbase_blocks: QVDRecordsT = searchInDAG(
-        &vec![
+        vec![
             simple_eq_clause("b_type", constants::block_types::Coinbase),
             ModelClause {
                 m_field_name: "b_creation_date",
@@ -836,7 +836,7 @@ pub fn tryCreateCoinbaseBlock() -> bool
     {
         // try to remove repayBack blocks
         let existed_RpBlocks: QVDRecordsT = searchInDAG(
-            &vec![
+            vec![
                 simple_eq_clause("b_type", constants::block_types::RpBlock),
                 ModelClause {
                     m_field_name: "b_hash",

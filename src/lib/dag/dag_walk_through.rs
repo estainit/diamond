@@ -12,7 +12,7 @@ use crate::lib::database::tables::STBL_BLOCKS_FIELDS;
 pub fn getLatestBlockRecord() -> (bool, Block)
 {
     let last_recorded_bLock: QVDRecordsT = searchInDAG(
-        &vec![],
+        vec![],
         &STBL_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,

@@ -47,7 +47,7 @@ impl MachineProfile {
         let (_status, records) = q_select(
             STBL_MACHINE_PROFILES,
             &vec!["mp_code", "mp_name", "mp_settings"],
-            &vec![
+            vec![
                 simple_eq_clause("mp_code", mp_code)],
             vec![],   // order
             1,

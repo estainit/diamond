@@ -445,7 +445,7 @@ impl DNAProposalDocument {
 
     pub fn update_proposal(
         upd_values: &HashMap<&str, &(dyn ToSql + Sync)>,
-        clauses: &ClausesT,
+        clauses: ClausesT,
         is_transactional: bool) -> (bool, String)
     {
         q_update(
@@ -479,7 +479,7 @@ impl DNAProposalDocument {
         let (_status, records) = q_select(
             STBL_PROPOSALS,
             &vec!["pr_hash"],
-            &vec![simple_eq_clause("pr_hash", &*doc.m_doc_hash)],
+            vec![simple_eq_clause("pr_hash", &*doc.m_doc_hash)],
             vec![],
             0,
             true,

@@ -27,6 +27,7 @@ pub struct OrderModifier<'l>
     // OrderModifier( const String & field, const String & order);
 }
 
+#[derive(Clone)]
 pub struct ModelClause<'l>
 {
     pub m_field_name: &'l str,
@@ -143,13 +144,13 @@ const QSDicT DbModel::s_map_table_to_db = {
 pub fn q_select(
     table: &str,
     fields: &Vec<&str>,
-    clauses: &ClausesT,
+    clauses: ClausesT,
     order: OrderT,
     limit: LimitT,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     return exec_query(
-        &prepare_to_select(table, fields, clauses, order, limit),
+        &prepare_to_select(table, fields, &clauses, order, limit),
         do_log);//, lockDb, log);
 }
 
@@ -169,10 +170,10 @@ pub fn prepare_to_select<'e>(
 
 pub fn q_delete(
     table: &str,
-    clauses: &ClausesT,
+    clauses: ClausesT,
     do_log: bool) -> bool
 {
-    let (_complete_query, query_elements) = prepareToDelete(table, clauses);
+    let (_complete_query, query_elements) = prepareToDelete(table, &clauses);
     let (status, _records) = exec_query(&query_elements, do_log);
     return status;
 }
@@ -194,8 +195,6 @@ pub fn clauses_query_generator<'e>(
     clauses: &'e ClausesT,
 ) -> (String, Vec<&'e (dyn ToSql + Sync)>)
 {
-    // println!("in clauses_ query_ generator clauses: {:?}", dump_clauses(clauses));
-
     let mut values_: Vec<&(dyn ToSql + Sync)> = vec![];
     let mut clauses_: String = "".to_string();
     let _val_arr: Vec<String>;
@@ -217,10 +216,10 @@ pub fn clauses_query_generator<'e>(
                 if a_clause_tuple.m_field_multi_values.len() == 0
                 {
                     dlog(
-                        &format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(clauses)),
+                        &format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(&clauses)),
                         constants::Modules::Sql,
                         constants::SecLevel::Fatal);
-                    panic!("{}", format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(clauses)));
+                    panic!("{}", format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(&clauses)));
                 }
 
                 let mut tmp_placeholders: Vec<String> = vec![];
@@ -256,9 +255,9 @@ pub fn pre_query_generator<'e>(
     order_: OrderT,
     limit_: LimitT) -> QueryElements<'e>
 {
-    let (mut clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
-    if clauses.len() > 0 {
-        clauses = " WHERE ".to_owned() + &clauses;
+    let (mut concatenated_clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
+    if concatenated_clauses.len() > 0 {
+        concatenated_clauses = " WHERE ".to_owned() + &concatenated_clauses;
     }
 
     let mut order: String = "".to_string();
@@ -275,13 +274,14 @@ pub fn pre_query_generator<'e>(
         limit = format!(" LIMIT {} ", limit_);
     }
 
-    return QueryElements {
-        m_clauses: clauses,
+    let q_elements: QueryElements = QueryElements {
+        m_clauses: concatenated_clauses,
         m_params: values_,
         m_order: order,
         m_limit: limit,
         m_complete_query: "".to_string(),
     };
+    q_elements
 }
 
 pub fn q_customQuery(
@@ -707,7 +707,7 @@ pub fn q_upsert(
     let (status, records) = q_select(
         table,
         &vec![controlled_field],     // fields
-        &clauses, //clauses
+        clauses.clone(), //clauses
         vec![],   // order
         1,   // limit
         do_log,
@@ -720,7 +720,7 @@ pub fn q_upsert(
         q_update(
             table,
             values, // update values
-            &clauses,  // update clauses
+            clauses,  // update clauses
             do_log);
 
         return true;
@@ -771,10 +771,10 @@ pub fn prepare_to_update<'e>(
 pub fn q_update(
     table: &str,
     update_values: &HashMap<&str, &(dyn ToSql + Sync)>,
-    update_clauses: &ClausesT,
+    update_clauses: ClausesT,
     do_log: bool) -> bool
 {
-    let query_elements = prepare_to_update(table, update_values, update_clauses);
+    let query_elements = prepare_to_update(table, update_values, &update_clauses);
     let _upd_res = exec_query(
         &query_elements,
         do_log);

@@ -215,7 +215,7 @@ pub fn pushIntoSendingQ(
         let (_status, records) = q_select(
             STBL_SENDING_Q,
             &vec!["sq_type", "sq_code"],
-            &vec![
+            vec![
                 simple_eq_clause("sq_type", &packet[2]),
                 simple_eq_clause("sq_code", &packet[3]),
                 simple_eq_clause("sq_sender", &packet[4]),
@@ -256,7 +256,7 @@ pub fn pushIntoSendingQ(
                 let (_status, records) = q_select(
                     STBLDEV_SENDING_Q,
                     &vec!["sq_type", "sq_code"],
-                    &vec![
+                    vec![
                         simple_eq_clause("sq_type", &packet[2]),
                         simple_eq_clause("sq_code", &packet[3]),
                         simple_eq_clause("sq_sender", &packet[4]),
@@ -300,7 +300,7 @@ pub fn cancelIvokeBlockRequest(block_hash: &CBlockHashT)
 {
     q_delete(
         STBL_SENDING_Q,
-        &vec![
+        vec![
             simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK),
             simple_eq_clause("sq_code", block_hash),
         ],
@@ -314,7 +314,7 @@ pub fn maybeCancelIvokeBlocksRequest()
     let (status, records) = q_select(
         STBL_SENDING_Q,
         &vec!["sq_code"],
-        &vec![simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK)],
+        vec![simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK)],
         vec![],
         1,
         false,
@@ -338,7 +338,7 @@ pub fn maybeCancelIvokeBlocksRequest()
 
     let hashes = hashes.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
     let existed_in_DAG: QVDRecordsT = searchInDAG(
-        &vec![ModelClause {
+        vec![ModelClause {
             m_field_name: "b_hash",
             m_field_single_str_value: "",
             m_clause_operand: "IN",
@@ -361,7 +361,7 @@ pub fn maybeCancelIvokeBlocksRequest()
 
     // remove existed in parsing q
     let existed_in_parsing_queue: QVDRecordsT = searchParsingQ(
-        &vec![ModelClause {
+        vec![ModelClause {
             m_field_name: "pq_code",
             m_field_single_str_value: "",
             m_clause_operand: "IN",
