@@ -15,7 +15,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
             let c1 = simple_eq_clause("b_hash", &*a_block_hash);
             let (_status, records) = q_select(
                 STBL_BLOCKS,
-                &vec!["b_hash", "b_descendants"],
+                vec!["b_hash", "b_descendants"],
                 vec![c1],
                 vec![],
                 1,
@@ -96,7 +96,7 @@ std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
 */
 pub fn searchInDAG(
     clauses: ClausesT,
-    fields: &Vec<&str>,
+    fields: Vec<&str>,
     order: OrderT,
     limit: u32,
     do_log: bool) -> QVDRecordsT
@@ -468,7 +468,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
 
     let latest_blocks: QVDRecordsT = searchInDAG(
         vec![],
-        &vec!["b_creation_date"],
+        vec!["b_creation_date"],
         vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,
@@ -819,7 +819,7 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
                 m_field_multi_values: vec![],
             },
         ],
-        &vec!["b_hash", "b_confidence", "b_ancestors"],
+        vec!["b_hash", "b_confidence", "b_ancestors"],
         vec![&OrderModifier { m_field: "b_confidence", m_order: "DESC" }],
         0,
         true);

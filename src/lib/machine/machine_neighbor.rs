@@ -44,7 +44,7 @@ impl CMachine {
 
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
-            &vec!["n_mp_code", "n_email"],
+            vec!["n_mp_code", "n_email"],
             vec![
                 simple_eq_clause("n_mp_code", &*mp_code),
                 simple_eq_clause("n_connection_type", &*connection_type),
@@ -142,7 +142,7 @@ impl CMachine {
     {
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
-            &vec!["n_email", "n_pgp_public_key", "n_connection_type"],
+            vec!["n_email", "n_pgp_public_key", "n_connection_type"],
             vec![
                 simple_eq_clause("n_is_active", constants::YES),
                 simple_eq_clause("n_mp_code", mp_code)],
@@ -185,7 +185,7 @@ impl CMachine {
 
         let (_status, records) = q_select(
             STBL_MACHINE_NEIGHBORS,
-            &vec!["n_id", "n_email", "n_pgp_public_key", "n_connection_type"],
+            vec!["n_id", "n_email", "n_pgp_public_key", "n_connection_type"],
             clauses,
             vec![
                 &OrderModifier { m_field: "n_connection_type", m_order: "DESC" },

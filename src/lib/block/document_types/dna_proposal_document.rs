@@ -478,7 +478,7 @@ impl DNAProposalDocument {
         // record in c_proposals (i_proposal)
         let (_status, records) = q_select(
             STBL_PROPOSALS,
-            &vec!["pr_hash"],
+            vec!["pr_hash"],
             vec![simple_eq_clause("pr_hash", &*doc.m_doc_hash)],
             vec![],
             0,

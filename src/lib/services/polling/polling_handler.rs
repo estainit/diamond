@@ -204,7 +204,7 @@ pub fn initPollingProfiles()
 
     let (_status, records) = q_select(
         STBL_POLLING_PROFILES,
-        &vec!["ppr_name"],
+        vec!["ppr_name"],
         vec![simple_eq_clause("ppr_name", "Basic", // POLLING_PROFILE_CLASSES["Basic"]["ppName"].to_string(),
         )],
         vec![],

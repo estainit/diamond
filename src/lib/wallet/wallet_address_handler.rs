@@ -57,7 +57,7 @@ pub fn search_wallet_addresses(
 
     let (status, records) = q_select(
         STBL_MACHINE_WALLET_ADDRESSES,
-        &fields,
+        fields,
         clauses,
         vec![],
         0,

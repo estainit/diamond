@@ -214,7 +214,7 @@ pub fn pushIntoSendingQ(
 
         let (_status, records) = q_select(
             STBL_SENDING_Q,
-            &vec!["sq_type", "sq_code"],
+            vec!["sq_type", "sq_code"],
             vec![
                 simple_eq_clause("sq_type", &packet[2]),
                 simple_eq_clause("sq_code", &packet[3]),
@@ -255,7 +255,7 @@ pub fn pushIntoSendingQ(
             {
                 let (_status, records) = q_select(
                     STBLDEV_SENDING_Q,
-                    &vec!["sq_type", "sq_code"],
+                    vec!["sq_type", "sq_code"],
                     vec![
                         simple_eq_clause("sq_type", &packet[2]),
                         simple_eq_clause("sq_code", &packet[3]),
@@ -313,7 +313,7 @@ pub fn maybeCancelIvokeBlocksRequest()
     // TODO: optimize it
     let (status, records) = q_select(
         STBL_SENDING_Q,
-        &vec!["sq_code"],
+        vec!["sq_code"],
         vec![simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK)],
         vec![],
         1,
@@ -344,7 +344,7 @@ pub fn maybeCancelIvokeBlocksRequest()
             m_clause_operand: "IN",
             m_field_multi_values: hashes.clone(),
         }],
-        &vec!["b_hash"],
+        vec!["b_hash"],
         vec![],
         0,
         false,
@@ -367,7 +367,7 @@ pub fn maybeCancelIvokeBlocksRequest()
             m_clause_operand: "IN",
             m_field_multi_values: hashes,
         }],
-        &vec!["pq_code"],
+        vec!["pq_code"],
         vec![],
         0,
     );

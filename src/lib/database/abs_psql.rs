@@ -143,14 +143,14 @@ const QSDicT DbModel::s_map_table_to_db = {
 
 pub fn q_select(
     table: &str,
-    fields: &Vec<&str>,
+    fields: Vec<&str>,
     clauses: ClausesT,
     order: OrderT,
     limit: LimitT,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     return exec_query(
-        &prepare_to_select(table, fields, &clauses, order, limit),
+        &prepare_to_select(table, &fields, &clauses, order, limit),
         do_log);//, lockDb, log);
 }
 
@@ -706,7 +706,7 @@ pub fn q_upsert(
     // controll if the record already existed
     let (status, records) = q_select(
         table,
-        &vec![controlled_field],     // fields
+        vec![controlled_field],     // fields
         clauses.clone(), //clauses
         vec![],   // order
         1,   // limit

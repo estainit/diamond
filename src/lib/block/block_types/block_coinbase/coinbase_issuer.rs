@@ -486,7 +486,7 @@ pub fn doesDAGHasMoreConfidenceCB() -> bool
                 m_field_multi_values: vec![],
             },
         ],
-        &vec!["b_hash", "b_confidence", "b_ancestors"],
+        vec!["b_hash", "b_confidence", "b_ancestors"],
         vec![],
         0,
         false,
@@ -845,7 +845,7 @@ pub fn tryCreateCoinbaseBlock() -> bool
                     m_field_multi_values: ancestors_diff.iter().map(|x| x.as_str()).collect::<Vec<&str>>(),
                 },
             ],
-            &vec!["b_hash"],
+            vec!["b_hash"],
             vec![],
             0,
             true);

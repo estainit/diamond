@@ -170,12 +170,12 @@ bool ParsingQHandler::appendPrerequisites(
 */
 
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
-use crate::lib::database::abs_psql::{pre_query_generator, q_customQuery, q_select, QueryElements};
+use crate::lib::database::abs_psql::{q_customQuery, q_select, QueryElements};
 use crate::lib::database::tables::STBL_PARSING_Q;
 
 pub fn searchParsingQ(
     clauses: ClausesT,
-    fields: &Vec<&str>,
+    fields: Vec<&str>,
     order: OrderT,
     limit: LimitT) -> QVDRecordsT
 {

@@ -10,7 +10,7 @@ pub fn get_value(kv_key: &str) -> String
 {
     let (status, records) = q_select(
         STBL_KVALUE,
-        &vec!["kv_value"],
+        vec!["kv_value"],
         vec![simple_eq_clause("kv_key", kv_key)],
         vec![],
         0,
@@ -38,7 +38,7 @@ bool KVHandler::deleteKey(const String &kvKey)
 */
 pub fn search_in_kv(
     clauses: ClausesT,
-    fields: &Vec<&str>,
+    fields: Vec<&str>,
     order: OrderT,
     limit: LimitT) -> QVDRecordsT
 {

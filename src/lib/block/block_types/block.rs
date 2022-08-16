@@ -722,7 +722,7 @@ impl Block {
         // duplicate check
         let (_status, records) = q_select(
             STBL_BLOCKS,
-            &vec!["b_hash"],     // fields
+            vec!["b_hash"],     // fields
             vec![
                 simple_eq_clause("b_hash", &self.m_block_hash),
             ],
@@ -968,7 +968,7 @@ impl Block {
 
     pub fn searchInBlockExtInfo(
         clauses: ClausesT,
-        fields: &Vec<&str>,
+        fields: Vec<&str>,
         order: OrderT,
         limit: u32) -> QVDRecordsT
     {
