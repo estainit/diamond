@@ -55,117 +55,151 @@ CPGP::CPGP()
 
 }
 */
-pub fn encryptPGP(
-    message: &str,
-    sender_priv_key: &str,
-    receiver_pub_key: &str,
-    secret_key: &str,
+use serde_json::json;
+use crate::{ccrypto, constants, cutils, dlog};
+use crate::lib::custom_types::JSonObject;
+use crate::lib::utils::compressor::compress;
+
+//old_name_was encryptPGP
+pub fn encrypt_pgp(
+    message: &String,
+    sender_priv_key: &String,
+    receiver_pub_key: &String,
+    secret_key_: &String,
     initialization_vector: &str,
     should_compress: bool,
     should_sign: bool) -> (bool, String)
 {
-    return (true, "".to_string());
-    /*
-      String pgp_versaion = "0.0.1";
+    let pgp_versaion = "0.0.1";
 
-      // base64 encoding
-      String base64Encoded = ccrypto::base64Encode(message);
+    // base64 encoding
+    let b64_encoded_msg = ccrypto::b64_encode(message);
 
-      String signature = "";
-      if (should_sign) {
-        signature = ccrypto::nativeSign(sender_priv_key, ccrypto::keccak256(base64Encoded));
-      }
-      JSonObject Jmsg_plus_signature {
-        {"sigVersion", "0.0.2"},
-        {"isSigned", (should_sign ? String::fromStdString("true") : String::fromStdString("false"))}, //  // this version denotes to used hashing and signature
-        {"message", base64Encoded},
-        {"signature", signature }};
+    let mut signature: String = "".to_string();
+    if should_sign {
+        let (status, the_signature) = ccrypto::rsa_sign(
+            &sender_priv_key,
+            &ccrypto::keccak256(&*b64_encoded_msg),
+        );
+        if !status {
+            dlog(
+                &format!("Failed in RSA signing the msg: {}", message),
+                constants::Modules::App,
+                constants::SecLevel::Fatal);
+            return (false, "Failed in RSA signing the in CPGP!".to_string());
+        }
+        signature = the_signature;
+    }
 
-      String msg_plus_signature = cutils::serializeJson(Jmsg_plus_signature);
-      CLog::log("msg_plus_signature: " + msg_plus_signature, "app", "trace");
+    let mut is_signed = "false".to_string();
+    if should_sign {
+        is_signed = "true".to_string();
+    }
 
-      String compressed;
-      if (should_compress)
-      {
-        JSonObject Jcompressed {
-          {"zipVersion", "0.0.0"},
-          {"zipAlgorithm", "zip..."},
-          {"isCompressed", "true"},
-          {"message", Compressor::compress(msg_plus_signature)}}; // TODO: implementing compress function
-        compressed = cutils::serializeJson(Jcompressed);
-      }
-      else
-      {
-        JSonObject Jcompressed {
-          {"isCompressed", "false"},
-        {"message", msg_plus_signature}};
-        compressed = cutils::serializeJson(Jcompressed);
-      }
-      CLog::log("compressed1: " + compressed, "app", "trace");
+    let mut j_msg_plus_signature: JSonObject = json!({
+        "sigVersion": "0.0.2",
+        "isSigned": is_signed, //  // this version denotes to used hashing and signature
+        "message": b64_encoded_msg,
+        "signature": signature });
 
-      String pgpRes = "";
+    let msg_plus_signature: String = cutils::serializeJson(&j_msg_plus_signature);
+    dlog(
+        &format!("msg_plus_signature: {}", msg_plus_signature),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
 
-      if (receiver_pub_key == "")
-      {
+    let mut compressed: String = "".to_string();
+    if should_compress {
+        let json_compressed: JSonObject = json!({
+        "zipVersion": "0.0.0",
+        "zipAlgorithm": "zip...",
+        "isCompressed": "true",
+        "message": compress(&msg_plus_signature)}); // TODO: implementing compress function
+        compressed = cutils::serializeJson(&json_compressed);
+    } else {
+        let json_compressed: JSonObject = json!({
+            "isCompressed": "false",
+            "message": msg_plus_signature});
+        compressed = cutils::serializeJson(&json_compressed);
+    }
+    dlog(
+        &format!("compressed 1: {}", compressed),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    let mut pgp_response: String = "".to_string();
+
+    let mut secret_key: String = secret_key_.clone();
+    if receiver_pub_key == ""
+    {
         // there is no pub key, so ther is no sence to encryption
-        JSonObject JpgpRes {
-          {"iPGPVersion", pgp_versaion},
-          {"secretKey", CConsts::MESSAGE_TAGS::NO_ENCRYPTION},
-          {"message", compressed}, // to support javascript nodes, maybe need to use \"compresses\"
-          {"isAuthenticated", "false"}};
+        let j_pgp_res: JSonObject = json!({
+          "iPGPVersion": pgp_versaion,
+          "secretKey": constants::message_tags::NO_ENCRYPTION,
+          "message": compressed,
+          "isAuthenticated": "false"});
 
-        pgpRes = cutils::serializeJson(JpgpRes);
-
-      } else {
-        if (secret_key == "")
-          secret_key = ccrypto::getRandomNumber(32);
-        if (initialization_vector == "")
-          initialization_vector = ccrypto::getRandomNumber(16);
+        pgp_response = cutils::serializeJson(&j_pgp_res);
+    } else {
+        /*
+        if secret_key == "" {
+            secret_key = ccrypto::get_random_number(32);
+        }
+        if initialization_vector == "" {
+            initialization_vector = ccrypto::getRandomNumber(16);
+        }
 
         secret_key = secret_key.midRef(0, 32).toString();
         initialization_vector = initialization_vector.midRef(0, 16).toString();
 
         // conventional symmetric encryption
-        auto[aes_status, aesEncoded] = ccrypto::AESencrypt(
-          compressed,
-          secret_key,
-          initialization_vector);
+        auto
+        [aes_status, aesEncoded] = ccrypto::AESencrypt(
+            compressed,
+            secret_key,
+            initialization_vector);
 
-        if (!aes_status)
-          return {false, "failed in AESencrypt"};
-        String pgp_encrypted_secret_key, pgp_encrypted_iv;
-        if (CConsts::CURRENT_AES_VERSION == "0.0.0")
-        {
-          pgp_encrypted_secret_key = CConsts::MESSAGE_TAGS::NO_ENCRYPTION;
-          pgp_encrypted_iv = "";
-        }else{
-          pgp_encrypted_secret_key = ccrypto::encryptStringWithPublicKey(
+        if !aes_status {
+            return (false, "failed in AESencrypt".to_string());
+        }
+
+        let pgp_encrypted_secret_key = ccrypto::encryptStringWithPublicKey(
             receiver_pub_key,
             secret_key);
 
-          pgp_encrypted_iv = ccrypto::encryptStringWithPublicKey(
+        let pgp_encrypted_iv: String = ccrypto::encryptStringWithPublicKey(
             receiver_pub_key,
             initialization_vector);
-        }
-        JSonObject JaesEncoded {
-          {"aesVersion", CConsts::CURRENT_AES_VERSION},
-          {"encrypted", aesEncoded}};
 
-        JSonObject JpgpRes {
-          {"iPGPVersion", pgp_versaion},
-          {"secretKey", pgp_encrypted_secret_key},
-          {"iv", pgp_encrypted_iv},
-          {"message", JaesEncoded},
-          {"isAuthenticated", "true"}};
+        let JaesEncoded: JSonObject = json!({
+            "aesVersion":constants::CURRENT_AES_VERSION,
+            "encrypted": aesEncoded});
 
-        pgpRes = cutils::serializeJson(JpgpRes);
-      }
-      CLog::log("pgpRes: " + pgpRes, "app", "trace");
 
-      // base64 encoding
-      return {true, ccrypto::base64Encode(pgpRes)};
-    */
+         */
+
+        let pgp_encrypted_secret_key = "DUMMY VALUE, remove ASAP".to_string();
+        let pgp_encrypted_iv = "DUMMY VALUE, remove ASAP".to_string();
+        let JaesEncoded = "DUMMY VALUE, remove ASAP".to_string();
+
+        let j_pgp_res: JSonObject = json!({
+        "iPGPVersion": pgp_versaion,
+        "secretKey": pgp_encrypted_secret_key ,
+        "iv": pgp_encrypted_iv ,
+        "message": JaesEncoded ,
+        "isAuthenticated": "true"});
+
+        pgp_response = cutils::serializeJson(&j_pgp_res);
+    }
+    dlog(
+        &format!("pgp_response: {}", pgp_response),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    // base64 encoding the final message
+    return (true, ccrypto::b64_encode(&pgp_response));
 }
+
 /*
 
 CPGPMessage CPGP::decryptPGP(

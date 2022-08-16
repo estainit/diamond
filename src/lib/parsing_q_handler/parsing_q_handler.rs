@@ -1,7 +1,4 @@
 /*
-const String ParsingQHandler::stbl_parsing_q = "c_parsing_q";
-const StringList ParsingQHandler::stbl_parsing_q_fields = {"pq_id", "pq_type", "pq_code", "pq_sender", "pq_connection_type", "pq_receive_date", "pq_payload", "pq_prerequisites", "pq_parse_attempts", "pq_v_status", "pq_creation_date", "pq_insert_date", "pq_last_modified"};
-const String ParsingQHandler::stbldev_parsing_q = "cdev_parsing_q";
 
 void ParsingQHandler::loopSmartPullFromParsingQ()
 {
@@ -378,7 +375,7 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
 
 //    listener.doCallSync('SPSH_after_insert_packet_in_q', args);
 
-    if (CMachine::isDevelopMod())
+    if (CMachine::is_develop_mod())
       DbModel::insert(
         stbldev_parsing_q,
         values,

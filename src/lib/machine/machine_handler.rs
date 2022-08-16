@@ -144,7 +144,7 @@ impl CMachine {
         // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;    // FIXME: this value must be defined by command line
-        let mut is_develop_mod: bool = false;
+        let mut is_develop_mod: bool = true;
 
 
         if args.len() > 1 {
@@ -186,7 +186,7 @@ impl CMachine {
     pub fn is_in_sync_process(&mut self, force_to_control_based_on_dag_status: bool) -> bool
     {
         // return false;//FIXME: remove this line after finishing develop
-        //  put LAST_SYNC_STATUS in CMachine as a static member
+        //  put last_sync_status in CMachine as a static member
         if !self.m_is_in_sync_process {
             return false;
         }
@@ -197,10 +197,10 @@ impl CMachine {
             return self.m_is_in_sync_process;
         }
 
-        let mut lastSyncStatus = get_value("LAST_SYNC_STATUS");
+        let mut lastSyncStatus = get_value("last_sync_status");
         if lastSyncStatus == "" {
             self.initLastSyncStatus();
-            lastSyncStatus = get_value("LAST_SYNC_STATUS");
+            lastSyncStatus = get_value("last_sync_status");
         }
         let mut lastSyncStatusObj: JSonObject = cutils::parseToJsonObj(&lastSyncStatus);
 
@@ -231,7 +231,7 @@ impl CMachine {
             if is_in_sync_process {
                 lastSyncStatusObj["lastTimeMachineWasInSyncMode"] = cutils::get_now().into();
             }
-            upsert_kvalue("LAST_SYNC_STATUS", &cutils::serializeJson(&lastSyncStatusObj), false);
+            upsert_kvalue("last_sync_status", &cutils::serializeJson(&lastSyncStatusObj), false);
             self.set_is_in_sync_process(is_in_sync_process, &cutils::get_now());
             return is_in_sync_process;
         }
@@ -250,13 +250,6 @@ impl CMachine {
         self.m_threads_status.insert((thread_prefix.to_string() + &thread_code).clone(), thread_status.clone());
         self.m_map_thread_code_to_prefix.insert(thread_code.clone(), thread_prefix.clone());
     }
-
-
-//
-// trait Booting{
-//     fn parse_args(self, args: Vec<String>, manual_clone_id: i8);
-//     fn set_clone_dev(self, clone_id: i8, is_develop_mod: bool) -> bool;
-// }
 
 
     /*
@@ -479,10 +472,10 @@ impl CMachine {
         return self.m_databases_are_created;
     }
 
-
-    pub fn isDevelopMod(&self) -> bool
+    //old_name_was isDevelopMod
+    pub fn is_develop_mod(&self) -> bool
     {
-        return self.m_is_develop_mod.clone();
+        return self.m_is_develop_mod;
     }
 
     pub fn getPubEmailInfo(&self) -> &EmailSettings {
@@ -694,7 +687,7 @@ impl CMachine {
         q_upsert(
             STBL_KVALUE,
             "kv_key",
-            "SELECTED_PROFILE",
+            "selected_profile",
             &values,
             true,
         );
@@ -710,19 +703,23 @@ impl CMachine {
         );
         let (_status, _msg) = insert_address(&w_address);
 
-        /*
+        self.addSeedNeighbors();
 
-                         ImaybeAddSeedNeighbors();
-
-               */
         return (true, "The Default profile initialized".to_string());
     }
 
     //old_name_was bootMachine
     pub fn boot_machine(&mut self) -> bool
     {
+        let clone_id = self.get_app_clone_id();
+        dlog(
+            &format!("Booting App({})", clone_id),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+
+        self.addSeedNeighbors();
+
         //  if (![1, 4].includes(appCloneId))
-        //    machine.neighborHandler.addSeedNeighbors()
         //  //TODO: start remove it BEFORERELEASE
         //  if (appCloneId == 1) {
         //    let issetted = model.sRead({
@@ -737,6 +734,7 @@ impl CMachine {
         //    sampleMachines.setSampleMachines();
         //    db.setAppCloneId(1);
         //  }
+
         //  //TODO: end remove it BEFORERELEASE
         //  // initialize document & content
         //  let initRes = initContentSetting.doInit();
@@ -748,11 +746,6 @@ impl CMachine {
         //  }
         //  return { err: false, msg: 'The machine fully initilized' };
 
-        let clone_id = self.get_app_clone_id();
-        dlog(
-            &format!("Booting App({})", clone_id),
-            constants::Modules::App,
-            constants::SecLevel::Info);
 
         self.m_last_sync_status_check = self.get_launch_date();
         // control DataBase
@@ -770,12 +763,12 @@ impl CMachine {
             }
         }
 
-        // check if flag MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED is setted
-        let is_inited = get_value("MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED");
+        // check if flag machine_and_dag_are_safely_initialized is setted
+        let is_inited = get_value("machine_and_dag_are_safely_initialized");
         if is_inited != constants::YES
         {
             empty_db(self);  // machine didn't initialized successfully, so empty all tables and try from zero
-            set_value("MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED", constants::NO, true);
+            set_value("machine_and_dag_are_safely_initialized", constants::NO, true);
         }
 
         let (status, _msg) = self.init_default_profile();
@@ -927,7 +920,7 @@ impl CMachine {
     //old_name_was loadSelectedProfile
     pub fn loadSelectedProfile(&mut self) -> bool
     {
-        let selected_prof = get_value("SELECTED_PROFILE");
+        let selected_prof = get_value("selected_profile");
         if selected_prof == "" {
             return false;
         }
@@ -979,7 +972,7 @@ impl CMachine {
             return self.m_selected_profile.clone();
         }
 
-        let mp_code: String = get_value("SELECTED_PROFILE");
+        let mp_code: String = get_value("selected_profile");
         // console.log('resresresresres', res);
         if mp_code == "" {
             dlog(
@@ -1089,22 +1082,27 @@ impl CMachine {
             true);
     }
 
-    /*
-
-    bool CMachine::ImaybeAddSeedNeighbors()
+    pub fn addSeedNeighbors(&self)->bool
     {
-      add_a_new_neighbor("matbit@secmail.pro", constants::PUBLIC);
+        self.add_a_new_neighbor(
+          "seed1@seed.pro".to_string(),
+          constants::PUBLIC.to_string(),
+          "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
+          constants::DEFAULT.to_string(),
+          constants::YES.to_string(),
+          NeighborInfo::new(),
+          cutils::get_now());
+
       return true;
     }
 
-*/
     pub fn getLastSyncStatus(&self) -> JSonObject
     {
-        let mut lastSyncStatus: String = get_value("LAST_SYNC_STATUS");
+        let mut lastSyncStatus: String = get_value("last_sync_status");
         if lastSyncStatus == ""
         {
             self.initLastSyncStatus();
-            lastSyncStatus = get_value("LAST_SYNC_STATUS");
+            lastSyncStatus = get_value("last_sync_status");
         }
         return cutils::parseToJsonObj(&lastSyncStatus);
     }
@@ -1119,7 +1117,7 @@ impl CMachine {
               "lastDAGBlockCreationDate": "Unknown"
             });
         return upsert_kvalue(
-            "LAST_SYNC_STATUS",
+            "last_sync_status",
             &cutils::serializeJson(&lastSyncStatus),
             true);
     }

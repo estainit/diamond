@@ -38,7 +38,7 @@ pub fn removeFromLeaveBlocks(leaves: &Vec<String>) -> (bool, String)
     q_upsert(
         STBL_KVALUE,
         "kv_key",
-        "DAG_LEAVE_BLOCKS",
+        "dag_leave_blocks",
         &values,
         true);
 
@@ -48,7 +48,7 @@ pub fn removeFromLeaveBlocks(leaves: &Vec<String>) -> (bool, String)
 //old_name_was getLeaveBlocks
 pub fn get_leave_blocks(only_before_date: &CDateT) -> HashMap<String, LeaveBlock>
 {
-    let value: String = get_value("DAG_LEAVE_BLOCKS");
+    let value: String = get_value("dag_leave_blocks");
     if value == "" {
         return HashMap::new();
     }
@@ -96,7 +96,7 @@ pub fn addToLeaveBlocks(
     q_upsert(
         STBL_KVALUE,
         "kv_key",
-        "DAG_LEAVE_BLOCKS",
+        "dag_leave_blocks",
         &update_values,
         true);
 

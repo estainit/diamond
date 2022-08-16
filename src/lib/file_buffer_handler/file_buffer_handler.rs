@@ -131,7 +131,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 
 
       //developer log
-      if ((file_name!="") && (CMachine::isDevelopMod()))
+      if ((file_name!="") && (CMachine::is_develop_mod()))
         DbModel::insert(
           "cdev_inbox_logs",
           {

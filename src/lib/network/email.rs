@@ -160,7 +160,7 @@ bool EmailHandler::sendMail(
   uint16_t port)
 {
   std::string subject = subject_.toStdString();
-  if (CMachine::isDevelopMod())
+  if (CMachine::is_develop_mod())
     subject = "test";     //remove beforerelease
 
   // connect to poco;

@@ -50,8 +50,11 @@ pub const STBL_TREASURY_FIELDS: [&str; 8] = ["tr_id", "tr_cat", "tr_title", "tr_
 
 pub const STBL_SENDING_Q: &str = "c_sending_q";
 pub const STBL_SENDING_Q_FIELDS: [&str; 8] = ["sq_id", "sq_type", "sq_code", "sq_title", "sq_sender", "sq_receiver", "sq_connection_type", "sq_payload"];
-
 pub const STBLDEV_SENDING_Q: &str = "cdev_sending_q";
+
+pub const STBL_PARSING_Q: &str = "c_parsing_q";
+pub const STBL_PARSING_Q_FIELDS: [&str; 13] = ["pq_id", "pq_type", "pq_code", "pq_sender", "pq_connection_type", "pq_receive_date", "pq_payload", "pq_prerequisites", "pq_parse_attempts", "pq_v_status", "pq_creation_date", "pq_insert_date", "pq_last_modified"];
+pub const CDEV_PARSING_Q: &str = "cdev_parsing_q";
 
 pub const STBL_MACHINE_BLOCK_BUFFER: &str = "c_machine_block_buffer";
 pub const STBL_MACHINE_BLOCK_BUFFER_FIELDS: [&str; 9] = ["bd_id", "bd_mp_code", "bd_insert_date", " bd_doc_hash", "bd_doc_type", "bd_doc_class", "bd_payload", "bd_dp_cost", "bd_doc_len"];

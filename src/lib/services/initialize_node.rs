@@ -57,7 +57,7 @@ pub fn doesSafelyInitialized(machine: &mut CMachine) -> bool
 
     // long list of controlls
 
-    set_value("MACHINE_AND_DAG_ARE_SAFELY_INITIALIZED", constants::YES, false);
+    set_value("machine_and_dag_are_safely_initialized", constants::YES, false);
 
     return true;
 }

@@ -23,10 +23,6 @@ pub enum SecLevel {
 #[allow(dead_code)]
 pub(crate) const SOCIETY_NAME: &str = "im";
 
-// in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
-pub(crate) const TIME_GAIN: u8 = 1;
-pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
-
 //bech32 part
 pub(crate) const BECH32_ADDRESS_VER: &str = "0";
 pub(crate) const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
@@ -51,7 +47,12 @@ namespace CConsts
   */
   pub const SOCIETY_NAME = "im";
   */
-pub(crate) const LAUNCH_DATE: &str = "2023-08-15 12:00:01";
+
+pub(crate) const LAUNCH_DATE: &str = "2023-08-15 17:20:01";
+// in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
+pub(crate) const TIME_GAIN: u32 = 10;
+pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
+
 /*
   const uint8_t TIME_GAIN = 10;  // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
    */
@@ -466,28 +467,28 @@ pub const YesDomain = "YesDomain";      // TODO: after implementing a method to 
 
 
 
-namespace MESSAGE_TAGS
-{
-pub const senderStartTag = "---START_SENDER_TAG---";
-pub const senderEndTag = "---END_SENDER_TAG---";
-pub const receiverStartTag = "---START_RECEIVER_TAG---";
-pub const receiverEndTag = "---END_RECEIVER_TAG---";
-pub const hashStartTag = "---START_HASH_TAG---";
-pub const hashEndTag = "---END_HASH_TAG---";
-
-pub const customEnvelopeTag = "CUSTOM ENVELOPE";
-pub const customStartEnvelope = "-----START_CUSTOM_ENVELOPE-----";
-pub const customEndEnvelope = "-----END_CUSTOM_ENVELOPE-----";
-pub const NO_ENCRYPTION = "NO-ENCRYPTION";
-
-pub const iPGPStartEnvelope = "-----START_iPGP_ENVELOPE-----";
-pub const iPGPEndEnvelope = "-----END_iPGP_ENVELOPE-----";
-
-pub const iPGPStartLineBreak = "(";
-pub const iPGPEndLineBreak = ")\n\r<br>";
-};
-
 */
+pub mod message_tags
+{
+    pub const senderStartTag: &str = "---START_SENDER_TAG---";
+    pub const senderEndTag: &str = "---END_SENDER_TAG---";
+    pub const receiverStartTag: &str = "---START_RECEIVER_TAG---";
+    pub const receiverEndTag: &str = "---END_RECEIVER_TAG---";
+    pub const hashStartTag: &str = "---START_HASH_TAG---";
+    pub const hashEndTag: &str = "---END_HASH_TAG---";
+
+    pub const customEnvelopeTag: &str = "CUSTOM ENVELOPE";
+    pub const customStartEnvelope: &str = "-----START_CUSTOM_ENVELOPE-----";
+    pub const customEndEnvelope: &str = "-----END_CUSTOM_ENVELOPE-----";
+    pub const NO_ENCRYPTION: &str = "NO-ENCRYPTION";
+
+    pub const iPGPStartEnvelope: &str = "-----START_iPGP_ENVELOPE-----";
+    pub const iPGPEndEnvelope: &str = "-----END_iPGP_ENVELOPE-----";
+
+    pub const iPGPStartLineBreak: &str = "(";
+    pub const iPGPEndLineBreak: &str = ")\n\r<br>";
+}
+
 pub mod polling_ref_types
 {
     pub const Proposal: &str = "Proposal";

@@ -9,6 +9,8 @@ use rsa::{RsaPrivateKey, RsaPublicKey,
 
 use base64::{encode, decode};
 use std::str;
+use rand::Rng;
+use substring::Substring;
 use crate::constants;
 
 use crate::lib::utils::cutils as cutils;
@@ -73,6 +75,20 @@ pub fn b64_decode(message: &String) -> String {
         Ok(v) => return v.to_string(),
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     };
+}
+
+//old_name_was getRandomNumber
+pub fn get_random_number(length: u8) -> String
+{
+    // FIXME: maybe use more random source
+    let mut rng = rand::thread_rng();
+
+    let mut rnd_str = "".to_string();
+    while rnd_str.len() < length as usize {
+        rnd_str += &*format!("{}", rng.gen::<u32>());
+    }
+
+    rnd_str.substring(0, length as usize).to_string()
 }
 
 /*
@@ -237,19 +253,6 @@ std::tuple<bool, String> ccrypto::AESdecrypt020(
     return {false, ""};
   }
 }
-
-String ccrypto::getRandomNumber(int len)
-{
-  // FIXME: maybe use more random source (e.g. open ssl)
-  srand(time(NULL));
-  String res = String::number(rand());
-  while (res.len() < len)
-    res += String::number(rand());
-
-  return res.midRef(0, len).to_string();
-}
-
-
 
 String ccrypto::sha256Dbl(const String &msg)
 {
@@ -625,6 +628,7 @@ pub fn rsa_decrypt_with_prv_key_64(prv_key: &RsaPrivateKey, cipher: &String) -> 
         }
     }
 }
+
 
 /*
 

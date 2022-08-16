@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::Row;
 use postgres::types::{ToSql, Type, FromSql};
-use crate::{dbhandler};
+use crate::{cutils, dbhandler};
 use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
@@ -167,30 +167,27 @@ pub fn prepare_to_select<'e>(
     return query_elements;
 }
 
-/*
-QueryRes DbModel::dDelete(
-  const String& table,
-  const ClausesT& clauses,
-  const bool& is_transactional,
-  const bool& do_log)
+pub fn q_delete(
+    table: &str,
+    clauses: &ClausesT,
+    do_log: bool) -> bool
 {
-  String database_name = s_map_table_to_db.keys().contains(table) ? s_map_table_to_db[table] : "db_comen_general";
-
-  PTRRes r = prepareToDelete(table, clauses);
-  return DbModel::exec_query(database_name, r.complete_query, clauses, {}, {}, is_transactional, do_log);
+    let (_complete_query, query_elements) = prepareToDelete(table, clauses);
+    let (status, _records) = exec_query(&query_elements, do_log);
+    return status;
 }
 
-PTRRes DbModel::prepareToDelete(
-  const String& table,
-  const ClausesT& clauses)
+pub fn prepareToDelete<'e>(
+    table: &'e str,
+    clauses: &'e ClausesT) -> (String, QueryElements<'e>)
 {
-  QueryElements query_elements = pre_query_generator(clauses);
-  String complete_query = "DELETE FROM " + table + query_elements.m_clauses + query_elements.m_order + query_elements.m_limit;
-  complete_query = complete_query.trimmed();
-  complete_query = cutils::removeDblSpaces(complete_query);
-  return {complete_query, query_elements};
+    let ord_ = vec![];
+    let query_elements: QueryElements = pre_query_generator(0, clauses, ord_, 0);
+    let mut complete_query: String = "DELETE FROM ".to_owned() + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
+    // complete_query = complete_query.trim().parse().unwrap();
+    // complete_query = cutils::removeDblSpaces(complete_query);
+    return (complete_query, query_elements);
 }
-*/
 
 pub fn clauses_query_generator<'e>(
     placeholder_offset: u8,
@@ -488,7 +485,7 @@ pub fn exec_query(
 
     if do_log {
         dlog(
-            &format!("Query Values: [{:?}] ", query_elements.m_params),
+            &format!("Query Values: {:?} ", &query_elements.m_params),
             constants::Modules::Sql,
             constants::SecLevel::Trace);
     }
@@ -526,7 +523,7 @@ pub fn exec_query(
                             let col_value: f64 = Row::get(a_row, col_inx);
                             convert_float_to_string(col_value, 11)
                         }
-                        ( "int4" ) => {
+                        ("int4") => {
                             let col_value: i32 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
@@ -578,11 +575,11 @@ pub fn exec_query(
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Failed in Q query: {} ", query_elements.m_complete_query),
+                &format!("Failed in Q query: {} ", &query_elements.m_complete_query),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Failed in Q params: [{:?}] ", query_elements.m_params),
+                &format!("Failed in Q params: [{:?}] ", &query_elements.m_params),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             (true, vec![])
@@ -739,12 +736,12 @@ pub fn q_upsert(
     );
 }
 
-pub fn prepare_to_update<'e >(
+pub fn prepare_to_update<'e>(
     table: &'e str,
     upd_values: &'e HashMap<&str, &(dyn ToSql + Sync)>,
-    clauses: &'e ClausesT) -> QueryElements<'e >
+    clauses: &'e ClausesT) -> QueryElements<'e>
 {
-    let ord_=vec![];
+    let ord_ = vec![];
     let mut query_elements: QueryElements = pre_query_generator(upd_values.len() as u8, clauses, ord_, 0);
 
     let mut updates: Vec<String> = vec![];

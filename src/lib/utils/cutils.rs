@@ -163,6 +163,11 @@ pub fn make_date_from_str(yyyymmddhhmmss: &CDateT) -> DateTime<FixedOffset> {
     };
 }
 
+pub fn add_fff_zzzz_to_yyyymmdd(c_date: CDateT) -> CDateT {
+    let out: String = c_date + ".000 +0000";
+    return out;
+}
+
 pub fn make_str_date_from_date_object(dt: DateTime<FixedOffset>) -> String {
     dt.format("%Y-%m-%d %H:%M:%S").to_string()
 }
@@ -312,11 +317,6 @@ impl TimeDiff {
         };
         return o;
     }
-}
-
-pub fn add_fff_zzzz_to_yyyymmdd(c_date: CDateT) -> CDateT {
-    let out: String = c_date + ".000 +0000";
-    return out;
 }
 
 //old_name_was timeDiff
