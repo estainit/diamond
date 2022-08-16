@@ -174,6 +174,8 @@ pub fn q_delete(
     do_log: bool) -> bool
 {
     let (_complete_query, query_elements) = prepareToDelete(table, &clauses);
+    println!("query_elements.m_complete_query: {:?}", query_elements.m_complete_query);
+    println!("query_elements.m_params: {:?}", query_elements.m_params);
     let (status, _records) = exec_query(&query_elements, do_log);
     return status;
 }
@@ -183,10 +185,11 @@ pub fn prepareToDelete<'e>(
     clauses: &'e ClausesT) -> (String, QueryElements<'e>)
 {
     let ord_ = vec![];
-    let query_elements: QueryElements = pre_query_generator(0, clauses, ord_, 0);
+    let mut query_elements: QueryElements = pre_query_generator(0, clauses, ord_, 0);
     let mut complete_query: String = "DELETE FROM ".to_owned() + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
     // complete_query = complete_query.trim().parse().unwrap();
     // complete_query = cutils::removeDblSpaces(complete_query);
+    query_elements.m_complete_query = complete_query.clone();
     return (complete_query, query_elements);
 }
 

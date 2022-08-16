@@ -1,5 +1,5 @@
 use crate::constants;
-use crate::lib::file_handler as file_handler;
+use crate::lib::file_handler::file_handler::read;
 
 
 //old_name_was maybeBootDAGFromBundle
@@ -52,7 +52,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     let mut file_path: String = constants::HD_ROOT_FILES.to_string() + &"/";
-    return file_handler::read(
+    return read(
         &mut file_path,
         &"DAGBundle.txt".to_string(),
         clone_id);

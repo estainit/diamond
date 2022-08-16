@@ -89,16 +89,19 @@ void EmailHandler::loopEmailPoper()
 }
 */
 
+use crate::{constants, dlog, machine};
+use crate::lib::machine::machine_profile::EmailSettings;
+
 //old_name_was sendPrivateEmail
-pub fn send_private_email()->bool
+pub fn send_private_email() -> bool
 {
-  return true;
+    return true;
 }
 
 //old_name_was sendPublicEmail
-pub fn send_public_email()->bool
+pub fn send_public_email() -> bool
 {
-  return true;
+    return true;
 }
 
 /*
@@ -121,85 +124,95 @@ void EmailHandler::loopEmailSender()
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Email Sender");
 }
 
-
-bool EmailHandler::sendEmailWrapper(
-  const String& sender_,
-  const String& title,
-  const String& message,
-  const String& receiver)
+*/
+pub fn sendEmailWrapper(
+    sender_: &String,
+    title: &String,
+    message: &String,
+    receiver: &String) -> bool
 {
-  CLog::log("send EmailWrapper args: sender(" + sender_ + ") receiver(" + receiver + ") title(" + title + ")" , "app", "trace");
-  EmailSettings machine_public_email = CMachine::getPubEmailInfo();
-  EmailSettings machine_private_email = CMachine::getPrivEmailInfo();
+    dlog(
+        &format!("send EmailWrapper args: sender({sender_}) receiver({receiver}) title({title})"),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
 
-  String sender, pass, host;
-  uint16_t port;
+    let machine_public_email: EmailSettings = machine().getPubEmailInfo().clone();
+    let machine_private_email: EmailSettings = machine().getPrivEmailInfo().clone();
 
-  if (machine_private_email.m_address == sender_)
-  {
-    sender = machine_private_email.m_address;
-    pass = machine_private_email.m_password;
-    host = machine_private_email.m_outgoing_mail_server;
-    port = QVariant::fromValue(machine_private_email.m_outgoing_smtp).toInt();
-  } else {
-    sender = machine_public_email.m_address;
-    pass = machine_public_email.m_password;
-    host = machine_public_email.m_outgoing_mail_server;
-    port = QVariant::fromValue(machine_public_email.m_outgoing_smtp).toInt();
-  }
-  return sendMail(host, sender, pass, title, message, receiver, port);
+    let mut sender: String;
+    let mut pass: String;
+    let mut host: String;
+    let mut port: u16;
+
+    if machine_private_email.m_address == sender_.to_string()
+    {
+        sender = machine_private_email.m_address.clone();
+        pass = machine_private_email.m_password.clone();
+        host = machine_private_email.m_outgoing_mail_server.clone();
+        port = machine_private_email.m_outgoing_smtp.parse::<u16>().unwrap();
+    } else {
+        sender = machine_public_email.m_address.clone();
+        pass = machine_public_email.m_password.clone();
+        host = machine_public_email.m_outgoing_mail_server.clone();
+        port = machine_public_email.m_outgoing_smtp.parse::<u16>().unwrap();
+    }
+    return sendMail(&host, &sender, &pass, title, message, receiver, port);
 }
 
-bool EmailHandler::sendMail(
-  const String& host_,
-  const String& sender_,
-  const String& password_,
-  const String& subject_,
-  const String& message_,
-  const String& recipient_,
-  uint16_t port)
+pub fn sendMail(
+    host_: &String,
+    sender_: &String,
+    password_: &String,
+    subject_: &String,
+    message_: &String,
+    recipient_: &String,
+    port: u16) -> bool
 {
-  std::string subject = subject_.toStdString();
-  if (CMachine::is_develop_mod())
-    subject = "test";     //remove beforerelease
+    let mut subject: String = subject_.clone();
+    if machine().is_develop_mod() {
+        subject = "test".to_string();     //remove beforerelease
+    }
 
-  // connect to poco;
-  std::string sender = sender_.toStdString();
-  std::string host = host_.toStdString();
-  std::string password = password_.toStdString();
-  std::string message = message_.toStdString();
-  std::string recipient = recipient_.toStdString();
+    /*
 
-  port = static_cast<Poco::UInt16>(port);
+      // connect to poco;
+      std::string sender = sender_.toStdString();
+      std::string host = host_.toStdString();
+      std::string password = password_.toStdString();
+      std::string message = message_.toStdString();
+      std::string recipient = recipient_.toStdString();
 
-  try
-  {
-    SharedPtr<InvalidCertificateHandler> pCert = new ConsoleCertificateHandler(false);
-    Context::Ptr pContext = new Context(Context::CLIENT_USE, "", "", "", Context::VERIFY_RELAXED, 9, true, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
-    SSLManager::instance().initializeClient(0, pCert, pContext);
+      port = static_cast<Poco::UInt16>(port);
 
-    SecureSMTPClientSession session(host, port);
-    session.login();
-    session.startTLS();
-    if (!sender.empty())
-      session.login(SMTPClientSession::AUTH_LOGIN, sender, password);
+      try
+      {
+        SharedPtr<InvalidCertificateHandler> pCert = new ConsoleCertificateHandler(false);
+        Context::Ptr pContext = new Context(Context::CLIENT_USE, "", "", "", Context::VERIFY_RELAXED, 9, true, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
 
-    MailMessage msg;
-    msg.setSender(sender);
-    msg.addRecipient(MailRecipient(MailRecipient::PRIMARY_RECIPIENT, recipient));
-    msg.setSubject(subject);
-    msg.setContent(message);
-    session.sendMessage(msg);
-    session.close();
-  }
-  catch (Exception& e)
-  {
-    std::cerr << e.message() << std::endl;
-    CLog::log("Unable to send email! " + e.message(), "app", "fatal");
-    return false;
-  }
+        SSLManager::instance().initializeClient(0, pCert, pContext);
 
-  return true;
+        SecureSMTPClientSession session(host, port);
+        session.login();
+        session.startTLS();
+        if (!sender.empty())
+          session.login(SMTPClientSession::AUTH_LOGIN, sender, password);
+
+        MailMessage msg;
+        msg.setSender(sender);
+        msg.addRecipient(MailRecipient(MailRecipient::PRIMARY_RECIPIENT, recipient));
+        msg.setSubject(subject);
+        msg.setContent(message);
+        session.sendMessage(msg);
+        session.close();
+      }
+      catch (Exception& e)
+      {
+        std::cerr << e.message() << std::endl;
+        CLog::log("Unable to send email! " + e.message(), "app", "fatal");
+        return false;
+      }
+
+     */
+    return true;
 }
 
- */

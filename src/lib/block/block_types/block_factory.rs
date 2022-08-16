@@ -52,7 +52,7 @@ pub fn load_block(obj: &JSonObject) -> (bool, Block)
 
 Block* BlockFactory::create(const JSonObject &obj)
 {
-  String block_type = obj.value("bType").toString();
+  String block_type = obj.value("bType").to_string();
   if (block_type == CConsts::BLOCK_TYPES::Normal)
   {
     return new NormalBlock(obj);

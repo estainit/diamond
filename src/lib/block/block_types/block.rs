@@ -17,7 +17,7 @@ use crate::lib::dag::leaves_handler::{addToLeaveBlocks, removeFromLeaveBlocks};
 use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{STBL_BLOCK_EXTINFOS, STBL_BLOCKS};
-use crate::lib::file_handler::f_write;
+use crate::lib::file_handler::file_handler::f_write;
 
 
 // struct BlockRecord

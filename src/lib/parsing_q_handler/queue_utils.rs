@@ -28,7 +28,7 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
     {"b_hash", "b_creation_date", "b_type", "b_utxo_imported"});
   QStringList existed_hashes;
   for (QVDicT a_block_record: existed_record_blocks)
-    existed_hashes.append(a_block_record.value("b_hash").toString());
+    existed_hashes.append(a_block_record.value("b_hash").to_string());
 
   QStringList missed_blocks = CUtils::arrayDiff(block->m_ancestors, existed_hashes);
   if (missed_blocks.size() > 0)
@@ -67,12 +67,12 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
   for (QVDicT bk: existed_record_blocks)
   {
     // controll ancestors creation date
-    if (bk.value("creation_date").toString() > block->m_block_creation_date)
+    if (bk.value("creation_date").to_string() > block->m_block_creation_date)
     {
       CLog::log(
         "Block(" + CUtils::hash6c(block->getBlockHash()) + ") " + pq_type +
         " creationDdate(" + block->m_block_creation_date + ") is before it's ancestors(" +
-         CUtils::hash6c(bk.value("bHash").toString()) + ") creation Date(" + bk.value("creation_date").toString() + ")",
+         CUtils::hash6c(bk.value("bHash").to_string()) + ") creation Date(" + bk.value("creation_date").to_string() + ")",
          "app", "error");
 
       return {false, true};
@@ -84,13 +84,13 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
           CConsts::BLOCK_TYPES::Coinbase,
           CConsts::BLOCK_TYPES::RpBlock,
           CConsts::BLOCK_TYPES::RlBlock
-        }.contains(bk.value("bType").toString())&&
-        (bk.value("bUtxoImported").toString() != CConsts::YES))
+        }.contains(bk.value("bType").to_string())&&
+        (bk.value("bUtxoImported").to_string() != CConsts::YES))
     {
       allAncestorsAreImported = false;
-      notImportedAncs.push_back(bk.value("bHash").toString());
-      if (oldestAncestorCreationDate > bk.value("bCreationDate").toString())
-        oldestAncestorCreationDate = bk.value("bCreationDate").toString();
+      notImportedAncs.push_back(bk.value("bHash").to_string());
+      if (oldestAncestorCreationDate > bk.value("bCreationDate").to_string())
+        oldestAncestorCreationDate = bk.value("bCreationDate").to_string();
     }
   }
 
@@ -147,7 +147,7 @@ bool ParsingQHandler::appendPrerequisites(
     return false;
   }
 
-  QStringList current_prereq = CUtils::convertJSonArrayToQStringList(CUtils::parseToJsonArr(res[0].value("pq_prerequisites").toString()));
+  QStringList current_prereq = CUtils::convertJSonArrayToQStringList(CUtils::parseToJsonArr(res[0].value("pq_prerequisites").to_string()));
   CLog::log(
     "block(" + CUtils::hash6c(block_hash) + ") adding new prerequisities(" +
     CUtils::dumpIt(prerequisites) + ") to existed prerequisities(" +
@@ -220,7 +220,7 @@ void ParsingQHandler::removePrerequisites(const String& block_hash)
 
   for(QVDicT aBlock: res.records)
   {
-    String prerequisites = aBlock.value("pq_prerequisites").toString().replace(block_hash, "");
+    String prerequisites = aBlock.value("pq_prerequisites").to_string().replace(block_hash, "");
     prerequisites = CUtils::normalizeCommaSeperatedStr(prerequisites);
     DbModel::update(
       stbl_parsing_q,

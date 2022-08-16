@@ -103,9 +103,9 @@ impl CoinbaseBlock {
       CLog::log("dummy dumping local_regenerated_coinbase before calculating it's length(serialized): " + cutils::serializeJson(local_regenerated_coinbase) , "cb", "info");
     //  CLog::log("dummy dumping local_regenerated_coinbase beofr calculating it's length(object): " + cutils::dumpIt(local_regenerated_coinbase) , "cb", "info");
 
-      if (tmp_Jblock.value("bDocsRootHash").toString() != m_documents_root_hash)
+      if (tmp_Jblock.value("bDocsRootHash").to_string() != m_documents_root_hash)
       {
-        String msg = "Discrepancy in bDocsRootHash locally created coinbase bDocsRootHash(" + cutils::hash8c(tmp_Jblock.value("bDocsRootHash").toString());
+        String msg = "Discrepancy in bDocsRootHash locally created coinbase bDocsRootHash(" + cutils::hash8c(tmp_Jblock.value("bDocsRootHash").to_string());
         msg += ") and remote-bDocsRootHash(" + cutils::hash8c(m_documents_root_hash) + ") Block(" + cutils::hash8c(m_block_hash) + ") ";
         CLog::log(msg, "cb", "error");
         CLog::log("Remote block" + dumpBlock(), "cb", "error");
@@ -126,13 +126,13 @@ impl CoinbaseBlock {
         return {false, true};
       }
 
-      if (tmp_Jblock.value("bHash").toString() == "")
+      if (tmp_Jblock.value("bHash").to_string() == "")
       {
         CLog::log("big failllllllll 1 . Regenerated coinbase in local has no hash! " + cutils::dumpIt(tmp_Jblock), "cb", "error");
         return {false, true};
       }
 
-      if (tmp_Jblock.value("bHash").toString() != m_block_hash)
+      if (tmp_Jblock.value("bHash").to_string() != m_block_hash)
       {
         CLog::log("big failllllllll2 in Regenerating coinbase in local, has differetnt hash! " + cutils::dumpIt(tmp_Jblock), "cb", "error");
         return {false, true};
@@ -192,7 +192,7 @@ impl CoinbaseBlock {
       if (m_block_descriptions == "")
         block["descriptions"] = CConsts::JS_FAKSE_NULL;
 
-      if (block["bVer"].toString() > "0.0.0")
+      if (block["bVer"].to_string() > "0.0.0")
         block.remove("descriptions");
 
       if (block.keys().contains("fVotes"))

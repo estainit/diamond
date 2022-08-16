@@ -33,7 +33,7 @@ pub fn path_exist(file_full_path: &String) -> bool {
 }
 
 use std::fs;
-use crate::constants;
+use crate::{ccrypto, constants, cutils, machine};
 
 pub fn mkdir(file_full_path: &String) -> bool {
     return match fs::create_dir(file_full_path) {
@@ -77,12 +77,12 @@ pub fn read_(file_full_path: &String) -> (bool, String) {
 
 
 pub fn f_write(
-     directory:&String,
-     file_name:&String,
-     content:&String,
-    clone_id:i16)->bool
+    directory: &String,
+    file_name: &String,
+    content: &String,
+    clone_id: i16) -> bool
 {
-    let mut file_path  = directory.to_string();
+    let mut file_path = directory.to_string();
     //  if (clone_id>0)
     //    file_path += String::number(clone_id);
 
@@ -95,7 +95,7 @@ pub fn f_write(
     return write_(&file_path, content);
 }
 
-pub fn write_( file_path:&String,  content:&String)->bool
+pub fn write_(file_path: &String, content: &String) -> bool
 {
     dlog(
         &format!("wirting file: {}", file_path),
@@ -121,4 +121,64 @@ pub fn write_( file_path:&String,  content:&String)->bool
     f.close();
      */
     return true;
+}
+
+
+//  -  -  -  email part
+pub fn writeEmailAsFile(
+    title: &String,
+    sender: &String,
+    receiver: &String,
+    email_body: &String) -> bool
+{
+    dlog(
+        &format!("write Em File args: title({title}) sender({sender}) receiver({receiver})"),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    // let mut to_send_message: String = message.clone();
+    // if is_custom
+    // {
+    //     to_send_message = constants::message_tags::customStartEnvelope.to_string() + &to_send_message + &constants::message_tags::customEndEnvelope;
+    // }
+
+    let outbox: String = machine().get_outbox_path();
+    let app_clone_id = machine().get_app_clone_id();
+//    if (app_clone_id > 0)
+//        outbox = outbox + app_clone_id;
+
+    // let mut email _body: String = cutils::get_now() + constants::NL;
+    // email _body += &*("time: ".to_owned() + &cutils::get_now_sss() + &constants::NL);
+    // email _body += constants::message_tags::senderStartTag + sender + constants::message_tags::senderEndTag + constants::NL;
+    // email_ body += constants::message_tags::receiverStartTag + receiver + constants::message_tags::receiverEndTag + constants::NL;
+    // email _body += &*(to_send_message.clone() + &constants::NL);
+    // let email hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender + receiver + to_send_message)));
+    // email_ body += constants::message_tags::hashStartTag + email _hash.clone() + constants::message_tags::hashEndTag + constants::NL;
+    dlog(
+        &format!("email body: {}", email_body),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    let mut file_name: String = "".to_string();
+    if machine().is_develop_mod()
+    {
+        file_name = [&cutils::get_now_sss(), sender, receiver, title, ".txt"].join(",");
+    } else {
+        file_name = [receiver, &cutils::get_now_sss(), &ccrypto::get_random_number(5), ".txt"].join(" ");
+    }
+    dlog(
+        &format!("file Name: {}", file_name),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+    dlog(
+        &format!("Try to write1: {}/{}", outbox, file_name),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+
+    return f_write(
+    &(outbox + &"/"),
+    &file_name,
+    &email_body,
+    app_clone_id);
 }

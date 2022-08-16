@@ -149,8 +149,8 @@ pub fn encrypt_pgp(
             initialization_vector = ccrypto::getRandomNumber(16);
         }
 
-        secret_key = secret_key.midRef(0, 32).toString();
-        initialization_vector = initialization_vector.midRef(0, 16).toString();
+        secret_key = secret_key.midRef(0, 32).to_string();
+        initialization_vector = initialization_vector.midRef(0, 16).to_string();
 
         // conventional symmetric encryption
         auto
@@ -215,31 +215,31 @@ CPGPMessage CPGP::decryptPGP(
   String base64Decoded = ccrypto::base64Decode(message);
   CLog::log("base64Decoded" + base64Decoded);
   JSonObject obj = cutils::parseToJsonObj(base64Decoded);
-  finalDec.m_is_authenticated = obj.value("isAuthenticated").toString() == "true";
-  finalDec.m_pgp_versaion = obj.value("iPGPVersion").toString();
-  finalDec.m_secret_key = obj.value("secretKey").toString();
-  finalDec.m_initialization_vector = obj.value("iv").toString();
+  finalDec.m_is_authenticated = obj.value("isAuthenticated").to_string() == "true";
+  finalDec.m_pgp_versaion = obj.value("iPGPVersion").to_string();
+  finalDec.m_secret_key = obj.value("secretKey").to_string();
+  finalDec.m_initialization_vector = obj.value("iv").to_string();
 
   JSonObject AESdecrypted;
 
   if (finalDec.m_secret_key == CConsts::MESSAGE_TAGS::NO_ENCRYPTION) {
-    CLog::log("AESdecrypted = " + obj.value("message").toString(), "app", "trace");
+    CLog::log("AESdecrypted = " + obj.value("message").to_string(), "app", "trace");
     auto tmpAESdecrypted = obj.value("message");
     if (tmpAESdecrypted.isObject())
     {
       AESdecrypted = tmpAESdecrypted.toObject();
     } else{
       // backward compatibility with Javascrit nodes
-      AESdecrypted = cutils::parseToJsonObj(tmpAESdecrypted.toString());
-      AESdecrypted["message"] = cutils::parseToJsonObj(AESdecrypted.value("message").toString());
+      AESdecrypted = cutils::parseToJsonObj(tmpAESdecrypted.to_string());
+      AESdecrypted["message"] = cutils::parseToJsonObj(AESdecrypted.value("message").to_string());
     }
   }
   else
   {
     JSonObject aesEncoded = obj.value("message").toObject();
-    finalDec.m_aes_version = aesEncoded.value("aesVersion").toString(); //, "Unknown AES Version!"
+    finalDec.m_aes_version = aesEncoded.value("aesVersion").to_string(); //, "Unknown AES Version!"
 
-    String AESencryptedMsg = aesEncoded.value("encrypted").toString();
+    String AESencryptedMsg = aesEncoded.value("encrypted").to_string();
 
     // decrypt secret key
     String  decryptedSecretKey;
@@ -271,27 +271,27 @@ CPGPMessage CPGP::decryptPGP(
     }
   }
 
-  finalDec.m_is_compressed = AESdecrypted.value("isCompressed").toString() == "true";
-  finalDec.m_zip_version = AESdecrypted.keys().contains("zipVersion") ? AESdecrypted.value("isCompressed").toString() : "Unknown zip version!";
-  finalDec.m_zip_algorithm = AESdecrypted.keys().contains("algorithm") ? AESdecrypted.value("algorithm").toString() : "Unknown zip algorithm!";
+  finalDec.m_is_compressed = AESdecrypted.value("isCompressed").to_string() == "true";
+  finalDec.m_zip_version = AESdecrypted.keys().contains("zipVersion") ? AESdecrypted.value("isCompressed").to_string() : "Unknown zip version!";
+  finalDec.m_zip_algorithm = AESdecrypted.keys().contains("algorithm") ? AESdecrypted.value("algorithm").to_string() : "Unknown zip algorithm!";
 
   JSonObject msg_plus_signature;
   if (finalDec.m_secret_key == CConsts::MESSAGE_TAGS::NO_ENCRYPTION)
   {
     msg_plus_signature = AESdecrypted.value("message").toObject();
   } else {
-    msg_plus_signature = cutils::parseToJsonObj(AESdecrypted.value("message").toString());
+    msg_plus_signature = cutils::parseToJsonObj(AESdecrypted.value("message").to_string());
   }
 
   // decompress it if it is compressed
   if (finalDec.m_is_compressed)
   {
     // decompress message
-    message = Compressor::decompress(msg_plus_signature.value("message").toString());
+    message = Compressor::decompress(msg_plus_signature.value("message").to_string());
   }
 
   // control signature if is signed
-  finalDec.m_is_signed = msg_plus_signature.value("isSigned").toString() == "true";
+  finalDec.m_is_signed = msg_plus_signature.value("isSigned").to_string() == "true";
   finalDec.m_is_verified = false;
   if (finalDec.m_is_signed)
   {
@@ -302,13 +302,13 @@ CPGPMessage CPGP::decryptPGP(
       finalDec.m_message = "missed sender_pub_key";
       return finalDec;
     }
-    finalDec.m_signature_version = msg_plus_signature.value("sigVersion").toString();
-    String signature = msg_plus_signature.value("signature").toString();
-    String hash = ccrypto::keccak256(msg_plus_signature.value("message").toString());
+    finalDec.m_signature_version = msg_plus_signature.value("sigVersion").to_string();
+    String signature = msg_plus_signature.value("signature").to_string();
+    String hash = ccrypto::keccak256(msg_plus_signature.value("message").to_string());
     finalDec.m_is_verified = ccrypto::nativeVerifySignature(sender_pub_key, hash, signature);
   }
   finalDec.m_decryption_status = true;
-  finalDec.m_message = ccrypto::base64Decode(msg_plus_signature.value("message").toString());
+  finalDec.m_message = ccrypto::base64Decode(msg_plus_signature.value("message").to_string());
   return finalDec;
 }
 
@@ -335,10 +335,10 @@ String CPGP::stripPGPEnvelope(const String& content_)
 std::tuple<String, String> CPGP::generateSecretKeyIV()
 {
   String secret_key = ccrypto::getRandomNumber();
-  secret_key = secret_key.midRef(0, 32).toString();
+  secret_key = secret_key.midRef(0, 32).to_string();
 
   String initialization_vector = ccrypto::getRandomNumber();
-  initialization_vector = initialization_vector.midRef(0, 16).toString();
+  initialization_vector = initialization_vector.midRef(0, 16).to_string();
 
   return {secret_key, initialization_vector};
 }

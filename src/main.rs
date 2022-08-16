@@ -93,7 +93,7 @@ fn main() {
 
 // use Merkle crate, if exist
 
-    let manual_clone_id: i8 = 0;
+    let manual_clone_id: i16 = 0;
 // CMachine::onAboutToQuit(&w);
     machine().init();
     machine().parse_args(env::args().collect(), manual_clone_id);

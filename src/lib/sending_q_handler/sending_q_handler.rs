@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
-use crate::lib::custom_types::{CBlockHashT, QVDRecordsT, VString, VVString};
+use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VString, VVString};
 use crate::lib::dag::dag::searchInDAG;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{STBL_SENDING_Q, STBLDEV_SENDING_Q};
+use crate::lib::database::tables::{STBL_SENDING_Q, STBL_SENDING_Q_FIELDS, STBLDEV_SENDING_Q};
 use crate::lib::network::broadcast_logger::{addSentBlock, listSentBloksIds};
+use crate::lib::network::network_handler::iPush;
 use crate::lib::parsing_q_handler::queue_utils::searchParsingQ;
 use crate::lib::pgp::cpgp::encrypt_pgp;
 use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
@@ -278,24 +279,25 @@ pub fn pushIntoSendingQ(
     return true;
 }
 
-/*
-QVDRecordsT SendingQHandler::fetchFromSendingQ(
-  StringList fields,
-  ClausesT clauses,
-  OrderT order)
+pub fn fetchFromSendingQ(
+    mut fields: Vec<&str>,
+    clauses: ClausesT,
+    order: OrderT) -> QVDRecordsT
 {
-  if (fields.len() == 0)
-    fields = stbl_sending_q_fields;
+    if fields.len() == 0 {
+        fields = STBL_SENDING_Q_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>();
+    }
 
-  QueryRes cpackets = DbModel::select(
-    stbl_sending_q,
-    fields,
-    clauses,
-    order);
-  return cpackets.records;
+    let (status, records) = q_select(
+        STBL_SENDING_Q,
+        fields,
+        clauses,
+        order,
+        0,
+        true);
+    return records;
 }
 
-*/
 pub fn cancelIvokeBlockRequest(block_hash: &CBlockHashT)
 {
     q_delete(
@@ -386,42 +388,48 @@ pub fn maybeCancelIvokeBlocksRequest()
 pub fn send_out_the_packet() -> bool
 {
     maybeCancelIvokeBlocksRequest();
-    /*
 
-      QVDRecordsT cpackets = fetchFromSendingQ();
-      if (cpackets.len() == 0)
-      {
-        CLog::log("No packet in sending q to Send", "app", "trace");
+    let cpackets: QVDRecordsT = fetchFromSendingQ(vec![],vec![],vec![]);
+    if cpackets.len() == 0
+    {
+        dlog(
+            &format!("No packet in sending q to Send"),
+            constants::Modules::App,
+            constants::SecLevel::Trace);
+
         return true;
-      }
+    }
 
-      // always pick the first pkt! TODO: maybe more intelligent solution needed
-      QVDicT packet = cpackets[0];
-      bool send_res = NetworkHandler::iPush(
-        packet["sq_title"].to_string(),
-        packet["sq_payload"].to_string(),
-        packet["sq_sender"].to_string(),
-        packet["sq_receiver"].to_string());
+    // always pick the first pkt! TODO: maybe more intelligent solution needed
+    let packet: &QVDicT = &cpackets[0];
+    let send_res: bool = iPush(
+        &packet["sq_title"].to_string(),
+        &packet["sq_payload"].to_string(),
+        &packet["sq_sender"].to_string(),
+        &packet["sq_receiver"].to_string());
 
-      // remove packet from sending queue
-      if (send_res)
-        rmoveFromSendingQ({
-          {"sq_type", packet["sq_type"]},
-          {"sq_code", packet["sq_code"]},
-          {"sq_sender", packet["sq_sender"]},
-          {"sq_receiver", packet["sq_receiver"]}});
-    */
+    // remove packet from sending queue
+    if send_res {
+        rmoveFromSendingQ(vec![
+            simple_eq_clause("sq_type", &packet["sq_type"]),
+            simple_eq_clause("sq_code", &packet["sq_code"]),
+            simple_eq_clause("sq_sender", &packet["sq_sender"]),
+            simple_eq_clause("sq_receiver", &packet["sq_receiver"]),
+        ]);
+    }
+    return true;
+}
+
+pub fn rmoveFromSendingQ(clauses: ClausesT) -> bool
+{
+    q_delete(
+        STBL_SENDING_Q,
+        clauses,
+        false);
     return true;
 }
 
 /*
-bool SendingQHandler::rmoveFromSendingQ(const ClausesT& clauses)
-{
-  DbModel::dDelete(
-    stbl_sending_q,
-    clauses);
-  return true;
-}
 
 void SendingQHandler::loopPullSendingQ()
 {

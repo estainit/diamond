@@ -15,7 +15,7 @@ use crate::lib::dag::dag_walk_through::getLatestBlockRecord;
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
 use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
-use crate::lib::file_handler::{mkdir, path_exist};
+use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
 use crate::lib::machine::machine_neighbor::{NeighborInfo};
 use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile};
@@ -26,7 +26,7 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
 pub struct CMachine {
-    m_clone_id: i8,
+    m_clone_id: i16,
     m_should_loop_threads: bool,
 
     m_is_in_sync_process: bool,
@@ -139,11 +139,11 @@ impl CMachine {
     }
 
     // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, manual_clone_id: i8)
+    pub fn parse_args(&mut self, args: VString, manual_clone_id: i16)
     {
         // println!("Env args: {:?}", args);
 
-        let mut clone_id: i8 = 0;    // FIXME: this value must be defined by command line
+        let mut clone_id: i16 = 0;    // FIXME: this value must be defined by command line
         let mut is_develop_mod: bool = true;
 
 
@@ -163,7 +163,7 @@ impl CMachine {
     }
 
     // func name was setCloneDev
-    pub fn set_clone_dev(&mut self, clone_id: i8, is_develop_mod: bool) -> bool
+    pub fn set_clone_dev(&mut self, clone_id: i16, is_develop_mod: bool) -> bool
     {
         self.m_clone_id = clone_id;
         self.m_is_develop_mod = is_develop_mod;
@@ -447,7 +447,7 @@ impl CMachine {
     */
 
     //old_name_was getAppCloneId
-    pub fn get_app_clone_id(&self) -> i8
+    pub fn get_app_clone_id(&self) -> i16
     {
         return self.m_clone_id;
     }
@@ -584,7 +584,7 @@ impl CMachine {
     }
 
     //old_name_was setLaunchDateAndCloneId
-    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i8)
+    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i16)
     {
         self.m_develop_launch_date = c_date;
         if clone_id != 0
@@ -856,7 +856,7 @@ impl CMachine {
         return self.get_clone_path() + "/inbox";
     }
 
-    //old_name_was getReportsPath
+    //old_name_was getOutboxPath
     pub fn get_outbox_path(&self) -> String
     {
         return self.get_clone_path() + "/outbox";
