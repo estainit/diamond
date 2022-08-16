@@ -160,6 +160,7 @@ impl CMachine {
         }
 
         self.set_clone_dev(clone_id, is_develop_mod);
+        println!("parsed args: clone_id:{}", clone_id);
     }
 
     // func name was setCloneDev
@@ -714,6 +715,21 @@ impl CMachine {
     pub fn boot_machine(&mut self) -> bool
     {
         let clone_id = self.get_app_clone_id();
+
+        let mut devel_msg: String = "".to_string();
+        if self.is_develop_mod() {
+            devel_msg = " (develop mode)".to_string();
+        }
+        let mut sync_msg: String = "".to_string();
+        if self.is_in_sync_process(false) {
+            sync_msg = " (syncing)".to_string();
+        }
+
+        if clone_id > 0 {
+            println!("Launched machine({}){}{}", clone_id, devel_msg, sync_msg);
+        } else {
+            println!("Launched machine{}{}", devel_msg, sync_msg);
+        }
         dlog(
             &format!("Booting App({})", clone_id),
             constants::Modules::App,
