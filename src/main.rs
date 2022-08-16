@@ -114,6 +114,14 @@ fn main() {
     //         lib::rest::apis::run_web_server(),
     //         run_loops()
     //     );
+
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(lib::rest::apis::run_web_server());
+
+
     launch_giga_loop(false);//    launch_threads();
 }
 

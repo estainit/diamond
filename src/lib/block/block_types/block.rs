@@ -17,7 +17,7 @@ use crate::lib::dag::leaves_handler::{addToLeaveBlocks, removeFromLeaveBlocks};
 use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{STBL_BLOCK_EXTINFOS, STBL_BLOCKS};
-use crate::lib::file_handler::file_handler::f_write;
+use crate::lib::file_handler::file_handler::file_write;
 
 
 // struct BlockRecord
@@ -740,9 +740,9 @@ impl Block {
         // in case of curruptions in DAG or bootstrp the DAG, machine doesn't need to download again entire DAG
         // you can simply copy files from ~/backup-dag to folder ~/temporary/inbox
         if constants::DO_HARDCOPY_DAG_BACKUP {
-            f_write(
-                &machine.get_dag_backup(),
-                &(cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt"),
+            file_write(
+                machine.get_dag_backup(),
+                (cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt"),
                 &self.safeStringifyBlock(false),
                 0);
         }

@@ -1,60 +1,40 @@
-// use std::fs::{File, OpenOptions, remove_file};
 use std::fs::{File};
-// use std::io::{Write, Read};
 use std::io::{Read, Write};
 use crate::lib::constants::{Modules, SecLevel};
 use crate::lib::dlog::dlog;
 use std::path::Path;
+use std::fs;
+use substring::Substring;
+use crate::{ccrypto, constants, cutils, machine};
 
-pub fn read(
-    file_path: &mut String,
-    file_name: &String,
-    clone_id: i8) -> (bool, String)
+pub fn file_read(
+    mut file_path: String,
+    file_name: String,
+    clone_id: i16) -> (bool, String)
 {
     if clone_id > 0 {
-        file_path.push_str(&clone_id.to_string());
+        file_path = format!("{file_path}{clone_id}");
     }
 
     if file_path != "" {
-        file_path.push_str("/");
+        file_path = format!("{file_path}/");
     }
 
-    file_path.push_str(file_name);
+    file_path = get_os_care_path(&format!("{file_path}{file_name}"));
 
-    return read_(file_path);
-}
-
-pub fn path_exist(file_full_path: &String) -> bool {
-    if Path::new(file_full_path).exists() {
-        return true;
-    } else {
-        return false;
+    if !path_exist(&file_path) {
+        return (false, format!("Path (to read) does not exist! {}", file_path));
     }
+
+    return read_exact_file(file_path);
 }
 
-use std::fs;
-use crate::{ccrypto, constants, cutils, machine};
 
-pub fn mkdir(file_full_path: &String) -> bool {
-    return match fs::create_dir(file_full_path) {
-        Ok(r) => { true }
-        Err(e) => {
-            dlog(
-                &format!("make dir failed: {}", e),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            false
-        }
-    };
-}
-
-pub fn read_(file_full_path: &String) -> (bool, String) {
-    if !path_exist(file_full_path) {
-        return (false, "".to_string());
-    }
+pub fn read_exact_file(file_full_path: String) -> (bool, String) {
+    let file_full_path = get_os_care_path(&file_full_path);
 
     // Open the file in read-only mode.
-    match File::open(file_full_path) {
+    match File::open(file_full_path.clone()) {
         // The file is open (no error).
         Ok(mut file) => {
             let mut content = String::new();
@@ -75,28 +55,61 @@ pub fn read_(file_full_path: &String) -> (bool, String) {
     }
 }
 
-
-pub fn f_write(
-    directory: &String,
-    file_name: &String,
-    content: &String,
-    clone_id: i16) -> bool
-{
-    let mut file_path = directory.to_string();
-    //  if (clone_id>0)
-    //    file_path += String::number(clone_id);
-
-    if file_path != "" {
-        file_path += "/";
+pub fn path_exist(file_full_path: &String) -> bool {
+    let file_full_path = &get_os_care_path(file_full_path);
+    if Path::new(file_full_path).exists() {
+        return true;
+    } else {
+        return false;
     }
-
-    file_path += file_name;
-
-    return write_(&file_path, content);
 }
 
-pub fn write_(file_path: &String, content: &String) -> bool
+pub fn mkdir(file_full_path: &String) -> bool {
+    let file_full_path = &get_os_care_path(file_full_path);
+    return match fs::create_dir(file_full_path) {
+        Ok(r) => { true }
+        Err(e) => {
+            dlog(
+                &format!("make dir failed: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            false
+        }
+    };
+}
+
+
+pub fn file_write(
+    directory: String,
+    file_name: String,
+    content: &String,
+    clone_id: i16) -> (bool,String)
 {
+    let mut file_path = directory.clone();
+
+    if clone_id > 0 {
+        file_path = format!("{file_path}{clone_id}");
+    }
+
+    if file_path != "" {
+        file_path = format!("{file_path}/");
+    }
+
+    file_path = get_os_care_path(&file_path);
+
+    if !path_exist(&file_path) {
+        return (false, format!("Path (to write) does not exist! {}", file_path));
+    }
+
+    file_path = get_os_care_path(&format!("{file_path}{file_name}"));
+
+    return write_exact_file(&file_path, content);
+}
+
+pub fn write_exact_file(file_path: &String, content: &String) -> (bool,String)
+{
+    let file_path = &get_os_care_path(file_path);
+
     dlog(
         &format!("wirting file: {}", file_path),
         constants::Modules::App,
@@ -107,20 +120,7 @@ pub fn write_(file_path: &String, content: &String) -> bool
     file.write_all(content.as_ref())
         .expect("Error while writing to file");
 
-    /*
-    QFile f(file_path);
-    if (!f.open(QIODevice::WriteOnly | QIODevice::Text))
-    {
-    CLog::log( "Unable to write file" + file_path, "app", "fatal");
-    return false;
-    }
-
-    QTextStream out(&f);
-    out << content;
-
-    f.close();
-     */
-    return true;
+    return (true, "File Writed".to_string());
 }
 
 
@@ -176,9 +176,21 @@ pub fn writeEmailAsFile(
         constants::SecLevel::Trace);
 
 
-    return f_write(
-    &(outbox + &"/"),
-    &file_name,
-    &email_body,
-    app_clone_id);
+    let (status, _msg)=file_write(
+        outbox,
+        file_name,
+        &email_body,
+        app_clone_id);
+    status
+}
+
+pub fn get_os_care_path(the_path: &String) -> String {
+    if std::env::consts::OS == "windows" {
+        let s1 = the_path.substring(3, the_path.len()).to_string();
+        let s2 = s1.replace("/", "\\").replace(":", "_");
+        let mut s3 = the_path.substring(0, 3).to_string();
+        s3.push_str(&s2);
+        return s3;
+    }
+    return the_path.clone();
 }

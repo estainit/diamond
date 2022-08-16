@@ -1,10 +1,10 @@
 use crate::constants;
-use crate::lib::file_handler::file_handler::read;
+use crate::lib::file_handler::file_handler::file_read;
 
 
 //old_name_was maybeBootDAGFromBundle
 pub fn maybe_boot_dag_from_bundle() -> bool {
-    let clone_id: i8 = 1;
+    let clone_id: i16 = 1;
     // let mut bundle = String::from("");
     let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
@@ -49,12 +49,11 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 }
 
 //old_name_was readDAGBundleIfExist
-pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
+pub fn read_dag_bundle_if_exist(clone_id: i16) -> (bool, String)
 {
-    let mut file_path: String = constants::HD_ROOT_FILES.to_string() + &"/";
-    return read(
-        &mut file_path,
-        &"DAGBundle.txt".to_string(),
+    return file_read(
+        constants::HD_ROOT_FILES.to_string(),
+        format!("DAGBundle.txt"),
         clone_id);
 }
 
