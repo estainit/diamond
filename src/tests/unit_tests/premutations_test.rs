@@ -1,7 +1,5 @@
 #[cfg(test)]
 pub mod merkel_tests_2 {
-    use crate::cmerkle;
-    use crate::lib::ccrypto;
     use crate::lib::utils::permutation_handler::PermutationHandler;
 
     // FIXME: complete it in order to test more possibile combination in automatic style

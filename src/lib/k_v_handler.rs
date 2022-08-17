@@ -16,7 +16,6 @@ pub fn get_value(kv_key: &str) -> String
         0,
         true,
     );
-    println!("00000000kv val res:{:?}", records);
 
     if records.len() == 0 {
         return "".to_string();

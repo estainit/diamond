@@ -104,7 +104,7 @@ pub fn iPush(
     let email_status: bool = sendEmailWrapper(
         sender,
         title,
-        &email_body,
+        email_body,
         receiver,
     );
     return email_status;

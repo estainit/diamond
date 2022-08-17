@@ -12,27 +12,34 @@ pub fn remove_quotes(inp_str: &String) -> String {
     inp_str.substring(1, inp_str.len() - 1).to_string()
 }
 
-#[allow(dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
+    return right_padding_custom(inp_str, length, "0".to_string());
+}
+
+pub fn right_padding_custom(inp_str: String, length: u8, placeholder: String) -> String {
     let mut str = inp_str.clone();
     if str.len() >= length as usize {
         return str;
     }
 
     for _i in 0..length - (str.len() as u8) {
-        str = str + "0";
+        str = str + &placeholder;
     }
     return str;
 }
 
 pub fn left_padding(inp_str: String, length: u8) -> String {
+    return left_padding_custom(inp_str, length, "0".to_string());
+}
+
+pub fn left_padding_custom(inp_str: String, length: u8, placeholder: String) -> String {
     let mut str = inp_str.clone();
     if str.len() >= length as usize {
         return str;
     }
 
     for _i in 0..length - (str.len() as u8) {
-        str = "0".to_string() + &str;
+        str = placeholder.clone() + &str;
     }
     return str;
 }

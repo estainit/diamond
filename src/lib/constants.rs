@@ -19,8 +19,6 @@ pub enum SecLevel {
     Fatal,
 }
 
-
-#[allow(dead_code)]
 pub(crate) const SOCIETY_NAME: &str = "im";
 
 //bech32 part
@@ -32,30 +30,14 @@ pub(crate) const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
 const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
 
-//bech32 part
-const std::string BECH32_ADDRESS_VER = "0"; // version must be one char
-const int TRUNCATE_FOR_BECH32_ADDRESS = 32; //
-
-
-namespace CConsts
-{
-
-  /**
-  * @brief SOCIETY_NAME
-  * the first society is imagine.
-  * people simply by change this constant to ahatever they want can stablish a new community (having new money and rules, etc...) in a matter of minute
-  */
-  pub const SOCIETY_NAME = "im";
-  */
+*/
 
 pub(crate) const LAUNCH_DATE: &str = "2023-08-15 17:20:01";
 // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
 pub(crate) const TIME_GAIN: u32 = 10;
 pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
-/*
-  const uint8_t TIME_GAIN = 10;  // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
-   */
+
 pub(crate) const EMAIL_IS_ACTIVE: bool = false;
 /*
   const bool BROADCAST_TO_NEIGHBOR_OF_NEIGHBOR = true;    // if machine allowed to publish email of neightbors of neighbors to hei neighbors?
@@ -75,14 +57,12 @@ pub const ONE_MILLION: u64 = 1_000_000;
 pub const ONE_BILLION: u64 = 1_000_000_000;
 
 pub const CLIENT_VERSION: &str = "0.2.0";
+// can be sqlite or psql
 pub(crate) const DATABASAE_AGENT: &str = "psql";
 
-// can be sqlite or psql
-/*
-  const uint DEFAULT_CONTRIBUTE_LEVEL = 6;
+pub const DEFAULT_CONTRIBUTE_LEVEL: u8 = 6;
 
-  // at least 4 cycle must be a gap between pay to treasury and dividing to shareholders
-*/
+// at least 4 cycle must be a gap between pay to treasury and dividing to shareholders
 pub const TREASURY_MATURATION_CYCLES: u8 = 4;
 pub const DUMPER_INDENT: &str = "  ";
 pub const DO_HARDCOPY_DAG_BACKUP: bool = true;
@@ -106,9 +86,8 @@ pub const COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG: f64 = 3.0 / 5.0;
 pub const MINIMUM_SHARES_IF_IS_NOT_SHAREHOLDER: f64 = 0.0000000001;
 pub const SHARE_MATURITY_CYCLE: u8 = 2;
 
-pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 700;
+pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 100;
 
-// every little help is appreciated for 7 years
 // 2 cycle after inserting a share in DB, coinbase will include the newly recorded share in it's dividend
 /*
   // to avoid spam proposals, there is a cost equal to 30 days of potential income of the proposal
@@ -615,36 +594,13 @@ pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";
 pub const OUTPUT_CHANGEBACK: &str = "OUTPUT_CHANGEBACK";
 
-/*
-  /**
-   * @brief CURRENT_AES_VERSION
-   * ver 0.0.0 to connect to Javascript clients
-   * ver 0.2.0 to connect to C++ clients
-   */
-  pub const CURRENT_AES_VERSION = "0.2.0";
+pub const CURRENT_AES_VERSION: &str = "0.0.0";
+pub const CURRENT_PGP_VERSION: &str = "0.0.0";
 
-  pub const FAKE_RIGHT_HASH_PREFIX = "_";
+// GUI settings
+pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 
-  // GUI settings
-  const uint16_t WATCHING_BLOCKS_COUNT = 300; // default is 5 minutes = 300 second
-
-*/
 // hu part
 //im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
 pub const HU_DNA_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
-/*
-}
-
-class GenRes
-{
-public:
-    GenRes();
-    GenRes(const bool &st, pub const &ms="");
-    bool status = false;
-    String msg = "";
-};
-
-#endif // CONTANTS_H
-
- */

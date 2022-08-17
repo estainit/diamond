@@ -91,7 +91,6 @@ fn main() {
 
 // config::print_config();
 
-// use Merkle crate, if exist
 
     let manual_clone_id: i16 = 0;
 // CMachine::onAboutToQuit(&w);

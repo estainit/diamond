@@ -1,3 +1,14 @@
+use crate::{constants, dlog, machine};
+use crate::lib::machine::machine_profile::EmailSettings;
+
+use lettre::{transport::smtp::{
+    authentication::{Credentials, Mechanism},
+    PoolConfig,
+}, Message, SmtpTransport, Transport, Address};
+use lettre::message::Mailbox;
+use lettre::transport::smtp::response::{Category, Code, Detail, Response, Severity};
+use serde::de::Unexpected::Option;
+
 /*
 // js name was fetchPrvEmailAndWriteOnHardDisk
 bool EmailHandler::popPrivateEmail()
@@ -89,8 +100,6 @@ void EmailHandler::loopEmailPoper()
 }
 */
 
-use crate::{constants, dlog, machine};
-use crate::lib::machine::machine_profile::EmailSettings;
 
 //old_name_was sendPrivateEmail
 pub fn send_private_email() -> bool
@@ -128,7 +137,7 @@ void EmailHandler::loopEmailSender()
 pub fn sendEmailWrapper(
     sender_: &String,
     title: &String,
-    message: &String,
+    message: String,
     receiver: &String) -> bool
 {
     dlog(
@@ -160,59 +169,119 @@ pub fn sendEmailWrapper(
 }
 
 pub fn sendMail(
-    host_: &String,
-    sender_: &String,
-    password_: &String,
-    subject_: &String,
-    message_: &String,
-    recipient_: &String,
+    host: &String,
+    sender: &String,
+    password: &String,
+    subject: &String,
+    message: String,
+    recipient: &String,
     port: u16) -> bool
 {
-    let mut subject: String = subject_.clone();
+    let mut subject: String = subject.clone();
     if machine().is_develop_mod() {
         subject = "test".to_string();     //remove beforerelease
     }
 
-    /*
-
-      // connect to poco;
-      std::string sender = sender_.toStdString();
-      std::string host = host_.toStdString();
-      std::string password = password_.toStdString();
-      std::string message = message_.toStdString();
-      std::string recipient = recipient_.toStdString();
-
-      port = static_cast<Poco::UInt16>(port);
-
-      try
-      {
-        SharedPtr<InvalidCertificateHandler> pCert = new ConsoleCertificateHandler(false);
-        Context::Ptr pContext = new Context(Context::CLIENT_USE, "", "", "", Context::VERIFY_RELAXED, 9, true, "ALL:!ADH:!LOW:!EXP:!MD5:@STRENGTH");
-
-        SSLManager::instance().initializeClient(0, pCert, pContext);
-
-        SecureSMTPClientSession session(host, port);
-        session.login();
-        session.startTLS();
-        if (!sender.empty())
-          session.login(SMTPClientSession::AUTH_LOGIN, sender, password);
-
-        MailMessage msg;
-        msg.setSender(sender);
-        msg.addRecipient(MailRecipient(MailRecipient::PRIMARY_RECIPIENT, recipient));
-        msg.setSubject(subject);
-        msg.setContent(message);
-        session.sendMessage(msg);
-        session.close();
-      }
-      catch (Exception& e)
-      {
-        std::cerr << e.message() << std::endl;
-        CLog::log("Unable to send email! " + e.message(), "app", "fatal");
+    let sender_details = sender.split("@").collect::<Vec<&str>>();
+    let (status, sender_address) = match Address::new(sender_details[0].to_string(), sender_details[1].to_string()) {
+        Ok(a) => {
+            (true, a)
+        }
+        Err(e) => {
+            dlog(
+                &format!("Failed in prepare sender address: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, Address::new("dummy", "dummy.com").unwrap())
+        }
+    };
+    if !status {
         return false;
-      }
+    }
+    let sender_mailbox = Mailbox::new(None, sender_address);
 
-     */
+    let recipient_details = recipient.split("@").collect::<Vec<&str>>();
+    let (status, recipient_address) = match Address::new(recipient_details[0].to_string(), recipient_details[1].to_string()) {
+        Ok(a) => {
+            (true, a)
+        }
+        Err(e) => {
+            dlog(
+                &format!("Failed in prepare recipient address: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, Address::new("dummy", "dummy.com").unwrap())
+        }
+    };
+    if !status {
+        return false;
+    }
+    let recipient_mailbox = Mailbox::new(None, recipient_address);
+
+
+    let email = match Message::builder()
+        .from(sender_mailbox)
+        .to(recipient_mailbox)
+        .subject(subject)
+        .body(message) {
+        Ok(m) => {
+            dlog(
+                &format!("Email was prepared: {:?}", m),
+                constants::Modules::App,
+                constants::SecLevel::Trace);
+            m
+        }
+        Err(e) => {
+            dlog(
+                &format!("Failed in Email preparing: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+    };
+
+    // Create TLS transport on port 587 with STARTTLS
+    let transporter = match SmtpTransport::starttls_relay(host) {
+        Ok(t) => t,
+        Err(e) => {
+            dlog(
+                &format!("Failed in SMTP preparing: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+    };
+
+    // Add credentials for authentication
+    let password = "";
+    let sender = transporter.credentials(Credentials::new(
+        "username".to_string(),
+        password.to_string(),
+    ))
+        // Configure expected authentication mechanism
+        .authentication(vec![Mechanism::Plain])
+        // Connection pool settings
+        .pool_config(PoolConfig::new().max_size(20))
+        .build();
+
+    // Send the email via remote relay
+    let result: Response = match sender.send(&email) {
+        Ok(r) => {
+            dlog(
+                &format!("Email was sent: {:?}", r),
+                constants::Modules::App,
+                constants::SecLevel::Trace);
+            r
+        }
+        Err(e) => {
+            dlog(
+                &format!("Failed in Email sending: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+    };
+
     return true;
 }
 

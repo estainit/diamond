@@ -6,7 +6,8 @@ use crate::lib::block::block_types::block::Block;
 
 pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, Block)
 {
-    println!("record_row oooooo: {:?}", record_row);
+    let b_body= record_row["b_body"].to_string();
+
     let obj: JSonObject = json!({
         "local_receive_date": record_row["b_receive_date"],
         "bNet": constants::SOCIETY_NAME,
@@ -19,14 +20,15 @@ pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, B
         "bDocsRootHash": record_row["b_docs_root_hash"],
         "bExtHash": record_row["b_ext_root_hash"],
         "bBacker": record_row["b_backer"],
+        "bCycle": record_row["b_cycle"],
         // "bVer": record_row[""],
         // "bDescriptions": record_row[""],
         // "bLen": record_row[""],
         // "bExtInfo": record_row[""],
         // "bDocs": record_row[""],
-        // "bCycle": record_row[""],
         // "bFVotes": record_row[""],
-    });
+
+           });
     return load_block(&obj);
 }
 

@@ -8,7 +8,7 @@ use crate::lib::database::tables::{STBL_SENDING_Q, STBL_SENDING_Q_FIELDS, STBLDE
 use crate::lib::network::broadcast_logger::{addSentBlock, listSentBloksIds};
 use crate::lib::network::network_handler::iPush;
 use crate::lib::parsing_q_handler::queue_utils::searchParsingQ;
-use crate::lib::pgp::cpgp::encrypt_pgp;
+use crate::lib::pgp::cpgp::pgp_encrypt;
 use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
 
 
@@ -124,7 +124,7 @@ pub fn preparePacketsForNeighbors(
             { continue; }
         }
 
-        let (pgp_status, email_body) = encrypt_pgp(
+        let (pgp_status, email_body) = pgp_encrypt(
             &sq_payload.to_string(),
             &sender_priv_key,
             &receiver_pub_key,

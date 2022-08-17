@@ -10,8 +10,17 @@ use rsa::{RsaPrivateKey, RsaPublicKey,
 use base64::{encode, decode};
 use std::str;
 use rand::Rng;
+
+use aes::Aes128;
+use aes::cipher::{
+    BlockCipher, BlockEncrypt, BlockDecrypt, KeyInit,
+    generic_array::GenericArray,
+};
+use postgres::types::ToSql;
+
 use substring::Substring;
 use crate::constants;
+use crate::cutils::right_padding;
 
 use crate::lib::utils::cutils as cutils;
 use crate::lib::bech_32;
@@ -89,6 +98,78 @@ pub fn get_random_number(length: u8) -> String
     }
 
     rnd_str.substring(0, length as usize).to_string()
+}
+
+pub fn aes_encrypt(msg: String, key: String) -> (bool, String)
+{
+    // FIXME: audit, security check and refactor this aes codes
+    let msg = msg.trim().to_string();
+    let chunks = cutils::chunk_string(&msg, 16);
+    let mut out: String = "".to_string();
+    let mut a_block: String;
+    for a_chunk in chunks
+    {
+        if a_chunk.len() < 16
+        {
+            a_block = aes_encrypt_16(cutils::right_padding_custom(a_chunk, 16, " ".to_string()), &key);
+        } else {
+            a_block = aes_encrypt_16(a_chunk, &key);
+        }
+        out += &*a_block;
+    }
+    return (true, out);
+}
+
+pub fn aes_encrypt_16(msg: String, key: &String) -> String
+{
+    let key = <[u8; 16]>::try_from(key.as_bytes()).unwrap();
+    let key = GenericArray::from(key);//[42u8; 16]
+
+    let mut block: [u8; 16] = <[u8; 16]>::try_from(msg.as_bytes()).unwrap();
+    let mut block = GenericArray::from(block);//[42u8; 16]
+
+    // Initialize cipher
+    let cipher = Aes128::new(&key);
+
+    // Encrypt block in-place
+    cipher.encrypt_block(&mut block);
+    let s = encode(block);
+    return s;
+}
+
+pub fn aes_decrypt(encrypted_msg: String, key: String, _aes_version:String) -> (bool, String)
+{
+    let chunks = cutils::chunk_string(&encrypted_msg, 24);
+
+    let mut out: String = "".to_string();
+    let mut a_block: String;
+    for a_chunk in chunks
+    {
+        if a_chunk.len() < 24
+        {
+            panic!("inproper cipher length! {}", a_chunk);
+        } else {
+            a_block = aes_decrypt_24(a_chunk, &key);
+        }
+        out += &*a_block;
+    }
+
+    return (true, out.trim().to_string());
+}
+
+pub fn aes_decrypt_24(msg: String, key: &String) -> String
+{
+    let key = <[u8; 16]>::try_from(key.as_bytes()).unwrap();
+    let key = GenericArray::from(key);//[42u8; 16]
+
+    let mut block = decode(msg).unwrap();
+    let mut block: [u8; 16] = <[u8; 16]>::try_from(block).unwrap();
+    let mut block = GenericArray::from(block);//[42u8; 16]
+
+    let cipher = Aes128::new(&key);
+    cipher.decrypt_block(&mut block);
+    let s = String::from_utf8(block.to_vec()).expect("Found invalid UTF-8 in deciphering aes!");
+    return s;
 }
 
 /*

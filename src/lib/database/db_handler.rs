@@ -84,8 +84,6 @@ pub fn init_db<'a>(machine: &mut CMachine) -> (bool, String)
                     false
                 }
             };
-            println!("check if databases_ are_ created ({})", are_created);
-
 
             if !are_created
             {
