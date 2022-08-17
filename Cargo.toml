@@ -40,4 +40,7 @@ futures = { version = "0.3.4", default-features = false, features = ["async-awai
 
 actix-web = "4.1.0"
 
+native-tls = "0.2.10"
+imap = "2.4.1"
 lettre = "0.10.1"
+

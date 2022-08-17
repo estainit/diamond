@@ -1,13 +1,17 @@
 use crate::{constants, dlog, machine};
 use crate::lib::machine::machine_profile::EmailSettings;
 
+use lettre::message::Mailbox;
+use lettre::transport::smtp::response::{Category, Code, Detail, Response, Severity};
+use postgres::types::ToSql;
+use serde::de::Unexpected::Option;
+
 use lettre::{transport::smtp::{
     authentication::{Credentials, Mechanism},
     PoolConfig,
 }, Message, SmtpTransport, Transport, Address};
-use lettre::message::Mailbox;
-use lettre::transport::smtp::response::{Category, Code, Detail, Response, Severity};
-use serde::de::Unexpected::Option;
+extern crate imap;
+extern crate native_tls;
 
 /*
 // js name was fetchPrvEmailAndWriteOnHardDisk
@@ -42,42 +46,6 @@ bool EmailHandler::popPrivateEmail()
   return true;
 }
 
-// js name was fetchPubEmailAndWriteOnHardDisk
-bool EmailHandler::popPublicEmail()
-{
-//  clog.app.info(`fetch Pub Email AndWriteOnHardDisk`);
-//  let msg;
-//  popCounter += 1;
-//  let machineInfo = machine.getMProfileSettingsSync();
-//  // console.log('machineInfo', machineInfo);
-//  let pubEmail = machineInfo.pubEmail;
-//  setTimeout(NetListener.fetchPubEmailAndWriteOnHardDisk, 60000 * pubEmail.fetchingIntervalByMinute);
-
-//  // fetch private inbox
-//  let params = {
-//    emailAddress: pubEmail.address,
-//    password: pubEmail.pwd,
-//    host: pubEmail.incomingMailServer,
-//    port: pubEmail.incomeIMAP,
-//    funcMode: 'readUNSEENs'
-//  }
-//  if (
-//    utils._nilEmptyFalse(params.emailAddress) ||
-//    utils._nilEmptyFalse(params.password) ||
-//    utils._nilEmptyFalse(params.host) ||
-//    utils._nilEmptyFalse(params.port)
-//  ) {
-//    msg = `missed some parameter of Public IMAP fetching`;
-//    console.log(`msg`, msg, params);
-//    clog.app.info(`msg ${msg} ${params}`);
-//    return { err: true, msg }
-//  }
-//  let popRes = await emailHandler.IMAPFetcher.fetchInbox(params);
-
-//  clog.app.info(`${popCounter}. incomeIMAP pub mailbox ${popRes}`);
-
-  return true;
-}
 
 
 void EmailHandler::loopEmailPoper()
@@ -165,10 +133,10 @@ pub fn sendEmailWrapper(
         host = machine_public_email.m_outgoing_mail_server.clone();
         port = machine_public_email.m_outgoing_smtp.parse::<u16>().unwrap();
     }
-    return sendMail(&host, &sender, &pass, title, message, receiver, port);
+    return send_mail(&host, &sender, &pass, title, message, receiver, port);
 }
 
-pub fn sendMail(
+pub fn send_mail(
     host: &String,
     sender: &String,
     password: &String,
@@ -253,9 +221,8 @@ pub fn sendMail(
     };
 
     // Add credentials for authentication
-    let password = "";
     let sender = transporter.credentials(Credentials::new(
-        "username".to_string(),
+        sender_details[0].to_string().clone(),
         password.to_string(),
     ))
         // Configure expected authentication mechanism
@@ -284,4 +251,97 @@ pub fn sendMail(
 
     return true;
 }
+
+pub fn popPublicEmail() -> (bool, String) // imap::error::Result<Option<String>>
+{
+    let pubEmail = machine().getPubEmailInfo().clone();
+    let domain = pubEmail.m_income_imap.clone(); // "imap.example.com";
+
+    return read_email(&domain, &pubEmail.m_address.clone(), &pubEmail.m_password.clone());
+}
+
+pub fn read_email(
+    domain: &String,
+    mail_address: &String,
+    mail_password: &String,
+) -> (bool, String) // imap::error::Result<Option<String>>
+{
+    dlog(
+        &format!("fetch Pub Email And Write On Hard Disk"),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
+
+    // // fetch private inbox
+    // let params = {
+    //     emailAddress: pubEmail.address,
+    //     password: pubEmail.pwd,
+    //     host: pubEmail.incomingMailServer,
+    //     port: pubEmail.incomeIMAP,
+    //     funcMode: "readUNSEENs"
+    // }
+
+
+    let tls = native_tls::TlsConnector::builder().build().unwrap();
+
+    // we pass in the domain twice to check that the server's TLS
+    // certificate is valid for the domain we're connecting to.
+    let client = imap::connect((domain.clone(), 993), domain, &tls).unwrap();
+
+    // the client we have here is unauthenticated.
+    // to do anything useful with the e-mails, we need to log in
+    let mut imap_session = match client
+        .login(mail_address, mail_password)
+        .map_err(|e| e.0) {
+        Ok(r) => { r }
+        Err(e) => {
+            dlog(
+                &format!("Failed in prepare IMAP session: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return (false, "Failed in prepare IMAP session".to_string());
+        }
+    };
+
+    // we want to fetch the first email in the INBOX mailbox
+    let dd = match imap_session.select("INBOX") {
+        Ok(m) => m,
+        Err(e) => {
+            dlog(
+                &format!("Failed in prepare IMAP inbox check: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return (false, "Failed in prepare IMAP inbox check".to_string());
+        }
+    };
+
+    // fetch message number 1 in this mailbox, along with its RFC822 field.
+    // RFC 822 dictates the format of the body of e-mails
+    let messages = match imap_session.fetch("1", "RFC822") {
+        Ok(r) => r,
+        Err(e) => {
+            dlog(
+                &format!("Failed in prepare IMAP fetch: {}", e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return (false, "Failed in prepare IMAP fetch".to_string());
+        }
+    };
+    let message = if let Some(m) = messages.iter().next() {
+        m
+    } else {
+        return (true, "".to_string());//Ok(None);
+    };
+
+    // extract the message's body
+    let body = message.body().expect("message did not have a body!");
+    let body = std::str::from_utf8(body)
+        .expect("message was not valid utf-8")
+        .to_string();
+
+    // be nice to the server and log out
+    // imap_session.logout()?;
+
+    (true, body)
+}
+
 
