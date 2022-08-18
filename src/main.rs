@@ -1,35 +1,15 @@
 extern crate core;
 
 use std::env;
-
 use std::thread;
 use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
 
-
-// use substring::Substring;
-// use der::Encode;
-// use pkcs1::LineEnding;
-// use rsa::pkcs8::{EncodePrivateKey, EncodePublicKey};
-// use std::fmt::Display;
-// use tokio::task;
-// use tokio::time::{sleep, Duration};
-
-
-// use std::thread;
-// use std::thread::sleep;
-// use std::time::Duration;
-
-// use lib::c_log::log;
-
 mod config;
 mod lib;
 mod tests;
-
-// use std::thread::sleep;
-// use std::time::Duration;
 
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
@@ -44,18 +24,11 @@ use crate::machine_handler::CMachine;
 use lib::rest::apis;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-
 fn machine() -> MutexGuard<'static, CMachine> { CMACHINE.lock().unwrap() }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
-
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
-
-/*
-#[tokio::main]
-async
-*/
 fn main() {
     //! # Diamond, the Community Maker Engine
     //! ```
@@ -65,61 +38,44 @@ fn main() {
     //! This starts whole game
     //!
     //!
-    //!
-    //!
-    //!
 
     initialize_log();
 
-    dlog(
-        &format!("Running Diamond Node (version 0.0.0). started at {}", cutils::get_now()),
-        constants::Modules::App,
-        constants::SecLevel::Info);
-
-    // let john: JSonT = json!({
-    //     "name": "John Doe",
-    //     "age": 43,
-    //     "phones": [
-    //         "+44 1234567",
-    //         "+44 2345678"
-    //     ]
-    // });
-    // println!("first phone number: {}", john["phones"][0]);
-    // // Convert to a string of JSON and print it out
-    // println!("{}", john.to_string());
-
-
-// config::print_config();
+    // config::print_config();
 
 
     let manual_clone_id: i16 = 0;
-// CMachine::onAboutToQuit(&w);
-    machine().init();
+    // CMachine::onAboutToQuit(&w);
     machine().parse_args(env::args().collect(), manual_clone_id);
+    machine().init();
     machine().boot_machine();
 
+    // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
-    machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
-
-    /*
-
-      if (true)
-      {
-        dummyTestsHandler();
-      }
-         */
-
-    // tokio::join!(
-    //         lib::rest::apis::run_web_server(),
-    //         run_loops()
-    //     );
-
-    tokio::runtime::Builder::new_multi_thread()
+    let mut web_server_msg: &str="";
+    web_server_msg = match tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()
         .unwrap()
-        .block_on(lib::rest::apis::run_web_server());
+        .block_on(lib::rest::apis::run_web_server()) {
+        Ok(r) => {
+            ". Webserver Ready on http://localhost:8080"
+        }
+        Err(e) => {
+            ". Webserver Failed!"
+        }
+    };
 
+    let msg = &format!(
+        "Running Diamond Node (version {}). started at {} {}",
+        constants::CLIENT_VERSION,
+        cutils::get_now(),
+        web_server_msg);
+    dlog(
+        msg,
+        constants::Modules::App,
+        constants::SecLevel::Info);
+    println!("{}", msg);
 
     launch_giga_loop(false);//    launch_threads();
 }

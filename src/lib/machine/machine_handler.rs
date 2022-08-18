@@ -143,9 +143,8 @@ impl CMachine {
     {
         // println!("Env args: {:?}", args);
 
-        let mut clone_id: i16 = 0;    // FIXME: this value must be defined by command line
+        let mut clone_id: i16 = 0;
         let mut is_develop_mod: bool = true;
-
 
         if args.len() > 1 {
             clone_id = args[1].parse().unwrap();
@@ -160,7 +159,6 @@ impl CMachine {
         }
 
         self.set_clone_dev(clone_id, is_develop_mod);
-        println!("parsed args: clone_id:{}", clone_id);
     }
 
     // func name was setCloneDev
@@ -869,13 +867,13 @@ impl CMachine {
     //old_name_was getReportsPath
     pub fn get_inbox_path(&self) -> String
     {
-        return self.get_clone_path() + "/inbox";
+        return self.get_clone_path() + &"/inbox";
     }
 
     //old_name_was getOutboxPath
     pub fn get_outbox_path(&self) -> String
     {
-        return self.get_clone_path() + "/outbox";
+        return self.get_clone_path() + &"/outbox";
     }
 
     //old_name_was getReportsPath
@@ -887,11 +885,11 @@ impl CMachine {
     //old_name_was getCachePath
     pub fn get_cache_path(&self) -> String
     {
-        return self.get_clone_path() + "/cache_files";
+        return self.get_clone_path() + &"/cache_files";
     }
 
     //old_name_was getDAGBackup
-    pub fn get_dag_backup(&self) -> String { return self.get_clone_path() + "/dag_backup"; }
+    pub fn get_dag_backup(&self) -> String { return self.get_clone_path() + &"/dag_backup"; }
 
     //old_name_was createFolders
     pub fn create_folders(&self) -> bool

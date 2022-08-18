@@ -744,7 +744,7 @@ impl Block {
                 machine.get_dag_backup(),
                 (cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt"),
                 &self.safeStringifyBlock(false),
-                0);
+                machine.get_app_clone_id());
         }
 
         //TODO: implementing atomicity(transactional) either in APP or DB

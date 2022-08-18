@@ -1,10 +1,10 @@
-use crate::constants;
+use crate::{constants, machine};
 use crate::lib::file_handler::file_handler::file_read;
 
 
 //old_name_was maybeBootDAGFromBundle
 pub fn maybe_boot_dag_from_bundle() -> bool {
-    let clone_id: i16 = 1;
+    let clone_id: i16 = machine().get_app_clone_id();
     // let mut bundle = String::from("");
     let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
