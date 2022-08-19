@@ -1,5 +1,5 @@
 
-CREATE OR REPLACE FUNCTION emptydb() RETURNS void AS
+CREATE OR REPLACE FUNCTION empty_db() RETURNS void AS
 $$
 DELETE FROM c_agoras;
 DELETE FROM c_agoras_posts;

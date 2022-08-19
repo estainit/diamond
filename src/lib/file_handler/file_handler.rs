@@ -33,7 +33,6 @@ pub fn file_read(
 pub fn read_exact_file(file_full_path: &String) -> (bool, String) {
     let file_full_path = get_os_care_path(file_full_path);
 
-    println!("read exact file: {}", file_full_path);
     // Open the file in read-only mode.
     match File::open(file_full_path.clone()) {
         // The file is open (no error).
@@ -178,7 +177,8 @@ pub fn get_os_care_path(the_path: &String) -> String {
 
 
 //  -  -  -  email part
-pub fn writeEmailAsFile(
+//old_name_was writeEmailAsFile
+pub fn write_email_as_file(
     title: &String,
     sender: &String,
     receiver: &String,

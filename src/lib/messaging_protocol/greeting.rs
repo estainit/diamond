@@ -1,11 +1,13 @@
 use serde_json::json;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{QVDicT, QVDRecordsT};
-use crate::lib::pgp::cpgp::{pgp_encrypt, wrap_pgp_envelope};
+use crate::lib::pgp::cpgp::{wrap_pgp_envelope};
 use crate::lib::ccrypto;
-use crate::lib::machine::machine_neighbor::getNeighbors;
+use crate::lib::machine::machine_neighbor::get_neighbors;
+use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
 
-pub fn createHandshakeRequest(
+//old_name_was createHandshakeRequest
+pub fn create_handshake_request(
     connection_type: &String,
     receiver_id: &String) -> (bool, String, String, String, String)
 {
@@ -33,7 +35,7 @@ pub fn createHandshakeRequest(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
 
-    let receivers_info: QVDRecordsT = getNeighbors(
+    let receivers_info: QVDRecordsT = get_neighbors(
         "",
         "",
         "",
@@ -68,7 +70,7 @@ pub fn createHandshakeRequest(
     }
 
 
-    let email_body: String = cutils::serializeJson(&json!({
+    let email_body: String = cutils::serialize_json(&json!({
          "type": constants::message_types::HANDSHAKE,
          "mVer": "0.0.0",
          "connectionType": connection_type,
@@ -100,7 +102,7 @@ pub fn createHandshakeRequest(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
 
-    let mut final_message: String = cutils::breakByBR(&pgp_msg, 128);
+    let mut final_message: String = cutils::break_by_br(&pgp_msg, 128);
     final_message = wrap_pgp_envelope(&final_message);
 
     return (
@@ -112,7 +114,8 @@ pub fn createHandshakeRequest(
     );
 }
 
-pub fn createNiceToMeetYou(
+//old_name_was createNiceToMeetYou
+pub fn create_nice_to_meet_you(
     connection_type: &String,
     receiver_email: &String,
     receiver_pgp_public_key: &String) -> (bool, String, String, String, String)
@@ -144,9 +147,9 @@ pub fn createNiceToMeetYou(
         "type": constants::message_types::NICETOMEETYOU,
         "connectionType": connection_type ,
         "mVer": default_message_version ,
-        "email": machine().getPubEmailInfo().m_address ,
-        "PGPPubKey": ccrypto::b64_encode(&machine().getPubEmailInfo().m_pgp_public_key)});
-    let email_body: String = cutils::serializeJson(&json_email_body);
+        "email": machine().get_pub_email_info().m_address ,
+        "PGPPubKey": ccrypto::b64_encode(&machine().get_pub_email_info().m_pgp_public_key)});
+    let email_body: String = cutils::serialize_json(&json_email_body);
     dlog(
         &format!("write NiceToMeetYou email_body1: {}", email_body),
         constants::Modules::App,
@@ -161,7 +164,7 @@ pub fn createNiceToMeetYou(
         false,
         false);
 
-    let mut email_body = cutils::breakByBR(&encrypted_message, 128);
+    let mut email_body = cutils::break_by_br(&encrypted_message, 128);
     email_body = wrap_pgp_envelope(&email_body);
     dlog(
         &format!("packetGenerators.write NiceToMeetYou email_body2: {}", email_body),
@@ -171,17 +174,18 @@ pub fn createNiceToMeetYou(
     return (
         true,
         "niceToMeetYou".to_string(), // title
-        machine().getPubEmailInfo().m_address.clone(), // sender
+        machine().get_pub_email_info().m_address.clone(), // sender
         receiver_email.to_string(),
         email_body);
 
     //TODO after successfull sending must save some part the result and change the email to confirmed
 }
 
-pub fn createHereIsNewNeighbor(
+//old_name_was createHereIsNewNeighbor
+pub fn create_here_is_new_neighbor(
     connection_type: &String,
     machine_email: &String,
-    machine_PGP_private_key: &String,
+    machine_pgp_private_key: &String,
     receiver_email: &String,
     receiver_pgp_public_key: &String,
     new_neighbor_email: &String,
@@ -200,39 +204,39 @@ pub fn createHereIsNewNeighbor(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
 
-    let default_mVer = "0.0.0";
+    let default_messaging_ver = "0.0.0";
     let json_email_body = json!({
         "type": constants::message_types::HEREISNEWNEIGHBOR,
-        "mVer": default_mVer ,
+        "mVer": default_messaging_ver ,
         "connectionType": connection_type ,
         "newNeighborEmail": new_neighbor_email ,
         "newNeighborPGPPubKey": ccrypto::b64_encode(new_neighbor_pgp_public_key)});  //sender's iPGP public key
 
-    let email_body: String = cutils::serializeJson(&json_email_body);
+    let email_body: String = cutils::serialize_json(&json_email_body);
 
 
 //  let params = {
 //   shouldSign: true, // in real world you can not sign an email in negotiation step in which the receiver has not your pgp public key
 //   shouldCompress: true,
 //   message: email_body,
-//   sendererPrvKey: machine_PGP_private_key,
+//   sendererPrvKey: machine_pgp_private_key,
 //   receiverPubKey: receiver_pgp_public_key
 //  }
 
     dlog(
-        &format!("write Here Is New Neighbor going to pgp mVer({}) connection_type({}) new_neighbor_email({})", default_mVer, connection_type, new_neighbor_email),
+        &format!("write Here Is New Neighbor going to pgp mVer({}) connection_type({}) new_neighbor_email({})", default_messaging_ver, connection_type, new_neighbor_email),
         constants::Modules::App,
         constants::SecLevel::Info);
 
     let (_pgp_status, message) = pgp_encrypt(
         &email_body,
-        machine_PGP_private_key,
+        machine_pgp_private_key,
         receiver_pgp_public_key,
         &"".to_string(),
         &"".to_string(),
         true,
         true);
-    let mut message = cutils::breakByBR(&message, 128);
+    let mut message = cutils::break_by_br(&message, 128);
     message = wrap_pgp_envelope(&message);
 
     return (

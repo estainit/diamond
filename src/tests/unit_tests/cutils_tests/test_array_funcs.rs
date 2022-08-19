@@ -8,7 +8,7 @@ pub mod test_array_funcs {
     #[test]
     pub fn test_array_diff() {
         assert_eq!(
-            cutils::arrayDiff(&vec!["a".to_string(), "b".to_string(), "c".to_string()],&vec!["b".to_string()]),
+            cutils::array_diff(&vec!["a".to_string(), "b".to_string(), "c".to_string()], &vec!["b".to_string()]),
             vec!["a".to_string(), "c".to_string()]
         );
     }

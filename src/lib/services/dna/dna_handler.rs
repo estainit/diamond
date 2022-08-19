@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::cutils::isGreaterThanNow;
+use crate::cutils::is_greater_than_now;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, DNAShareCountT, DNASharePercentT};
-use crate::lib::database::abs_psql::{q_customQuery, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::STBL_DNA_SHARES;
 
 
@@ -35,7 +35,8 @@ public:
 
 */
 
-pub fn insertAShare(doc: &Document) -> (bool, String)
+//old_name_was insertAShare
+pub fn insert_a_share(doc: &Document) -> (bool, String)
 {
     let single_value = doc.get_doc_hash().clone();
     let (_status, records) = q_select(
@@ -51,7 +52,7 @@ pub fn insertAShare(doc: &Document) -> (bool, String)
         return (false, "share already exist!".to_string()); // "The DNA document (${utils.hash6c(dna.hash)}) is already recorded"};
     }
 
-    if isGreaterThanNow(&doc.m_doc_creation_date)
+    if is_greater_than_now(&doc.m_doc_creation_date)
     {
         return (false, format!("share is newer than now! {}", doc.m_doc_creation_date));
     }
@@ -143,18 +144,19 @@ GenRes DNAHandler::insertAShare(JSonObject& params)
  */
 
  */
-pub fn getDNAActiveDateRange(cDate: &CDateT) -> (String, String)
+//old_name_was getDNAActiveDateRange
+pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 {
     // cDate = cutils::get_now();
 
     let mut the_range = cutils::get_a_cycle_range(
-        cDate,
+        c_date,
         constants::SHARE_MATURITY_CYCLE,
         0);
 
     if constants::TIME_GAIN == 1
     {
-        the_range.from = cutils::yearsBefore(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
+        the_range.from = cutils::years_before(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
     } else {
         the_range.from = cutils::minutes_before(100 * cutils::get_cycle_by_minutes(), &the_range.from);
     }
@@ -162,7 +164,8 @@ pub fn getDNAActiveDateRange(cDate: &CDateT) -> (String, String)
 }
 
 // TODO: since shares are counting for before 2 last cycles, so implementing a caching system will be much helpfull where we have millions of shareholders
-pub fn getSharesInfo(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
+//old_name_was getSharesInfo
+pub fn get_shares_info(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
 {
     // cDate = cutils::get_now();
 
@@ -178,26 +181,26 @@ pub fn getSharesInfo(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShar
         constants::Modules::App,
         constants::SecLevel::Trace);
 
-    let (minCreationDate, maxCreationDate) = getDNAActiveDateRange(cDate);
+    let (min_creation_date, max_creation_date) = get_dna_active_date_range(cDate);
 
 
     let mut query = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
     {
         query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + STBL_DNA_SHARES;
-        query += &*(" WHERE dn_creation_date between '".to_owned() + &minCreationDate + &"' AND '".to_owned() + &maxCreationDate + "' GROUP BY dn_shareholder ORDER BY sum_ DESC");
+        query += &*(" WHERE dn_creation_date between '".to_owned() + &min_creation_date + &"' AND '".to_owned() + &max_creation_date + "' GROUP BY dn_shareholder ORDER BY sum_ DESC");
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
         query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + STBL_DNA_SHARES;
-        query += &*(" WHERE dn_creation_date between \"".to_owned() + &minCreationDate + &"\" AND \"".to_owned() + &maxCreationDate + "\" GROUP BY dn_shareholder ORDER BY sum_ DESC");
+        query += &*(" WHERE dn_creation_date between \"".to_owned() + &min_creation_date + &"\" AND \"".to_owned() + &max_creation_date + "\" GROUP BY dn_shareholder ORDER BY sum_ DESC");
     }
     dlog(
-        &format!("Retrieve shares for range cDate({}) -> ({}, {})", cDate, minCreationDate, maxCreationDate),
+        &format!("Retrieve shares for range cDate({}) -> ({}, {})", cDate, min_creation_date, max_creation_date),
         constants::Modules::App,
         constants::SecLevel::Info);
 
     // let msg = `Retrieve shares: SELECT shareholder _shareholder, SUM(shares) _share FROM i_dna_shares WHERE creation_date between '${minCreationDate}' AND '${maxCreationDate}' GROUP BY _shareholder ORDER BY _share DESC `;
-    let (_status, records) = q_customQuery(
+    let (_status, records) = q_custom_query(
         &query,
         &vec![],
         true);
@@ -242,15 +245,16 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
 }
 
 */
-pub fn getMachineShares(cDate: &CDateT) -> (String, DNAShareCountT, DNASharePercentT)
+//old_name_was getMachineShares
+pub fn get_machine_shares(c_date: &CDateT) -> (String, DNAShareCountT, DNASharePercentT)
 {
-    let (sum_shares, share_amount_per_holder, _tmp) = getSharesInfo(cDate);
-    let backer_address: CAddressT = machine().getBackerAddress();
+    let (sum_shares, share_amount_per_holder, _tmp) = get_shares_info(c_date);
+    let backer_address: CAddressT = machine().get_backer_address();
     let mut shares: DNAShareCountT = 0.0;
     if share_amount_per_holder.contains_key(&*backer_address) {
         shares = share_amount_per_holder[&backer_address];
     }
-    let percentage: DNASharePercentT = cutils::iFloorFloat((shares * 100.0) / sum_shares);
+    let percentage: DNASharePercentT = cutils::i_floor_float((shares * 100.0) / sum_shares);
     return (backer_address, shares, percentage);
 }
 /*

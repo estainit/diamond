@@ -6,8 +6,8 @@ use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::STBL_LOGS_BROADCAST;
 use crate::lib::utils::dumper::{dump_hashmap_of_str_string, dump_it};
 
-
-pub fn listSentBlocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
+//old_name_was listSentBlocks
+pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
 {
     let mut after_that = after_that_.clone();
     if after_that == ""
@@ -37,9 +37,10 @@ pub fn listSentBlocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
     records
 }
 
-pub fn listSentBloksIds() -> Vec<String>
+//old_name_was listSentBloksIds
+pub fn list_sent_bloks_ids() -> Vec<String>
 {
-    let rows: QVDRecordsT = listSentBlocks(&"".to_string(), vec!["lb_type", "lb_code", "lb_sender", "lb_receiver"]);
+    let rows: QVDRecordsT = list_sent_blocks(&"".to_string(), vec!["lb_type", "lb_code", "lb_sender", "lb_receiver"]);
     let mut out: Vec<String> = vec![];
     for a_row in rows {
         out.push(vec![
@@ -53,8 +54,8 @@ pub fn listSentBloksIds() -> Vec<String>
     return out;
 }
 
-
-pub fn addSentBlock(values: &mut HashMap<&str, &(dyn ToSql + Sync)>) -> bool
+//old_name_was addSentBlock
+pub fn add_sent_block(values: &mut HashMap<&str, &(dyn ToSql + Sync)>) -> bool
 {
     dlog(
         &format!("add SentBlock: {:?}", &values),

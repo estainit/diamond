@@ -4,7 +4,7 @@ use std::thread;
 use postgres::{Client, NoTls};
 use crate::lib::{constants};
 use crate::lib::dlog::dlog;
-use crate::{CMachine, dbhandler, machine};
+use crate::{CMachine, dbhandler};
 use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
@@ -20,7 +20,8 @@ impl DBHandler {
     }
 }
 
-pub fn getConnection() -> Client {
+//old_name_was getConnection
+pub fn get_connectionZ() -> Client {
     let mut database_name: String = constants::psql_db::DB_NAME.to_string();
     let clone_id = 0;//machine().get_app_clone_id();
     if clone_id > 0 {
@@ -68,6 +69,7 @@ pub fn getConnection() -> Client {
 //     }
 }
 
+//old_name_was getConnection
 pub fn get_connection(clone_id: i8) -> Client {
     let mut database_name: String = constants::psql_db::DB_NAME.to_string();
     // let clone_id = 0;//machine().get_app_clone_id();

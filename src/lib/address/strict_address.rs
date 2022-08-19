@@ -34,7 +34,7 @@ pub fn create_a_new_strict_address<'a>(
                 &format!("Couldn't create Strict ECDSA key pair"),
                 constants::Modules::App,
                 constants::SecLevel::Fatal);
-            return (false, UnlockDocument::get_null());
+            return (false, UnlockDocument::new());
         }
 
         map_pub_key_to_priv_key.insert(public_key.clone(), private_key);

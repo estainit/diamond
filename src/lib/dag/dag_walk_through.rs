@@ -1,17 +1,18 @@
 use std::collections::HashMap;
 use crate::{CMachine, constants, dlog, machine};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_factory::{load_block, load_block_by_db_record};
+use crate::lib::block::block_types::block_factory::{load_block_by_db_record};
 use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT};
-use crate::lib::dag::dag::searchInDAG;
+use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::OrderModifier;
 use crate::lib::database::tables::STBL_BLOCKS_FIELDS;
 
 
 //returns latest block which is already recorded in DAG
-pub fn getLatestBlockRecord() -> (bool, Block)
+//old_name_was getLatestBlockRecord
+pub fn get_latest_block_record() -> (bool, Block)
 {
-    let last_recorded_bLock: QVDRecordsT = searchInDAG(
+    let last_recorded_bLock: QVDRecordsT = search_in_dag(
         vec![],
         STBL_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
@@ -287,9 +288,9 @@ pub fn updateCachedBlocks(
         ("b_hash".to_string(), b_hash.to_string()),
         ("b_creation_date".to_string(), b_creation_date.to_string()),
         ("b_utxo_imported".to_string(), b_utxo_imported.to_string())])];
-    machine.cachedBlocks("append", blocks, &"".to_string());
+    machine.cached_blocks("append", blocks, &"".to_string());
 
-    machine.cachedBlockHashes("append", &vec![b_hash.to_string()]);
+    machine.cached_block_hashes("append", &vec![b_hash.to_string()]);
 
     return true;
 }

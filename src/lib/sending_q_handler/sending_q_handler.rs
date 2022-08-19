@@ -2,18 +2,19 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VVString};
-use crate::lib::dag::dag::searchInDAG;
+use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{STBL_SENDING_Q, STBL_SENDING_Q_FIELDS, STBLDEV_SENDING_Q};
-use crate::lib::machine::machine_neighbor::getActiveNeighbors;
-use crate::lib::network::broadcast_logger::{addSentBlock, listSentBloksIds};
-use crate::lib::network::network_handler::iPush;
-use crate::lib::parsing_q_handler::queue_utils::searchParsingQ;
-use crate::lib::pgp::cpgp::{pgp_encrypt, wrap_pgp_envelope};
+use crate::lib::machine::machine_neighbor::get_active_neighbors;
+use crate::lib::network::broadcast_logger::{add_sent_block, list_sent_bloks_ids};
+use crate::lib::network::network_handler::i_push;
+use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
+use crate::lib::pgp::cpgp::{wrap_pgp_envelope};
+use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
 use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
 
-
-pub fn preparePacketsForNeighbors(
+//old_name_was preparePacketsForNeighbors
+pub fn prepare_packets_for_neighbors(
     sq_type: &str,
     sq_code: &str,
     sq_payload: &str,
@@ -43,8 +44,8 @@ pub fn preparePacketsForNeighbors(
             constants::SecLevel::Trace);
     }
 
-    let mp_code = machine().getSelectedMProfile();
-    let mut neighbors: QVDRecordsT = getActiveNeighbors(&mp_code);
+    let mp_code = machine().get_selected_m_profile();
+    let mut neighbors: QVDRecordsT = get_active_neighbors(&mp_code);
     if sq_receivers.len() > 0
     {
         // keep only requested neighbors
@@ -89,7 +90,7 @@ pub fn preparePacketsForNeighbors(
         return vec![];
     }
 
-    // let pub_email_info: &EmailSettings = machine().getPubEmailInfo();
+    // let pub_email_info: &EmailSettings = machine().get_pub_email_info();
     // let prive_email_info: &EmailSettings = machine().getPrivEmailInfo();
 
     let mut packets: VVString = vec![];
@@ -106,16 +107,16 @@ pub fn preparePacketsForNeighbors(
 
         if connection_type == constants::PRIVATE
         {
-            sender = machine().getPrivEmailInfo().m_address.clone();
-            sender_priv_key = machine().getPrivEmailInfo().m_pgp_private_key.clone();
+            sender = machine().get_priv_email_info().m_address.clone();
+            sender_priv_key = machine().get_priv_email_info().m_pgp_private_key.clone();
         } else {
-            sender = machine().getPubEmailInfo().m_address.clone();
-            sender_priv_key = machine().getPubEmailInfo().m_pgp_private_key.clone();
+            sender = machine().get_pub_email_info().m_address.clone();
+            sender_priv_key = machine().get_pub_email_info().m_pgp_private_key.clone();
         }
 
         let key: String = vec![sq_type, sq_code, &*sender, &receiver_email].join("");
 
-        if listSentBloksIds().contains(&key)
+        if list_sent_bloks_ids().contains(&key)
         {
             dlog(
                 &format!("already send packet! {}", key),
@@ -141,7 +142,7 @@ pub fn preparePacketsForNeighbors(
                 constants::SecLevel::Error);
             continue;
         }
-        let mut email_body = cutils::breakByBR(&email_body, 128);
+        let mut email_body = cutils::break_by_br(&email_body, 128);
         email_body = wrap_pgp_envelope(&email_body);
 
         // control output size
@@ -166,7 +167,7 @@ pub fn preparePacketsForNeighbors(
             ]);
 
 
-        addSentBlock(&mut HashMap::from([
+        add_sent_block(&mut HashMap::from([
             ("lb_type", &sq_type as &(dyn ToSql + Sync)),
             ("lb_code", &sq_code as &(dyn ToSql + Sync)),
             ("lb_title", &sq_title as &(dyn ToSql + Sync)),
@@ -181,8 +182,8 @@ pub fn preparePacketsForNeighbors(
     //TODO after successfull sending must save some part the result and change the email to confirmed
 }
 
-
-pub fn pushIntoSendingQ(
+//old_name_was pushIntoSendingQ
+pub fn push_into_sending_q(
     sq_type: &str,
     sq_code: &str,
     sq_payload: &str,
@@ -192,7 +193,7 @@ pub fn pushIntoSendingQ(
     denay_double_send_check: bool,
 ) -> bool
 {
-    let packets: VVString = preparePacketsForNeighbors(
+    let packets: VVString = prepare_packets_for_neighbors(
         sq_type,
         sq_code,
         sq_payload,
@@ -280,7 +281,8 @@ pub fn pushIntoSendingQ(
     return true;
 }
 
-pub fn fetchFromSendingQ(
+//old_name_was fetchFromSendingQ
+pub fn fetch_from_sending_q(
     mut fields: Vec<&str>,
     clauses: ClausesT,
     order: OrderT) -> QVDRecordsT
@@ -299,7 +301,8 @@ pub fn fetchFromSendingQ(
     return records;
 }
 
-pub fn cancelIvokeBlockRequest(block_hash: &CBlockHashT)
+//old_name_was cancelIvokeBlockRequest
+pub fn cancel_ivoke_block_request(block_hash: &CBlockHashT)
 {
     q_delete(
         STBL_SENDING_Q,
@@ -310,7 +313,8 @@ pub fn cancelIvokeBlockRequest(block_hash: &CBlockHashT)
         false);
 }
 
-pub fn maybeCancelIvokeBlocksRequest()
+//old_name_was maybeCancelIvokeBlocksRequest
+pub fn maybe_cancel_ivoke_blocks_request()
 {
 
     // TODO: optimize it
@@ -340,7 +344,7 @@ pub fn maybeCancelIvokeBlocksRequest()
     }
 
     let hashes = hashes.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
-    let existed_in_DAG: QVDRecordsT = searchInDAG(
+    let existed_in_DAG: QVDRecordsT = search_in_dag(
         vec![ModelClause {
             m_field_name: "b_hash",
             m_field_single_str_value: "",
@@ -359,11 +363,11 @@ pub fn maybeCancelIvokeBlocksRequest()
 
     for a_block in existed_in_DAG
     {
-        cancelIvokeBlockRequest(&a_block["b_hash"].to_string());
+        cancel_ivoke_block_request(&a_block["b_hash"].to_string());
     }
 
     // remove existed in parsing q
-    let existed_in_parsing_queue: QVDRecordsT = searchParsingQ(
+    let existed_in_parsing_queue: QVDRecordsT = search_parsing_q(
         vec![ModelClause {
             m_field_name: "pq_code",
             m_field_single_str_value: "",
@@ -381,16 +385,16 @@ pub fn maybeCancelIvokeBlocksRequest()
 
     for a_block in existed_in_parsing_queue
     {
-        cancelIvokeBlockRequest(&a_block["pq_code"].to_string());
+        cancel_ivoke_block_request(&a_block["pq_code"].to_string());
     }
 }
 
 //old_name_was sendOutThePacket
 pub fn send_out_the_packet() -> bool
 {
-    maybeCancelIvokeBlocksRequest();
+    maybe_cancel_ivoke_blocks_request();
 
-    let cpackets: QVDRecordsT = fetchFromSendingQ(vec![],vec![],vec![]);
+    let cpackets: QVDRecordsT = fetch_from_sending_q(vec![], vec![], vec![]);
     if cpackets.len() == 0
     {
         dlog(
@@ -403,7 +407,7 @@ pub fn send_out_the_packet() -> bool
 
     // always pick the first pkt! TODO: maybe more intelligent solution needed
     let packet: &QVDicT = &cpackets[0];
-    let send_res: bool = iPush(
+    let send_res: bool = i_push(
         &packet["sq_title"].to_string(),
         &packet["sq_payload"].to_string(),
         &packet["sq_sender"].to_string(),
@@ -411,7 +415,7 @@ pub fn send_out_the_packet() -> bool
 
     // remove packet from sending queue
     if send_res {
-        rmoveFromSendingQ(vec![
+        rmove_from_sending_q(vec![
             simple_eq_clause("sq_type", &packet["sq_type"]),
             simple_eq_clause("sq_code", &packet["sq_code"]),
             simple_eq_clause("sq_sender", &packet["sq_sender"]),
@@ -421,7 +425,8 @@ pub fn send_out_the_packet() -> bool
     return true;
 }
 
-pub fn rmoveFromSendingQ(clauses: ClausesT) -> bool
+//old_name_was rmoveFromSendingQ
+pub fn rmove_from_sending_q(clauses: ClausesT) -> bool
 {
     q_delete(
         STBL_SENDING_Q,

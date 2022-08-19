@@ -1,30 +1,21 @@
 use crate::{constants, cutils, dlog};
 use crate::cutils::TimeRange;
 use crate::lib::custom_types::{CDateT, CMPAIValueT};
-use crate::lib::database::abs_psql::q_customQuery;
+use crate::lib::database::abs_psql::q_custom_query;
 use crate::lib::database::tables::STBL_TREASURY;
 
-/*
-
-#ifndef TREASURYHANDLER_H
-#define TREASURYHANDLER_H
-
-
-class TreasuryHandler
-
-
-*/
-pub fn getTreasureIncomesDateRange(c_date: &CDateT) -> TimeRange
+//old_name_was getTreasureIncomesDateRange
+pub fn get_treasure_incomes_date_range(c_date: &CDateT) -> TimeRange
 {
     return cutils::get_a_cycle_range(c_date, constants::TREASURY_MATURATION_CYCLES, 0);
 }
 
-
-pub fn calcTreasuryIncomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
+//old_name_was calcTreasuryIncomes
+pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
 {
 
     // retrieve the total treasury incomes in last cycle (same as share cycle calculation)
-    let the_range = getTreasureIncomesDateRange(c_date);
+    let the_range = get_treasure_incomes_date_range(c_date);
 
     let mut complete_query: String = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
@@ -36,7 +27,7 @@ pub fn calcTreasuryIncomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
         complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
     }
 
-    let (status, records) = q_customQuery(
+    let (status, records) = q_custom_query(
         &complete_query,
         &vec![],
         true);

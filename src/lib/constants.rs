@@ -193,7 +193,7 @@ pub const DEFAULT: &str = "Default";
 pub const DEFAULT_BLOCK_VERSION: &str = "0.0.0";
 pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
 pub const DEFAULT_CONTENT_VERSION: &str = "0.0.0";
-pub const DEFAULT_RSA_KEY_LENGTH: usize = 256;//4096;
+pub const DEFAULT_RSA_KEY_LENGTH: usize = 2048;
 pub const PUBLIC: &str = "Public";
 pub const PRIVATE: &str = "Private";
 pub const GENERAL: &str = "General";
@@ -606,4 +606,4 @@ pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6
 // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
 pub(crate) const TIME_GAIN: u32 = 10;
 
-pub(crate) const LAUNCH_DATE: &str = "2023-08-19 14:30:01";
+pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-19 21:50:01";

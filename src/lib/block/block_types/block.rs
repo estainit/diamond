@@ -434,10 +434,10 @@ impl Block {
         // recaluculate block final length
         j_block["bLen"] = constants::LEN_PROP_PLACEHOLDER.into();
         j_block["bLen"] = cutils::padding_length_value(
-            cutils::serializeJson(&j_block).len().to_string(),
+            cutils::serialize_json(&j_block).len().to_string(),
             constants::LEN_PROP_LENGTH).into();
 
-        let out = cutils::serializeJson(&j_block);//serde_json::to_string
+        let out = cutils::serialize_json(&j_block);//serde_json::to_string
         dlog(
             &format!(
                 "Safe stringified block(Base class) Block({}) length({}) the block: {}",
@@ -742,7 +742,7 @@ impl Block {
         if constants::DO_HARDCOPY_DAG_BACKUP {
             file_write(
                 machine.get_dag_backup(),
-                (cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt"),
+                cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt",
                 &self.safeStringifyBlock(false),
                 machine.get_app_clone_id());
         }
@@ -752,7 +752,7 @@ impl Block {
         // insert into DB
         let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
         let confidence_float = confidence_string.parse::<f64>().unwrap();
-        let signals = cutils::serializeJson(&self.m_block_signals);
+        let signals = cutils::serialize_json(&self.m_block_signals);
         let body = wrapSafeContentForDB(&self.safeStringifyBlock(false), constants::WRAP_SAFE_VERION.to_string()).content;
         let docs_count = self.m_block_documents.len() as i32;
         let ancestors = self.m_block_ancestors.join(",");

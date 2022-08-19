@@ -5,8 +5,8 @@ use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::STBL_MACHINE_NEIGHBORS;
-use crate::lib::messaging_protocol::greeting::{createHandshakeRequest, createHereIsNewNeighbor, createNiceToMeetYou};
-use crate::lib::network::network_handler::iPush;
+use crate::lib::messaging_protocol::greeting::{create_handshake_request, create_here_is_new_neighbor, create_nice_to_meet_you};
+use crate::lib::network::network_handler::i_push;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct NeighborPresentation {
@@ -82,8 +82,8 @@ struct TmpData{
     machine_PGP_private_key = getPrivEmailInfo().m_PGP_private_key;
     machine_email = getPrivEmailInfo().m_address;
   }else{
-    machine_PGP_private_key = getPubEmailInfo().m_PGP_private_key;
-    machine_email = getPubEmailInfo().m_address;
+    machine_PGP_private_key = get_pub_email_info().m_PGP_private_key;
+    machine_email = get_pub_email_info().m_address;
   }
   String neighbor_email_address = neiInfo[0]["n_email"].to_string();
 
@@ -284,7 +284,8 @@ pub fn add_a_new_neighbor(
     );
 }
 
-pub fn getNeighbors(
+//old_name_was getNeighbors
+pub fn get_neighbors(
     neighbor_type: &str,
     connection_status: &str,
     mp_code: &str,
@@ -326,7 +327,8 @@ pub fn getNeighbors(
     return records;
 }
 
-pub fn getActiveNeighbors(mp_code: &str) -> QVDRecordsT
+//old_name_was getActiveNeighbors
+pub fn get_active_neighbors(mp_code: &str) -> QVDRecordsT
 {
     let (_status, records) = q_select(
         STBL_MACHINE_NEIGHBORS,
@@ -341,7 +343,8 @@ pub fn getActiveNeighbors(mp_code: &str) -> QVDRecordsT
     return records;
 }
 
-pub fn handshakeNeighbor(n_id: &String, connection_type: &String) -> bool
+//old_name_was handshakeNeighbor
+pub fn handshake_neighbor(n_id: &String, connection_type: &String) -> bool
 {
     dlog(
         &format!("handshake Neighbor: {} {}", n_id, connection_type),
@@ -353,7 +356,7 @@ pub fn handshakeNeighbor(n_id: &String, connection_type: &String) -> bool
         title,
         sender_email,
         receiver_email,
-        message) = createHandshakeRequest(connection_type, n_id);
+        message) = create_handshake_request(connection_type, n_id);
     dlog(
         &format!("packet Generators.write Handshake: sender_email({}) title({}) sender_email({}) receiver_email({}) message({})",
                  sender_email, title, sender_email, receiver_email, message),
@@ -364,15 +367,15 @@ pub fn handshakeNeighbor(n_id: &String, connection_type: &String) -> bool
 
     // the concept is the node public email is propagated to more neighbors in order to strength connectivity,
     // but the node private email will be used as a second plan to defence against the any kind of spaming/DOS Attacks ...
-    return iPush(
+    return i_push(
         &title,
         &message,
         &sender_email,
         &receiver_email);
 }
 
-
-pub fn parseHandshake(
+//old_name_was parseHandshake
+pub fn parse_handshake(
     sender_email: &String,
     message: &JSonObject,
     connection_type: &String) -> (bool, bool)
@@ -396,7 +399,7 @@ pub fn parseHandshake(
     // if user needs to change publickkey or ... she can send alternate messages like changeMyPublicKey(which MUST be signed with current key)
     // retreive sender's info
     let mut email_already_exist: bool = false;
-    let sender_info: QVDRecordsT = getNeighbors(connection_type, "", "", "", sender_email);
+    let sender_info: QVDRecordsT = get_neighbors(connection_type, "", "", "", sender_email);
 
     if sender_info.len() > 0
     {
@@ -457,7 +460,7 @@ pub fn parseHandshake(
     }
 
     // send response niceToMeetYou
-    let (status, title, sender_email_, receiver_email, message_) = createNiceToMeetYou(
+    let (status, title, sender_email_, receiver_email, message_) = create_nice_to_meet_you(
         connection_type,
         sender_email,
         &pgp_public_key);
@@ -470,7 +473,7 @@ pub fn parseHandshake(
     if !status
     { return (false, true); }
 
-    let _sent: bool = iPush(
+    let _sent: bool = i_push(
         &title,
         &message_,
         &sender_email_,
@@ -479,13 +482,14 @@ pub fn parseHandshake(
     // broadcast the email to other neighbors
     if connection_type == constants::PUBLIC
     {
-        floodEmailToNeighbors(sender_email, &pgp_public_key);
+        flood_email_to_neighbors(sender_email, &pgp_public_key);
     }
 
     return (true, true);
 }
 
-pub fn floodEmailToNeighbors(
+//old_name_was floodEmailToNeighbors
+pub fn flood_email_to_neighbors(
     email: &String,
     pgp_public_key: &String) -> bool
 {
@@ -497,7 +501,7 @@ pub fn floodEmailToNeighbors(
 
     if pgp_public_key == ""
     {
-        let email_info: QVDRecordsT = getNeighbors(constants::PUBLIC, "", "", "", email);
+        let email_info: QVDRecordsT = get_neighbors(constants::PUBLIC, "", "", "", email);
         if email_info.len() == 0
         {
             dlog(
@@ -519,10 +523,10 @@ pub fn floodEmailToNeighbors(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let active_neighbors: QVDRecordsT = getNeighbors(
+    let active_neighbors: QVDRecordsT = get_neighbors(
         constants::PUBLIC,
         constants::YES,
-        &machine().getSelectedMProfile(),
+        &machine().get_selected_m_profile(),
         "",
         "");
 
@@ -568,10 +572,10 @@ pub fn floodEmailToNeighbors(
                 m_date: cutils::get_now(),
             });
 
-            let (status, title, sender_email, receiver_email, message) = createHereIsNewNeighbor(
+            let (status, title, sender_email, receiver_email, message) = create_here_is_new_neighbor(
                 &constants::PUBLIC.to_string(),
-                &machine().getPubEmailInfo().m_address,
-                &machine().getPubEmailInfo().m_pgp_private_key,
+                &machine().get_pub_email_info().m_address,
+                &machine().get_pub_email_info().m_pgp_private_key,
                 &n_email,
                 &neighbor["n_pgp_public_key"].to_string(),
                 email,  //newNeighborEmail
@@ -588,7 +592,7 @@ pub fn floodEmailToNeighbors(
                 constants::Modules::App,
                 constants::SecLevel::Info);
 
-            iPush(
+            i_push(
                 &title,
                 &message,
                 &sender_email,

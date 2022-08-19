@@ -707,15 +707,15 @@ pub fn rsa_encrypt_with_pub_key(pem_pub_key: &String, message: &String) -> (bool
 pub fn rsa_decrypt_with_prv_key(pem_prv_key: &String, cipher: &String) -> (bool, String) {
     let mut output: String = "".to_string();
     let prv_key = rsa_read_pem_prv_key(&pem_prv_key);
-    for a_chunk in cutils::chunk_string(&cipher, 64) {
-        let (status, a_chunk_dec) = rsa_decrypt_with_prv_key_64(&prv_key, &a_chunk);
+    for a_chunk in cutils::chunk_string(&cipher, 512) {
+        let (status, a_chunk_dec) = rsa_decrypt_with_prv_key_512(&prv_key, &a_chunk);
         if !status { return (false, "".to_string()); }
         output += &a_chunk_dec;
     }
     return (true, output);
 }
 
-pub fn rsa_decrypt_with_prv_key_64(prv_key: &RsaPrivateKey, cipher: &String) -> (bool, String) {
+pub fn rsa_decrypt_with_prv_key_512(prv_key: &RsaPrivateKey, cipher: &String) -> (bool, String) {
     let ciph = hex::decode(cipher).unwrap();
     let padding = PaddingScheme::new_pkcs1v15_encrypt();
     match prv_key.decrypt(padding, &ciph) {

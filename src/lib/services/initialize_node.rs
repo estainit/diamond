@@ -3,8 +3,8 @@ use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::ini
 use crate::lib::database::abs_psql::{OrderModifier, q_select, simple_eq_clause};
 use crate::lib::database::tables::STBL_BLOCKS;
 use crate::lib::k_v_handler::set_value;
-use crate::lib::services::polling::polling_handler::initPollingProfiles;
-use crate::lib::services::society_rules::society_rules::initAdministrativeConfigurationsHistory;
+use crate::lib::services::polling::polling_handler::init_polling_profiles;
+use crate::lib::services::society_rules::society_rules::init_administrative_configurations_history;
 
 //old_name_was maybeInitDAG
 pub fn maybe_init_dag(machine: &mut CMachine) -> bool
@@ -33,10 +33,10 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
     initGenesisBlock(machine);
 
     // init Administrative Configurations History
-    initAdministrativeConfigurationsHistory(machine);
+    init_administrative_configurations_history(machine);
 
     // init Polling Profiles
-    initPollingProfiles();
+    init_polling_profiles();
 
     // Initialize Agoras content
     /*

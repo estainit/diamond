@@ -3,7 +3,7 @@ use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{COutputIndexT, JSonArray, JSonObject};
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{compactUnlockersArray, stringify_inputs, stringify_outputs, TInput, TOutput};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{compact_unlockers_array, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -54,13 +54,13 @@ impl BasicTxDocument {
 //  document["dLen"] = constants::LEN_PROP_PLACEHOLDER;
 //  document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).len());
 
-        let res: String = cutils::serializeJson(&document);
+        let res: String = cutils::serialize_json(&document);
         dlog(
             &format!("3 safe Sringify Doc({}): {}/{} length: {} serialized document: {}",
                      cutils::hash8c(&doc.m_doc_hash),
                      doc.m_doc_type,
                      doc.m_doc_class,
-                     cutils::sepNum(res.len() as i64),
+                     cutils::sep_num_3(res.len() as i64),
                      res),
             constants::Modules::App,
             constants::SecLevel::Trace);
@@ -162,7 +162,7 @@ impl BasicTxDocument {
         // impacting uSets
         if ext_info_in_document
         {
-            document["dExtInfo"] = compactUnlockersArray(&document["dExtInfo"]);
+            document["dExtInfo"] = compact_unlockers_array(&document["dExtInfo"]);
         }
 
         if self.m_data_and_process_payment_indexes.len() > 0

@@ -139,7 +139,8 @@ impl CMachine{
 
     */
 
-    pub fn getInvokeLeavesGap(&mut self) -> TimeBySecT
+    //old_name_was getInvokeLeavesGap
+    pub fn get_invoke_leaves_gap(&mut self) -> TimeBySecT
     {
         //      return 500;
         let mut gap_by_seconds: TimeBySecT;

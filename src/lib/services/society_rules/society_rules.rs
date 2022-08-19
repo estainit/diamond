@@ -6,152 +6,29 @@ use crate::lib::database::tables::STBL_ADMINISTRATIVE_REFINES_HISTORY;
 
 pub mod polling_types
 {
-    pub const RFRlRsCoins: &str = "RFRlRsCoins";
-    pub const RFRfBasePrice: &str = "RFRfBasePrice";
+    pub const REQUEST_FOR_RELEASE_RESERVED_COINS: &str = "RFRlRsCoins";
+    pub const REQUEST_FOR_REFINE_BASE_PRICE: &str = "RFRfBasePrice";
     // char base price
-    pub const RFRfTxBPrice: &str = "RFRfTxBPrice";
-    pub const RFRfBlockFixCost: &str = "RFRfBlockFixCost";
-    pub const RFRfPollingPrice: &str = "RFRfPollingPrice";
-    pub const RFRfPLedgePrice: &str = "RFRfPLedgePrice";
-    pub const RFRfClPLedgePrice: &str = "RFRfClPLedgePrice";
-    pub const RFRfDNAPropPrice: &str = "RFRfDNAPropPrice";
-    pub const RFRfBallotPrice: &str = "RFRfBallotPrice";
-    pub const RFRfINameRegPrice: &str = "RFRfINameRegPrice";
-    pub const RFRfINameBndPGPPrice: &str = "RFRfINameBndPGPPrice";
-    pub const RFRfINameMsgPrice: &str = "RFRfINameMsgPrice";
-    pub const RFRfFPostPrice: &str = "RFRfFPostPrice";
-    pub const RFRfMinS2Wk: &str = "RFRfMinS2Wk";
-    pub const RFRfMinS2DA: &str = "RFRfMinS2DA";
-    pub const RFRfMinS2V: &str = "RFRfMinS2V";
-    pub const RFRfMinFSign: &str = "RFRfMinFSign";
-    pub const RFRfMinFVote: &str = "RFRfMinFVote";
+    pub const REQUEST_FOR_REFINE_TX_PRICE: &str = "RFRfTxBPrice";
+    pub const REQUEST_FOR_REFINE_BLOCK_FIXED_COST: &str = "RFRfBlockFixCost";
+    pub const REQUEST_FOR_REFINE_POLLING_PRICE: &str = "RFRfPollingPrice";
+    pub const REQUEST_FOR_REFINE_PLEDGE_PRICE: &str = "RFRfPLedgePrice";
+    pub const REQUEST_FOR_REFINE_CONCLUDE_PLEDGE_PRICE: &str = "RFRfClPLedgePrice";
+    pub const REQUEST_FOR_REFINE_PROPSAL_PRICE: &str = "RFRfDNAPropPrice";
+    pub const REQUEST_FOR_REFINE_BALLOT_PRICE: &str = "RFRfBallotPrice";
+    pub const REQUEST_FOR_REFINE_INAME_REGISTER_PRICE: &str = "RFRfINameRegPrice";
+    pub const REQUEST_FOR_REFINE_INAME_BIND_PGP_PRICE: &str = "RFRfINameBndPGPPrice";
+    pub const REQUEST_FOR_REFINE_INAME_MESSAGE_PRICE: &str = "RFRfINameMsgPrice";
+    pub const REQUEST_FOR_REFINE_FREE_POST_PRICE: &str = "RFRfFPostPrice";
+    pub const REQUEST_FOR_REFINE_MIN_SHARES_TO_WIKI: &str = "RFRfMinS2Wk";
+    pub const REQUEST_FOR_REFINE_MIN_SHARES_TO_FORUMS: &str = "RFRfMinS2DA";
+    pub const REQUEST_FOR_REFINE_MIN_SHARES_TO_VOTE: &str = "RFRfMinS2V";
+    pub const REQUEST_FOR_REFINE_MIN_SHARES_TO_SIGN_BLOCKS: &str = "RFRfMinFSign";
+    pub const REQUEST_FOR_REFINE_MIN_SHARES_TO_FLOATING_VOTES: &str = "RFRfMinFVote";
 }
 
-/*
-
-class AdministrativePollingDocument;
-
-class SocietyRules
-{
-public:
-  SocietyRules();
-  static const String stbl_administrative_refines_history;
-  static const StringList stbl_administrative_refines_history_fields;
-
-  static const String stbl_administrative_pollings;
-  static const StringList stbl_administrative_pollings_fields;
-
-  static const StringList POLLING_TYPES;
-
-
-  static QVariant getAdmValue(
-    const String& pollingKey,
-    String cDate = cutils::get_now());
-
-  static CMPAIValueT getSingleIntegerValue(
-    const String& pollingKey,
-    const CDateT& cDate = cutils::get_now());
-
-  static CMPAIValueT getBasePricePerChar(const CDateT& cDate = cutils::get_now());
-
-  static CMPAIValueT getBasicTxDPCost(
-    const DocLenT& dLen,
-    const CDateT& cDate = cutils::get_now());
-
-  static CMPAIValueT getPollingDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getPledgeDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getClosePledgeDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getCloseDNAProposalDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getBallotDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getINameRegDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getINameBindDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getINameMsgDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getCPostDPCost(const CDateT& cDate = cutils::get_now());
-  static CMPAIValueT getBlockFixCost(const CDateT& cDate = cutils::get_now());
-  static DNASharePercentT getMinShareToAllowedWiki(const CDateT& cDate = cutils::get_now());
-  static DNASharePercentT getMinShareToAllowedDemos(const CDateT& cDate = cutils::get_now());
-
-  static QVDicT prepareDocExpenseDict(
-    const CDateT& cDate = cutils::get_now(),
-    const DocLenT& dLen = 0);
-
-  static CMPAIValueT getDocExpense(
-    const String& dType,
-    const DocLenT& dLen,
-    const String& dClass = "",
-    const CDateT& cDate = cutils::get_now());
-
-  static CMPAIValueT getTransactionMinimumFee(const CDateT& cDate = cutils::get_now());
-
-  static uint8_t getPoWDifficulty(const CDateT& cDate = cutils::get_now());
-
-  static BlockLenT getMaxBlockSize(const String& block_type);
-
-  static double getSingleFloatValue(
-    const String& pollingKey,
-    const CDateT& cDate = cutils::get_now());
-
-  static double getMinShareToAllowedIssueFVote(const CDateT& cDate = cutils::get_now());
-  static double getMinShareToAllowedVoting(const CDateT& cDate = cutils::get_now());
-  static double getMinShareToAllowedSignCoinbase(const CDateT& cDate = cutils::get_now());
-
-  static bool logRefineDetail(
-    const CDocHashT& arh_hash,
-    const String& arh_subject,
-    const double arh_value,
-    const String& arh_apply_date);
-
-  static bool treatPollingWon(
-    const QVDicT& polling,
-    const CDateT& approveDate);
-
-  static bool concludeAdmPolling(
-    const QVDicT& polling,
-    const CDateT& approveDate);
-
-  static bool recordAnAdministrativePollingInDB(
-    const Block& block,
-    const AdministrativePollingDocument* polling);
-
-  static bool removeAdmPolling(const CDocHashT& doc_hash);
-
-  static QVDRecordsT searchInAdmPollings(
-    const ClausesT& clauses,
-    const StringList& fields = stbl_administrative_pollings_fields,
-    const OrderT& order = {},
-    const int limit = 0);
-
-  static QVDRecordsT searchInAdmRefineHistory(
-    const ClausesT& clauses = {},
-    const StringList& fields = stbl_administrative_refines_history_fields,
-    const OrderT& order = {},
-    const int limit = 0);
-
-  static QVDicT readAdministrativeCurrentValues();
-
-  static JSonArray loadAdmPollings(
-    const CDateT& cDate = cutils::get_now());
-
-  static std::tuple<bool, String> createAPollingFor(
-    const String& polling_subject,
-    TimeByHoursT voting_timeframe,
-    double the_value); // it can be fee or shares
-
-  static QHash<uint32_t, QVDicT> getOnchainSocietyPollings(
-    const CAddressT& voter);
-
-
-};
-
-
-SocietyRules::SocietyRules()
-{
-
-}
-
-*/
-
-pub fn getAdmDefaultValues() -> HashMap<String, f64>
+//old_name_was getAdmDefaultValues
+pub fn get_administrative_default_values() -> HashMap<String, f64>
 {
 
     //minimum cost(100 trx * 2 PAI per trx * 1000000 micropPAI) for atleast 100 simple/light transaction
@@ -163,35 +40,36 @@ pub fn getAdmDefaultValues() -> HashMap<String, f64>
         block_fix_cost = 1000.0;
     }
 
-    let admCostParams: HashMap<String, f64> = HashMap::from([
-        (polling_types::RFRfPLedgePrice.to_string(), 37.0),
-        (polling_types::RFRfPollingPrice.to_string(), 37.0),
-        (polling_types::RFRfTxBPrice.to_string(), 11.0),
-        (polling_types::RFRfClPLedgePrice.to_string(), 37.0),
-        (polling_types::RFRfDNAPropPrice.to_string(), 37.0),
-        (polling_types::RFRfBallotPrice.to_string(), 57.0),
-        (polling_types::RFRfINameRegPrice.to_string(), 71.0),
-        (polling_types::RFRfINameBndPGPPrice.to_string(), 41.0),
-        (polling_types::RFRfINameMsgPrice.to_string(), 11.0),
-        (polling_types::RFRfFPostPrice.to_string(), 17.0),
-        (polling_types::RFRfBasePrice.to_string(), 683.0),
-        (polling_types::RFRfBlockFixCost.to_string(), block_fix_cost),
-        (polling_types::RFRfMinS2Wk.to_string(), 0.0001),        // create/edit wiki page
-        (polling_types::RFRfMinS2DA.to_string(), 0.00001),       // create/edit Demos
-        (polling_types::RFRfMinS2V.to_string(), 0.0000000001),  // participate in pollings and vote
-        (polling_types::RFRfMinFSign.to_string(), 0.0000000001),
-        (polling_types::RFRfMinFVote.to_string(), 0.000000002)
+    let administrative_costs_params: HashMap<String, f64> = HashMap::from([
+        (polling_types::REQUEST_FOR_REFINE_PLEDGE_PRICE.to_string(), 37.0),
+        (polling_types::REQUEST_FOR_REFINE_POLLING_PRICE.to_string(), 37.0),
+        (polling_types::REQUEST_FOR_REFINE_TX_PRICE.to_string(), 11.0),
+        (polling_types::REQUEST_FOR_REFINE_CONCLUDE_PLEDGE_PRICE.to_string(), 37.0),
+        (polling_types::REQUEST_FOR_REFINE_PROPSAL_PRICE.to_string(), 37.0),
+        (polling_types::REQUEST_FOR_REFINE_BALLOT_PRICE.to_string(), 57.0),
+        (polling_types::REQUEST_FOR_REFINE_INAME_REGISTER_PRICE.to_string(), 71.0),
+        (polling_types::REQUEST_FOR_REFINE_INAME_BIND_PGP_PRICE.to_string(), 41.0),
+        (polling_types::REQUEST_FOR_REFINE_INAME_MESSAGE_PRICE.to_string(), 11.0),
+        (polling_types::REQUEST_FOR_REFINE_FREE_POST_PRICE.to_string(), 17.0),
+        (polling_types::REQUEST_FOR_REFINE_BASE_PRICE.to_string(), 683.0),
+        (polling_types::REQUEST_FOR_REFINE_BLOCK_FIXED_COST.to_string(), block_fix_cost),
+        (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_WIKI.to_string(), 0.0001),        // create/edit wiki page
+        (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_FORUMS.to_string(), 0.00001),       // create/edit Demos
+        (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_VOTE.to_string(), 0.0000000001),  // participate in pollings and vote
+        (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_SIGN_BLOCKS.to_string(), 0.0000000001),
+        (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_FLOATING_VOTES.to_string(), 0.000000002)
         // ['RFRlRsCoins', {}],
     ]);
 
-    return admCostParams;
+    return administrative_costs_params;
 }
 
-pub fn initAdministrativeConfigurationsHistory(machine: &CMachine)
+//old_name_was initAdministrativeConfigurationsHistory
+pub fn init_administrative_configurations_history(machine: &CMachine)
 {
-    let admCostParams: HashMap<String, f64> = getAdmDefaultValues();
+    let admin_cost_params: HashMap<String, f64> = get_administrative_default_values();
 
-    for (a_key, a_value) in admCostParams
+    for (a_key, a_value) in admin_cost_params
     {
         let arh_hash: String = ccrypto::keccak256(&(machine.get_launch_date() + "-" + &a_key));
         let arh_value = cutils::convert_float_to_string(a_value, constants::FLOAT_LENGTH);

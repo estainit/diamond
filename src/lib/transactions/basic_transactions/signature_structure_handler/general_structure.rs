@@ -24,9 +24,11 @@ pub struct TInput
 }
 
 impl TInput {
-    pub fn getCoinCode(&self) -> CCoinCodeT
+
+    //old_name_was getCoinCode
+    pub fn get_coin_code(&self) -> CCoinCodeT
     {
-        return cutils::packCoinCode(&self.m_transaction_hash, self.m_output_index);
+        return cutils::pack_coin_code(&self.m_transaction_hash, self.m_output_index);
     }
 
     pub fn dump(&self) -> String
@@ -34,7 +36,7 @@ impl TInput {
         let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
         out += &*("\nOwner: ".to_owned() + &self.m_owner.clone());
         out += &*("\nAmount: ".to_owned() + &self.m_amount.to_string());
-        out += &*("\nUnlockset: ".to_owned() + &cutils::serializeJson(&self.m_unlock_set));
+        out += &*("\nUnlockset: ".to_owned() + &cutils::serialize_json(&self.m_unlock_set));
         //  out += "\nPrivate keys: " + m_private_keys.join(", ");
         return out;
     }
@@ -397,10 +399,11 @@ JSonObject compactUnlocker(const JSonObject& u_set)
 
 */
 
-pub fn compactUnlockersArray(dExtInfo: &JSonObject) -> JSonObject
+//old_name_was compactUnlockersArray
+pub fn compact_unlockers_array(doc_ext_info: &JSonObject) -> JSonObject
 {
     let new_doc_ext_info: JSonObject = json!({});
-    for an_ext in dExtInfo.as_array().unwrap()
+    for an_ext in doc_ext_info.as_array().unwrap()
     {
         println!("compacting an_ext: {:?}", an_ext);
         /*

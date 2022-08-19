@@ -25,6 +25,6 @@ pub mod tests_cycle_times {
 
     #[test]
     pub fn tests_years_before() {
-        assert_eq!(cutils::yearsBefore(1, &"2020-02-02 00:00:00".to_string()), "2019-02-02 00:00:00");
+        assert_eq!(cutils::years_before(1, &"2020-02-02 00:00:00".to_string()), "2019-02-02 00:00:00");
     }
 }

@@ -1,6 +1,4 @@
 use crate::{constants, cutils, dlog, machine};
-use crate::lib::database::abs_psql::q_insert;
-use crate::lib::database::tables::CDEV_PARSING_Q;
 use crate::lib::file_handler::file_handler::{delete_exact_file, file_read, list_exact_files, read_exact_file};
 use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
 
@@ -139,7 +137,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         message) = read_email_file();
     if !status {
         dlog(
-            &format!("Some error in reading inbox files!"),
+            &format!("Nothing in reading inbox files!"),
             constants::Modules::App,
             constants::SecLevel::Info);
         return false;
@@ -166,6 +164,9 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         maybe_purge_message(&file_name, true);
         return false;
     }
+
+    println!(">>>>>>> cpacket: {}", cpacket);
+
     /*
 
     auto[dispatch_status, should_purge_file] = Dispatcher::dispatchMessage(
@@ -290,7 +291,6 @@ pub fn read_email_file() -> (bool, String, String, String, String)
         {
             pure_content = cutils::strip_parentheses_as_break_line(pure_content);
         }
-        println!("pure_content content offffffff exact file: {}", pure_content);
 
 //    FileHandler::deleteFile(full_path);
         return (

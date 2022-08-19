@@ -102,7 +102,9 @@ void EmailHandler::loopEmailSender()
 }
 
 */
-pub fn sendEmailWrapper(
+
+//old_name_was sendEmailWrapper
+pub fn send_email_wrapper(
     sender_: &String,
     title: &String,
     message: String,
@@ -113,8 +115,8 @@ pub fn sendEmailWrapper(
         constants::Modules::App,
         constants::SecLevel::Trace);
 
-    let machine_public_email: EmailSettings = machine().getPubEmailInfo().clone();
-    let machine_private_email: EmailSettings = machine().getPrivEmailInfo().clone();
+    let machine_public_email: EmailSettings = machine().get_pub_email_info().clone();
+    let machine_private_email: EmailSettings = machine().get_priv_email_info().clone();
 
     let mut sender: String;
     let mut pass: String;
@@ -252,12 +254,13 @@ pub fn send_mail(
     return true;
 }
 
-pub fn popPublicEmail() -> (bool, String) // imap::error::Result<Option<String>>
+//old_name_was popPublicEmail
+pub fn pop_public_email() -> (bool, String) // imap::error::Result<Option<String>>
 {
-    let pubEmail = machine().getPubEmailInfo().clone();
-    let domain = pubEmail.m_income_imap.clone(); // "imap.example.com";
+    let pub_email = machine().get_pub_email_info().clone();
+    let domain = pub_email.m_income_imap.clone(); // "imap.example.com";
 
-    return read_email(&domain, &pubEmail.m_address.clone(), &pubEmail.m_password.clone());
+    return read_email(&domain, &pub_email.m_address.clone(), &pub_email.m_password.clone());
 }
 
 pub fn read_email(

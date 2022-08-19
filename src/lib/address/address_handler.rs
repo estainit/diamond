@@ -31,6 +31,6 @@ pub fn create_a_new_address<'a>(
         constants::Modules::App,
         constants::SecLevel::Fatal);
 
-    return (false, UnlockDocument::get_null());
+    return (false, UnlockDocument::new());
 }
 

@@ -24,16 +24,6 @@ impl UnlockDocument {
         };
     }
 
-    pub fn get_null() -> UnlockDocument {
-        return UnlockDocument {
-            m_unlock_sets: vec![],
-            m_merkle_root: "".to_string(),
-            m_account_address: "".to_string(),
-            m_merkle_version: "".to_string(),
-            m_private_keys: Default::default(),
-        };
-    }
-
     pub fn dump(&self) -> String {
         let prefix_tabs = constants::TAB;
         let mut out_str: String = constants::NL.to_owned().to_owned() + &prefix_tabs + "merkle_root: " + &self.m_merkle_root + "(" + &self.m_merkle_version + ")";

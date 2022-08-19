@@ -105,16 +105,17 @@ QVDRecordsT MissedBlocksHandler::listMissedBlocks(
   return res.records;
 }
 */
-use crate::lib::database::abs_psql::q_customQuery;
+use crate::lib::database::abs_psql::q_custom_query;
 use crate::lib::database::tables::STBL_MISSED_BLOCKS;
 
-pub fn getMissedBlocksToInvoke(limit: u64) -> Vec<String>
+//old_name_was getMissedBlocksToInvoke
+pub fn get_missed_blocks_to_invoke(limit: u64) -> Vec<String>
 {
     let mut complete_query:String = "SELECT mb_block_hash FROM ".to_owned() + STBL_MISSED_BLOCKS + " ORDER BY mb_invoke_attempts, mb_descendants_count DESC, mb_last_invoke_date, mb_insert_date";
     if limit != 0 {
         complete_query += &*(" LIMIT ".to_owned() + &limit.to_string());
     }
-    let (_status, records) = q_customQuery(&complete_query, &vec![], true);
+    let (_status, records) = q_custom_query(&complete_query, &vec![], true);
     let mut missed_hashes: Vec<String> = vec![];
     for a_row in records
     {

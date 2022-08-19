@@ -5,9 +5,10 @@ use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{STBL_CPACKET_TICKETING, STBL_CPACKET_TICKETING_FIELDS};
-use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, getNeighbors, handshakeNeighbor, NeighborInfo};
+use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, get_neighbors, handshake_neighbor, NeighborInfo};
 use crate::lib::machine::machine_profile::EmailSettings;
-use crate::lib::pgp::cpgp::{CPGPMessage, pgp_decrypt};
+use crate::lib::pgp::cpgp::{CPGPMessage};
+use crate::lib::pgp::cpgp_decrypt::pgp_decrypt;
 
 //old_name_was decryptAndParsePacketSync
 pub fn decrypt_and_parse_packet(
@@ -30,22 +31,21 @@ pub fn decrypt_and_parse_packet(
     }
 
     // later again try this message or purge it after a certain try and fail. but not blocked on this message.
-    tLog(file_name);
+    t_log(file_name);
 
     // retrieve sender's info
-    let sender_info: QVDRecordsT = getNeighbors("", "", "", "", sender);
-    let mut sender_public_Key: String = "".to_string();
+    let sender_info: QVDRecordsT = get_neighbors("", "", "", "", sender);
+    let mut sender_public_key: String = "".to_string();
 
     if sender_info.len() > 0
     {
-        sender_public_Key = sender_info[0]["n_pgp_public_key"].to_string();
+        sender_public_key = sender_info[0]["n_pgp_public_key"].to_string();
     } else {
-        /**
-            * sender is not in my neighbors, so i add it as a new neighbor
-        * TODO: probably security issue! machine must not add all new random emails.
-        * instead must list them and user decides about that
-        * so it must be implemented ASAP
-         */
+        //     * sender is not in my neighbors, so i add it as a new neighbor
+        // * TODO: probably security issue! machine must not add all new random emails.
+        // * instead must list them and user decides about that
+        // * so it must be implemented ASAP
+
         dlog(
             &format!("Unknown email addresse sent msg, so add it automatically as a new neighbor({})", sender),
             constants::Modules::Sec,
@@ -55,15 +55,15 @@ pub fn decrypt_and_parse_packet(
             sender.clone(),
             constants::PUBLIC.to_string(),
             "".to_string(),
-            machine().getSelectedMProfile(),
+            machine().get_selected_m_profile(),
             constants::YES.to_string(),
             NeighborInfo::new(),
             cutils::get_now(),
         );
 
 // retrieve id of newly inserted email
-        let newNeiInfo: QVDRecordsT = getNeighbors("", "", "", "", sender);
-        if newNeiInfo.len() == 0
+        let new_neighbor_info: QVDRecordsT = get_neighbors("", "", "", "", sender);
+        if new_neighbor_info.len() == 0
         {
             dlog(
                 &format!("Couldn't insert unknown email as a new neighbor({})", sender),
@@ -74,7 +74,7 @@ pub fn decrypt_and_parse_packet(
         }
 
         // and now do handshake (possible in async mode)
-        handshakeNeighbor(&newNeiInfo[0]["n_id"].to_string(), &constants::PUBLIC.to_string());
+        handshake_neighbor(&new_neighbor_info[0]["n_id"].to_string(), &constants::PUBLIC.to_string());
     }
 // if (sender_public_Key == '')
 //     sender_public_Key = null;    // for new neighbors
@@ -102,7 +102,7 @@ pub fn decrypt_and_parse_packet(
 
 
     let decrypt_res: CPGPMessage;
-    decrypt_res = pgp_decrypt(message, &machine_private_pgp_key, &sender_public_Key);
+    decrypt_res = pgp_decrypt(message, &machine_private_pgp_key, &sender_public_key);
 
     dlog(
         &format!(
@@ -145,7 +145,7 @@ pub fn decrypt_and_parse_packet(
         return (false, connection_type, message_obj);
     }
 
-    let (status, message_obj) = cutils::parseToJsonObxjContolled(&decrypt_res.m_message);
+    let (status, message_obj) = cutils::controlled_str_to_json(&decrypt_res.m_message);
     if !status {
         dlog(
             &format!("Failed parse msg {}", decrypt_res.m_message),
@@ -159,19 +159,21 @@ pub fn decrypt_and_parse_packet(
 
 
 //  -  -  -  -  -  CPacket ticketing
-pub fn tLog(file_name: &String) -> bool
+//old_name_was tLog
+pub fn t_log(file_name: &String) -> bool
 {
-    let res: QVDRecordsT = iRead(file_name);
+    let res: QVDRecordsT = i_read(file_name);
     if res.len() == 0
     {
-        iCreate(file_name);
+        i_create(file_name);
     } else {
         iUpdate(file_name);
     }
     return true;
 }
 
-pub fn iRead(file_name: &String) -> QVDRecordsT
+//old_name_was iRead
+pub fn i_read(file_name: &String) -> QVDRecordsT
 {
     let (status, records) = q_select(
         STBL_CPACKET_TICKETING,
@@ -211,8 +213,8 @@ pub fn iUpdate(_file_name: &String) -> bool
     return true;
 }
 
-
-pub fn iCreate(file_id: &String) -> bool
+//old_name_was iCreate
+pub fn i_create(file_id: &String) -> bool
 {
     let zero: i32 = 0;
     let now_ = cutils::get_now();

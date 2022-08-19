@@ -3,11 +3,12 @@ use serde_json::json;
 use crate::{ccrypto, constants, cutils, dlog, get_value};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::JSonObject;
-use crate::lib::file_handler::file_handler::writeEmailAsFile;
+use crate::lib::file_handler::file_handler::write_email_as_file;
 use crate::lib::k_v_handler::upsert_kvalue;
-use crate::lib::network::email::sendEmailWrapper;
+use crate::lib::network::email::send_email_wrapper;
 
-pub fn iPush(
+//old_name_was iPush
+pub fn i_push(
     title: &String,
     message: &String,
     sender: &String,
@@ -40,7 +41,7 @@ pub fn iPush(
         // in such a way user can send email manually
         // she can sign some transactions and create a proper block, but not send it immideately
         // keeps it in safe place and when it need just send it manually to one or more backers
-        let (status) = writeEmailAsFile(
+        let (status) = write_email_as_file(
             title,
             sender,
             receiver,
@@ -91,17 +92,17 @@ pub fn iPush(
     let c_date: String = cutils::minutes_before(
         cutils::get_cycle_by_minutes(),
         &cutils::get_now());
-    for aHash in sent_emails_obj.keys()
+    for a_hash in sent_emails_obj.keys()
         .cloned()
         .collect::<Vec<String>>() {
-        if sent_emails_obj[&aHash].to_string() > c_date {
-            refresh_sents.insert(aHash.clone(), sent_emails_obj[&aHash].clone());
+        if sent_emails_obj[&a_hash].to_string() > c_date {
+            refresh_sents.insert(a_hash.clone(), sent_emails_obj[&a_hash].clone());
         }
     }
     upsert_kvalue("SENT_EMAILS", &serde_json::to_string(&refresh_sents).unwrap(), false);
 
     // send email to via SMTP server
-    let email_status: bool = sendEmailWrapper(
+    let email_status: bool = send_email_wrapper(
         sender,
         title,
         email_body,

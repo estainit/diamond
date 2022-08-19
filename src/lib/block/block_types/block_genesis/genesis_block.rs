@@ -7,7 +7,7 @@ pub mod b_genesis {
     use crate::lib::block::document_types::document::Document;
     use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject};
     use crate::lib::database::abs_psql::{simple_eq_clause};
-    use crate::lib::services::dna::dna_handler::insertAShare;
+    use crate::lib::services::dna::dna_handler::insert_a_share;
     use crate::lib::services::polling::polling_handler::update_polling;
 
     pub fn initGenesisBlock(machine: &mut CMachine) -> (bool, String)
@@ -120,7 +120,7 @@ pub mod b_genesis {
             false);
 
         // also insert in db DNA initiate shares
-        return insertAShare(initial_proposal);
+        return insert_a_share(initial_proposal);
     }
 
     /*

@@ -2,7 +2,7 @@ use std::thread;
 use crate::lib::constants;
 use crate::{cutils, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
-use crate::lib::dag::dag::{dag_has_blocks_which_are_created_in_current_cycle, searchInDAG};
+use crate::lib::dag::dag::{dag_has_blocks_which_are_created_in_current_cycle, search_in_dag};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
 use crate::lib::dlog::dlog;
 use crate::lib::utils::dumper::dump_it;
@@ -52,7 +52,8 @@ pub fn do_import_coins(c_date_: &CDateT)
 //      outputTimeLockHandler.importTimeLocked();
 }
 
-pub fn retrieveProperBlocks(c_date: &CDateT) -> QVDRecordsT
+//old_name_was retrieveProperBlocks
+pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
 {
     //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
     let min_creation_date = cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, c_date);
@@ -84,13 +85,13 @@ pub fn retrieveProperBlocks(c_date: &CDateT) -> QVDRecordsT
         //  * all above condition & clauses are valid for a normal working machine.
         //  * but if machine newly get synched, it has some blocks which are newly received but belongs to some old cycles
         //  * so we control if machine was in sync mode in last 12 hours? if no we add the b_receive_date condition
-        let lastSyncStatus: JSonObject = machine().getLastSyncStatus();
+        let last_sync_status: JSonObject = machine().get_last_sync_status();
         dlog(
-            &format!("last SyncStatus in import Normal Block UTXOs: {}", dump_it(&lastSyncStatus)),
+            &format!("last SyncStatus in import Normal Block UTXOs: {}", dump_it(&last_sync_status)),
             constants::Modules::Trx,
             constants::SecLevel::Trace);
 
-        if lastSyncStatus["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, &cutils::get_now())
+        if last_sync_status["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, &cutils::get_now())
         {
             clauses.push(ModelClause {
                 m_field_name: "b_receive_date",
@@ -100,7 +101,7 @@ pub fn retrieveProperBlocks(c_date: &CDateT) -> QVDRecordsT
             });
         }
     }
-    let records: QVDRecordsT = searchInDAG(
+    let records: QVDRecordsT = search_in_dag(
         clauses,
         vec!["b_hash", "b_body"],
         vec![

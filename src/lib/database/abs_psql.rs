@@ -173,14 +173,15 @@ pub fn q_delete(
     clauses: ClausesT,
     do_log: bool) -> bool
 {
-    let (_complete_query, query_elements) = prepareToDelete(table, &clauses);
+    let (_complete_query, query_elements) = prepare_to_delete(table, &clauses);
     println!("query_elements.m_complete_query: {:?}", query_elements.m_complete_query);
     println!("query_elements.m_params: {:?}", query_elements.m_params);
     let (status, _records) = exec_query(&query_elements, do_log);
     return status;
 }
 
-pub fn prepareToDelete<'e>(
+//old_name_was prepareToDelete
+pub fn prepare_to_delete<'e>(
     table: &'e str,
     clauses: &'e ClausesT) -> (String, QueryElements<'e>)
 {
@@ -287,7 +288,8 @@ pub fn pre_query_generator<'e>(
     q_elements
 }
 
-pub fn q_customQuery(
+//old_name_was q_customQuery
+pub fn q_custom_query(
     complete_query: &String,
     params: &Vec<&str>,
     do_log: bool) -> (bool, QVDRecordsT)
@@ -331,11 +333,11 @@ pub fn q_customQuery(
                     let (col_name, col_type) = &res_cols_info[col_inx];
                     // let col_value: String = Row::get(a_row, col_inx);
                     let the_col_value: String = match &*col_type.clone() {
-                        ("real" | "double precision") => {
+                        "real" | "double precision" => {
                             let col_value: f64 = Row::get(a_row, col_inx);
                             convert_float_to_string(col_value, 11)
                         }
-                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8") => {
+                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
@@ -352,7 +354,7 @@ pub fn q_customQuery(
                                 "".to_string()
                             }
                         }
-                        ("text") => {
+                        "text" => {
                             let col_value: String = Row::get::<_, String>(a_row, col_inx);
                             col_value
                         }
@@ -360,7 +362,7 @@ pub fn q_customQuery(
                             let col_value: bool = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        (_) => {
+                        _ => {
                             println!("UUUUU Unsetted col type {} {} ", col_type.clone(), col_name.clone());
                             let col_value: String = Row::get(a_row, col_inx);
                             println!("UUUUU Unsetted col type {} {} {}", col_type.clone(), col_name.clone(), col_value.clone());
@@ -522,15 +524,15 @@ pub fn exec_query(
                 for col_inx in 0..a_row.len() {
                     let (col_name, col_type) = &res_cols_info[col_inx];
                     let the_col_value: String = match &*col_type.clone() {
-                        ("real" | "double precision" | "float8") => {
+                        "real" | "double precision" | "float8" => {
                             let col_value: f64 = Row::get(a_row, col_inx);
                             convert_float_to_string(col_value, 11)
                         }
-                        ("int4") => {
+                        "int4" => {
                             let col_value: i32 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        ("smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8") => {
+                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }

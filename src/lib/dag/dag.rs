@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{constants, cutils};
-use crate::cutils::{arrayAdd, arrayUnique};
+use crate::cutils::{array_add, array_unique};
 use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::STBL_BLOCKS;
@@ -30,8 +30,8 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
                     .map(|&x| x.to_string())
                     .collect::<Vec<String>>();
 
-                let final_descendants: Vec<String> = arrayUnique(
-                    &arrayAdd(&new_descendents, &current_descendants)
+                let final_descendants: Vec<String> = array_unique(
+                    &array_add(&new_descendents, &current_descendants)
                 );
 
                 let b_descendants = final_descendants.join(",");
@@ -94,7 +94,8 @@ std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
   return {block_hashes, map_doc_to_block};
 }
 */
-pub fn searchInDAG(
+//old_name_was searchInDAG
+pub fn search_in_dag(
     clauses: ClausesT,
     fields: Vec<&str>,
     order: OrderT,
@@ -466,7 +467,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
     if c_date == ""
     { c_date = cutils::get_now(); }
 
-    let latest_blocks: QVDRecordsT = searchInDAG(
+    let latest_blocks: QVDRecordsT = search_in_dag(
         vec![],
         vec!["b_creation_date"],
         vec![
@@ -809,7 +810,7 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
         cutils::get_coinbase_info(c_date, "");
 
 
-    let current_coinbases_in_dag: QVDRecordsT = searchInDAG(
+    let current_coinbases_in_dag: QVDRecordsT = search_in_dag(
         vec![
             simple_eq_clause("b_type", constants::block_types::Coinbase),
             ModelClause {

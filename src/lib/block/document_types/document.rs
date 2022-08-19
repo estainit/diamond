@@ -214,7 +214,7 @@ impl Document
     {
         let mut j_doc: JSonObject = self.exportDocToJson(ext_info_in_document);
         j_doc["dLen"] = constants::LEN_PROP_PLACEHOLDER.into();
-        let serialized_j_doc: String = cutils::serializeJson(&j_doc);
+        let serialized_j_doc: String = cutils::serialize_json(&j_doc);
         // recaluculate block final length
         j_doc["dLen"] = cutils::padding_length_value(
             serialized_j_doc.len().to_string(),
@@ -232,7 +232,7 @@ impl Document
             constants::Modules::App,
             constants::SecLevel::Trace);
 
-        return cutils::serializeJson(&j_doc);
+        return cutils::serialize_json(&j_doc);
     }
 
     pub fn getRef(&self) -> String

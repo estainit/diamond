@@ -224,19 +224,20 @@ pub fn get_cycle_by_seconds() -> TimeBySecT
     return get_cycle_by_minutes() * 60;
 }
 
-
-pub fn getCoinbaseAgeByMinutes(c_date: &CDateT) -> TimeByMinutesT
+//old_name_was getCoinbaseAgeByMinutes
+pub fn get_coinbase_age_by_minutes(c_date: &CDateT) -> TimeByMinutesT
 {
     return time_diff(get_a_cycle_range(c_date, 0, 0).from, c_date.clone()).as_minutes;
 }
 
-
-pub fn getCoinbaseAgeBySecond(c_date: &CDateT) -> TimeBySecT
+//old_name_was getCoinbaseAgeBySecond
+pub fn get_coinbase_age_by_seconds(c_date: &CDateT) -> TimeBySecT
 {
-    return getCoinbaseAgeByMinutes(c_date) * 60;
+    return get_coinbase_age_by_minutes(c_date) * 60;
 }
 
-pub fn isGreaterThanNow(c_date: &CDateT) -> bool
+//old_name_was isGreaterThanNow
+pub fn is_greater_than_now(c_date: &CDateT) -> bool
 {
     if c_date.to_string() > get_now()
     {
@@ -274,7 +275,8 @@ pub fn get_cycle_elapsed_by_minutes(c_date_: CDateT) -> u64 {
     return time_diff(cycle_start_time, c_date).as_minutes;
 }
 
-pub fn isInCurrentCycle(c_date: &CDateT) -> bool
+//old_name_was isInCurrentCycle
+pub fn is_in_current_cycle(c_date: &CDateT) -> bool
 {
     c_date >= &get_coinbase_range(&get_now()).from
 }
@@ -504,17 +506,18 @@ pub fn get_coinbase_info(c_date: &CDateT, cycle: &str) -> (String, String, Strin
     panic!("invalid input for get Coinbase Info");
 }
 
-pub fn yearsBefore(backInTimesByYears: u64, cDate: &CDateT) -> String
+//old_name_was yearsBefore
+pub fn years_before(back_in_time_by_years: u64, c_date: &CDateT) -> String
 {
     let mut since_epoch: i64;
-    if cDate == ""
+    if c_date == ""
     {
         since_epoch = get_since_epoch();
     } else {
-        let dt = make_date_from_str(cDate);
+        let dt = make_date_from_str(c_date);
         since_epoch = dt.timestamp();
     }
-    since_epoch -= (backInTimesByYears * 31536000 as TimeBySecT) as i64; // 365Days * 24Hours * 60Minutes * 60Seconds
+    since_epoch -= (back_in_time_by_years * 31536000 as TimeBySecT) as i64; // 365Days * 24Hours * 60Minutes * 60Seconds
     let dt = Utc.timestamp(since_epoch, 0);
     return dt.format("%Y-%m-%d %H:%M:%S").to_string();
 }
@@ -546,7 +549,8 @@ pub fn get_coinbase_range_by_cycle_stamp(cycle: &str) -> TimeRange {
     }
 }
 
-pub fn getPrevCoinbaseInfo(c_date: &CDateT) -> (String, String, String, String, String)
+//old_name_was getPrevCoinbaseInfo
+pub fn get_prev_coinbase_info(c_date: &CDateT) -> (String, String, String, String, String)
 {
     return get_coinbase_info(&get_a_cycle_range(c_date, 1, 0).from, "");
 }
@@ -683,7 +687,8 @@ pub fn remove_dbl_spaces(s: &String) -> String
     return ISO8601_DATE_REGEX.replace_all(s, " ").to_string();
 }
 
-pub fn breakByBR(content: &String, chunk_size: u16) -> String
+//old_name_was breakByBR
+pub fn break_by_br(content: &String, chunk_size: u16) -> String
 {
     let chunks = chunk_string(content, chunk_size);
     let lineBR = constants::message_tags::iPGPEndLineBreak.to_owned() + constants::message_tags::iPGPStartLineBreak;
@@ -764,17 +769,20 @@ pub fn short_bech16(s: &String) -> String
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
 }
 
-pub fn serializeJson(j_obj: &JSonObject) -> String
+//old_name_was serializeJson
+pub fn serialize_json(j_obj: &JSonObject) -> String
 {
     serde_json::to_string(&j_obj).unwrap()
 }
 
-pub fn parseToJsonObj(serialized: &String) -> JSonObject
+//old_name_was parseToJsonObj
+pub fn parse_to_json_obj(serialized: &String) -> JSonObject
 {
     return serde_json::from_str(serialized).unwrap();
 }
 
-pub fn parseToJsonObxjContolled(serialized: &String) -> (bool, JSonObject)
+//old_name_was parseToJsonObxjContolled
+pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
 {
     return match serde_json::from_str(serialized) {
         Ok(r) => { (true, r) }
@@ -788,8 +796,8 @@ pub fn parseToJsonObxjContolled(serialized: &String) -> (bool, JSonObject)
     };
 }
 
-
-pub fn sepNum(number: i64) -> String
+//old_name_was sepNum
+pub fn sep_num_3(number: i64) -> String
 {
     let mut str_number: String = number.to_string();
     let mut sign = "";
@@ -815,34 +823,27 @@ pub fn sepNum(number: i64) -> String
     return sign.to_owned() + &str_number;
 }
 
-pub fn CFloor(v: f64) -> i64
+//old_name_was CFloor
+pub fn c_floor(v: f64) -> i64
 {
     return v.floor() as i64;
 }
 
-pub fn customFloorFloat(number: f64, percision: u8) -> f64
+//old_name_was customFloorFloat
+pub fn custom_floor_float(number: f64, percision: u8) -> f64
 {
     let the_gain: f64 = 10_i64.pow(percision as u32) as f64;
     return (number * the_gain) / the_gain;
 }
 
-pub fn iFloorFloat(number: f64) -> f64
+//old_name_was iFloorFloat
+pub fn i_floor_float(number: f64) -> f64
 {
-    return customFloorFloat(number, 11); // in order to keep maximum 11 digit after point
+    return custom_floor_float(number, 11); // in order to keep maximum 11 digit after point
 }
 
-pub fn arrayDiff(superset: &Vec<String>, subset: &Vec<String>) -> Vec<String>
-{
-    let mut remined_values: Vec<String> = vec![];
-    for element in superset {
-        if !subset.contains(element) {
-            remined_values.push(element.clone());
-        }
-    }
-    return remined_values;
-}
-
-pub fn convertJSonArrayToStringVector(inp: &JSonArray) -> Vec<String> {
+//old_name_was convertJSonArrayToStringVector
+pub fn convert_json_array_to_string_vector(inp: &JSonArray) -> Vec<String> {
     if !inp.is_array() {
         return vec![];
     }
@@ -855,13 +856,26 @@ pub fn convertJSonArrayToStringVector(inp: &JSonArray) -> Vec<String> {
     return out;
 }
 
-pub fn parseToJsonArr(serialized: &String) -> JSonArray
+//old_name_was parseToJsonArr
+pub fn parse_to_json_array(serialized: &String) -> JSonArray
 {
     serde_json::from_str(serialized).unwrap()
 }
 
+//old_name_was arrayDiff
+pub fn array_diff(superset: &Vec<String>, subset: &Vec<String>) -> Vec<String>
+{
+    let mut remined_values: Vec<String> = vec![];
+    for element in superset {
+        if !subset.contains(element) {
+            remined_values.push(element.clone());
+        }
+    }
+    return remined_values;
+}
 
-pub fn arrayAdd(arr1: &Vec<String>, arr2: &Vec<String>) -> Vec<String>
+//old_name_was arrayAdd
+pub fn array_add(arr1: &Vec<String>, arr2: &Vec<String>) -> Vec<String>
 {
     let mut out: Vec<String> = arr1.clone();
     for elm in arr2
@@ -869,7 +883,8 @@ pub fn arrayAdd(arr1: &Vec<String>, arr2: &Vec<String>) -> Vec<String>
     return out;
 }
 
-pub fn arrayUnique(inp_arr: &Vec<String>) -> Vec<String>
+//old_name_was arrayUnique
+pub fn array_unique(inp_arr: &Vec<String>) -> Vec<String>
 {
     let mut out_arr: Vec<String> = vec![];
     for elm in inp_arr {
@@ -880,13 +895,14 @@ pub fn arrayUnique(inp_arr: &Vec<String>) -> Vec<String>
     out_arr
 }
 
-
-pub fn packCoinCode(ref_trx_hash: &CDocHashT, output_index: COutputIndexT) -> CCoinCodeT
+//old_name_was packCoinCode
+pub fn pack_coin_code(ref_trx_hash: &CDocHashT, output_index: COutputIndexT) -> CCoinCodeT
 {
     return vec![ref_trx_hash.to_string(), output_index.to_string()].join(":");
 }
 
-pub fn unpackCoinCode(coin: &CCoinCodeT) -> (String, COutputIndexT)
+//old_name_was unpackCoinCode
+pub fn unpack_coin_code(coin: &CCoinCodeT) -> (String, COutputIndexT)
 {
     let segments: Vec<&str> = coin.split(":").collect();
     return (segments[0].to_string(), segments[1].parse::<COutputIndexT>().unwrap());

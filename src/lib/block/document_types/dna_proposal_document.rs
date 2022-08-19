@@ -8,7 +8,7 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, CDocHashT, ClausesT, JSonObject, TimeByHoursT};
 use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::STBL_PROPOSALS;
-use crate::lib::services::polling::polling_handler::autoCreatePollingForProposal;
+use crate::lib::services::polling::polling_handler::auto_create_polling_for_proposal;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DNAProposalDocument
@@ -116,19 +116,19 @@ impl DNAProposalDocument {
 
         // recaluculate block final length
         j_doc["dLen"] = cutils::padding_length_value(
-            cutils::serializeJson(&j_doc).len().to_string(),
+            cutils::serialize_json(&j_doc).len().to_string(),
             constants::LEN_PROP_LENGTH).into();
         dlog(
             &format!("do safe Sringify Doc({}): {} / {} length: {} serialized document: {}",
                      cutils::hash8c(&doc.m_doc_hash),
                      &doc.m_doc_type,
                      &doc.m_doc_class,
-                     cutils::serializeJson(&j_doc).len(),
-                     cutils::serializeJson(&j_doc)),
+                     cutils::serialize_json(&j_doc).len(),
+                     cutils::serialize_json(&j_doc)),
             constants::Modules::App,
             constants::SecLevel::Trace);
 
-        return cutils::serializeJson(&j_doc);
+        return cutils::serialize_json(&j_doc);
     }
     /*
 
@@ -536,7 +536,7 @@ impl DNAProposalDocument {
             "related_proposal": doc.m_doc_hash ,
             "dComment": "Polling for proposal(".to_owned() + &cutils::hash6c(&doc.m_doc_hash) + "), " + &doc.m_doc_title + " " ,
             "status": constants::OPEN});
-        let res = autoCreatePollingForProposal(&mut params, block);
+        let res = auto_create_polling_for_proposal(&mut params, block);
         return res;
     }
 }

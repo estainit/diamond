@@ -3,14 +3,17 @@ pub mod tests_crypto_cpgp {
     use substring::Substring;
     use crate::{constants};
     use crate::lib::ccrypto;
-    use crate::lib::pgp::cpgp::{CPGPMessage, pgp_decrypt, pgp_encrypt};
+    use crate::lib::pgp::cpgp::{CPGPMessage};
+    use crate::lib::pgp::cpgp_decrypt::pgp_decrypt;
+    use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
 
     #[test]
+    #[ignore]
     pub fn test_autogen_pgp_1()
     {
-        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
+        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
         assert!(status);
-        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
+        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
         assert!(status);
 
         let msg = "Hello World".to_string();
@@ -37,11 +40,12 @@ pub mod tests_crypto_cpgp {
     }
 
     #[test]
+    #[ignore]
     pub fn test_autogen_pgp_long()
     {
-        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
+        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
         assert!(status);
-        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
+        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
         assert!(status);
 
         let msg = "Too long msg Hello World".to_string();

@@ -2,17 +2,17 @@
 
 use std::collections::HashMap;
 use postgres::Client;
-use crate::{ccrypto, cutils, dbhandler, machine};
-use crate::lib::constants::LAUNCH_DATE;
+use crate::{ccrypto, cutils, dbhandler};
+use crate::lib::constants::NETWORK_LAUNCH_DATE;
 // use crate::lib::constants as cconsts;
-use crate::lib::custom_types::{CAddressT, CDateT, JSonArray, JSonObject, QSDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, get_connection, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::constants::HD_ROOT_FILES;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
-use crate::lib::dag::dag_walk_through::getLatestBlockRecord;
+use crate::lib::dag::dag_walk_through::get_latest_block_record;
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
 use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
@@ -80,14 +80,14 @@ pub trait CMachineThreadGaps {
 
 impl CMachine {
     pub(crate) fn new() -> CMachine {
-        let (_status, profile) = MachineProfile::get_profile(constants::DEFAULT);
+        // let (_status, profile) = MachineProfile::get_profile_from_db(constants::DEFAULT);
         CMachine {
             m_clone_id: 0,
             m_should_loop_threads: true,
 
             m_is_in_sync_process: true,
 
-            m_last_sync_status_check: LAUNCH_DATE.to_string(),
+            m_last_sync_status_check: NETWORK_LAUNCH_DATE.to_string(),
 
             m_is_develop_mod: false,
 
@@ -121,7 +121,7 @@ impl CMachine {
               */
             m_dag_cached_blocks: vec![],
             m_dag_cached_block_hashes: vec![],
-            m_profile: profile,
+            m_profile: MachineProfile::new(),
         }
     }
 
@@ -211,43 +211,43 @@ impl CMachine {
             return self.m_is_in_sync_process;
         }
 
-        let mut lastSyncStatus = get_value("last_sync_status");
-        if lastSyncStatus == "" {
-            self.initLastSyncStatus();
-            lastSyncStatus = get_value("last_sync_status");
+        let mut last_sync_status = get_value("last_sync_status");
+        if last_sync_status == "" {
+            self.init_last_sync_status();
+            last_sync_status = get_value("last_sync_status");
         }
-        let mut lastSyncStatusObj: JSonObject = cutils::parseToJsonObj(&lastSyncStatus);
+        let mut last_sync_status_json_obj: JSonObject = cutils::parse_to_json_obj(&last_sync_status);
 
 
-        let cycleByMinutes = cutils::get_cycle_by_minutes();
+        let cycle_by_minutes = cutils::get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if !force_to_control_based_on_dag_status &&
-            (lastSyncStatusObj["checkDate"].to_string() > cutils::minutes_before(
-                cycleByMinutes / 24,
+            (last_sync_status_json_obj["checkDate"].to_string() > cutils::minutes_before(
+                cycle_by_minutes / 24,
                 &cutils::get_now())) {
-            let is_in_sync: bool = lastSyncStatusObj["lastDAGBlockCreationDate"].to_string() < cutils::minutes_before(2 * cycleByMinutes, &cutils::get_now());
+            let is_in_sync: bool = last_sync_status_json_obj["lastDAGBlockCreationDate"].to_string() < cutils::minutes_before(2 * cycle_by_minutes, &cutils::get_now());
             self.set_is_in_sync_process(is_in_sync, &cutils::get_now());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
-            let (status, block) = getLatestBlockRecord();
+            let (status, block) = get_latest_block_record();
             if !status {
                 panic!("No block in DAG exit!!");
             }
 
-            let is_in_sync_process: bool = block.m_block_creation_date < cutils::minutes_before(2 * cycleByMinutes, &cutils::get_now());
+            let is_in_sync_process: bool = block.m_block_creation_date < cutils::minutes_before(2 * cycle_by_minutes, &cutils::get_now());
 
             if is_in_sync_process {
-                lastSyncStatusObj["isInSyncMode"] = "Y".into();
+                last_sync_status_json_obj["isInSyncMode"] = "Y".into();
             } else {
-                lastSyncStatusObj["isInSyncMode"] = "N".into();
+                last_sync_status_json_obj["isInSyncMode"] = "N".into();
             }
-            lastSyncStatusObj["checkDate"] = cutils::get_now().into();
-            lastSyncStatusObj["lastDAGBlockCreationDate"] = block.m_block_creation_date.into();
+            last_sync_status_json_obj["checkDate"] = cutils::get_now().into();
+            last_sync_status_json_obj["lastDAGBlockCreationDate"] = block.m_block_creation_date.into();
             if is_in_sync_process {
-                lastSyncStatusObj["lastTimeMachineWasInSyncMode"] = cutils::get_now().into();
+                last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = cutils::get_now().into();
             }
-            upsert_kvalue("last_sync_status", &cutils::serializeJson(&lastSyncStatusObj), false);
+            upsert_kvalue("last_sync_status", &cutils::serialize_json(&last_sync_status_json_obj), false);
             self.set_is_in_sync_process(is_in_sync_process, &cutils::get_now());
             return is_in_sync_process;
         }
@@ -464,16 +464,28 @@ impl CMachine {
         return self.m_is_develop_mod;
     }
 
-    pub fn getPubEmailInfo(&self) -> &EmailSettings {
+    //old_name_was getPubEmailInfo
+    pub fn get_pub_email_info(&self) -> &EmailSettings {
         return &self.m_profile.m_mp_settings.m_public_email;
     }
-    pub fn getPrivEmailInfo(&self) -> &EmailSettings {
+
+    //old_name_was getPrivEmailInfo
+    pub fn get_priv_email_info(&self) -> &EmailSettings {
         return &self.m_profile.m_mp_settings.m_private_email;
     }
 
     //old_name_was saveSettings
     pub fn save_settings(&self) -> bool
     {
+        // panic!("OOOOOOO2 self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
+        // &self.m_profile.m_mp_last_modified
+        //     let mp_settings = b
+        // let serialized_profile = json!({
+        //     "m_mp_code": &self.m_profile.m_mp_code,
+        //     "m_mp_name": &self.m_profile.m_mp_name,
+        //     "m_mp_last_modified": &self.m_profile.m_mp_last_modified,
+        //     "m_mp_settings": mp_settings});
+        // panic!("serialized_profile {}", serialized_profile);
         let (status, serialized_settings) = match serde_json::to_string(&self.m_profile) {
             Ok(ser) => { (true, ser) }
             Err(e) => {
@@ -487,6 +499,7 @@ impl CMachine {
         if !status
         { return false; }
 
+        println!("serialized_settings to be saved {}", serialized_settings);
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
             ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
@@ -497,7 +510,7 @@ impl CMachine {
         return q_upsert(
             STBL_MACHINE_PROFILES,
             "mp_code",
-            &self.m_profile.m_mp_code[..],
+            self.m_profile.m_mp_code.as_str(),
             &values,
             true);
     }
@@ -586,8 +599,8 @@ impl CMachine {
     //old_name_was getLaunchDate
     pub fn get_launch_date(&self) -> String
     {
-        if constants::LAUNCH_DATE != "" {
-            return constants::LAUNCH_DATE.to_string();
+        if constants::NETWORK_LAUNCH_DATE != "" {
+            return constants::NETWORK_LAUNCH_DATE.to_string();
         }
         return self.m_develop_launch_date.clone();
     }
@@ -603,11 +616,13 @@ impl CMachine {
     //old_name_was initDefaultProfile
     pub fn init_default_profile(&mut self) -> (bool, String)
     {
-        let (_status, profile) = MachineProfile::get_profile(&constants::DEFAULT);
+        let (_status, profile) = MachineProfile::get_profile_from_db(&constants::DEFAULT);
         self.m_profile = profile;
-        if self.m_profile.m_mp_code == constants::DEFAULT
-        { return (true, "The Default profile Already initialized".to_string()); }
-
+        // panic!("elf.m_profile.m_mp_code {}", self.m_profile.m_mp_code);
+        if self.m_profile.m_mp_code == constants::DEFAULT.to_string()
+        {
+            return (true, "The Default profile Already initialized".to_string());
+        }
 
         // initializing default valuies and save it
         self.m_profile.m_mp_code = constants::DEFAULT.to_string();
@@ -846,13 +861,13 @@ impl CMachine {
     }
 
     //old_name_was getBackerAddress
-    pub fn getBackerAddress(&self) -> CAddressT
+    pub fn get_backer_address(&self) -> CAddressT
     {
         self.m_profile.m_mp_settings.m_backer_detail.m_account_address.clone()
     }
 
     //old_name_was getBackerDetails
-    pub fn getBackerDetails(&self) -> &UnlockDocument
+    pub fn get_backer_details(&self) -> &UnlockDocument
     {
         return &self.m_profile.m_mp_settings.m_backer_detail;
     }
@@ -865,7 +880,7 @@ impl CMachine {
     }
 
     //old_name_was loadSelectedProfile
-    pub fn loadSelectedProfile(&mut self) -> bool
+    pub fn load_selected_profile(&mut self) -> bool
     {
         let selected_prof = get_value("selected_profile");
         if selected_prof == "" {
@@ -904,7 +919,7 @@ impl CMachine {
         );
         if records.len() != 1
         {
-            return MachineProfile::get_null();
+            return MachineProfile::new();
         }
 
         let serialized_profile = records[0].get("mp_settings").unwrap().clone();
@@ -912,7 +927,8 @@ impl CMachine {
         return profile;
     }
 
-    pub fn getSelectedMProfile(&mut self) -> String
+    //old_name_was getSelectedMProfile
+    pub fn get_selected_m_profile(&mut self) -> String
     {
         if self.m_selected_profile != ""
         {
@@ -998,21 +1014,22 @@ impl CMachine {
       return true;
     }
 */
-
-    pub fn getLastSyncStatus(&self) -> JSonObject
+    //old_name_was getLastSyncStatus
+    pub fn get_last_sync_status(&self) -> JSonObject
     {
-        let mut lastSyncStatus: String = get_value("last_sync_status");
-        if lastSyncStatus == ""
+        let mut last_sync_status: String = get_value("last_sync_status");
+        if last_sync_status == ""
         {
-            self.initLastSyncStatus();
-            lastSyncStatus = get_value("last_sync_status");
+            self.init_last_sync_status();
+            last_sync_status = get_value("last_sync_status");
         }
-        return cutils::parseToJsonObj(&lastSyncStatus);
+        return cutils::parse_to_json_obj(&last_sync_status);
     }
 
-    pub fn initLastSyncStatus(&self) -> bool
+    //old_name_was initLastSyncStatus
+    pub fn init_last_sync_status(&self) -> bool
     {
-        let lastSyncStatus: JSonObject = json!({
+        let last_sync_status: JSonObject = json!({
               "isInSyncMode": "Unknown",
               "lastTimeMachineWasInSyncMode":
                           cutils::minutes_before(cutils::get_cycle_by_minutes() * 2, &cutils::get_now()),
@@ -1021,7 +1038,7 @@ impl CMachine {
             });
         return upsert_kvalue(
             "last_sync_status",
-            &cutils::serializeJson(&lastSyncStatus),
+            &cutils::serialize_json(&last_sync_status),
             true);
     }
     /*
@@ -1119,7 +1136,8 @@ impl CMachine {
     //}
 
 */
-    pub fn cachedBlocks(
+    //old_name_was cachedBlocks
+    pub fn cached_blocks(
         &mut self,
         action: &str,
         blocks: QVDRecordsT,
@@ -1152,7 +1170,8 @@ impl CMachine {
         //   }
     }
 
-    pub fn cachedBlockHashes(
+    //old_name_was cachedBlockHashes
+    pub fn cached_block_hashes(
         &mut self,
         action: &str,
         block_hashes: &Vec<String>) -> bool
@@ -1313,11 +1332,8 @@ impl CMachine {
 
             let clone_id = self.get_app_clone_id();
             println!("Machine is in Dev mode, so make some neighborhoods! clone({})", clone_id);
-            println!("m_pgp_private_key: {}", self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key);
-            println!("m_pgp_public_key: {}", self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key);
             if [0, 1, 2, 3].contains(&clone_id) {
                 println!("Machine is a fake neighbor, so make some connections!");
-
 
                 if clone_id == 0 {
                     // update machine settings to dev mode settings (user@imagine.com)
@@ -1326,6 +1342,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = USER_PRIVATE_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
+                    println!("OOOOOOO xx self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
 
                     // add Hu as a neighbor
                     add_a_new_neighbor(
@@ -1348,6 +1365,8 @@ impl CMachine {
                         cutils::get_now());
 
                     self.save_settings();
+                    println!("OOOOOOO yy self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
+
                 } else if clone_id == 1
                 {
                     // set profile as hu@imagine.com
@@ -1375,6 +1394,8 @@ impl CMachine {
                         constants::YES.to_string(),
                         NeighborInfo::new(),
                         cutils::get_now());
+
+                    println!("OOOOOOO1 self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
 
                     self.save_settings();
                 } else if self.m_clone_id == 2

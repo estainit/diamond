@@ -123,7 +123,7 @@ pub fn wrapSafeContentForDB(content: &String, sfVer: String) -> Unwrapped
         return Unwrapped {
             status: true,
             version: sfVer,
-            content: cutils::serializeJson(&jsonObj),
+            content: cutils::serialize_json(&jsonObj),
         };
     } else {
         let msg = format!("unknown sfVer version: {}", sfVer);

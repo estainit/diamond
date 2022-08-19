@@ -227,7 +227,7 @@ use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::database::abs_psql::simple_eq_clause;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
-use crate::lib::sending_q_handler::sending_q_handler::pushIntoSendingQ;
+use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
@@ -278,7 +278,8 @@ bool DAGMessageHandler::invokeBlock(const String &block_hash)
 }
 
 */
-pub fn getLastReceivedBlockTimestamp() -> JSonObject
+//old_name_was getLastReceivedBlockTimestamp
+pub fn get_last_received_block_timestamp() -> JSonObject
 {
     let res: String = get_value("last_received_block_timestamp");
     if res == "" {
@@ -287,16 +288,17 @@ pub fn getLastReceivedBlockTimestamp() -> JSonObject
             "last_block_hash": "-" ,
             "last_block_receive_date": machine().get_launch_date()});
     }
-    return cutils::parseToJsonObj(&res);
+    return cutils::parse_to_json_obj(&res);
 }
 
-
-pub fn getMaybeAskForLatestBlocksFlag() -> String
+//old_name_was getMaybeAskForLatestBlocksFlag
+pub fn get_maybe_ask_for_latest_blocks_flag() -> String
 {
     return get_value("maybe_ask_for_latest_blocks");
 }
 
-pub fn invokeLeaves() -> bool
+//old_name_was invokeLeaves
+pub fn invoke_leaves() -> bool
 {
     dlog(
         &format!("Invoking for DAG leaves!"),
@@ -305,9 +307,9 @@ pub fn invokeLeaves() -> bool
     let payload: JSonObject = json!({
         "type": constants::message_types::DAG_INVOKE_LEAVES,
         "mVer": "0.0.0"});
-    let serialized_payload = cutils::serializeJson(&payload);
+    let serialized_payload = cutils::serialize_json(&payload);
 
-    let status = pushIntoSendingQ(
+    let status = push_into_sending_q(
         constants::message_types::DAG_INVOKE_LEAVES, // sqType
         &cutils::get_now_sss(),  // sqCode
         &serialized_payload,
@@ -320,20 +322,22 @@ pub fn invokeLeaves() -> bool
     return status;
 }
 
-pub fn launchInvokeLeaves()
+//old_name_was launchInvokeLeaves
+pub fn launch_invoke_leaves()
 {
-    let shouldI = getMaybeAskForLatestBlocksFlag();
-    if shouldI == constants::YES
+    let should_i = get_maybe_ask_for_latest_blocks_flag();
+    if should_i == constants::YES
     {
         // TODO: needs control for latest invoke to not spaming network
-        invokeLeaves();
+        invoke_leaves();
         /*
         setMaybeAskForLatestBlocksFlag(constants::NO);
         */
     }
 }
 
-pub fn setMaybeAskForLatestBlocksFlag(value: &str)
+//old_name_was setMaybeAskForLatestBlocksFlag
+pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
 {
     dlog(
         &format!("set Maybe Ask For Latest Blocks Flag value: {}", value),
@@ -345,9 +349,9 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &str)
         // if we currently asked for leave information, so do not flood the network with multiple asking
         let last_leave_invoke_response_str: String = get_value("last_received_leaves_info_timestamp");
         if last_leave_invoke_response_str != "" {
-            let last_leave_invoke_response: JSonObject = cutils::parseToJsonObj(&last_leave_invoke_response_str);
+            let last_leave_invoke_response: JSonObject = cutils::parse_to_json_obj(&last_leave_invoke_response_str);
             // TODO: tune the gap time
-            if cutils::time_diff(last_leave_invoke_response["receiveDate"].to_string(), cutils::get_now()).as_seconds < machine().getInvokeLeavesGap() {
+            if cutils::time_diff(last_leave_invoke_response["receiveDate"].to_string(), cutils::get_now()).as_seconds < machine().get_invoke_leaves_gap() {
                 return;
             }
         }
@@ -355,9 +359,9 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &str)
         // control last_received_block_timestamp flag
         // if we are receiving continiuosly new blocks, it doesn't sence to ask for leave information.
         // this case happends in runing a new machin in which the machine has to download entire DAG.
-        let last_block: JSonObject = getLastReceivedBlockTimestamp();
+        let last_block: JSonObject = get_last_received_block_timestamp();
         // TODO: tune the gap time
-        if cutils::time_diff(remove_quotes(&last_block["last_block_receive_date"].to_string()), cutils::get_now()).as_seconds < machine().getInvokeLeavesGap() {
+        if cutils::time_diff(remove_quotes(&last_block["last_block_receive_date"].to_string()), cutils::get_now()).as_seconds < machine().get_invoke_leaves_gap() {
             return;
         }
 
@@ -369,16 +373,16 @@ pub fn setMaybeAskForLatestBlocksFlag(value: &str)
         if machine_request_status.len() > 0 {
             let invoke_age: TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
             dlog(
-                &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().getInvokeLeavesGap()),
+                &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().get_invoke_leaves_gap()),
                 constants::Modules::App,
                 constants::SecLevel::Info);
-            if invoke_age < machine().getInvokeLeavesGap() {
+            if invoke_age < machine().get_invoke_leaves_gap() {
                 return;
             }
         }
 
         // TODO: tune the gap time
-        launchInvokeLeaves();
+        launch_invoke_leaves();
     }
 
     set_value("maybe_ask_for_latest_blocks", value, false);
