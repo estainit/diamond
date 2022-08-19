@@ -19,7 +19,7 @@ pub fn initialize_log(){
     let config = Config::builder()
         .appender(
             Appender::builder()
-                .filter(Box::new(ThresholdFilter::new(LevelFilter::Trace)))
+                .filter(Box::new(ThresholdFilter::new(LevelFilter::Debug)))
                 .build(
                     "logfile",
                     Box::new(
@@ -32,7 +32,7 @@ pub fn initialize_log(){
         .build(
             Root::builder()
                 .appender("logfile")
-                .build(LevelFilter::Trace),
+                .build(LevelFilter::Debug),
         ).unwrap();
     let _handle = log4rs::init_config(config).unwrap();
 

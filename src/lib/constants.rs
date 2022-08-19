@@ -32,9 +32,6 @@ const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with J
 
 */
 
-pub(crate) const LAUNCH_DATE: &str = "2023-08-15 17:20:01";
-// in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
-pub(crate) const TIME_GAIN: u32 = 10;
 pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
 
@@ -196,6 +193,7 @@ pub const DEFAULT: &str = "Default";
 pub const DEFAULT_BLOCK_VERSION: &str = "0.0.0";
 pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
 pub const DEFAULT_CONTENT_VERSION: &str = "0.0.0";
+pub const DEFAULT_RSA_KEY_LENGTH: usize = 256;//4096;
 pub const PUBLIC: &str = "Public";
 pub const PRIVATE: &str = "Private";
 pub const GENERAL: &str = "General";
@@ -604,3 +602,8 @@ pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 //im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
 pub const HU_DNA_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
+
+// in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
+pub(crate) const TIME_GAIN: u32 = 10;
+
+pub(crate) const LAUNCH_DATE: &str = "2023-08-19 14:30:01";

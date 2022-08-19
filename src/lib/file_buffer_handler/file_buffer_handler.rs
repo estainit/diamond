@@ -1,10 +1,13 @@
-use crate::{constants, machine};
-use crate::lib::file_handler::file_handler::file_read;
+use crate::{constants, cutils, dlog, machine};
+use crate::lib::database::abs_psql::q_insert;
+use crate::lib::database::tables::CDEV_PARSING_Q;
+use crate::lib::file_handler::file_handler::{delete_exact_file, file_read, list_exact_files, read_exact_file};
+use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
 
 
 //old_name_was maybeBootDAGFromBundle
 pub fn maybe_boot_dag_from_bundle() -> bool {
-    let clone_id: i16 = machine().get_app_clone_id();
+    let clone_id: i8 = machine().get_app_clone_id();
     // let mut bundle = String::from("");
     let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
@@ -49,7 +52,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 }
 
 //old_name_was readDAGBundleIfExist
-pub fn read_dag_bundle_if_exist(clone_id: i16) -> (bool, String)
+pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     return file_read(
         constants::HD_ROOT_FILES.to_string(),
@@ -118,44 +121,54 @@ void FileBufferHandler::loopReadAndParseHardDiskInbox()
 
  */
 
+pub fn received_email_checks() {
+    // auto[status, sender, receiver, file_name, message] = readEmails();
+    // if (!status)
+    // return status;
+}
+
 //old_name_was doReadAndParseHardDiskInbox
 pub fn do_read_and_parse_hard_disk_inbox() -> bool
 {
-    /*
     //  pullCounter += 1
-      auto[status, sender, receiver, file_name, message] = readEmailFile();
-      CLog::log("have read packet from HD sender(" + sender + ") receiver(" + receiver + ") file_name(" + file_name + ")", "app", "trace");
-      if (!status)
-        return status;
-
-
-      //developer log
-      if ((file_name!="") && (CMachine::is_develop_mod()))
-        DbModel::insert(
-          "cdev_inbox_logs",
-          {
-            {"il_creation_date", cutils::get_now()},
-            {"il_title", file_name}
-          });
-
-      if (message == "")
+    let (
+        status,
+        sender,
+        receiver,
+        file_name,
+        message) = read_email_file();
+    if !status {
+        dlog(
+            &format!("Some error in reading inbox files!"),
+            constants::Modules::App,
+            constants::SecLevel::Info);
         return false;
+    }
 
-    //  listener.doCallSync('SPSH_before_parse_packet', packet);
+    dlog(
+        &format!("have read packet from HD sender({}) receiver({}) file_name({})", sender, receiver, file_name),
+        constants::Modules::App,
+        constants::SecLevel::Info);
 
-      auto[dec_status, connection_type, cpacket] = CPacketHandler::decryptAndParsePacketSync(sender, receiver, file_name, message);
-      if (!dec_status)
-      {
+    let (
+        dec_status,
+        connection_type,
+        cpacket) =
+        decrypt_and_parse_packet(
+            &sender,
+            &receiver,
+            &file_name,
+            &message);
+
+    if !dec_status
+    {
         //TODO: implement a reputation system based on sender email address to avoid pottentially attacks (e.g DOS)
-        maybePurgeMessage(file_name, true);
+        maybe_purge_message(&file_name, true);
         return false;
-      }
+    }
+    /*
 
-    //  listener.doCallSync('SPSH_after_parse_packet', { packet, parsePacketRes });
-
-      CLog::log("a cpacket received:" + cutils::serializeJson(cpacket), "app", "trace");
-
-      auto[dispatch_status, should_purge_file] = Dispatcher::dispatchMessage(
+    auto[dispatch_status, should_purge_file] = Dispatcher::dispatchMessage(
         sender,
         cpacket,
         connection_type);
@@ -171,7 +184,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         maybePurgeMessage(file_name, should_purge_file);
       }
 
-    //  let dispatchResErr = _.has(dispatchRes, 'error') ? dispatchRes.error : null;
+    //  let dispatchResErr = _.has(dispatchRes, "error") ? dispatchRes.error : null;
     //  if (utils._notNil(dispatchResErr)) {
     //    //TODO:  some log to db denoting to "unable to parse a message"
     //    clog.app.error(dispatchRes)
@@ -182,28 +195,31 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
     return true;
 }
 
-/*
-bool FileBufferHandler::maybePurgeMessage(const String& full_path, const bool& should_purge_fessage)
+//old_name_was maybePurgeMessage
+pub fn maybe_purge_message(full_path: &String, should_purge_message: bool) -> bool
 {
-  //should purge packet?
-  bool is_expired = false;
-//  if (_.has(file_name, 'creation_date'))
-//  {
-//    let creation_date = new Date(file_name.creation_date);
-//    is_expired = utils.isItExpired(creation_date, 60); //after 60 minutes
-//  }
-  bool reachedTL = false; // this.richedTryLimitation(packet);
-  if (should_purge_fessage || is_expired || reachedTL)
-  {
-    CLog::log("should-Purge-Message ${should_purge_fessage} is-expired ${expired}  reached-Try-Limitation ${reachedTL}");
-    if (full_path == "")
+    //should purge packet?
+    let mut is_expired: bool = false;
+    let mut reached_tl: bool = false; // this.richedTryLimitation(packet);
+    if should_purge_message || is_expired || reached_tl
     {
-      CLog::log("maybe Purge Message, got empty fileName! ${utils.stringify(packet)}", "sec", "error");
-      return false;
+        dlog(
+            &format!("should-Purge-Message{}  is-expired {}  reached-Try-Limitation {}", should_purge_message, is_expired, reached_tl),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+
+        if full_path == ""
+        {
+            dlog(
+                &format!("maybe Purge Message, got empty fileName! {}", full_path),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+
+            return false;
+        }
+        delete_exact_file(full_path);
     }
-    FileHandler::deleteFile(full_path);
-  }
-  return true;
+    return true;
 }
 
 //static richedTryLimitation(packet) {
@@ -217,82 +233,87 @@ bool FileBufferHandler::maybePurgeMessage(const String& full_path, const bool& s
 //    }
 //};
 
-
-std::tuple<bool, String, String, String, String> FileBufferHandler::readEmailFile()
+//old_name_was readEmailFile
+pub fn read_email_file() -> (bool, String, String, String, String)
 {
-  String inbox = CMachine::getInboxPath();
+    let inbox: String = machine().get_inbox_path();
 
-  CLog::log("reading inbox(" + inbox + ")", "app", "trace");
+    dlog(
+        &format!("reading inbox({})", inbox),
+        constants::Modules::App,
+        constants::SecLevel::Trace);
 
-  QDir directory(inbox);
-  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+    let files = list_exact_files(&inbox, "txt");  //FIXME: maybe read files ordered by reverse modify date!
+    println!("fileszzzzzzzzzzzzz {:?}", files);
 
-  // the live system never delet outbox, instead can delete inbox after parsing
-  if (files.len() == 0)
-    return {
-      true,
-      "", // sender: '',
-      "", // receiver: '',
-      "", // file_name: '',
-      "" // message: ''
-    };
+    // the live system never delet outbox, instead can delete inbox after parsing
+    if files.len() == 0
+    {
+        return (
+            false,
+            "".to_string(), // sender: "",
+            "".to_string(), // receiver: "",
+            "".to_string(), // file_name: "",
+            "".to_string() // message: ""
+        );
+    }
 
+    let full_path: &String = &files[0].clone();
+    // let full_path: &String = &format!("{inbox}/{file_name}");
+    let (status, content) = read_exact_file(full_path);
 
+    if !status || (content == "")
+    {
+        // delete curropted file
+        delete_exact_file(full_path);
+        return (
+            false,
+            "".to_string(), // sender
+            "".to_string(), // receiver
+            "".to_string(), // file_name
+            "".to_string() // content
+        );
+    }
 
-  String file_name = files[0];
-  String full_path = inbox + '/' + file_name;
-  auto[status, content] = FileHandler::read(inbox, file_name);
-  if (!status || (content == ""))
-  {
-    // delete curropted file
-    FileHandler::deleteFile(full_path);
-    return {
-      false,
-      "", // sender: '',
-      "", // receiver: '',
-      "", // file_name: '',
-      "" // message: '',
-    };
-  }
-
-  if (
-    content.contains(constants::MESSAGE_TAGS::senderStartTag) &&
-    content.contains(constants::MESSAGE_TAGS::senderEndTag) &&
-    content.contains(constants::MESSAGE_TAGS::receiverStartTag) &&
-    content.contains(constants::MESSAGE_TAGS::receiverEndTag) &&
-    content.contains(constants::MESSAGE_TAGS::iPGPStartEnvelope) &&
-    content.contains(constants::MESSAGE_TAGS::iPGPEndEnvelope)
-  )
-  {
-    String sender = content.split(constants::MESSAGE_TAGS::senderStartTag)[1].split(constants::MESSAGE_TAGS::senderEndTag)[0];
-    String receiver = content.split(constants::MESSAGE_TAGS::receiverStartTag)[1].split(constants::MESSAGE_TAGS::receiverEndTag)[0];
-    String pure_content = content.split(constants::MESSAGE_TAGS::iPGPStartEnvelope)[1].split(constants::MESSAGE_TAGS::iPGPEndEnvelope)[0];
-    if (pure_content != "")
-        pure_content = cutils::stripBR(pure_content);
+    if
+    content.contains(constants::message_tags::senderStartTag) &&
+        content.contains(constants::message_tags::senderEndTag) &&
+        content.contains(constants::message_tags::receiverStartTag) &&
+        content.contains(constants::message_tags::receiverEndTag) &&
+        content.contains(constants::message_tags::iPGPStartEnvelope) &&
+        content.contains(constants::message_tags::iPGPEndEnvelope)
+    {
+        let sender: String = content.split(constants::message_tags::senderStartTag).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::senderEndTag).collect::<Vec<&str>>()[0].to_string();
+        let receiver: String = content.split(constants::message_tags::receiverStartTag).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::receiverEndTag).collect::<Vec<&str>>()[0].to_string();
+        let mut pure_content: String = content.split(constants::message_tags::iPGPStartEnvelope).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::iPGPEndEnvelope).collect::<Vec<&str>>()[0].to_string();
+        if pure_content != ""
+        {
+            pure_content = cutils::strip_parentheses_as_break_line(pure_content);
+        }
+        println!("pure_content content offffffff exact file: {}", pure_content);
 
 //    FileHandler::deleteFile(full_path);
-    return {
-      true,
-      sender,
-      receiver,
-      full_path,
-      pure_content};
+        return (
+            true,
+            sender,
+            receiver,
+            full_path.clone(),
+            pure_content
+        );
+    } else {
+        // delete invalid message
+        dlog(
+            &format!("received invalid msg which missed either sender, receiver or iPGP tag. {}", full_path),
+            constants::Modules::App,
+            constants::SecLevel::Debug);
 
-  } else {
-    // delete invalid message
-    CLog::log("received invalid msg which missed either sender, receiver or iPGP tag", "app", "debug");
-    FileHandler::deleteFile(full_path);
-    return {
-      false,
-      "",
-      "",
-      full_path,
-      ""
-    };
-
-  }
+        delete_exact_file(full_path);
+        return (
+            false,
+            "".to_string(),
+            "".to_string(),
+            full_path.clone(),
+            "".to_string()
+        );
+    }
 }
-
-
-
- */

@@ -9,7 +9,7 @@ use crate::lib::block::block_types::block_repayback::repayback_block::import_dou
 use crate::lib::dag::dag::do_prerequisities_remover;
 use crate::lib::dag::missed_blocks_handler::refresh_missed_block;
 use crate::lib::dag::normal_block::normal_utxo_handler::do_import_coins;
-use crate::lib::file_buffer_handler::file_buffer_handler::{do_read_and_parse_hard_disk_inbox, maybe_boot_dag_from_bundle};
+use crate::lib::file_buffer_handler::file_buffer_handler::{do_read_and_parse_hard_disk_inbox, maybe_boot_dag_from_bundle, received_email_checks};
 use crate::lib::messaging_protocol::dag_message_handler::do_missed_blocks_invoker;
 use crate::lib::network::email::{send_private_email, send_public_email};
 use crate::lib::parsing_q_handler::queue_picker::smart_pull_q;
@@ -93,6 +93,11 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
         {
 //         // ingress cpackets and parsing
             if constants::EMAIL_IS_ACTIVE
+            {
+                // fetch mailboxes
+                received_email_checks();
+            }
+
             {
                 // read messages from hard drive
                 do_read_and_parse_hard_disk_inbox();

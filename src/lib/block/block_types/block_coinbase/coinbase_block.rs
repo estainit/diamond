@@ -83,7 +83,7 @@ impl CoinbaseBlock {
 
       auto[status, local_regenerated_coinbase] = CoinbaseIssuer::doGenerateCoinbaseBlock(
         m_cycle,
-        CConsts::STAGES::Regenerating,
+        constants::STAGES::Regenerating,
         m_block_version);
       Q_UNUSED(status);
 
@@ -115,7 +115,7 @@ impl CoinbaseBlock {
           // TODO: remove this block of code after all tests
           auto[status, local_regenerated_coinbase] = CoinbaseIssuer::doGenerateCoinbaseBlock(
             m_cycle,
-            CConsts::STAGES::Regenerating,
+            constants::STAGES::Regenerating,
             m_block_version);
           Q_UNUSED(status);
 
@@ -190,7 +190,7 @@ impl CoinbaseBlock {
         block.remove("bExtHash");
 
       if (m_block_descriptions == "")
-        block["descriptions"] = CConsts::JS_FAKSE_NULL;
+        block["descriptions"] = constants::JS_FAKSE_NULL;
 
       if (block["bVer"].to_string() > "0.0.0")
         block.remove("descriptions");

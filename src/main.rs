@@ -22,9 +22,12 @@ use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 use lib::rest::apis;
+use crate::cutils::strip_parentheses_as_break_line;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-fn machine() -> MutexGuard<'static, CMachine> { CMACHINE.lock().unwrap() }
+fn machine() -> MutexGuard<'static, CMachine> {
+    CMACHINE.lock().unwrap()
+}
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
@@ -43,28 +46,27 @@ fn main() {
 
     // config::print_config();
 
-
-    let manual_clone_id: i16 = 0;
+    let manual_clone_id: i8 = 0;
     // CMachine::onAboutToQuit(&w);
     machine().parse_args(env::args().collect(), manual_clone_id);
-    machine().init();
+    machine().initialize_machine();
     machine().boot_machine();
 
     // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
     let mut web_server_msg: &str="";
-    web_server_msg = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(lib::rest::apis::run_web_server()) {
-        Ok(r) => {
-            ". Webserver Ready on http://localhost:8080"
-        }
-        Err(e) => {
-            ". Webserver Failed!"
-        }
-    };
+    // web_server_msg = match tokio::runtime::Builder::new_multi_thread()
+    //     .enable_all()
+    //     .build()
+    //     .unwrap()
+    //     .block_on(lib::rest::apis::run_web_server()) {
+    //     Ok(r) => {
+    //         ". Webserver Ready on http://localhost:8080"
+    //     }
+    //     Err(e) => {
+    //         ". Webserver Failed!"
+    //     }
+    // };
 
     let msg = &format!(
         "Running Diamond Node (version {}). started at {} {}",

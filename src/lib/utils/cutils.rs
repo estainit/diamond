@@ -5,6 +5,7 @@ use chrono::{DateTime, TimeZone};
 use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
+use serde_json::json;
 use crate::{constants, dlog};
 use crate::lib::custom_types::{CCoinCodeT, CDateT, CDocHashT, COutputIndexT, JSonArray, JSonObject, TimeByMinutesT, TimeBySecT, VVString};
 
@@ -682,6 +683,46 @@ pub fn remove_dbl_spaces(s: &String) -> String
     return ISO8601_DATE_REGEX.replace_all(s, " ").to_string();
 }
 
+pub fn breakByBR(content: &String, chunk_size: u16) -> String
+{
+    let chunks = chunk_string(content, chunk_size);
+    let lineBR = constants::message_tags::iPGPEndLineBreak.to_owned() + constants::message_tags::iPGPStartLineBreak;
+    let mut out = chunks.join(&*lineBR);
+    out = constants::message_tags::iPGPStartLineBreak.to_owned() + &out + constants::message_tags::iPGPEndLineBreak;
+    return out;
+}
+
+//old_name_was stripBR
+pub fn strip_parentheses_as_break_line(mut content: String) -> String
+{
+    if content.contains("(")
+    {
+        content = content.replace("\n", "");
+        content = content.replace("\r", "");
+        let mut outs: String = "".to_string();
+        let chunks = content.split("<br>");
+        for a_chunk in chunks
+        {
+            let (has_open, open_p) = match a_chunk.find("(") {
+                Some(p) => { (true, p) }
+                _ => (false, 0)
+            };
+            let (has_close, close_p) = match a_chunk.find(")") {
+                Some(p) => { (true, p) }
+                _ => (false, 0)
+            };
+            if has_open && has_close
+            {
+                let ach = a_chunk.substring(1 as usize + open_p, close_p);
+                outs += ach;
+            }
+        }
+        return outs.trim().to_string();
+    } else {
+        return "".to_string();
+    }
+}
+
 //old_name_was paddingLengthValue
 pub fn padding_length_value(value: String, needed_len: u8) -> String
 {
@@ -731,6 +772,20 @@ pub fn serializeJson(j_obj: &JSonObject) -> String
 pub fn parseToJsonObj(serialized: &String) -> JSonObject
 {
     return serde_json::from_str(serialized).unwrap();
+}
+
+pub fn parseToJsonObxjContolled(serialized: &String) -> (bool, JSonObject)
+{
+    return match serde_json::from_str(serialized) {
+        Ok(r) => { (true, r) }
+        Err(e) => {
+            dlog(
+                &format!("Failed in deserializing json object: {}", serialized),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, json!({}))
+        }
+    };
 }
 
 

@@ -4,7 +4,7 @@ use std::thread;
 use postgres::{Client, NoTls};
 use crate::lib::{constants};
 use crate::lib::dlog::dlog;
-use crate::{CMachine, dbhandler};
+use crate::{CMachine, dbhandler, machine};
 use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
@@ -15,12 +15,12 @@ pub struct DBHandler {
 impl DBHandler {
     pub(crate) fn new() -> DBHandler {
         DBHandler {
-            m_db: get_connection()
+            m_db: get_connection(0)
         }
     }
 }
 
-pub fn get_connection() -> Client {
+pub fn getConnection() -> Client {
     let mut database_name: String = constants::psql_db::DB_NAME.to_string();
     let clone_id = 0;//machine().get_app_clone_id();
     if clone_id > 0 {
@@ -68,61 +68,56 @@ pub fn get_connection() -> Client {
 //     }
 }
 
+pub fn get_connection(clone_id: i8) -> Client {
+    let mut database_name: String = constants::psql_db::DB_NAME.to_string();
+    // let clone_id = 0;//machine().get_app_clone_id();
+    if clone_id > 0 {
+        database_name = format!("{}{}", database_name, clone_id);
+    }
+    println!("Stablish db connection for client {} database_name: {}", clone_id, database_name);
+
+    let mut connection_str = format!(
+        "host={host} dbname={database} user={user} password={password}",
+        host = constants::psql_db::DB_HOST,
+        user = constants::psql_db::DB_USER,
+        password = constants::psql_db::DB_PASS,
+        database = database_name,
+    );
+    return Client::connect(&connection_str, NoTls).unwrap();
+}
+
 //old_name_was initDb
-pub fn init_db<'a>(machine: &mut CMachine) -> (bool, String)
+pub fn maybe_initialize_db<'a>(machine: &mut CMachine) -> (bool, String)
 {
     if constants::DATABASAE_AGENT == "psql"
     {
-        if !machine.databases_are_created()
-        {
-            let are_created: bool = match dbhandler().m_db.query("SELECT * FROM c_blocks limit 1;", &[]) {
-                Ok(rows) => {
-                    true
-                }
-                Err(e) => {
-                    println!("Failed in db {:?}", e);
-                    false
-                }
-            };
-
-            if !are_created
-            {
-                let creation_status = create_tables_in_psql();
-                machine.set_databases_are_created(creation_status);
+        let is_created: bool = match dbhandler().m_db.query("SELECT * FROM c_blocks limit 1;", &[]) {
+            Ok(rows) => {
+                true
             }
-        }
+            Err(e) => {
+                println!("No table existed, so create it");
+                false
+            }
+        };
 
-        return (true, "connected".to_string());
+        return if is_created
+        {
+            machine.m_is_db_connected = true;
+            machine.m_is_db_initialized = true;
+            (true, "connected".to_string())
+        } else {
+            let creation_status = create_tables_in_psql();
+            machine.m_is_db_connected = creation_status;
+            machine.m_is_db_initialized = creation_status;
+            if machine.m_is_db_initialized
+            {
+                machine.maybe_add_seed_neighbors();
+            }
+            (creation_status, "connected".to_string())
+        };
     }
     return (false, "Unknown db agent!".to_string());
-}
-
-//old_name_was connectToPSQL
-pub fn connect_to_psql(database_name: &String) -> bool
-{
-    false
-// //std::tuple<bool, QSqlDatabase*>
-//
-//     if !machine().databases_are_created()
-//     {
-//         let rows: Vec<Row> = get_connection().query("SELECT b_hash FROM c_blocks limit 1", &[]).unwrap();
-//
-//
-//         //     {
-//         //     let id: i32 = row.get(0);
-//         //     let name: &str = row.get(1);
-//         //     let data: Option<&[u8]> = row.get(2);
-//         //
-//         //     println!("found person: {} {} {:?}", id, name, data);
-//         // }
-//
-//
-//         if rows.len() < 1
-//         {
-//             machine().set_databases_are_created(create_tables_in_psql());
-//         }
-//     }
-//     return true;
 }
 
 pub fn s_databases<'l>() -> Vec<&'l str> {

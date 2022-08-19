@@ -55,42 +55,42 @@ pub fn load_block(obj: &JSonObject) -> (bool, Block)
 Block* BlockFactory::create(const JSonObject &obj)
 {
   String block_type = obj.value("bType").to_string();
-  if (block_type == CConsts::BLOCK_TYPES::Normal)
+  if (block_type == constants::BLOCK_TYPES::Normal)
   {
     return new NormalBlock(obj);
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::Coinbase)
+  else if (block_type == constants::BLOCK_TYPES::Coinbase)
   {
     Block *b{new CoinbaseBlock(obj)};
     return b;
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::RpBlock)
+  else if (block_type == constants::BLOCK_TYPES::RpBlock)
   {
     Block *b{new RepaybackBlock(obj)};
     return b;
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::FSign)
+  else if (block_type == constants::BLOCK_TYPES::FSign)
   {
     Block *b{new FloatingSignatureBlock(obj)};
     return b;
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::FVote)
+  else if (block_type == constants::BLOCK_TYPES::FVote)
   {
     Block *b{new FloatingVoteBlock(obj)};
     return b;
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::POW)
+  else if (block_type == constants::BLOCK_TYPES::POW)
   {
     Block *b{new POWBlock(obj)};
     return b;
 
   }
-  else if (block_type == CConsts::BLOCK_TYPES::Genesis)
+  else if (block_type == constants::BLOCK_TYPES::Genesis)
   {
     return new GenesisBlock(obj);
   }

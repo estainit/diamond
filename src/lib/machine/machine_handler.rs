@@ -1,11 +1,12 @@
 // use std::sync::{Arc, Mutex};
 
 use std::collections::HashMap;
-use crate::{ccrypto, cutils};
+use postgres::Client;
+use crate::{ccrypto, cutils, dbhandler, machine};
 use crate::lib::constants::LAUNCH_DATE;
 // use crate::lib::constants as cconsts;
-use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
-use crate::lib::database::db_handler::{empty_db, init_db};
+use crate::lib::custom_types::{CAddressT, CDateT, JSonArray, JSonObject, QSDicT, QVDRecordsT, VString};
+use crate::lib::database::db_handler::{empty_db, get_connection, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::constants::HD_ROOT_FILES;
@@ -17,7 +18,8 @@ use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
 use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
-use crate::lib::machine::machine_neighbor::{NeighborInfo};
+use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
+use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, NeighborInfo};
 use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile};
 use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
@@ -26,17 +28,18 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
 pub struct CMachine {
-    m_clone_id: i16,
+    m_clone_id: i8,
     m_should_loop_threads: bool,
 
-    m_is_in_sync_process: bool,
+    pub m_is_db_connected: bool,
+    pub m_is_db_initialized: bool,
+    pub m_is_in_sync_process: bool,
     m_last_sync_status_check: CDateT,
 
     m_threads_status: QSDicT,
     m_map_thread_code_to_prefix: QSDicT,
     m_is_develop_mod: bool,
 
-    // pub(crate) m_db_connection: Client,
     m_develop_launch_date: CDateT,
 
     /*
@@ -44,10 +47,7 @@ pub struct CMachine {
 
       bool m_machine_is_loaded = false;
 */
-    s_dag_is_initialized: bool,
     m_selected_profile: String,
-    m_db_is_connected: bool,
-    pub(crate) m_databases_are_created: bool,
     /*
       bool s_DAG_is_initialized;
       bool m_should_loop_threads = true;
@@ -86,20 +86,19 @@ impl CMachine {
             m_should_loop_threads: true,
 
             m_is_in_sync_process: true,
+
             m_last_sync_status_check: LAUNCH_DATE.to_string(),
 
             m_is_develop_mod: false,
 
             m_threads_status: HashMap::new(),
             m_map_thread_code_to_prefix: HashMap::new(),
-            // m_db_connection: get_connection_1(),
 
             m_develop_launch_date: "".to_string(),
 
-            s_dag_is_initialized: false,
             m_selected_profile: "".to_string(),
-            m_db_is_connected: false,
-            m_databases_are_created: false,
+            m_is_db_connected: false,
+            m_is_db_initialized: false,
 
             /*
           const static String stb_machine_block_buffer;
@@ -126,9 +125,25 @@ impl CMachine {
         }
     }
 
-    pub fn init(&mut self) -> bool
+    pub fn initialize_machine(&mut self) -> bool
     {
         self.create_folders();
+
+        if self.get_app_clone_id() > 0
+        {
+            // change database
+            println!(" connnnnnnnecting db to {}", self.get_app_clone_id());
+            dbhandler().m_db = get_connection(self.get_app_clone_id());
+        }
+
+        self.m_last_sync_status_check = self.get_launch_date();
+
+        // control DataBase
+        let (status, msg) = maybe_initialize_db(self);
+        if !status
+        {
+            panic!("failed on maybe initialize db {}", msg)
+        }
 
         maybe_init_dag(self);
 
@@ -139,12 +154,12 @@ impl CMachine {
     }
 
     // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, manual_clone_id: i16)
+    pub fn parse_args(&mut self, args: VString, manual_clone_id: i8)
     {
-        // println!("Env args: {:?}", args);
+        println!("Env args: {:?}", args);
 
-        let mut clone_id: i16 = 0;
-        let mut is_develop_mod: bool = true;
+        let mut clone_id: i8 = 0;
+        let mut is_develop_mod: bool = false;
 
         if args.len() > 1 {
             clone_id = args[1].parse().unwrap();
@@ -162,7 +177,7 @@ impl CMachine {
     }
 
     // func name was setCloneDev
-    pub fn set_clone_dev(&mut self, clone_id: i16, is_develop_mod: bool) -> bool
+    pub fn set_clone_dev(&mut self, clone_id: i8, is_develop_mod: bool) -> bool
     {
         self.m_clone_id = clone_id;
         self.m_is_develop_mod = is_develop_mod;
@@ -299,11 +314,6 @@ impl CMachine {
       // machine_handler.cpp
       GenRes initDefaultProfile();
 
-*/
-    pub fn setDAGIsInitialized(&mut self, status: bool) {
-        self.s_dag_is_initialized = status;
-    }
-    /*
       static bool getDAGIsInitialized(){ return get().s_DAG_is_initialized; }
 
       static std::tuple<bool, QVDRecordsT> cachedSpendableCoins(
@@ -360,24 +370,10 @@ impl CMachine {
 
       //  -  -  -  -  -  neighbors handler
 
-
-
-
-
-      static bool handshakeNeighbor(const String& n_id, const String& connection_type);
-
       static std::tuple<bool, bool> parseHandshake(
         const String& sender_email,
         const JSonObject& message,
         const String& connection_type);
-
-      static bool floodEmailToNeighbors(
-        const String& email,
-        String PGP_public_key = ""){ return get().IfloodEmailToNeighbors(email, PGP_public_key); };
-
-      static bool setAlreadyPresentedNeighbors(const JSonArray& already_presented_neighbors){ return get().IsetAlreadyPresentedNeighbors(already_presented_neighbors); }
-
-      static JSonArray getAlreadyPresentedNeighbors(){ return get().IgetAlreadyPresentedNeighbors(); }
 
       static bool deleteNeighbors(
         const String& n_id,
@@ -446,7 +442,7 @@ impl CMachine {
     */
 
     //old_name_was getAppCloneId
-    pub fn get_app_clone_id(&self) -> i16
+    pub fn get_app_clone_id(&self) -> i8
     {
         return self.m_clone_id;
     }
@@ -461,17 +457,6 @@ impl CMachine {
         return m_should_loop_threads;
       }
 */
-    //old_name_was setDatabasesAreCreated
-    pub fn set_databases_are_created(&mut self, status: bool)
-    {
-        self.m_databases_are_created = status;
-    }
-
-    //old_name_was databasesAreCreated
-    pub fn databases_are_created(&self) -> bool
-    {
-        return self.m_databases_are_created;
-    }
 
     //old_name_was isDevelopMod
     pub fn is_develop_mod(&self) -> bool
@@ -484,6 +469,37 @@ impl CMachine {
     }
     pub fn getPrivEmailInfo(&self) -> &EmailSettings {
         return &self.m_profile.m_mp_settings.m_private_email;
+    }
+
+    //old_name_was saveSettings
+    pub fn save_settings(&self) -> bool
+    {
+        let (status, serialized_settings) = match serde_json::to_string(&self.m_profile) {
+            Ok(ser) => { (true, ser) }
+            Err(e) => {
+                dlog(
+                    &format!("Failed in serialization machine profile: {:?}", e),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                (false, "Failed in serialization machine profile!".to_string())
+            }
+        };
+        if !status
+        { return false; }
+
+        let values = HashMap::from([
+            ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
+            ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
+            ("mp_settings", &serialized_settings as &(dyn ToSql + Sync)),
+            ("mp_last_modified", &self.m_profile.m_mp_last_modified as &(dyn ToSql + Sync)),
+        ]);
+
+        return q_upsert(
+            STBL_MACHINE_PROFILES,
+            "mp_code",
+            &self.m_profile.m_mp_code[..],
+            &values,
+            true);
     }
     /*
 
@@ -500,12 +516,6 @@ impl CMachine {
 
       //  -  -  -  -  -  neighbors handler
 
-      bool IfloodEmailToNeighbors(
-        const String& email,
-        String PGP_public_key = "");
-
-      JSonArray IgetAlreadyPresentedNeighbors(){ return m_profile.m_mp_settings.m_already_presented_neighbors; }
-      bool IsetAlreadyPresentedNeighbors(const JSonArray& already_presented_neighbors){ m_profile.m_mp_settings.m_already_presented_neighbors = already_presented_neighbors; return true; }
       bool IdeleteNeighbors(
         const String& n_id,
         const String& connection_type,
@@ -517,7 +527,7 @@ impl CMachine {
 
       String ImapThreadCodeToPrefix(const String& code);
 
-    };
+        };
 
     //  -  -  -  EmailSettings
     JSonObject EmailSettings::exportJson() const
@@ -572,7 +582,7 @@ impl CMachine {
     }
 
 
-*/
+    */
     //old_name_was getLaunchDate
     pub fn get_launch_date(&self) -> String
     {
@@ -583,7 +593,7 @@ impl CMachine {
     }
 
     //old_name_was setLaunchDateAndCloneId
-    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i16)
+    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i8)
     {
         self.m_develop_launch_date = c_date;
         if clone_id != 0
@@ -606,7 +616,7 @@ impl CMachine {
 
         {
             // initializing email PGP pair keys (it uses native node.js crypto lib. TODO: probably depricated and must refactor to use new one)
-            let (status, private_pgp, public_pgp) = ccrypto::rsa_generate_key_pair();
+            let (status, private_pgp, public_pgp) = ccrypto::rsa_generate_key_pair(0);
             if !status {
                 return (false, "Couldn't creat RSA key pairs (for private channel)".to_string());
             }
@@ -616,7 +626,7 @@ impl CMachine {
 
         {
             // initializing email PGP pair keys (it uses native node.js crypto lib. TODO: probably depricated and must refactor to use new one)
-            let (status, private_pgp, public_pgp) = ccrypto::rsa_generate_key_pair();
+            let (status, private_pgp, public_pgp) = ccrypto::rsa_generate_key_pair(0);
             if !status {
                 return (false, "Couldn't creat RSA key pairs (for public channel)".to_string());
             }
@@ -635,47 +645,6 @@ impl CMachine {
 
         self.m_profile.m_mp_settings.m_machine_alias = "node-".to_owned() + &cutils::hash6c(&ccrypto::keccak256(&unlock_doc.m_account_address));
         self.m_profile.m_mp_settings.m_backer_detail = unlock_doc;
-
-        {
-            // this block existed ONLY for test and development environment
-            let aaa_pgp_private_key: String = "-----BEGIN PRIVATE KEY-----\nMIIJQgIBADANBgkqhkiG9w0BAQEFAASCCSwwggkoAgEAAoICAQCNJ675CfLjSWnM\nV8PLVc1ZjI0cCV1VTAfYj74/BX7E30sTQkhuDeSHgEwcHnM3jryqaW8TxC9NhsDY\n02QcNgeBuL5yzMRm94REkryLfhmqquAWHz6cGJETFUWOa0kyrGNSkZQhRGXDhTT8\nQLd8zk65CNfjP33YXQvS+zSBaAV3ejeZqmiH409N7In5vohnwlSbQzD+LSEsbIGg\nrnAJjVmmoG4yacr6y3z9AbZTFLVOJ+ITL/NIUN2a8nXgHYJ1yQBjc8S3MI9iebtD\nU2kz2+wN2OuQ62JpEQlqq9+4TD2D0iUQJvnCSZdQ2lYx+B3fV5wPvrpIr9g/x2pH\nnNVb5WF2nwW1FkaIbJZs6CXIBEqHgYLfsuglkmTy5O+nUWYSdRkrqdJIOYPM0Crw\nzzzj3McwZemhF3YDTiea4vkkADZamRbtZCpu+ma6dcdGs4q31wWYTrO6yWbxOJFO\nKCMPr1g65KXjzHuj/cssnDh1uA+WZiLkTN/ZmdyWUVJsg/FdI/m33lyo6vFMDv9R\n7z9Ume4PcYnKbyVc8WfzMcyNUf26PGmbr37RepKwGeSJC1y/Sp5o8QEyhtsAEFy8\ny6a9QBt1TWgxWvgx37k5qmfszTfD5k0iqh9m1AVuYSJZqMBhOLGFhAdKotd2nVhe\nBUhx8FojKj60HZm7tYXpvianS0PS1QIBEQKCAgASrqn7UGAlnIo87X+Pni4AjtZw\n4x8tK/H6x7sP3thOwzNZIyAsrwPkwev0qa1d8QJh2T+kf5zZUdXCWDapYYD+WHOP\nMbCVKEn6BFy4G/veHiUwGrk6Tour7/3pcBT7aaO73o/XOf5o7797vUV2Kl0+Iw2D\nuVgvdboJGbfj82oiov/UVo3Vv/esMiFR/t1ZBuWNBSDWWMvrhtTr2tofYcRWDbQ7\nYNNV5jn0T0kShoFodjhGTeAy+6TcCYCK1rqttPTB3mGQt15FgQ19ndz7kdAvAltp\nxM0GYF9dLVYUoK3J6t9CI0a0EUT34KmGnRMDNQHU6E1ccaBiy1WYiXaXdPKLvQuz\nmmMX83v9EGMGe3bwZEDoU72QdDhZeqvmKJOfHtED6afl1t5/YeID6sSzsXurWoT1\ngtojejsI3uFKInibxLlayldxan1bDMTy4WJEeERUL6516NAQYG+sWqMjM3Tof8r9\n47HQMpzjtOdAF3cNKBBZi6NzdcNl77fFam9MjYkG9NH/RM7RKUPGA/7qMynchDWa\nfjjBcA72OW+MqgucO7/ldtfLpMHOICyVWIWsr6wqaWSbMFqbppVaaHGzZwiuTFcK\np97P7kdmmH5GBozNt296IBeURMAjMX+z5WqMbIuBbAQHgYV+tbsrHW3f83EFcPRu\nwYhWf7+FHG2XzY9bWQKCAQEAxVorRAl8lBX27lOiEgBPbr53P3N8zgUZX9Mc1l1N\neYMhEwJTuTlDYgNK+ONmbr4Nobp8pkmN0nuFsaMbjjL+YtQ3evLqO9cmub7qvFVu\nguZHPb88fmF2UzUlniCzH6UPTlmvhRleHczdhlsmW7JsHLvWyi9Vs/eJowE6PtuK\nyAGU5jRbkmYrj/FTILhLL48p/wczjURhnQCZ2AWG8OkopG73ucwxvgzRirD6kwyY\nGsoAeUSTHQiHw/FjvWDZKVmt/vxmDE076zRg7vHdz+te2ILlBD7rYksmm7qBdNXr\nqcLiW13X8W3QgWe1ok8Pt7D6gcCHBZV1ctn/sgCyDX1pHQKCAQEAtxo80fsBjGXh\nfgJmvzlYq4SpiPjXHWDDrV8U1q1oEsAl6k0r7/JVNUMWdsQvv0ZM+9DJBkqF4Cbu\nnVqC+8lt9h+WKU2BKDHHW42ipaQnjozU/gc8T4wbmvP13THEYD/dJhWZjwZZtusk\n23vc4/YcNyRo8d2NT67uDOS0BHeP9bPuaRIZ+1QQnJwmsFZYy1t/xHvOtm0M6Uuj\nNgptzhIuDW0zkDe5ilvJKlR7abOAOWpEd+DubkJSDHSt+SO1DEdNDaFB6IlEs0zu\nAmaokuuoFZxqCLyM+IBaT2oXNaj7Pl7RTeBWbQc+FDGbhJ7GJcT/i/IEtxqcRJMY\nw5SWuuCbGQKCAQEAub5G1p+ETyO7OqkRAeIspHcG0k6TlLmBSyEMFQyFJxIBAtUD\ngSbWAeT7RJnJ0aPQmDcL58zBtwrYLrehdsaVEbisr/OvR2EVY4aCkyM61Y1wOh1m\nHJf25Oa5/jzk0n07lQkdqnI6dmZ2JBmNg3rAGwskgg5ux3+QmWqRLBnsB4kEnG2D\nXJxlPC5sWwfOSuEYd45OoxMuseJyrTJg4r1TbZWd3At6HEhMvsSvmXVD3PpazHzG\nsenpMOMwsj0In2N2laJB7XXeCoumholJPCjRvLduIh0ZxexgkpFqyFDdzPOn3YV/\n8kk8tgdBibPSjsSviS2sQX2bt2PDelsB7pQmsQKCAQEAoY+fE6E9mf+KunqW5PZd\nTAukpgi9zqCsqAiZ6pkBefTWKRbqiGxpTR0T0jSimbaAKXv8qzKyXF6WTpsoR5Od\nQpRXUZ69QZVVjQSAdAlQFF4lWJz4+uUJTHzn/2glvlZ31k9LQfaLZSnVOiH/I37N\nmhERTeGazdaVzyQmXktg59r/ieLLoYZpAqfl5uLG0Yz4Q/TFc8mh+waA83KdHz03\nsX54youFmDLerOEhmYBD9mzTAF0OnYXP7N9sVEyuzplD/PeyoACmB547a4fB6wwq\n5eRdjzz020QTcz995A2SZDWLgPMfFOhF1ZUu3m36IVN4EhHH7Ns+ltwk6M5m4SCI\n2QKCAQEAhueikHEK98tAbGsbUoAwEf5XEIpsDwtlTB/1EBX00QLl9FCfahAZoDYY\n6+2L+Axj8ANCqt4XXDKdbjDGiEV14E4D5QeJsWKMzedacjW+x9e1pbVRyGMoPBDz\nGPHruXSejR4lyi7cFvnhFiEb+18t+KWP38iCL42Mi6i4o3ojemkNQ+GDR+jnc4wJ\n98bpOr7Hhc0UPJZnAFmn614JA0b5V7KZaWlKiDlPdhE0tPLaUDZP4jzlTkSqdwVZ\nmxg6yiV93jpqhmM1Eru05EsbQiDgb5+HOj+yUuz0f82txjMihkH+sbffOyWhqAB7\nmNI4cf8hgrmIb2AgIyZ9LJMhSDaF+g==\n-----END PRIVATE KEY-----".to_string();
-            let aaa_pgp_public_key: String = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAjSeu+Qny40lpzFfDy1XN\nWYyNHAldVUwH2I++PwV+xN9LE0JIbg3kh4BMHB5zN468qmlvE8QvTYbA2NNkHDYH\ngbi+cszEZveERJK8i34ZqqrgFh8+nBiRExVFjmtJMqxjUpGUIURlw4U0/EC3fM5O\nuQjX4z992F0L0vs0gWgFd3o3mapoh+NPTeyJ+b6IZ8JUm0Mw/i0hLGyBoK5wCY1Z\npqBuMmnK+st8/QG2UxS1TifiEy/zSFDdmvJ14B2CdckAY3PEtzCPYnm7Q1NpM9vs\nDdjrkOtiaREJaqvfuEw9g9IlECb5wkmXUNpWMfgd31ecD766SK/YP8dqR5zVW+Vh\ndp8FtRZGiGyWbOglyARKh4GC37LoJZJk8uTvp1FmEnUZK6nSSDmDzNAq8M8849zH\nMGXpoRd2A04nmuL5JAA2WpkW7WQqbvpmunXHRrOKt9cFmE6zuslm8TiRTigjD69Y\nOuSl48x7o/3LLJw4dbgPlmYi5Ezf2ZncllFSbIPxXSP5t95cqOrxTA7/Ue8/VJnu\nD3GJym8lXPFn8zHMjVH9ujxpm69+0XqSsBnkiQtcv0qeaPEBMobbABBcvMumvUAb\ndU1oMVr4Md+5Oapn7M03w+ZNIqofZtQFbmEiWajAYTixhYQHSqLXdp1YXgVIcfBa\nIyo+tB2Zu7WF6b4mp0tD0tUCARE=\n-----END PUBLIC KEY-----".to_string();
-
-            let bbb_pgp_private_key: String = "-----BEGIN PRIVATE KEY-----\nMIIJPwIBADANBgkqhkiG9w0BAQEFAASCCSkwggklAgEAAoICAQDOu5d2Gh1c94ex\noyA1LDpQ3ixFUZd5BGuLw8ngQUYq5NxUXr/ZlbL4j9UceirVj/Xm+b9EVH9B+K31\nMiCL6nZ4LD12MzuOWsq9Nl+z68ArH6onnrHWC7QKNr5GR1sl2WKpUoAtl9jT6NZp\nyj7Mf564Tyo+NTKBSghLOaw11xms02LZ4snTI0xVrjHnLRjTLC6Em9vHAx+91HEy\n7LRhnBwLyLmWQI8I8qOv07NH6MLvB5Qz878eZ+ok4WFeIIpe+NdoFl0S3lapTzqU\nxESWT2leHKCU6Ws97/f2fUGGzTC7gwNuFytc+Pyl8SbGmWFB9pHf97PHBXFjQwR9\n8UaUyBfrRHCgSBHsFfUFm/arCnsoF/uBhgl45VgKPF1sphEEt04x+pDetdu2mWOK\nhrX3vldm7dsAfQHKEoo9kqpUCkvewDU+bu9aNLxcRQ5wuAsrFh6qOtl5N6zRVbfT\nL+0eeRQ4dPTNXxJinC5LeaBCZuK+u8IuF0BgTV7wcbO1vZuEE8exCAGepGd80MfK\nsSsxAcF/BdPv243+jKPgJF6gyp+CbSf8YfZmKMpv3gtHYwwd5OtPE6Hesj3i3QcK\npXEHsqyHYfkf3KdnphS0zQVBAiPNSBT9tNC4BAeo4FOKJIIoUas9/SJRxjS23+lf\nwdAw/zbMtlcospc1aBF9MBeJlM7NVQIBEQKCAgAeZuGRXjF+nN8/xSpiLCaxihWR\nuSzdFzz99yU3kSDoMLb9WTpUtCHZQlQLt5zjK8JHnTK3OZo+aFXRPBPYVy+KJJ+g\ncPIrhdKFPLO4k5xCk7cj8bC9mE8urbKR3VErNo6CT+WsWhhbZgFp6Qk8MOKiojrr\nB9K4qQE4PS/pzM8R4tnUv3gIdiHQXWGxDilMOzQEcUX3npO6CKc8Md5KlvUQyrHh\nY9jMnCchYuWosUnX23etSX388Sn2XWEkbjJ3YNRiIWgKTd+RXnmOWRklKcu7BDW7\ni7zyhSv+mfMMS1n9dSYmxywGJJ2f7sHwB38+aAZks3xR+UVha7zlWDAG0iGiVWgn\nEfnE02rocfOWaIgVNJjqWzeohcpY8EBmJfYNOIB7GRkD0vv8pP8lMY5kb1f7Ea+P\n3XJrkDxJkNEDbJSmEXu+BIYKkhDg3uxwWmo8MCrhDEVYqwJT8Z+AEPmDj3z/R9E9\nFzRDC/+HHtjJ0qXLoQu6wPoR3lWzgVa3WJcLTnQx6GrFM1Respw5Ew/pr90UedQM\nU7zvH/Hflw7I0q95y91mW8u+LiEI/tApud0cGOtOJjEfD8rXAjP5VeScD0UfgL0E\n1//4PrR37UwgVPTnhn42XoKfu/Wdi9PCGHEUdK+W77CZOAhPhPBbGlrOF05ktw7J\n9O817qC6bXlBQenFPwKCAQEA3P+c5Jz8Oc+hMeNB5jJj1oxmJ+Sa+iQ8GuLnJCtE\n84RFPs1ybDK0b04h0xs4kt5IQrueTrFf3b2EdsPUpdGq+vN2Ip1LX/sg6SdN7jW+\n5SGjHhnNK5HQDb81rkDZ1ftvgeMn5l/6C22H1LHiL5r3aFMEuanqyTrNW2v+Ulmb\nUd8zbAYEpZdS8hrEpSpgj6M8qxrwVQ+CPUwBphC3wQ2WJBgh09xr87wYf9mmogzO\nAB534Z+yT9zcmjK/2Q1NqOtWJCgHmyRW9jrzhAZwSUX94/4gLYhuG9jlNNw8OlDY\nbE8tmrE0hRPVYugiPe67u80KN2gHqiEazlNbAjHBU/CUawKCAQEA73mTT59PC05q\n/M43KkUA28Wui3cww9PXv8SbsvYyqfna3eYfFV3lyBs4ldJ6nLxzZg8pf6zB+Zkr\nQyYBtVQw5/hVxyj6JrTb1mwmyWlsgwymYugd56TGdojQQXH5OcbN14LS2uigpZDG\nbMXQnuBepewzcIuVnEPE2foL3aU1eTjD1fJdCCwMU1OB8MfOkwu3HkpFTRNVdh5U\nexyTcOiwEfsihEogLpQaMxCFBFL3O1mQlLQl9v22mj+rUR37O4TBa/73UYNFa9te\nlPkoEMLcN+/SN9ALttvHjj2/qmORmLIOBI0LXbUrKDhrnXf72CF8CIqQhuhFdkX7\nRXoMgKiVPwKCAQAm/+6CskqgykmfZFbsYz7LgjAlKFeVjex9Nxm7FrHQnt8LFTJP\nVD31hkI0UBkK2+6iXVgsAS8JA1OcfOlKcEtZdkIGG8IB4QXOyrNmRbhGjXcjbfcH\nsFHkTuta/GKtSn0W69ndXDsvMXJStfq9G1jWLMSZPBpfvxUuQDvwaip33BgiHy3/\nGrRI14wdJZiR0YMtQP08L+nOlPE7bFypmPxguPbpJuXft8gWj9IcmNkPFG+CKz2V\nn3I5VD/5IHcdzy1RrLYMUbT+RqNxpsiFZrRVaRS8vbkT+RljrmT7O3F8hnF1ps0I\nbOlrzpyhhHt7folVElu0nG4kaRAPcjEs7jhPAoIBABwsa68DrvJFdf+fykE1S2Um\nUMUdFMu+kdpTXZyVb19Kkjg5MNVWV0S36IoYwyF/lRsQ17Sq6aTk1+nIPG+vjUh3\nkZ71wxOczpGyXuqE35bybe2EuDlere/T3EPvSn9EkK/xRfui5bkgF1gXRbhWobkq\n2OAQa/RENUbSH4N82R1R+Ov+ZUxBatygaaPbRXq2FYsXy+rzNzsSoIb0TZTQFLbS\nQEvMfEG3EiQgD6Yn4NnOTT6ryDss6E5h1+ts8GFa6ZQ8HRimCCrOg5kOQPLpv44c\nNtljxSSSU7ZhnhQLtsariS22PZKNyNeOKsc7Ss4iDpeX1MSTy+/L/3GV41puL60C\nggEAa2qQ5OS9YzWWmX4PXDt8vS5yLS0gDIwYzbSIHza4NTUOxH06ZfpcJoT/JA+D\nPK3ND/9F4cq24NV8E/aJ0tbqTdNDlokspXGyMgzptG3Ddo8Wh9xpUasZDhrUNXPT\nW1mlzTTrXlhYSnRNak6YYTDQY528JP1GaaL7RL7KcgkOGmSwQU64WVHaQ3MJnmhN\nVUwJuqQsFUTMy30h/w1GInpuLNh5YIWf7/V0hoNCCTGH8mBeYnFxrBGNTCfpeq5Z\nRF/FOP+NjVh4KGz/SFnlmSDnek7zaNoFJ7OhGwJtTrFCjSevRgjbK3XUvXtHEgDn\nbxC8SYNfb397H1VNQUzlPIW6oA==\n-----END PRIVATE KEY-----".to_string();
-            let bbb_pgp_public_key: String = "-----BEGIN PUBLIC KEY-----\nMIICIDANBgkqhkiG9w0BAQEFAAOCAg0AMIICCAKCAgEAzruXdhodXPeHsaMgNSw6\nUN4sRVGXeQRri8PJ4EFGKuTcVF6/2ZWy+I/VHHoq1Y/15vm/RFR/Qfit9TIgi+p2\neCw9djM7jlrKvTZfs+vAKx+qJ56x1gu0Cja+RkdbJdliqVKALZfY0+jWaco+zH+e\nuE8qPjUygUoISzmsNdcZrNNi2eLJ0yNMVa4x5y0Y0ywuhJvbxwMfvdRxMuy0YZwc\nC8i5lkCPCPKjr9OzR+jC7weUM/O/HmfqJOFhXiCKXvjXaBZdEt5WqU86lMRElk9p\nXhyglOlrPe/39n1Bhs0wu4MDbhcrXPj8pfEmxplhQfaR3/ezxwVxY0MEffFGlMgX\n60RwoEgR7BX1BZv2qwp7KBf7gYYJeOVYCjxdbKYRBLdOMfqQ3rXbtpljioa1975X\nZu3bAH0ByhKKPZKqVApL3sA1Pm7vWjS8XEUOcLgLKxYeqjrZeTes0VW30y/tHnkU\nOHT0zV8SYpwuS3mgQmbivrvCLhdAYE1e8HGztb2bhBPHsQgBnqRnfNDHyrErMQHB\nfwXT79uN/oyj4CReoMqfgm0n/GH2ZijKb94LR2MMHeTrTxOh3rI94t0HCqVxB7Ks\nh2H5H9ynZ6YUtM0FQQIjzUgU/bTQuAQHqOBTiiSCKFGrPf0iUcY0tt/pX8HQMP82\nzLZXKLKXNWgRfTAXiZTOzVUCARE=\n-----END PUBLIC KEY-----".to_string();
-
-            if self.m_clone_id == 1
-            {
-                self.m_profile.m_mp_settings.m_machine_alias = "node-AAA".to_string();
-                self.m_profile.m_mp_settings.m_public_email.m_address = "AAA@AAA.AAA".to_string();
-                self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = aaa_pgp_private_key;
-                self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = aaa_pgp_public_key.clone();
-                self.add_a_new_neighbor(
-                    "BBB@BBB.BBB".to_string(),
-                    constants::PUBLIC.to_string(),
-                    bbb_pgp_public_key.clone(),
-                    constants::DEFAULT.to_string(),
-                    constants::YES.to_string(),
-                    NeighborInfo::new(),
-                    cutils::get_now());
-            }
-            if self.m_clone_id == 2
-            {
-                self.m_profile.m_mp_settings.m_machine_alias = "node-BBB".to_string();
-                self.m_profile.m_mp_settings.m_public_email.m_address = "BBB@BBB.BBB".to_string();
-                self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = bbb_pgp_private_key;
-                self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = bbb_pgp_public_key.to_string();
-                self.add_a_new_neighbor(
-                    "AAA@AAA.AAA".to_string(),
-                    constants::PUBLIC.to_string(),
-                    aaa_pgp_public_key,
-                    constants::DEFAULT.to_string(),
-                    constants::YES.to_string(),
-                    NeighborInfo::new(),
-                    cutils::get_now());
-            }
-        }
-
 
         self.save_settings();
 
@@ -704,7 +673,7 @@ impl CMachine {
         );
         let (_status, _msg) = insert_address(&w_address);
 
-        self.addSeedNeighbors();
+        self.maybe_add_seed_neighbors();
 
         return (true, "The Default profile initialized".to_string());
     }
@@ -718,9 +687,10 @@ impl CMachine {
         if self.is_develop_mod() {
             devel_msg = " (develop mode)".to_string();
         }
+
         let mut sync_msg: String = "".to_string();
         if self.is_in_sync_process(false) {
-            sync_msg = " (syncing)".to_string();
+            sync_msg = " Syncing".to_string();
         }
 
         if clone_id > 0 {
@@ -732,52 +702,6 @@ impl CMachine {
             &format!("Booting App({})", clone_id),
             constants::Modules::App,
             constants::SecLevel::Info);
-
-        self.addSeedNeighbors();
-
-        //  if (![1, 4].includes(appCloneId))
-        //  //TODO: start remove it BEFORERELEASE
-        //  if (appCloneId == 1) {
-        //    let issetted = model.sRead({
-        //        table: 'i_kvalue',
-        //        fields: ['kv_value'],
-        //        query: [
-        //            ['kv_key', 'setSampleMachines']
-        //        ]
-        //    });
-        //    if (issetted.length > 0)
-        //        return { err: false, msg: 'sample machines already setted' };
-        //    sampleMachines.setSampleMachines();
-        //    db.setAppCloneId(1);
-        //  }
-
-        //  //TODO: end remove it BEFORERELEASE
-        //  // initialize document & content
-        //  let initRes = initContentSetting.doInit();
-        //  if (initRes.err != false)
-        //    return initRes;
-        //  let doesSafelyInitialized = initContentSetting.doesSafelyInitialized();
-        //  if (doesSafelyInitialized.err != false) {
-        //    utils.exiter(`doesSafelyInitialized ${doesSafelyInitialized}`, 609);
-        //  }
-        //  return { err: false, msg: 'The machine fully initilized' };
-
-
-        self.m_last_sync_status_check = self.get_launch_date();
-        // control DataBase
-        if !self.m_db_is_connected
-        {
-            let (status, _msg) = init_db(self);
-            self.m_db_is_connected = status;
-
-            if !status {
-                dlog(
-                    &format!("Coudn't establish database connections!"),
-                    constants::Modules::App,
-                    constants::SecLevel::Fatal);
-                panic!("Coudn't establish database connections!");
-            }
-        }
 
         // check if flag machine_and_dag_are_safely_initialized is setted
         let is_inited = get_value("machine_and_dag_are_safely_initialized");
@@ -864,7 +788,7 @@ impl CMachine {
         return self.get_clone_path() + &"/reports";
     }
 
-    //old_name_was getReportsPath
+    //old_name_was getInboxPath
     pub fn get_inbox_path(&self) -> String
     {
         return self.get_clone_path() + &"/inbox";
@@ -931,6 +855,13 @@ impl CMachine {
     pub fn getBackerDetails(&self) -> &UnlockDocument
     {
         return &self.m_profile.m_mp_settings.m_backer_detail;
+    }
+
+
+    //old_name_was getProfile
+    pub fn get_profile(&self) -> MachineProfile
+    {
+        return self.m_profile.clone();
     }
 
     //old_name_was loadSelectedProfile
@@ -1067,50 +998,6 @@ impl CMachine {
       return true;
     }
 */
-    pub fn save_settings(&self) -> bool
-    {
-        let (status, serialized_settings) = match serde_json::to_string(&self.m_profile) {
-            Ok(ser) => { (true, ser) }
-            Err(e) => {
-                dlog(
-                    &format!("Failed in serialization{:?}", e),
-                    constants::Modules::App,
-                    constants::SecLevel::Error);
-                (false, "".to_string())
-            }
-        };
-        if !status
-        { return false; }
-
-        //   String serialized_setting = cutils::serializeJson(m_profile.exportJson());
-        let values = HashMap::from([
-            ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
-            ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
-            ("mp_settings", &serialized_settings as &(dyn ToSql + Sync)),
-            ("mp_last_modified", &self.m_profile.m_mp_last_modified as &(dyn ToSql + Sync)),
-        ]);
-
-        return q_upsert(
-            STBL_MACHINE_PROFILES,
-            "mp_code",
-            &self.m_profile.m_mp_code[..],
-            &values,
-            true);
-    }
-
-    pub fn addSeedNeighbors(&self) -> bool
-    {
-        self.add_a_new_neighbor(
-            "seed1@seed.pro".to_string(),
-            constants::PUBLIC.to_string(),
-            "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
-            constants::DEFAULT.to_string(),
-            constants::YES.to_string(),
-            NeighborInfo::new(),
-            cutils::get_now());
-
-        return true;
-    }
 
     pub fn getLastSyncStatus(&self) -> JSonObject
     {
@@ -1404,4 +1291,193 @@ impl CMachine {
        }
 
         */
+
+    pub fn maybe_add_seed_neighbors(&mut self) -> bool
+    {
+        let (status, msg) = add_a_new_neighbor(
+            "seed1@seed.pro".to_string(),
+            constants::PUBLIC.to_string(),
+            "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
+            constants::DEFAULT.to_string(),
+            constants::YES.to_string(),
+            NeighborInfo::new(),
+            cutils::get_now());
+        dlog(
+            &format!("result of add a new neighbor({}): {}", status, msg),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+
+
+        if self.is_develop_mod() {
+            // this block existed ONLY for test and development environment
+
+            let clone_id = self.get_app_clone_id();
+            println!("Machine is in Dev mode, so make some neighborhoods! clone({})", clone_id);
+            println!("m_pgp_private_key: {}", self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key);
+            println!("m_pgp_public_key: {}", self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key);
+            if [0, 1, 2, 3].contains(&clone_id) {
+                println!("Machine is a fake neighbor, so make some connections!");
+
+
+                if clone_id == 0 {
+                    // update machine settings to dev mode settings (user@imagine.com)
+                    println!("Setting machine as a developing user node");
+                    self.m_profile.m_mp_settings.m_machine_alias = "node-user".to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = USER_PRIVATE_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
+
+                    // add Hu as a neighbor
+                    add_a_new_neighbor(
+                        HU_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        HU_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Eve as a neighbor
+                    add_a_new_neighbor(
+                        EVE_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        EVE_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    self.save_settings();
+                } else if clone_id == 1
+                {
+                    // set profile as hu@imagine.com
+                    self.m_profile.m_mp_settings.m_machine_alias = "node-hu".to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = HU_PRIVATE_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = HU_PUPLIC_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_address = HU_PUBLIC_EMAIL.to_string();
+
+                    // add user as a neighbor
+                    add_a_new_neighbor(
+                        USER_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        USER_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Eve as a neighbor
+                    add_a_new_neighbor(
+                        EVE_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        EVE_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    self.save_settings();
+                } else if self.m_clone_id == 2
+                {
+                    // set profile as eve@imagine.com
+                    self.m_profile.m_mp_settings.m_machine_alias = "node-eve".to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_address = EVE_PUBLIC_EMAIL.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = EVE_PRIVATE_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = EVE_PUPLIC_KEY.to_string();
+
+                    // add User as a neighbor
+                    add_a_new_neighbor(
+                        USER_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        USER_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Hu as a neighbor
+                    add_a_new_neighbor(
+                        HU_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        HU_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Bob as a neighbor
+                    add_a_new_neighbor(
+                        HU_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        BOB_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    self.save_settings();
+                } else if self.m_clone_id == 3
+                {
+                    // set profile as bob@imagine.com
+                    self.m_profile.m_mp_settings.m_machine_alias = "node-bob".to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_address = BOB_PUBLIC_EMAIL.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = BOB_PRIVATE_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = BOB_PUPLIC_KEY.to_string();
+
+                    // add Eve as a neighbor
+                    add_a_new_neighbor(
+                        EVE_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        EVE_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Alice as a neighbor
+                    add_a_new_neighbor(
+                        ALICE_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        ALICE_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    self.save_settings();
+                } else if self.m_clone_id == 4
+                {
+                    // set profile as alice@imagine.com
+                    self.m_profile.m_mp_settings.m_machine_alias = "node-alice".to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_address = ALICE_PUBLIC_EMAIL.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = ALICE_PRIVATE_KEY.to_string();
+                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = ALICE_PUPLIC_KEY.to_string();
+
+                    // add Hu as a neighbor
+                    add_a_new_neighbor(
+                        HU_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        HU_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    // add Bob as a neighbor
+                    add_a_new_neighbor(
+                        BOB_PUBLIC_EMAIL.to_string(),
+                        constants::PUBLIC.to_string(),
+                        BOB_PUPLIC_KEY.to_string(),
+                        constants::DEFAULT.to_string(),
+                        constants::YES.to_string(),
+                        NeighborInfo::new(),
+                        cutils::get_now());
+
+                    self.save_settings();
+                }
+            }
+        }
+
+        return true;
+    }
 }

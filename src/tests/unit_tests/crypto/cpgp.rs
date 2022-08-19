@@ -8,9 +8,9 @@ pub mod tests_crypto_cpgp {
     #[test]
     pub fn test_autogen_pgp_1()
     {
-        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair();
+        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
         assert!(status);
-        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair();
+        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
         assert!(status);
 
         let msg = "Hello World".to_string();
@@ -37,11 +37,11 @@ pub mod tests_crypto_cpgp {
     }
 
     #[test]
-    pub fn test_autogen_pgp_l()
+    pub fn test_autogen_pgp_long()
     {
-        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair();
+        let (status, sender_pem_prv_key, sender_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
         assert!(status);
-        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair();
+        let (status, receiver_pem_prv_key, receiver_pem_pub_key) = ccrypto::rsa_generate_key_pair(256);
         assert!(status);
 
         let msg = "Too long msg Hello World".to_string();

@@ -13,6 +13,7 @@ use crate::lib::dag::leaves_handler::{get_leave_blocks, has_fresh_leaves, LeaveB
 use crate::lib::dag::missed_blocks_handler::getMissedBlocksToInvoke;
 use crate::lib::database::abs_psql::{ModelClause, simple_eq_clause};
 use crate::lib::dlog::dlog;
+use crate::lib::machine::machine_neighbor::getNeighbors;
 use crate::lib::messaging_protocol::dag_message_handler::setMaybeAskForLatestBlocksFlag;
 use crate::lib::sending_q_handler::sending_q_handler::pushIntoSendingQ;
 use crate::lib::services::dna::dna_handler::{getMachineShares, getSharesInfo};
@@ -549,7 +550,7 @@ pub fn makeEmailHashDict() -> (String, String, String, QSDicT)
     let machine_key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &*machine_email));
     emails_hash_dict.insert(machine_key.clone(), machine_email.clone());
 
-    let neightbors: QVDRecordsT = machine().getNeighbors(
+    let neightbors: QVDRecordsT = getNeighbors(
         "",
         constants::YES,
         "",

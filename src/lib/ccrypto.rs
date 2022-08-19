@@ -78,12 +78,30 @@ pub fn b64_encode(message: &String) -> String {
     encode(message.as_bytes())
 }
 
-pub fn b64_decode(message: &String) -> String {
-    let buf: Vec<u8> = decode(&message).unwrap();
-    match str::from_utf8(&buf) {
-        Ok(v) => return v.to_string(),
-        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
+pub fn b64_decode(message: &String) -> (bool, String)
+{
+    let (status, buf) = match decode(&message) {
+        Ok(r) => (true, r),
+        Err(e) => {
+            dlog(&format!("Failed in b64 decoding: {} {}", message, e),
+                 constants::Modules::Sec,
+                 constants::SecLevel::Error);
+            (false, vec![])
+        }
     };
+    if !status
+    { return (false, "".to_string()); }
+
+    let (status, out) = match str::from_utf8(&buf) {
+        Ok(v) => (true, v.to_string()),
+        Err(e) => {
+            dlog(&format!("Failed in b64 decoding to string: {} {}", message, e),
+                 constants::Modules::Sec,
+                 constants::SecLevel::Error);
+            (false, "".to_string())
+        }
+    };
+    return (status, out);
 }
 
 //old_name_was getRandomNumber
@@ -137,7 +155,7 @@ pub fn aes_encrypt_16(msg: String, key: &String) -> String
     return s;
 }
 
-pub fn aes_decrypt(encrypted_msg: String, key: String, _aes_version:String) -> (bool, String)
+pub fn aes_decrypt(encrypted_msg: String, key: String, _aes_version: String) -> (bool, String)
 {
     let chunks = cutils::chunk_string(&encrypted_msg, 24);
 
@@ -521,9 +539,11 @@ bool ccrypto::VerifyMessage(const CryptoPP::ECDSA<CryptoPP::ECP, CryptoPP::SHA25
  */
 
 //old_name_was nativeGenerateKeyPair
-pub fn rsa_generate_key_pair() -> (bool, String, String) {
+pub fn rsa_generate_key_pair(key_length: usize) -> (bool, String, String) {
     let mut rng = rand::thread_rng();
-    let bits = 256;
+    let mut bits = key_length;
+    if bits == 0
+    { bits = constants::DEFAULT_RSA_KEY_LENGTH }
     let private_key: RsaPrivateKey = RsaPrivateKey::new(&mut rng, bits).expect("failed to generate a key");
     let public_key: RsaPublicKey = RsaPublicKey::from(&private_key);
 

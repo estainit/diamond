@@ -101,7 +101,7 @@ std::tuple<bool, JSonArray> TrxUtils::normalize_outputsJ(
     }
 
     // address control
-    if (!CConsts::TREASURY_PAYMENTS.contains(an_output[0].to_string()) &&
+    if (!constants::TREASURY_PAYMENTS.contains(an_output[0].to_string()) &&
         !ccrypto::isValidBech32(an_output[0].to_string()))
     {
       CLog::log("invalid trx output " + cutils::dumpIt(an_output), "trx", "error");

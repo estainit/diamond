@@ -65,8 +65,8 @@ bool FloatingSignatureBlock::validateFSBlock() const
 
   // control signature
   if (
-    (m_fsign_ext_info.m_unlock_set.m_signature_sets.size() == 0) ||
-    (m_fsign_ext_info.m_signatures.size() == 0)
+    (m_fsign_ext_info.m_unlock_set.m_signature_sets.len() == 0) ||
+    (m_fsign_ext_info.m_signatures.len() == 0)
   )
   {
     msg = "Rejected FSBlock because of missed bExtInfo FSBlock(" + cutils::hash8c(m_block_hash) + ") ";
@@ -86,10 +86,10 @@ bool FloatingSignatureBlock::validateFSBlock() const
 
   String ancestors_str = "[\"" + m_ancestors[0] + "\"]";
 //  String ancestors_str = m_ancestors[0];
-  String signMsg = ccrypto::keccak256(ancestors_str).midRef(0, CConsts::SIGN_MSG_LENGTH).to_string();
+  String signMsg = ccrypto::keccak256(ancestors_str).midRef(0, constants::SIGN_MSG_LENGTH).to_string();
 //  let signMsg = crypto.convertToSignMsg(block.ancestors)
 
-  for (int singatureInx = 0; singatureInx < m_fsign_ext_info.m_unlock_set.m_signature_sets.size(); singatureInx++)
+  for (int singatureInx = 0; singatureInx < m_fsign_ext_info.m_unlock_set.m_signature_sets.len(); singatureInx++)
   {
     bool verifyRes = ccrypto::ECDSAVerifysignature(
       m_fsign_ext_info.m_unlock_set.m_signature_sets[singatureInx].m_signature_key,
@@ -303,7 +303,7 @@ String FloatingSignatureBlock::safeStringifyBlock(const bool ext_info_in_documen
 
   // maybe remove add some item in object
   if (m_block_descriptions == "")
-    block["descriptions"] = CConsts::JS_FAKSE_NULL;
+    block["descriptions"] = constants::JS_FAKSE_NULL;
 
   // recaluculate block final length
   String tmp_stringified = cutils::serializeJson(block);

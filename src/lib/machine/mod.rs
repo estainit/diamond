@@ -7,3 +7,4 @@ pub mod machine_services_interests;
 pub mod machine_signaling;
 pub mod machine_profile;
 pub mod thread_gaps;
+pub mod dev_neighbors;

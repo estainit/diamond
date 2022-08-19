@@ -33,7 +33,9 @@ pub mod tests_crypto {
     pub fn test_b64()
     {
         assert_eq!(ccrypto::b64_encode(&"hello world".to_string()), "aGVsbG8gd29ybGQ=");
-        assert_eq!(ccrypto::b64_decode(&"aGVsbG8gd29ybGQ=".to_string()), "hello world");
+        let (status, dec) = ccrypto::b64_decode(&"aGVsbG8gd29ybGQ=".to_string());
+        assert!(status);
+        assert_eq!(dec, "hello world");
     }
 
     #[test]

@@ -65,6 +65,9 @@ pub const STBL_MACHINE_ONCHAIN_CONTRACTS_FIELDS: [&str; 6] = ["lc_id", "lc_type"
 pub const STBL_MISSED_BLOCKS: &str = "c_missed_blocks";
 pub const STBL_MISSED_BLOCKS_FIELDS: [&str; 6] = ["mb_block_hash", "mb_insert_date", "mb_invoke_attempts", "mb_last_invoke_date", "mb_descendants_count", "mb_descendants"];
 
+pub const STBL_CPACKET_TICKETING: &str = "c_cpacket_ticketing";
+pub const STBL_CPACKET_TICKETING_FIELDS: [&str; 5] = ["msg_id", "msg_file_id", "msg_try_count", "msg_creation_date", "msg_last_modified"];
+
 
 
 

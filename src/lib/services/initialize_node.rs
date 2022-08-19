@@ -24,7 +24,9 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
         true,
     );
     if records.len() > 0
-    { return true; }
+    {
+        return true;
+    }
 
 
     // create Genisis Block
@@ -53,11 +55,9 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 pub fn doesSafelyInitialized(machine: &mut CMachine) -> bool
 {
     // TODO implement it to controll if all intial document are inserted properly?
-    machine.setDAGIsInitialized(true);
 
     // long list of controlls
 
     set_value("machine_and_dag_are_safely_initialized", constants::YES, false);
-
     return true;
 }

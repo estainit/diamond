@@ -1,14 +1,15 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
-use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VString, VVString};
+use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VVString};
 use crate::lib::dag::dag::searchInDAG;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{STBL_SENDING_Q, STBL_SENDING_Q_FIELDS, STBLDEV_SENDING_Q};
+use crate::lib::machine::machine_neighbor::getActiveNeighbors;
 use crate::lib::network::broadcast_logger::{addSentBlock, listSentBloksIds};
 use crate::lib::network::network_handler::iPush;
 use crate::lib::parsing_q_handler::queue_utils::searchParsingQ;
-use crate::lib::pgp::cpgp::pgp_encrypt;
+use crate::lib::pgp::cpgp::{pgp_encrypt, wrap_pgp_envelope};
 use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
 
 
@@ -43,7 +44,7 @@ pub fn preparePacketsForNeighbors(
     }
 
     let mp_code = machine().getSelectedMProfile();
-    let mut neighbors: QVDRecordsT = machine().getActiveNeighbors(&mp_code);
+    let mut neighbors: QVDRecordsT = getActiveNeighbors(&mp_code);
     if sq_receivers.len() > 0
     {
         // keep only requested neighbors
@@ -140,8 +141,8 @@ pub fn preparePacketsForNeighbors(
                 constants::SecLevel::Error);
             continue;
         }
-        // emailBody = cutils::breakByBR(emailBody);
-        // emailBody = wrapPGPEnvelope(emailBody);
+        let mut email_body = cutils::breakByBR(&email_body, 128);
+        email_body = wrap_pgp_envelope(&email_body);
 
         // control output size
         if email_body.len() > constants::MAX_BLOCK_LENGTH_BY_CHAR

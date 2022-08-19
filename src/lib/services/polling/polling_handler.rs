@@ -78,7 +78,6 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
     let doc: Document = load_document(params, block, 0);
     let pll_hash = doc.m_if_polling_doc.calc_doc_hash(&doc); //old name was calcHashDPolling
 
-    println!("pTime frame.h: {}", params["pTimeframe"]);
     let voting_timeframe: f64 = match remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>() {
         Ok(t) => t,
         Err(e) => {
@@ -91,7 +90,6 @@ pub fn autoCreatePollingForProposal(params: &mut JSonObject, block: &Block) -> b
         }
     };
     // let voting_timeframe: f64 = remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>().unwrap();
-    println!("voting_timeframe__h: {}", voting_timeframe);
     let abs_no_timeframe_by_minutes: TimeByMinutesT = (voting_timeframe.clone() * 60.0 * 1.5) as u64; // 90 = 60 minute + 30 minute => 1.5 * yesTime
     dlog(
         &format!("abs and no timeframe by minutes = {}", abs_no_timeframe_by_minutes),

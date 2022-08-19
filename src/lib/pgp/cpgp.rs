@@ -46,17 +46,6 @@ impl CPGPMessage {
         }
     }
 }
-/*
-
-  static String wrapPGPEnvelope(const String& content);
-
-  static String stripPGPEnvelope(const String& content);
-
-  static std::tuple<String, String> generateSecretKeyIV();
-
-};
-
-*/
 
 //old_name_was encryptPGP
 pub fn pgp_encrypt(
@@ -170,9 +159,19 @@ pub fn pgp_decrypt(
     sender_pub_key: &String) -> CPGPMessage
 {
     let mut final_decoded_msg: CPGPMessage = CPGPMessage::new();
-    let mut message: String = stripPGPEnvelope(message);
+    let mut message: String = strip_pgp_envelope(message);
     // decode base64
-    let base64_decoded: String = ccrypto::b64_decode(&message);
+    let (status, base64_decoded) = ccrypto::b64_decode(&message);
+    if !status
+    {
+        dlog(
+            &format!("failed in base64 Decoded in pgp decrypt: {}", base64_decoded),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        final_decoded_msg.m_decryption_status = false;
+        return final_decoded_msg;
+    }
+
     dlog(
         &format!("base64 Decoded: {}", base64_decoded),
         constants::Modules::App,
@@ -198,7 +197,6 @@ pub fn pgp_decrypt(
         final_decoded_msg.m_aes_version = remove_quotes(&decode_j_obj["aesVersion"].to_string()); //, "Unknown AES Version!"
 
         // decrypt secret key
-        let decryptedSecretKey: String;
         let (status, decrypted_secret_key) = ccrypto::rsa_decrypt_with_prv_key(priv_key, &final_decoded_msg.m_secret_key);
         if !status {
             dlog(
@@ -258,14 +256,25 @@ pub fn pgp_decrypt(
             &remove_quotes(&decode_j_obj["signature"].to_string()));
     }
 
+    let (status, base64_decoded) = ccrypto::b64_decode(&final_decoded_msg.m_message);
+    if !status
+    {
+        dlog(
+            &format!("failed in base64 Decoded in pgp final decrypt: {}", base64_decoded),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        final_decoded_msg.m_decryption_status = false;
+        return final_decoded_msg;
+    }
+    final_decoded_msg.m_message = base64_decoded;
+
     final_decoded_msg.m_decryption_status = true;
-    final_decoded_msg.m_message = ccrypto::b64_decode(&final_decoded_msg.m_message);
 
     return final_decoded_msg.clone();
 }
 
-
-pub fn stripPGPEnvelope(content: &String) -> String
+//old_name_was stripPGPEnvelope
+pub fn strip_pgp_envelope(content: &String) -> String
 {
     let mut content: String = content.trim().to_string(); // remove extra spaces
     if content.contains(constants::message_tags::iPGPStartEnvelope)
@@ -279,23 +288,8 @@ pub fn stripPGPEnvelope(content: &String) -> String
     return content;
 }
 
-/*
-
-String CPGP::wrapPGPEnvelope(const String& content)
+//old_name_was wrapPGPEnvelope
+pub fn wrap_pgp_envelope(content:&String) ->String
 {
-    return constants::message_tags::iPGPStartEnvelope + content + constants::message_tags::iPGPEndEnvelope;
+    return constants::message_tags::iPGPStartEnvelope.to_owned() + content + constants::message_tags::iPGPEndEnvelope;
 }
-
-std::tuple<String, String> CPGP::generateSecretKeyIV()
-{
-  String secret_key = ccrypto::getRandomNumber();
-  secret_key = secret_key.midRef(0, 32).to_string();
-
-  String initialization_vector = ccrypto::getRandomNumber();
-  initialization_vector = initialization_vector.midRef(0, 16).to_string();
-
-  return {secret_key, initialization_vector};
-}
-
-
-*/

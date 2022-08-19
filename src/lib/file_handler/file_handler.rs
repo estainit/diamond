@@ -10,7 +10,7 @@ use crate::{ccrypto, constants, cutils, machine};
 pub fn file_read(
     mut file_path: String,
     file_name: String,
-    clone_id: i16) -> (bool, String)
+    clone_id: i8) -> (bool, String)
 {
     if clone_id > 0 {
         file_path = format!("{file_path}{clone_id}");
@@ -20,9 +20,9 @@ pub fn file_read(
         file_path = format!("{file_path}/");
     }
 
-    file_path = get_os_care_path(&format!("{file_path}{file_name}"));
+    let file_path = &get_os_care_path(&format!("{file_path}{file_name}"));
 
-    if !path_exist(&file_path) {
+    if !path_exist(file_path) {
         return (false, format!("Path (to read) does not exist! {}", file_path));
     }
 
@@ -30,9 +30,10 @@ pub fn file_read(
 }
 
 
-pub fn read_exact_file(file_full_path: String) -> (bool, String) {
-    let file_full_path = get_os_care_path(&file_full_path);
+pub fn read_exact_file(file_full_path: &String) -> (bool, String) {
+    let file_full_path = get_os_care_path(file_full_path);
 
+    println!("read exact file: {}", file_full_path);
     // Open the file in read-only mode.
     match File::open(file_full_path.clone()) {
         // The file is open (no error).
@@ -78,12 +79,11 @@ pub fn mkdir(file_full_path: &String) -> bool {
     };
 }
 
-
 pub fn file_write(
     directory: String,
     file_name: String,
     content: &String,
-    clone_id: i16) -> (bool,String)
+    clone_id: i8) -> (bool, String)
 {
     let mut file_path = directory.clone();
 
@@ -101,13 +101,14 @@ pub fn file_write(
         return (false, format!("Path (to write) does not exist! {}", file_path));
     }
 
-    file_path = get_os_care_path(&format!("{file_path}{file_name}"));
+    file_path = get_os_care_path(&format!("{}{}", file_path, file_name));
 
     return write_exact_file(&file_path, content);
 }
 
-pub fn write_exact_file(file_path: &String, content: &String) -> (bool,String)
+pub fn write_exact_file(file_path: &String, content: &String) -> (bool, String)
 {
+    println!(":::::write_exact_file file_path: {}", file_path);
     let file_path = &get_os_care_path(file_path);
 
     dlog(
@@ -121,6 +122,58 @@ pub fn write_exact_file(file_path: &String, content: &String) -> (bool,String)
         .expect("Error while writing to file");
 
     return (true, "File Writed".to_string());
+}
+
+pub fn delete_exact_file(file_name: &String) -> bool
+{
+    return match fs::remove_file(file_name)
+    {
+        Ok(r) =>
+            {
+                true
+            }
+        Err(e) => {
+            eprintln!("Failed in file delete {}: {}", file_name, e);
+            false
+        }
+    };
+}
+
+pub fn list_exact_files(folder_path: &String, filter_by_extension: &str) -> Vec<String> {
+    let folder_path = get_os_care_path(folder_path);
+
+    let mut out: Vec<String> = vec![];
+    if filter_by_extension == ""
+    {
+        let paths = fs::read_dir(folder_path).unwrap();
+
+        for path in paths {
+            out.push(path.unwrap().path().display().to_string());
+        }
+        out
+    } else {
+        // let mut faxvec: Vec<std::path::PathBuf> = Vec::new();
+        for element in std::path::Path::new(folder_path.as_str()).read_dir().unwrap() {
+            let path = element.unwrap().path();
+            if let Some(extension) = path.extension() {
+                if extension == filter_by_extension {
+                    out.push(path.display().to_string());
+                }
+            }
+        }
+        out
+    }
+}
+
+pub fn get_os_care_path(the_path: &String) -> String {
+    if std::env::consts::OS == "windows" {
+        let s1 = the_path.substring(3, the_path.len()).to_string();
+        let s2 = s1.replace("/", "\\").replace(":", "_");
+        let mut s3 = the_path.substring(0, 3).to_string();
+        s3.push_str(&s2);
+        return s3;
+    }
+    return the_path.clone();
 }
 
 
@@ -176,21 +229,10 @@ pub fn writeEmailAsFile(
         constants::SecLevel::Trace);
 
 
-    let (status, _msg)=file_write(
+    let (status, _msg) = file_write(
         outbox,
         file_name,
         &email_body,
         app_clone_id);
     status
-}
-
-pub fn get_os_care_path(the_path: &String) -> String {
-    if std::env::consts::OS == "windows" {
-        let s1 = the_path.substring(3, the_path.len()).to_string();
-        let s2 = s1.replace("/", "\\").replace(":", "_");
-        let mut s3 = the_path.substring(0, 3).to_string();
-        s3.push_str(&s2);
-        return s3;
-    }
-    return the_path.clone();
 }
