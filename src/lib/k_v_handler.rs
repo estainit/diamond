@@ -3,13 +3,13 @@ use postgres::types::ToSql;
 use crate::cutils;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
-use crate::lib::database::tables::STBL_KVALUE;
+use crate::lib::database::tables::C_KVALUE;
 
 //old_name_was getValue
 pub fn get_value(kv_key: &str) -> String
 {
     let (status, records) = q_select(
-        STBL_KVALUE,
+        C_KVALUE,
         vec!["kv_value"],
         vec![simple_eq_clause("kv_key", kv_key)],
         vec![],
@@ -42,7 +42,7 @@ pub fn search_in_kv(
     limit: LimitT) -> QVDRecordsT
 {
     let (status, records) = q_select(
-        STBL_KVALUE,
+        C_KVALUE,
         fields,
         clauses,
         order,
@@ -82,7 +82,7 @@ pub fn upsert_kvalue(
             .iter().cloned().collect();
 
     return q_upsert(
-        STBL_KVALUE,
+        C_KVALUE,
         "kv_key",
         key,
         &values,

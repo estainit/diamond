@@ -1,7 +1,7 @@
 use crate::{CMachine, constants};
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::initGenesisBlock;
 use crate::lib::database::abs_psql::{OrderModifier, q_select, simple_eq_clause};
-use crate::lib::database::tables::STBL_BLOCKS;
+use crate::lib::database::tables::C_BLOCKS;
 use crate::lib::k_v_handler::set_value;
 use crate::lib::services::polling::polling_handler::init_polling_profiles;
 use crate::lib::services::society_rules::society_rules::init_administrative_configurations_history;
@@ -12,7 +12,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 
     // check if genesis block is created?
     let (status, records) = q_select(
-        STBL_BLOCKS,
+        C_BLOCKS,
         vec!["b_id", "b_hash"],     // fields
         vec![
             simple_eq_clause( "b_type", constants::block_types::Genesis)],

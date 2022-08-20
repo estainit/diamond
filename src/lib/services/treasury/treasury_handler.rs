@@ -2,7 +2,7 @@ use crate::{constants, cutils, dlog};
 use crate::cutils::TimeRange;
 use crate::lib::custom_types::{CDateT, CMPAIValueT};
 use crate::lib::database::abs_psql::q_custom_query;
-use crate::lib::database::tables::STBL_TREASURY;
+use crate::lib::database::tables::C_TREASURY;
 
 //old_name_was getTreasureIncomesDateRange
 pub fn get_treasure_incomes_date_range(c_date: &CDateT) -> TimeRange
@@ -20,11 +20,11 @@ pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
     let mut complete_query: String = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
     {
-        complete_query = "SELECT CAST(SUM(tr_value) AS varchar) AS incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
+        complete_query = "SELECT CAST(SUM(tr_value) AS varchar) AS incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
         // complete_query = "SELECT tr_value AS incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
-        complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
+        complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
     }
 
     let (status, records) = q_custom_query(

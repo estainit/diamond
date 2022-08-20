@@ -5,7 +5,7 @@ use crate::lib::block::block_types::block_factory::{load_block_by_db_record};
 use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::OrderModifier;
-use crate::lib::database::tables::STBL_BLOCKS_FIELDS;
+use crate::lib::database::tables::C_BLOCKS_FIELDS;
 
 
 //returns latest block which is already recorded in DAG
@@ -14,7 +14,7 @@ pub fn get_latest_block_record() -> (bool, Block)
 {
     let last_recorded_bLock: QVDRecordsT = search_in_dag(
         vec![],
-        STBL_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        C_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,
         true,

@@ -1,6 +1,6 @@
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_select};
-use crate::lib::database::tables::STBL_PARSING_Q;
+use crate::lib::database::tables::C_PARSING_Q;
 
 /*
 
@@ -181,7 +181,7 @@ pub fn search_parsing_q(
     limit: LimitT) -> QVDRecordsT
 {
     let (_status, records) = q_select(
-        STBL_PARSING_Q,
+        C_PARSING_Q,
         fields,
         clauses,
         order,

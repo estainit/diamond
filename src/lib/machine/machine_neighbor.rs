@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::STBL_MACHINE_NEIGHBORS;
+use crate::lib::database::tables::{C_MACHINE_NEIGHBORS, C_MACHINE_NEIGHBORS_FIELDS};
 use crate::lib::messaging_protocol::greeting::{create_handshake_request, create_here_is_new_neighbor, create_nice_to_meet_you};
 use crate::lib::network::network_handler::i_push;
 
@@ -201,7 +201,7 @@ pub fn add_a_new_neighbor(
     }
 
     let (_status, records) = q_select(
-        STBL_MACHINE_NEIGHBORS,
+        C_MACHINE_NEIGHBORS,
         vec!["n_mp_code", "n_email"],
         vec![
             simple_eq_clause("n_mp_code", &*mp_code),
@@ -229,14 +229,14 @@ pub fn add_a_new_neighbor(
             ];
 
             q_update(
-                STBL_MACHINE_NEIGHBORS,
+                C_MACHINE_NEIGHBORS,
                 &values,
                 clauses,
                 true);
             (true, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) updated"))
         } else {
             (false, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) was missed"))
-        }
+        };
     }
 
 
@@ -274,7 +274,7 @@ pub fn add_a_new_neighbor(
         constants::SecLevel::Info);
 
     q_insert(
-        STBL_MACHINE_NEIGHBORS,
+        C_MACHINE_NEIGHBORS,
         &values,
         true);
 
@@ -289,7 +289,7 @@ pub fn get_neighbors(
     neighbor_type: &str,
     connection_status: &str,
     mp_code: &str,
-    n_id: &str,
+    n_id: i64,
     n_email: &str) -> QVDRecordsT
 {
     let mut clauses: ClausesT = vec![];
@@ -306,8 +306,9 @@ pub fn get_neighbors(
         clauses.push(simple_eq_clause("n_mp_code", mp_code));
     }
 
-    if n_id != "" {
-        clauses.push(simple_eq_clause("n_id", n_id));
+    let nid = n_id.to_string();
+    if n_id != 0 {
+        clauses.push(simple_eq_clause("n_id", &nid));
     }
 
     if n_email != "" {
@@ -315,8 +316,8 @@ pub fn get_neighbors(
     }
 
     let (_status, records) = q_select(
-        STBL_MACHINE_NEIGHBORS,
-        vec!["n_id", "n_email", "n_pgp_public_key", "n_connection_type"],
+        C_MACHINE_NEIGHBORS,
+        C_MACHINE_NEIGHBORS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         clauses,
         vec![
             &OrderModifier { m_field: "n_connection_type", m_order: "DESC" },
@@ -331,7 +332,7 @@ pub fn get_neighbors(
 pub fn get_active_neighbors(mp_code: &str) -> QVDRecordsT
 {
     let (_status, records) = q_select(
-        STBL_MACHINE_NEIGHBORS,
+        C_MACHINE_NEIGHBORS,
         vec!["n_email", "n_pgp_public_key", "n_connection_type"],
         vec![
             simple_eq_clause("n_is_active", constants::YES),
@@ -344,10 +345,10 @@ pub fn get_active_neighbors(mp_code: &str) -> QVDRecordsT
 }
 
 //old_name_was handshakeNeighbor
-pub fn handshake_neighbor(n_id: &String, connection_type: &String) -> bool
+pub fn handshake_neighbor(n_id: i64, connection_type: &str) -> (bool, String)
 {
     dlog(
-        &format!("handshake Neighbor: {} {}", n_id, connection_type),
+        &format!("handshake Neighbor: id({}) connection({})", n_id, connection_type),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -363,15 +364,26 @@ pub fn handshake_neighbor(n_id: &String, connection_type: &String) -> bool
         constants::Modules::App,
         constants::SecLevel::Info);
     if !status
-    { return status; }
+    { return (status, message); }
 
     // the concept is the node public email is propagated to more neighbors in order to strength connectivity,
     // but the node private email will be used as a second plan to defence against the any kind of spaming/DOS Attacks ...
-    return i_push(
+    let status = i_push(
         &title,
         &message,
         &sender_email,
         &receiver_email);
+    if status
+    {
+        return (true, "Done".to_string());
+    } else {
+        let msg = "Failed in push request to sending q! ".to_string();
+        dlog(
+            &format!("{}", msg),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, msg);
+    }
 }
 
 //old_name_was parseHandshake
@@ -399,7 +411,12 @@ pub fn parse_handshake(
     // if user needs to change publickkey or ... she can send alternate messages like changeMyPublicKey(which MUST be signed with current key)
     // retreive sender's info
     let mut email_already_exist: bool = false;
-    let sender_info: QVDRecordsT = get_neighbors(connection_type, "", "", "", sender_email);
+    let sender_info: QVDRecordsT = get_neighbors(
+        connection_type,
+        "",
+        "",
+        0,
+        sender_email);
 
     if sender_info.len() > 0
     {
@@ -451,7 +468,7 @@ pub fn parse_handshake(
                 ("n_pgp_public_key", &pgp_public_key as &(dyn ToSql + Sync)),
             ]);
             q_update(
-                STBL_MACHINE_NEIGHBORS,
+                C_MACHINE_NEIGHBORS,
                 &update_values,
                 vec![simple_eq_clause("n_id", &sender_info[0]["n_id"])],
                 false,
@@ -501,7 +518,12 @@ pub fn flood_email_to_neighbors(
 
     if pgp_public_key == ""
     {
-        let email_info: QVDRecordsT = get_neighbors(constants::PUBLIC, "", "", "", email);
+        let email_info: QVDRecordsT = get_neighbors(
+            constants::PUBLIC,
+            "",
+            "",
+            0,
+            email);
         if email_info.len() == 0
         {
             dlog(
@@ -517,7 +539,7 @@ pub fn flood_email_to_neighbors(
     //  * [{vertice: "neighborEmail->targetEmail", date:"presenting date"}]
 
     let mut already_presented_neighbors: Vec<NeighborPresentation> = machine().m_profile.m_mp_settings.m_already_presented_neighbors.clone();
-    let pr= &already_presented_neighbors.iter().map(|x| x.m_vertice.clone()).collect::<Vec<String>>().join(",");
+    let pr = &already_presented_neighbors.iter().map(|x| x.m_vertice.clone()).collect::<Vec<String>>().join(",");
     dlog(
         &format!("Already Presented to these Neighbors {:?}", pr),
         constants::Modules::App,
@@ -527,7 +549,7 @@ pub fn flood_email_to_neighbors(
         constants::PUBLIC,
         constants::YES,
         &machine().get_selected_m_profile(),
-        "",
+        0,
         "");
 
     dlog(

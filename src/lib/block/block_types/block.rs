@@ -16,7 +16,7 @@ use crate::lib::dag::dag_walk_through::updateCachedBlocks;
 use crate::lib::dag::leaves_handler::{addToLeaveBlocks, removeFromLeaveBlocks};
 use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{STBL_BLOCK_EXTINFOS, STBL_BLOCKS};
+use crate::lib::database::tables::{C_BLOCK_EXTINFOS, C_BLOCKS};
 use crate::lib::file_handler::file_handler::file_write;
 
 
@@ -721,7 +721,7 @@ impl Block {
     {
         // duplicate check
         let (_status, records) = q_select(
-            STBL_BLOCKS,
+            C_BLOCKS,
             vec!["b_hash"],     // fields
             vec![
                 simple_eq_clause("b_hash", &self.m_block_hash),
@@ -791,7 +791,7 @@ impl Block {
             constants::SecLevel::Trace);
 
         q_insert(
-            STBL_BLOCKS,     // table
+            C_BLOCKS,     // table
             &values, // values to insert
             true);
 
@@ -973,7 +973,7 @@ impl Block {
         limit: u32) -> QVDRecordsT
     {
         let (_status, records) = q_select(
-            STBL_BLOCK_EXTINFOS,
+            C_BLOCK_EXTINFOS,
             fields,
             clauses,
             order,
@@ -1202,7 +1202,7 @@ impl Block {
 
 
         return q_insert(
-            STBL_BLOCK_EXTINFOS,     // table
+            C_BLOCK_EXTINFOS,     // table
             &values, // values to insert
             true);
     }

@@ -7,7 +7,7 @@ use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, CDocHashT, ClausesT, JSonObject, TimeByHoursT};
 use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::STBL_PROPOSALS;
+use crate::lib::database::tables::C_PROPOSALS;
 use crate::lib::services::polling::polling_handler::auto_create_polling_for_proposal;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -449,7 +449,7 @@ impl DNAProposalDocument {
         is_transactional: bool) -> (bool, String)
     {
         q_update(
-            STBL_PROPOSALS,
+            C_PROPOSALS,
             upd_values, // update values
             clauses,  // update clauses
             is_transactional);
@@ -477,7 +477,7 @@ impl DNAProposalDocument {
 
         // record in c_proposals (i_proposal)
         let (_status, records) = q_select(
-            STBL_PROPOSALS,
+            C_PROPOSALS,
             vec!["pr_hash"],
             vec![simple_eq_clause("pr_hash", &*doc.m_doc_hash)],
             vec![],
@@ -517,7 +517,7 @@ impl DNAProposalDocument {
         ]);
 
         q_insert(
-            STBL_PROPOSALS,
+            C_PROPOSALS,
             &values,
             true);
 

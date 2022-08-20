@@ -4,7 +4,7 @@ use crate::lib::machine::machine_neighbor::{NeighborPresentation};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
 use crate::dlog;
-use crate::lib::database::tables::STBL_MACHINE_PROFILES;
+use crate::lib::database::tables::C_MACHINE_PROFILES;
 
 
 /**
@@ -44,7 +44,7 @@ impl MachineProfile {
     pub fn get_profile_from_db(mp_code: &str) -> (bool, MachineProfile)
     {
         let (_status, records) = q_select(
-            STBL_MACHINE_PROFILES,
+            C_MACHINE_PROFILES,
             vec!["mp_code", "mp_name", "mp_settings"],
             vec![
                 simple_eq_clause("mp_code", mp_code)],

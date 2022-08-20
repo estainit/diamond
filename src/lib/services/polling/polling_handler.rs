@@ -7,7 +7,7 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, TimeByMinutesT};
 use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::{STBL_POLLING_PROFILES, STBL_POLLINGS};
+use crate::lib::database::tables::{C_POLLING_PROFILES, C_POLLINGS};
 use crate::lib::utils::version_handler::is_older_than;
 
 /*
@@ -148,7 +148,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::SecLevel::Trace);
 
     return q_insert(
-        STBL_POLLINGS,
+        C_POLLINGS,
         &values,
         true,
     );
@@ -181,7 +181,7 @@ pub fn update_polling(
     is_transactional: bool) -> (bool, String)
 {
     q_update(
-        STBL_POLLINGS,
+        C_POLLINGS,
         upd_values, // update values
         clauses,  // update clauses
         is_transactional,
@@ -202,7 +202,7 @@ pub fn init_polling_profiles()
 
 
     let (_status, records) = q_select(
-        STBL_POLLING_PROFILES,
+        C_POLLING_PROFILES,
         vec!["ppr_name"],
         vec![simple_eq_clause("ppr_name", "Basic", // POLLING_PROFILE_CLASSES["Basic"]["ppName"].to_string(),
         )],
@@ -232,7 +232,7 @@ pub fn init_polling_profiles()
         ("ppr_version", &ppr_version as &(dyn ToSql + Sync)),
     ]);
     q_insert(
-        STBL_POLLING_PROFILES,
+        C_POLLING_PROFILES,
         &values,
         false,
     );

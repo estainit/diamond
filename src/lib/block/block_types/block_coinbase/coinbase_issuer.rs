@@ -554,7 +554,7 @@ pub fn makeEmailHashDict() -> (String, String, String, QSDicT)
         "",
         constants::YES,
         "",
-        "",
+        0,
         "");
     dlog(
         &format!("neightbors in makeEmail Hash Dict: {}", dump_hashmap_of_QVDRecordsT(&neightbors)),

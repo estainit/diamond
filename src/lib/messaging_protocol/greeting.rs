@@ -8,8 +8,8 @@ use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
 
 //old_name_was createHandshakeRequest
 pub fn create_handshake_request(
-    connection_type: &String,
-    receiver_id: &String) -> (bool, String, String, String, String)
+    connection_type: &str,
+    receiver_id: i64) -> (bool, String, String, String, String)
 {
     dlog(
         &format!("generate Handshake packet for: {} {}", connection_type, receiver_id),
@@ -26,13 +26,13 @@ pub fn create_handshake_request(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
 
-    if receiver_id == ""
+    if receiver_id == 0
     {
         dlog(
-            &format!("The receiver_id can not be empty!"),
+            &format!("The receiver_id can not be zero!"),
             constants::Modules::App,
             constants::SecLevel::Error);
-        return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
+        return (false, "".to_string(), "".to_string(), "".to_string(), "The receiver_id can not be zero!".to_string());
     }
 
     let receivers_info: QVDRecordsT = get_neighbors(
@@ -40,7 +40,7 @@ pub fn create_handshake_request(
         "",
         "",
         receiver_id,
-        ""
+        "",
     );
     if receivers_info.len() != 1
     {

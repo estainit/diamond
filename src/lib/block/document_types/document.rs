@@ -10,7 +10,7 @@ use crate::lib::block::document_types::dna_proposal_document::DNAProposalDocumen
 use crate::lib::block::document_types::polling_document::PollingDocument;
 use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, DocLenT, JSonObject};
 use crate::lib::database::abs_psql::q_insert;
-use crate::lib::database::tables::STBL_DOCS_BLOCKS_MAP;
+use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Document
@@ -726,7 +726,7 @@ pub fn mapDocToBlock(
         constants::Modules::App,
         constants::SecLevel::Info);
     q_insert(
-        STBL_DOCS_BLOCKS_MAP,     // table
+        C_DOCS_BLOCKS_MAP,     // table
         &values, // values to insert
         true);
 }

@@ -4,7 +4,7 @@ use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VVString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{STBL_SENDING_Q, STBL_SENDING_Q_FIELDS, STBLDEV_SENDING_Q};
+use crate::lib::database::tables::{C_SENDING_Q, C_SENDING_Q_FIELDS, CDEV_SENDING_Q};
 use crate::lib::machine::machine_neighbor::get_active_neighbors;
 use crate::lib::network::broadcast_logger::{add_sent_block, list_sent_bloks_ids};
 use crate::lib::network::network_handler::i_push;
@@ -217,7 +217,7 @@ pub fn push_into_sending_q(
 
 
         let (_status, records) = q_select(
-            STBL_SENDING_Q,
+            C_SENDING_Q,
             vec!["sq_type", "sq_code"],
             vec![
                 simple_eq_clause("sq_type", &packet[2]),
@@ -251,14 +251,14 @@ pub fn push_into_sending_q(
                 ("sq_last_modified", &now as &(dyn ToSql + Sync))
             ]);
             q_insert(
-                STBL_SENDING_Q,
+                C_SENDING_Q,
                 &values,
                 false);
 
             if machine().is_develop_mod()
             {
                 let (_status, records) = q_select(
-                    STBLDEV_SENDING_Q,
+                    CDEV_SENDING_Q,
                     vec!["sq_type", "sq_code"],
                     vec![
                         simple_eq_clause("sq_type", &packet[2]),
@@ -272,7 +272,7 @@ pub fn push_into_sending_q(
 
                 if records.len() == 0 {
                     q_insert(
-                        STBLDEV_SENDING_Q,
+                        CDEV_SENDING_Q,
                         &values,
                         false);
                 }
@@ -289,11 +289,11 @@ pub fn fetch_from_sending_q(
     order: OrderT) -> QVDRecordsT
 {
     if fields.len() == 0 {
-        fields = STBL_SENDING_Q_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>();
+        fields = C_SENDING_Q_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>();
     }
 
     let (status, records) = q_select(
-        STBL_SENDING_Q,
+        C_SENDING_Q,
         fields,
         clauses,
         order,
@@ -306,7 +306,7 @@ pub fn fetch_from_sending_q(
 pub fn cancel_ivoke_block_request(block_hash: &CBlockHashT)
 {
     q_delete(
-        STBL_SENDING_Q,
+        C_SENDING_Q,
         vec![
             simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK),
             simple_eq_clause("sq_code", block_hash),
@@ -320,7 +320,7 @@ pub fn maybe_cancel_ivoke_blocks_request()
 
     // TODO: optimize it
     let (status, records) = q_select(
-        STBL_SENDING_Q,
+        C_SENDING_Q,
         vec!["sq_code"],
         vec![simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK)],
         vec![],
@@ -430,7 +430,7 @@ pub fn send_out_the_packet() -> bool
 pub fn rmove_from_sending_q(clauses: ClausesT) -> bool
 {
     q_delete(
-        STBL_SENDING_Q,
+        C_SENDING_Q,
         clauses,
         false);
     return true;

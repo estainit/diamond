@@ -22,14 +22,18 @@ use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 use lib::rest::apis;
+use crate::apis::do_handshake;
 use crate::cutils::strip_parentheses_as_break_line;
+use crate::lib::machine::machine_neighbor::get_neighbors;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
+
 fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
+
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 fn main() {
@@ -54,7 +58,7 @@ fn main() {
 
     // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
-    let mut web_server_msg: &str="";
+    let mut web_server_msg: &str = "";
     // web_server_msg = match tokio::runtime::Builder::new_multi_thread()
     //     .enable_all()
     //     .build()
@@ -78,6 +82,21 @@ fn main() {
         constants::Modules::App,
         constants::SecLevel::Info);
     println!("{}", msg);
+
+    {
+        // web api part
+        let neighbors = get_neighbors(
+            "",
+            "",
+            "",
+            0,
+            "");
+        println!("neighbors: {:?}", neighbors);
+
+        let (status, msg) = do_handshake(0);
+        println!("do_handshake: {}, {}", status, msg);
+    }
+
 
     launch_giga_loop(false);//    launch_threads();
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{ccrypto, CMachine, constants, cutils};
 use crate::lib::database::abs_psql::q_insert;
-use crate::lib::database::tables::STBL_ADMINISTRATIVE_REFINES_HISTORY;
+use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
 pub mod polling_types
 {
@@ -81,7 +81,7 @@ pub fn init_administrative_configurations_history(machine: &CMachine)
             ("arh_apply_date", &arh_apply_date as &(dyn ToSql + Sync))
         ]);
         q_insert(
-            STBL_ADMINISTRATIVE_REFINES_HISTORY,
+            C_ADMINISTRATIVE_REFINES_HISTORY,
             &values,
             false,
         );

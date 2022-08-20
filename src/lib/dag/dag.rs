@@ -4,7 +4,7 @@ use crate::{constants, cutils};
 use crate::cutils::{array_add, array_unique};
 use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::STBL_BLOCKS;
+use crate::lib::database::tables::C_BLOCKS;
 
 pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
 {
@@ -14,7 +14,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
         {
             let c1 = simple_eq_clause("b_hash", &*a_block_hash);
             let (_status, records) = q_select(
-                STBL_BLOCKS,
+                C_BLOCKS,
                 vec!["b_hash", "b_descendants"],
                 vec![c1],
                 vec![],
@@ -40,7 +40,7 @@ pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<Strin
                 ]);
                 let c1 = simple_eq_clause("b_hash", &*a_block_hash);
                 q_update(
-                    STBL_BLOCKS,
+                    C_BLOCKS,
                     &update_values,
                     vec![c1],
                     true);
@@ -103,7 +103,7 @@ pub fn search_in_dag(
     do_log: bool) -> QVDRecordsT
 {
     let (_status, records) = q_select(
-        STBL_BLOCKS,
+        C_BLOCKS,
         fields,
         clauses,
         order,

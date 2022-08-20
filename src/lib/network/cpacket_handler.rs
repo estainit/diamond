@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use actix_web::cookie::time::format_description::parse;
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{STBL_CPACKET_TICKETING, STBL_CPACKET_TICKETING_FIELDS};
+use crate::lib::database::tables::{C_CPACKET_TICKETING, C_CPACKET_TICKETING_FIELDS};
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, get_neighbors, handshake_neighbor, NeighborInfo};
 use crate::lib::machine::machine_profile::EmailSettings;
 use crate::lib::pgp::cpgp::{CPGPMessage};
@@ -34,7 +35,12 @@ pub fn decrypt_and_parse_packet(
     t_log(file_name);
 
     // retrieve sender's info
-    let sender_info: QVDRecordsT = get_neighbors("", "", "", "", sender);
+    let sender_info: QVDRecordsT = get_neighbors(
+        "",
+        "",
+        "",
+        0,
+        sender);
     let mut sender_public_key: String = "".to_string();
 
     if sender_info.len() > 0
@@ -62,7 +68,12 @@ pub fn decrypt_and_parse_packet(
         );
 
 // retrieve id of newly inserted email
-        let new_neighbor_info: QVDRecordsT = get_neighbors("", "", "", "", sender);
+        let new_neighbor_info: QVDRecordsT = get_neighbors(
+            "",
+            "",
+            "",
+            0,
+            sender);
         if new_neighbor_info.len() == 0
         {
             dlog(
@@ -74,7 +85,19 @@ pub fn decrypt_and_parse_packet(
         }
 
         // and now do handshake (possible in async mode)
-        handshake_neighbor(&new_neighbor_info[0]["n_id"].to_string(), &constants::PUBLIC.to_string());
+        let (status, msg) = handshake_neighbor(new_neighbor_info[0]["n_id"].parse::<i64>().unwrap_or(0), constants::PUBLIC);
+        if status
+        {
+            dlog(
+                &format!("Handshake Done neighbor({}/{}): {}", sender, receiver, msg),
+                constants::Modules::App,
+                constants::SecLevel::Info);
+        } else {
+            dlog(
+                &format!("Failed Handshake neighbor({}/{}): {}", sender, receiver, msg),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+        }
     }
 // if (sender_public_Key == '')
 //     sender_public_Key = null;    // for new neighbors
@@ -87,8 +110,7 @@ pub fn decrypt_and_parse_packet(
     {
         machine_private_pgp_key = machine_profile.m_mp_settings.m_private_email.m_pgp_private_key.clone();
         connection_type = constants::PRIVATE.to_string();
-    }
-    else if receiver.to_string() == machine_profile.m_mp_settings.m_public_email.m_address
+    } else if receiver.to_string() == machine_profile.m_mp_settings.m_public_email.m_address
     {
         machine_private_pgp_key = machine_profile.m_mp_settings.m_public_email.m_pgp_private_key.clone();
         connection_type = constants::PUBLIC.to_string();
@@ -176,8 +198,8 @@ pub fn t_log(file_name: &String) -> bool
 pub fn i_read(file_name: &String) -> QVDRecordsT
 {
     let (status, records) = q_select(
-        STBL_CPACKET_TICKETING,
-        STBL_CPACKET_TICKETING_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        C_CPACKET_TICKETING,
+        C_CPACKET_TICKETING_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![simple_eq_clause("msg_file_id", file_name)],
         vec![],
         0,
@@ -225,7 +247,7 @@ pub fn i_create(file_id: &String) -> bool
         ("msg_last_modified", &now_ as &(dyn ToSql + Sync)),
     ]);
     q_insert(
-        STBL_CPACKET_TICKETING,
+        C_CPACKET_TICKETING,
         &values,
         true);
     return true;

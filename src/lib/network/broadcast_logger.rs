@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
-use crate::lib::database::tables::STBL_LOGS_BROADCAST;
+use crate::lib::database::tables::C_LOGS_BROADCAST;
 use crate::lib::utils::dumper::{dump_hashmap_of_str_string, dump_it};
 
 //old_name_was listSentBlocks
@@ -19,7 +19,7 @@ pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
         }
     }
     let (status, records) = q_select(
-        STBL_LOGS_BROADCAST,
+        C_LOGS_BROADCAST,
         fields,
         vec![ModelClause {
             m_field_name: "lb_send_date",
@@ -63,7 +63,7 @@ pub fn add_sent_block(values: &mut HashMap<&str, &(dyn ToSql + Sync)>) -> bool
         constants::SecLevel::Trace);
 
     q_insert(
-        STBL_LOGS_BROADCAST,
+        C_LOGS_BROADCAST,
         values,
         false);
     return true;

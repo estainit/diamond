@@ -7,7 +7,7 @@ use crate::lib::custom_types::{ClausesT, JSonObject, VString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::dag_walk_through::getCachedBlocksHashes;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{CDEV_PARSING_Q, STBL_PARSING_Q};
+use crate::lib::database::tables::{CDEV_PARSING_Q, C_PARSING_Q};
 
 /*
 
@@ -260,7 +260,7 @@ pub fn push_to_parsing_q(
     let mut prerequisites = prerequisites;
     // check for duplicate entries
     let (status, records) = q_select(
-        STBL_PARSING_Q,
+        C_PARSING_Q,
         vec!["pq_type"],
         vec![
             simple_eq_clause("pq_type", card_type),
@@ -406,7 +406,7 @@ pub fn push_to_parsing_q(
     ]);
 
     q_insert(
-        STBL_PARSING_Q,
+        C_PARSING_Q,
         &values,
         false);
 
@@ -441,7 +441,7 @@ pub fn push_to_parsing_q(
 pub fn rmoveFromParsingQ(clauses: ClausesT) -> bool
 {
     return q_delete(
-        STBL_PARSING_Q,
+        C_PARSING_Q,
         clauses,
         false,
     );

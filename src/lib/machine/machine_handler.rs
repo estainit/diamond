@@ -11,7 +11,7 @@ use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
 use crate::lib::dag::dag_walk_through::get_latest_block_record;
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
-use crate::lib::database::tables::{STBL_KVALUE, STBL_MACHINE_PROFILES};
+use crate::lib::database::tables::{C_KVALUE, C_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
 use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
@@ -505,7 +505,7 @@ impl CMachine {
         ]);
 
         return q_upsert(
-            STBL_MACHINE_PROFILES,
+            C_MACHINE_PROFILES,
             "mp_code",
             self.m_profile.m_mp_code.as_str(),
             &values,
@@ -667,7 +667,7 @@ impl CMachine {
             ("kv_last_modified", &self.m_profile.m_mp_last_modified as &(dyn ToSql + Sync)),
         ]);
         q_upsert(
-            STBL_KVALUE,
+            C_KVALUE,
             "kv_key",
             "selected_profile",
             &values,
@@ -906,7 +906,7 @@ impl CMachine {
     pub fn read_profile(&self, mp_code: String) -> MachineProfile
     {
         let (_status, records) = q_select(
-            STBL_MACHINE_PROFILES,
+            C_MACHINE_PROFILES,
             vec!["mp_code", "mp_name", "mp_settings"],
             vec![
                 simple_eq_clause("mp_code", &*mp_code)],

@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use crate::{constants, cutils, dlog};
 use crate::lib::custom_types::{CBlockHashT, CDateT, TimeByMinutesT};
 use crate::lib::database::abs_psql::q_upsert;
-use crate::lib::database::tables::STBL_KVALUE;
+use crate::lib::database::tables::C_KVALUE;
 use crate::lib::k_v_handler::get_value;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -36,7 +36,7 @@ pub fn removeFromLeaveBlocks(leaves: &Vec<String>) -> (bool, String)
     ]);
 
     q_upsert(
-        STBL_KVALUE,
+        C_KVALUE,
         "kv_key",
         "dag_leave_blocks",
         &values,
@@ -94,7 +94,7 @@ pub fn addToLeaveBlocks(
     ]);
 
     q_upsert(
-        STBL_KVALUE,
+        C_KVALUE,
         "kv_key",
         "dag_leave_blocks",
         &update_values,

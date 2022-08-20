@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{constants, dlog};
 use crate::lib::custom_types::{ClausesT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::STBL_MACHINE_WALLET_ADDRESSES;
+use crate::lib::database::tables::C_MACHINE_WALLET_ADDRESSES;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::utils::dumper::{dump_hashmap_of_str_string};
 
@@ -56,7 +56,7 @@ pub fn search_wallet_addresses(
     });
 
     let (status, records) = q_select(
-        STBL_MACHINE_WALLET_ADDRESSES,
+        C_MACHINE_WALLET_ADDRESSES,
         fields,
         clauses,
         vec![],
@@ -216,7 +216,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
     ]);
 
     q_insert(
-        STBL_MACHINE_WALLET_ADDRESSES,
+        C_MACHINE_WALLET_ADDRESSES,
         &values_,
         true,
     );
