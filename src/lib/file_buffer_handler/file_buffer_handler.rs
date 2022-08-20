@@ -1,5 +1,6 @@
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::file_handler::file_handler::{delete_exact_file, file_read, list_exact_files, read_exact_file};
+use crate::lib::messaging_protocol::dispatcher::parse_a_packet;
 use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
 
 
@@ -167,33 +168,32 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 
     println!(">>>>>>> cpacket: {}", cpacket);
 
-    /*
 
-    auto[dispatch_status, should_purge_file] = Dispatcher::dispatchMessage(
-        sender,
-        cpacket,
-        connection_type);
+    let (status, should_purge_file) = parse_a_packet(
+        &sender,
+        &cpacket,
+        &connection_type);
 
-      CLog::log("Dispatch Message res: dispatch_status(" + cutils::dumpIt(dispatch_status) + ") should_purge_file(" + cutils::dumpIt(should_purge_file) + ") ", "app", "trace");
+    dlog(
+        &format!("Parse packet res: status({}) should purge file({}) ", status, should_purge_file),
+        constants::Modules::App,
+        constants::SecLevel::Info);
 
-      //should purge file?
-      if (file_name != "")
-      {
-        if (should_purge_file == false) {
-            CLog::log("why should_purge_file == false? " + cutils::serializeJson(cpacket), "sec", "error");;
+
+    //should purge file?
+    if file_name != ""
+    {
+        if should_purge_file == false
+        {
+            dlog(
+                &format!("Why should not purge the file {}? {}", file_name, cutils::serialize_json(&cpacket)),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
         }
-        maybePurgeMessage(file_name, should_purge_file);
-      }
+        maybe_purge_message(&file_name, should_purge_file);
+    }
 
-    //  let dispatchResErr = _.has(dispatchRes, "error") ? dispatchRes.error : null;
-    //  if (utils._notNil(dispatchResErr)) {
-    //    //TODO:  some log to db denoting to "unable to parse a message"
-    //    clog.app.error(dispatchRes)
-    //  }
-
-    //  return parsePacketRes
-    */
-    return true;
+    return status;
 }
 
 //old_name_was maybePurgeMessage

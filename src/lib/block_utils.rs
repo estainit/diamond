@@ -3,14 +3,9 @@
 #ifndef BLOCKUTILS_H
 #define BLOCKUTILS_H
 
-struct WrapDBObj
-{
-  String sfVer = "";
-  String content = "";
-};
-
 */
-pub struct Unwrapped
+
+pub struct WrappedBundle
 {
     pub(crate) status: bool,
     pub(crate) version: String,
@@ -110,33 +105,33 @@ use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::lib::custom_types::JSonObject;
 
-pub fn wrapSafeContentForDB(content: &String, sfVer: String) -> Unwrapped
+//old_name_was wrapSafeContentForDB
+pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str) -> (bool, String, String)
 {
-     // to make a safe string to insert in db, jus convert it to base64
-    if sfVer == "0.0.0"
+    // to make a safe string to insert in db, jus convert it to base64
+    if safe_ver == "0.0.0"
     {
         let b64 = ccrypto::b64_encode(content);
-        let jsonObj: JSonObject = json!({
-          "sfVer": sfVer,
+        let json_obj: JSonObject = json!({
+          "sfVer": safe_ver,
           "content": b64});
         //    CLog::log("Safe Wrapped Content: " + cutils::serializeJson(jsonObj), "app");
-        return Unwrapped {
-            status: true,
-            version: sfVer,
-            content: cutils::serialize_json(&jsonObj),
-        };
+        return (
+            true,
+            safe_ver.to_string(),
+            cutils::serialize_json(&json_obj),
+        );
     } else {
-        let msg = format!("unknown sfVer version: {}", sfVer);
+        let msg = format!("unknown sfVer version: {}", safe_ver);
         dlog(
             &msg,
             constants::Modules::App,
             constants::SecLevel::Error);
 
-        return Unwrapped {
-            status: false,
-            version: sfVer,
-            content: msg,
-        };
+        return (false,
+                safe_ver.to_string(),
+                msg,
+        );
     }
 }
 

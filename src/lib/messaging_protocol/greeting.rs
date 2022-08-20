@@ -71,7 +71,7 @@ pub fn create_handshake_request(
 
 
     let email_body: String = cutils::serialize_json(&json!({
-         "type": constants::message_types::HANDSHAKE,
+         "mType": constants::card_types::HANDSHAKE,
          "mVer": "0.0.0",
          "connectionType": connection_type,
          "email": email, // sender email
@@ -144,7 +144,7 @@ pub fn create_nice_to_meet_you(
     }
     let default_message_version = "0.0.0";
     let json_email_body = json!({
-        "type": constants::message_types::NICETOMEETYOU,
+        "mType": constants::card_types::NICETOMEETYOU,
         "connectionType": connection_type ,
         "mVer": default_message_version ,
         "email": machine().get_pub_email_info().m_address ,
@@ -206,7 +206,7 @@ pub fn create_here_is_new_neighbor(
 
     let default_messaging_ver = "0.0.0";
     let json_email_body = json!({
-        "type": constants::message_types::HEREISNEWNEIGHBOR,
+        "mType": constants::card_types::HEREISNEWNEIGHBOR,
         "mVer": default_messaging_ver ,
         "connectionType": connection_type ,
         "newNeighborEmail": new_neighbor_email ,

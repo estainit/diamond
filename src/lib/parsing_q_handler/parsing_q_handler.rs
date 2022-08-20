@@ -1,3 +1,13 @@
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::{constants, cutils, dlog, machine};
+use crate::lib::block_utils::wrap_safe_content_for_db;
+use crate::lib::custom_types::{ClausesT, JSonObject, VString};
+use crate::lib::dag::dag::search_in_dag;
+use crate::lib::dag::dag_walk_through::getCachedBlocksHashes;
+use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::{CDEV_PARSING_Q, STBL_PARSING_Q};
+
 /*
 
 void ParsingQHandler::loopSmartPullFromParsingQ()
@@ -30,16 +40,16 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
   CLog::log("handle Pulled Packet: " + cutils::dumpIt(packet), "app", "trace");
 
-  String receive_date = packet.value("pq_receive_date", cutils::get_now()).to_string();
-  String pq_type = packet.value("pq_type", "").to_string();
-  String pq_code = packet.value("pq_code", "").to_string();
-  String pq_sender = packet.value("pq_sender", "").to_string();
-  String connection_type = packet.value("pq_connection_type", "").to_string();
+  String receive_date = packet["pq_receive_date"] cutils::get_now()).to_string();
+  String pq_type = packet["pq_type"] "").to_string();
+  String pq_code = packet["pq_code"] "").to_string();
+  String pq_sender = packet["pq_sender"] "").to_string();
+  String connection_type = packet["pq_connection_type"] "").to_string();
   /**
   * payload could be a block, GQL or even old-style messages
   * TODO: optimizine to use heap allocation for bigger payloads
   */
-  JSonObject payload = packet.value("pq_payload", JSonObject()).toJSonObject();
+  JSonObject payload = packet["pq_payload"] JSonObject()).toJSonObject();
 
   if ((pq_sender == "") || (payload.keys().len() == 0))
   {
@@ -58,9 +68,9 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
     return {false, true};
   }
 
-  if(payload.value("bType").to_string() == constants::BLOCK_TYPES::RpBlock)
+  if(payload["bType"].to_string() == constants::BLOCK_TYPES::RpBlock)
   {
-    CLog::log("A repay Block received block(" + cutils::hash8c(payload.value("bHash").to_string()) + ")", "trx", "info");
+    CLog::log("A repay Block received block(" + cutils::hash8c(payload["bHash"].to_string()) + ")", "trx", "info");
     // Since machine must create the repayments by itself we drop this block immidiately,
     // in addition machine calls importCoinbasedUTXOs method to import potentially minted coins and cut the potentially repay backs in on shot
     return {true, true};
@@ -80,7 +90,7 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
     if (!block->objectAssignmentsControlls())
     {
-      CLog::log("Maleformed JSon block couldn't be parsed! block(" + cutils::hash8c(payload.value("bHash").to_string()) + ")", "trx", "error");
+      CLog::log("Maleformed JSon block couldn't be parsed! block(" + cutils::hash8c(payload["bHash"].to_string()) + ")", "trx", "error");
       return {false, true};
     }
 
@@ -136,7 +146,7 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 //        });
 //        break;
   }
-  else if (pq_type == constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK)
+  else if (pq_type == constants::card_types::DAG_INVOKE_BLOCK)
   {
     //comunications
     auto[status, should_purge_record] = DAGMessageHandler::handleBlockInvokeReq(
@@ -146,9 +156,9 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
     return {status, should_purge_record};
 
   }
-  else if (pq_type == constants::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS)
+  else if (pq_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
   {
-//    case MESSAGE_TYPES.DAG_INVOKE_DESCENDENTS:
+//    case message_types.DAG_INVOKE_DESCENDENTS:
 //        res = dagMsgHandler.handleDescendentsInvokeReq({
 //            sender,
 //            payload,
@@ -233,41 +243,47 @@ std::tuple<bool, bool> ParsingQHandler::parsePureBlock(
 
 }
 
-std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
-  const JSonObject& message,
-  const String& creation_date,
-  const String& type,
-  const String& code,
-  const String& sender,
-  const String& connection_type,
-  StringList prerequisites)
+*/
+
+
+//old_name_was pushToParsingQ
+pub fn push_to_parsing_q(
+    card: &JSonObject,
+    creation_date: &String,
+    card_type: &String,
+    card_code: &String,
+    sender: &String,
+    connection_type: &String,
+    prerequisites: Vec<String>) -> (bool, bool)
 {
-  try {
+    let mut prerequisites = prerequisites;
     // check for duplicate entries
-    QueryRes dbl = DbModel::select(
-      stbl_parsing_q,
-      {"pq_type"},
-      {{"pq_type", type},
-        {"pq_code", code}},
-      {},
-      0,
-      false,
-      false
+    let (status, records) = q_select(
+        STBL_PARSING_Q,
+        vec!["pq_type"],
+        vec![
+            simple_eq_clause("pq_type", card_type),
+            simple_eq_clause("pq_code", card_code),
+        ],
+        vec![],
+        0,
+        false,
     );
-    if (dbl.records.len() > 0)
-      return { true, true };
+    if records.len() > 0
+    { return (true, true); }
 
-//    listener.doCallSync('SPSH_before_insert_packet_in_q', args);
-
-
-    // control if needs some initiative prerequisities
-    StringList message_ancestors = {};
-    if (message.keys().contains("ancestors") && (message.value("ancestors").toArray().len() > 0))
+    // control if needs some initiative prerequisites
+    let mut card_ancestors: VString = vec![];
+    if !card["ancestors"].is_null()
     {
-      for(auto an_anc: message.value("ancestors").toArray())
-      {
-        message_ancestors.push(an_anc.to_string());
-      }
+        if !card["ancestors"][0].is_null()
+        {
+            let mut i = 0;
+            while !card["ancestors"][i].is_null() {
+                card_ancestors.push(card["ancestors"][i].to_string());
+                i += 1;
+            }
+        }
 
 //      // check if ancestores exist in parsing q
 //      QueryRes queuedAncs = DbModel::select(
@@ -285,128 +301,147 @@ std::tuple<bool, bool> ParsingQHandler::pushToParsingQ(
 //      {
 //        StringList pq_codes = {};
 //        for(QVDicT a_row: queuedAncs.records)
-//          pq_codes.push(a_row.value("pq_code").to_string());
+//          pq_codes.push(a_row["pq_code"].to_string());
 //        missedAnc = cutils::arrayDiff(message_ancestors, pq_codes);
 //        CLog::log("block(" + code + ") partially missed ancestors (" + cutils::dumpIt(missedAnc) + ") ", "app", "trace");
 //      }
 
-      CLog::log("block(" + code + ") before + missed ancs (" + cutils::dumpIt(prerequisites) + "\n\n " + cutils::dumpIt(message_ancestors), "app", "trace");
+        dlog(
+            &format!("block({}) before + missed ancs ({:?}) ({:?})", card_code, prerequisites, card_ancestors),
+            constants::Modules::App,
+            constants::SecLevel::Info);
 
-      // control if missedAnc alredy exist in DAG?
-      StringList exist_in_DAG;
-      StringList existed_blocks_in_DAG = DAG::getCachedBlocksHashes();
-      for (CBlockHashT an_ancestor: message_ancestors)
-        if (existed_blocks_in_DAG.contains(an_ancestor))
-          exist_in_DAG.push(an_ancestor);
+        // remove if missed anc already exist in cache?
+        card_ancestors = cutils::array_diff(&card_ancestors, &getCachedBlocksHashes());
 
-//      QVDRecordsT DAGedAncs = DAG::searchInDAG(
-//        {{"b_hash", message_ancestors, "IN"}},
-//        {"b_hash"});
+        if card_ancestors.len() > 0
+        {
+            // remove if missed anc already exist in DAG?
+            let daged_blocks = search_in_dag(
+                vec![ModelClause {
+                    m_field_name: "b_hash",
+                    m_field_single_str_value: "",
+                    m_clause_operand: "IN",
+                    m_field_multi_values: card_ancestors.iter().map(|x| x.as_str()).collect::<Vec<&str>>(),
+                }],
+                vec!["b_hash"],
+                vec![],
+                0,
+                false,
+            );
+            if daged_blocks.len() > 0
+            {
+                card_ancestors = cutils::array_diff(&card_ancestors, &daged_blocks.iter().map(|r, | r["b_hash"].to_string()).collect::<Vec<String>>());
+            }
+        }
 
-//      if (DAGedAncs.len() > 0)
-//      {
-//        StringList exist_in_DAG;
-//        for (QVDicT x: DAGedAncs)
-//        {
-//          exist_in_DAG.push(x.value("b_hash").to_string());
-//        }
+        dlog(
+            &format!("Some likely missed blocks({})", card_ancestors.join(",")),
+            constants::Modules::App,
+            constants::SecLevel::Info);
 
-        CLog::log("some likly missed blocks(" + message_ancestors.join(",") + ") already recorded in DAG(" + exist_in_DAG.join(",") + ")", "app", "trace");
-        message_ancestors = cutils::arrayDiff(message_ancestors, exist_in_DAG);
-//      }
-      prerequisites = cutils::arrayAdd(prerequisites, message_ancestors);
+        prerequisites = cutils::array_add(&prerequisites, &card_ancestors);
     }
 
-    /**
-     * if blcok is FVote, maybe we need customized treatment, since generally in DAG later blocks are depend on
-     * early blocks and it is one way graph.
-     * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
-     * so depends on voting type(bCat) for, we need proper treatment
-     */
-    if (message.value("bType").to_string() == constants::BLOCK_TYPES::FVote)
-    {
+    // * if blcok is FVote, maybe we need customized treatment, since generally in DAG later blocks are depend on
+    // * early blocks and it is one way graph.
+    // * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
+    // * so depends on voting type(bCat) for, we need proper treatment
 
-      if (message.value("bCat").to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
-      {
-        /**
-        * if the machine get an FVote, so insert uplink block in SUS BLOCKS WHICH NEEDED VOTES TO BE IMPORTED AHAED(SusBlockWNVTBIA)
-        * WNVTBIA: Wait becaue Needs Vote To Be Importable
-        */
-        String uplinkBlock = message.value("ancestors").toArray()[0].to_string();    // FVote blocks always have ONLY one ancestor for which Fvote is voting
-        String currentWNVTBIA = KVHandler::getValue("SusBlockWNVTBIA");
-        StringList currentWNVTBIA_arr = {};
-        if (currentWNVTBIA == "")
+    if card["bType"].to_string() == constants::block_types::FVote
+    {
+        /*
+        if (message["bCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
         {
-          currentWNVTBIA_arr.push(uplinkBlock);
-        } else {
-          auto tmp = cutils::parseToJsonArr(currentWNVTBIA);
-          for(auto x: tmp)
-            currentWNVTBIA_arr.push(x.to_string());
-          currentWNVTBIA_arr.push(uplinkBlock);
-          currentWNVTBIA_arr = cutils::arrayUnique(currentWNVTBIA_arr);
+            /**
+             * if the machine get an FVote, so insert uplink block in SUS BLOCKS WHICH NEEDED VOTES TO BE IMPORTED AHAED(SusBlockWNVTBIA)
+             * WNVTBIA: Wait becaue Needs Vote To Be Importable
+             */
+            String
+            uplinkBlock = message["ancestors"].toArray()[0].to_string();    // FVote blocks always have ONLY one ancestor for which Fvote is voting
+            String
+            currentWNVTBIA = KVHandler::getValue("SusBlockWNVTBIA");
+            StringList
+            currentWNVTBIA_arr = {};
+            if (currentWNVTBIA == "")
+            {
+                currentWNVTBIA_arr.push(uplinkBlock);
+            } else {
+                auto
+                tmp = cutils::parseToJsonArr(currentWNVTBIA);
+                for (auto x: tmp)
+                currentWNVTBIA_arr.push(x.to_string());
+                currentWNVTBIA_arr.push(uplinkBlock);
+                currentWNVTBIA_arr = cutils::arrayUnique(currentWNVTBIA_arr);
+            }
+            currentWNVTBIA = cutils::serializeJson(currentWNVTBIA_arr);
+            KVHandler::upsertKValue("SusBlockWNVTBIA", currentWNVTBIA);
         }
-        currentWNVTBIA = cutils::serializeJson(currentWNVTBIA_arr);
-        KVHandler::upsertKValue("SusBlockWNVTBIA", currentWNVTBIA);
-      }
+        */
     }
 
     // TODO: security issue to control block (specially payload), before insert to db
     // potentially attacks: sql injection, corrupted JSON object ...
 
-    QVDicT values {
-      {"pq_type", type},
-      {"pq_code", code},
-      {"pq_sender", sender},
-      {"pq_connection_type", connection_type},
-      {"pq_receive_date", cutils::get_now()},
-      {"pq_payload", BlockUtils::wrapSafeContentForDB(cutils::serializeJson(message)).content},
-      {"pq_prerequisites", "," + prerequisites.join(",")},  //"," prefix intentionally was added
-      {"pq_parse_attempts", 0},
-      {"pq_v_status", "new"},
-      {"pq_creation_date", creation_date},
-      {"pq_insert_date", cutils::get_now()},
-      {"pq_last_modified", cutils::get_now()}
-    };
-    DbModel::insert(
-      stbl_parsing_q,
-      values,
-      false,
-      false);
+    let (_status, _safe_version, pq_payload) = wrap_safe_content_for_db(
+        &cutils::serialize_json(&card), constants::DEFAULT_SAFE_VERSION);
+    let now_ = cutils::get_now();
+    let pq_prerequisites= prerequisites.join(",");
+    let zero:i32 = 0 ;
+    let pq_v_status="new".to_string();
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("pq_type", card_type as &(dyn ToSql + Sync)),
+        ("pq_code", card_code as &(dyn ToSql + Sync)),
+        ("pq_sender", sender as &(dyn ToSql + Sync)),
+        ("pq_connection_type", connection_type as &(dyn ToSql + Sync)),
+        ("pq_receive_date", &now_ as &(dyn ToSql + Sync)),
+        ("pq_payload", &pq_payload as &(dyn ToSql + Sync)),
+        ("pq_prerequisites", &pq_prerequisites as &(dyn ToSql + Sync)),
+        ("pq_parse_attempts", &zero as &(dyn ToSql + Sync)),
+        ("pq_v_status", &pq_v_status as &(dyn ToSql + Sync)),
+        ("pq_creation_date", creation_date as &(dyn ToSql + Sync)),
+        ("pq_insert_date", &now_ as &(dyn ToSql + Sync)),
+        ("pq_last_modified", &now_ as &(dyn ToSql + Sync)),
+    ]);
+
+    q_insert(
+        STBL_PARSING_Q,
+        &values,
+        false);
 
 //    listener.doCallSync('SPSH_after_insert_packet_in_q', args);
 
-    if (CMachine::is_develop_mod())
-      DbModel::insert(
-        stbldev_parsing_q,
-        values,
-        false,
-        false);
+    if machine().is_develop_mod()
+    {
+        q_insert(
+            CDEV_PARSING_Q,
+            &values,
+            false);
+    }
 
 
-    rmoveFromParsingQ({
-      {"pq_parse_attempts", constants::MAX_PARSE_ATTEMPS_COUNT, ">"},
-      {"pq_creation_date", cutils::minutes_before(cutils::get_cycle_by_minutes()), "<"}
-    });
+    rmoveFromParsingQ(vec![
+        ModelClause {
+            m_field_name: "pq_parse_attempts",
+            m_field_single_str_value: &constants::MAX_PARSE_ATTEMPS_COUNT.to_string(),
+            m_clause_operand: ">",
+            m_field_multi_values: vec![],
+        },
+        ModelClause {
+            m_field_name: "pq_creation_date",
+            m_field_single_str_value: &cutils::minutes_before(cutils::get_cycle_by_minutes(), &cutils::get_now()),
+            m_clause_operand: "<",
+            m_field_multi_values: vec![],
+        }]);
 
-    if (!CMachine::is_in_sync_process())
-      CGUI::signalUpdateParsingQ();
-    return { true, true};
-
-  } catch (std::exception) {
-    CLog::log("push To Parsing Q Sync was failed on block(" + code + ") type(" + type + ") from(" + sender + ")!", "app", "error");
-    return {false, true};
-
-  }
+    return (true, true);
 }
 
-
-bool ParsingQHandler::rmoveFromParsingQ(const ClausesT& clauses)
+pub fn rmoveFromParsingQ(clauses: ClausesT) -> bool
 {
-  DbModel::dDelete(
-    stbl_parsing_q,
-    clauses
-  );
-  return true;
+    return q_delete(
+        STBL_PARSING_Q,
+        clauses,
+        false,
+    );
 }
-
- */

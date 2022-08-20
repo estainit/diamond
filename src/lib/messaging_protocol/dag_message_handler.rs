@@ -114,13 +114,13 @@ bool DAGMessageHandler::doInvokeDescendents(
 
     CLog::log("invoking for descendents of ${utils.hash6c(block_hash)}", "app", "trace");
     JSonObject payload = {
-      {"type", constants::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS},
+      {"mType", constants::card_types::DAG_INVOKE_DESCENDENTS},
       {"mVer", "0.0.0"},
       {"bHash", block_hash}
     };
     String payload_ = cutils::serializeJson(payload);
     SendingQHandler::pushIntoSendingQ(
-      constants::MESSAGE_TYPES::DAG_INVOKE_DESCENDENTS,
+      constants::card_types::DAG_INVOKE_DESCENDENTS,
       block_hash, // sqCode
       payload_,
       "Invoke Descendents(" + cutils::hash16c(block_hash) + ")",
@@ -227,6 +227,7 @@ use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::database::abs_psql::simple_eq_clause;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
+use crate::lib::messaging_protocol::dispatcher::make_a_packet;
 use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 
 //old_name_was doMissedBlocksInvoker
@@ -262,14 +263,14 @@ bool DAGMessageHandler::invokeBlock(const String &block_hash)
 {
   CLog::log("invoking for block(" + cutils::hash16c(block_hash) + ")", "app", "trace");
   JSonObject payload {
-    {"type", constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK},
+    {"mType", constants::card_types::DAG_INVOKE_BLOCK},
     {"mVer", "0.0.0"},
     {"bHash", block_hash}};
   String serialized_payload = cutils::serializeJson(payload);
   CLog::log("invoked for keaves (" + block_hash + ")", "app", "trace");
 
   bool status = SendingQHandler::pushIntoSendingQ(
-    constants::MESSAGE_TYPES::DAG_INVOKE_BLOCK, // sqType
+    constants::card_types::DAG_INVOKE_BLOCK, // sqType
     block_hash,  // sqCode
     serialized_payload,
     "Invoke Block(" + cutils::hash16c(block_hash) + ")");
@@ -304,15 +305,24 @@ pub fn invoke_leaves() -> bool
         &format!("Invoking for DAG leaves!"),
         constants::Modules::App,
         constants::SecLevel::Trace);
-    let payload: JSonObject = json!({
-        "type": constants::message_types::DAG_INVOKE_LEAVES,
-        "mVer": "0.0.0"});
-    let serialized_payload = cutils::serialize_json(&payload);
+
+    let (code, body) = make_a_packet(
+        vec![json!({
+            "cdType": constants::card_types::DAG_INVOKE_LEAVES,//CConsts::CARD_TYPES::FullDAGDownloadRequest
+            "cdVer": constants::DEFAULT_CARD_VERSION})],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        cutils::get_now(),
+    );
+    // let payload: JSonObject = json!({
+    //     "mType": constants::card_types::DAG_INVOKE_LEAVES,
+    //     "mVer": "0.0.0"});
+    // let serialized_payload = cutils::serialize_json(&payload);
 
     let status = push_into_sending_q(
-        constants::message_types::DAG_INVOKE_LEAVES, // sqType
-        &cutils::get_now_sss(),  // sqCode
-        &serialized_payload,
+        constants::card_types::DAG_INVOKE_LEAVES, // sqType
+        &cutils::hash6c(&code),  // sqCode
+        &body,
         "Invoking for DAG leaves",
         &vec![],
         &vec![],

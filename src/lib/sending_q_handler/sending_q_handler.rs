@@ -307,7 +307,7 @@ pub fn cancel_ivoke_block_request(block_hash: &CBlockHashT)
     q_delete(
         STBL_SENDING_Q,
         vec![
-            simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK),
+            simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK),
             simple_eq_clause("sq_code", block_hash),
         ],
         false);
@@ -321,7 +321,7 @@ pub fn maybe_cancel_ivoke_blocks_request()
     let (status, records) = q_select(
         STBL_SENDING_Q,
         vec!["sq_code"],
-        vec![simple_eq_clause("sq_type", constants::message_types::DAG_INVOKE_BLOCK)],
+        vec![simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK)],
         vec![],
         1,
         false,

@@ -183,7 +183,7 @@ pub(crate) mod psql_db
 
 pub const DEFAULT_LANG: &str = "eng";
 pub const DEFAULT_VERSION: &str = "0.0.0";
-pub const WRAP_SAFE_VERION: &str = "0.0.0";
+pub const WRAP_SAFE_CONTENT_VERSION: &str = "0.0.0";
 
 pub const NL: &str = "\n";
 pub const TAB: &str = "\t";
@@ -192,7 +192,6 @@ pub const ALL: &str = "All";
 pub const DEFAULT: &str = "Default";
 pub const DEFAULT_BLOCK_VERSION: &str = "0.0.0";
 pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
-pub const DEFAULT_CONTENT_VERSION: &str = "0.0.0";
 pub const DEFAULT_RSA_KEY_LENGTH: usize = 2048;
 pub const PUBLIC: &str = "Public";
 pub const PRIVATE: &str = "Private";
@@ -351,12 +350,11 @@ pub mod doc_types
     // binds a iPGP(later GNU GPG) to an iName
     pub const INameMsgTo: &str = "INameMsgTo"; // general message to a registered iName
 }
-/*
 
 // message parsing settings
-const uint MAX_PARSE_ATTEMPS_COUNT = 5; // parse message tentative
+pub const MAX_PARSE_ATTEMPS_COUNT: u8 = 5; // parse message tentative
 
-
+/*
 pub const NO_EXT_HASH = "NEH";
 
 // floating blocks like floating signature, floating votes, collision logs...
@@ -366,6 +364,7 @@ pub const Trx = "Trx";     // collision on spending a coin in some transactions
 pub const FleNS = "FleNS"; // collision on registring an iName
 }
 */
+
 pub mod document_types {
     pub const Coinbase: &str = "Coinbase";
     pub const RpDoc: &str = "RpDoc";
@@ -559,23 +558,17 @@ pub mod signature_types
 /*
   pub const DEFAULT_SIGNATURE_MOD = "2/3"; // needs 2 signature of 3
 
-  namespace CARD_TYPES
-  {
-      pub const ProposalLoanRequest = "ProposalLoanRequest";
-      pub const FullDAGDownloadRequest = "FullDAGDownloadRequest";
-      pub const FullDAGDownloadResponse = "FullDAGDownloadResponse";
-      pub const BallotsReceiveDates = "BallotsReceiveDates";
-      pub const NodeStatusScreenshot = "NodeStatusScreenshot";
-      pub const NodeStatusSnapshot = "NodeStatusSnapshot";
-
-      pub const pleaseRemoveMeFromYourNeighbors = "pleaseRemoveMeFromYourNeighbors";
-      pub const directMsgToNeighbor = "directMsgToNeighbor";
-  };
 
 */
 
-pub mod message_types
+pub const DEFAULT_PACKET_VERSION: &str = "0.0.3";
+pub const DEFAULT_PACKET_TYPE: &str = "Standard";
+pub const DEFAULT_CARD_VERSION: &str = "0.0.1";
+pub const DEFAULT_SAFE_VERSION: &str = "0.0.0";
+
+pub mod card_types
 {
+    // simple cards
     pub const HANDSHAKE: &str = "handshake";
     pub const NICETOMEETYOU: &str = "niceToMeetYou";
     pub const HEREISNEWNEIGHBOR: &str = "hereIsNewNeighbor";
@@ -585,6 +578,17 @@ pub mod message_types
     pub const DAG_LEAVES_INFO: &str = "dagLeavesInfo";
     pub const DAG_INVOKE_BLOCK: &str = "dagInvokeBlock";
     pub const DAG_INVOKE_DESCENDENTS: &str = "dagInvokeDescendents";
+
+    // complicated cards
+    pub const ProposalLoanRequest: &str = "ProposalLoanRequest";
+    pub const FullDAGDownloadRequest: &str = "FullDAGDownloadRequest";
+    pub const FullDAGDownloadResponse: &str = "FullDAGDownloadResponse";
+    pub const BallotsReceiveDates: &str = "BallotsReceiveDates";
+    pub const NodeStatusScreenshot: &str = "NodeStatusScreenshot";
+    pub const NodeStatusSnapshot: &str = "NodeStatusSnapshot";
+
+    pub const pleaseRemoveMeFromYourNeighbors: &str = "pleaseRemoveMeFromYourNeighbors";
+    pub const directMsgToNeighbor: &str = "directMsgToNeighbor";
 }
 
 pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";

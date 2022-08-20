@@ -1,10 +1,7 @@
-// use std::sync::{Arc, Mutex};
-
 use std::collections::HashMap;
 use postgres::Client;
 use crate::{ccrypto, cutils, dbhandler};
 use crate::lib::constants::NETWORK_LAUNCH_DATE;
-// use crate::lib::constants as cconsts;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, get_connection, maybe_initialize_db};
 use postgres::types::ToSql;

@@ -17,9 +17,9 @@ pub fn convert_ver_to_val(version: String) -> i64 {
     let mut version_segments: Vec<i64> = vec![];
     for &a_seg in v_seg.iter()
     {
-        let seg_int2 = match a_seg.to_string().parse::<i64>(){
-            Ok(i)=>{i},
-            Err(e)=>{
+        let seg_int2 = match a_seg.to_string().parse::<i64>() {
+            Ok(i) => { i }
+            Err(e) => {
                 println!("convert_ver_to_val version, {:?}", version);
                 println!("convert_ver_to_val v_seg, {:?}", v_seg);
                 println!("convert_ver_to_val FAILED, {}", e);
@@ -66,3 +66,23 @@ bool VersionHandler::isNewerThan(
 }
 
  */
+
+//old_name_was isValid
+//old_name_was isValidVersionNumber
+pub fn is_valid_version_number(version: &str) -> bool
+{
+    if version == ""
+    { return false; }
+
+    // let ver_segments = ver.split(".");
+    // if (ver_segments.size() != 3)
+    // return false;
+    //
+    // for (QString aSeg : ver_segments)
+    // {
+    //     if (QString::number(aSeg.toUInt()) != aSeg)
+    //     return false;
+    // }
+
+    return true;
+}

@@ -9,7 +9,7 @@ use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{ge
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::node_signals_handler::logSignals;
-use crate::lib::block_utils::wrapSafeContentForDB;
+use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT};
 use crate::lib::dag::dag::appendDescendents;
 use crate::lib::dag::dag_walk_through::updateCachedBlocks;
@@ -753,7 +753,7 @@ impl Block {
         let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
         let confidence_float = confidence_string.parse::<f64>().unwrap();
         let signals = cutils::serialize_json(&self.m_block_signals);
-        let body = wrapSafeContentForDB(&self.safeStringifyBlock(false), constants::WRAP_SAFE_VERION.to_string()).content;
+        let (_status, _sf_version, body) = wrap_safe_content_for_db(&self.safeStringifyBlock(false), constants::WRAP_SAFE_CONTENT_VERSION);
         let docs_count = self.m_block_documents.len() as i32;
         let ancestors = self.m_block_ancestors.join(",");
         let ancestors_count = self.m_block_ancestors.len() as i32;
@@ -1183,16 +1183,16 @@ impl Block {
     // old name was insertToDB
     pub fn insertBlockExtInfoToDB(
         &self,
-        serializedBextInfo: &String,
+        serialized_block_ext_info: &String,
         block_hash: &CBlockHashT,
         creation_date: &CDateT) -> bool
     {
-        let cntnt = wrapSafeContentForDB(
-            serializedBextInfo,
-            constants::DEFAULT_CONTENT_VERSION.to_string());
+        let (_status, _sf_version, the_safe_content) = wrap_safe_content_for_db(
+            serialized_block_ext_info,
+            constants::WRAP_SAFE_CONTENT_VERSION);
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("x_block_hash", &block_hash as &(dyn ToSql + Sync)),
-            ("x_detail", &cntnt.content as &(dyn ToSql + Sync)),
+            ("x_detail", &the_safe_content as &(dyn ToSql + Sync)),
             ("x_creation_date", &creation_date as &(dyn ToSql + Sync))
         ]);
         dlog(
