@@ -2,14 +2,13 @@ use crate::{constants, dlog, machine};
 use crate::lib::machine::machine_profile::EmailSettings;
 
 use lettre::message::Mailbox;
-use lettre::transport::smtp::response::{Category, Code, Detail, Response, Severity};
-use postgres::types::ToSql;
-use serde::de::Unexpected::Option;
 
 use lettre::{transport::smtp::{
     authentication::{Credentials, Mechanism},
     PoolConfig,
 }, Message, SmtpTransport, Transport, Address};
+use lettre::transport::smtp::response::Response;
+
 extern crate imap;
 extern crate native_tls;
 

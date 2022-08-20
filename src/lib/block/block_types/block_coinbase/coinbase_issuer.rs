@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde_json::json;
 use crate::cmerkle::generate_m;
 use crate::{ccrypto, cutils, machine};
@@ -479,10 +480,10 @@ pub fn doesDAGHasMoreConfidenceCB() -> bool
 
     let already_recorded_coinbase_blocks: QVDRecordsT = search_in_dag(
         vec![
-            simple_eq_clause("b_type", constants::block_types::Coinbase),
+            simple_eq_clause("b_type", &constants::block_types::Coinbase.to_string()),
             ModelClause {
                 m_field_name: "b_creation_date",
-                m_field_single_str_value: &*current_cycle_range_from,
+                m_field_single_str_value: &current_cycle_range_from as &(dyn ToSql + Sync),
                 m_clause_operand: ">=",
                 m_field_multi_values: vec![],
             },
@@ -836,15 +837,20 @@ pub fn tryCreateCoinbaseBlock() -> bool
     if ancestors_diff.len() > 0
     {
         // try to remove repayBack blocks
+        let empty_string = "".to_string();
+        let mut c1 = ModelClause {
+            m_field_name: "b_hash",
+            m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+            m_clause_operand: "IN",
+            m_field_multi_values: vec![],
+        };
+        for an_anc in &ancestors_diff {
+            c1.m_field_multi_values.push(an_anc as &(dyn ToSql + Sync));
+        }
         let existed_RpBlocks: QVDRecordsT = search_in_dag(
             vec![
-                simple_eq_clause("b_type", constants::block_types::RpBlock),
-                ModelClause {
-                    m_field_name: "b_hash",
-                    m_field_single_str_value: "",
-                    m_clause_operand: "IN",
-                    m_field_multi_values: ancestors_diff.iter().map(|x| x.as_str()).collect::<Vec<&str>>(),
-                },
+                simple_eq_clause("b_type", &constants::block_types::RpBlock.to_string()),
+                c1,
             ],
             vec!["b_hash"],
             vec![],

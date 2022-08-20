@@ -15,7 +15,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
         C_BLOCKS,
         vec!["b_id", "b_hash"],     // fields
         vec![
-            simple_eq_clause( "b_type", constants::block_types::Genesis)],
+            simple_eq_clause( "b_type", &constants::block_types::Genesis.to_string())],
         vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
             &OrderModifier { m_field: "b_id", m_order: "ASC" },

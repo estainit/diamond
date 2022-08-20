@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
-use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_NEIGHBORS, C_MACHINE_NEIGHBORS_FIELDS};
 use crate::lib::messaging_protocol::greeting::{create_handshake_request, create_here_is_new_neighbor, create_nice_to_meet_you};
 use crate::lib::network::network_handler::i_push;
@@ -189,6 +189,10 @@ pub fn add_a_new_neighbor(
     neighbor_info: NeighborInfo,
     c_date: CDateT) -> (bool, String)
 {
+    let mp_code = mp_code.to_string();
+    let connection_type = connection_type.to_string();
+    let neighbor_email = neighbor_email.to_string();
+
     dlog(
         &format!("add new Neighbor email({neighbor_email}) connection_type({connection_type}) "),
         constants::Modules::App,
@@ -204,9 +208,9 @@ pub fn add_a_new_neighbor(
         C_MACHINE_NEIGHBORS,
         vec!["n_mp_code", "n_email"],
         vec![
-            simple_eq_clause("n_mp_code", &*mp_code),
-            simple_eq_clause("n_connection_type", &*connection_type),
-            simple_eq_clause("n_email", &*neighbor_email),
+            simple_eq_clause("n_mp_code", &mp_code.to_string()),
+            simple_eq_clause("n_connection_type", &connection_type.to_string()),
+            simple_eq_clause("n_email", &neighbor_email.to_string()),
         ],
         vec![],
         0,
@@ -223,9 +227,9 @@ pub fn add_a_new_neighbor(
                 ("n_last_modified", &now as &(dyn ToSql + Sync)),
             ]);
             let clauses: ClausesT = vec![
-                simple_eq_clause("n_mp_code", &*mp_code),
-                simple_eq_clause("n_connection_type", &*connection_type),
-                simple_eq_clause("n_email", &*neighbor_email),
+                simple_eq_clause("n_mp_code", &mp_code),
+                simple_eq_clause("n_connection_type", &connection_type),
+                simple_eq_clause("n_email", &neighbor_email),
             ];
 
             q_update(
@@ -292,27 +296,36 @@ pub fn get_neighbors(
     n_id: i64,
     n_email: &str) -> QVDRecordsT
 {
+    let n_email = n_email.to_string();
+    let mp_code = mp_code.to_string();
+    let neighbor_type = neighbor_type.to_string();
+    let connection_status = connection_status.to_string();
+
     let mut clauses: ClausesT = vec![];
 
     if connection_status != "" {
-        clauses.push(simple_eq_clause("n_is_active", connection_status));
+        clauses.push(simple_eq_clause("n_is_active", &connection_status));
     }
 
     if neighbor_type != "" {
-        clauses.push(simple_eq_clause("n_connection_type", neighbor_type));
+        clauses.push(simple_eq_clause("n_connection_type", &neighbor_type));
     }
 
     if mp_code != "" {
-        clauses.push(simple_eq_clause("n_mp_code", mp_code));
+        clauses.push(simple_eq_clause("n_mp_code", &mp_code));
     }
 
-    let nid = n_id.to_string();
     if n_id != 0 {
-        clauses.push(simple_eq_clause("n_id", &nid));
+        clauses.push(ModelClause {
+            m_field_name: "n_id",
+            m_field_single_str_value: &n_id as &(dyn ToSql + Sync),
+            m_clause_operand: "=",
+            m_field_multi_values: vec![],
+        });
     }
 
     if n_email != "" {
-        clauses.push(simple_eq_clause("n_email", n_email));
+        clauses.push(simple_eq_clause("n_email", &n_email));
     }
 
     let (_status, records) = q_select(
@@ -335,8 +348,8 @@ pub fn get_active_neighbors(mp_code: &str) -> QVDRecordsT
         C_MACHINE_NEIGHBORS,
         vec!["n_email", "n_pgp_public_key", "n_connection_type"],
         vec![
-            simple_eq_clause("n_is_active", constants::YES),
-            simple_eq_clause("n_mp_code", mp_code)],
+            simple_eq_clause("n_is_active", &constants::YES.to_string()),
+            simple_eq_clause("n_mp_code", &mp_code.to_string())],
         vec![&OrderModifier { m_field: "n_connection_type", m_order: "DESC" }],
         0,
         true,
@@ -359,8 +372,8 @@ pub fn handshake_neighbor(n_id: i64, connection_type: &str) -> (bool, String)
         receiver_email,
         message) = create_handshake_request(connection_type, n_id);
     dlog(
-        &format!("packet Generators.write Handshake: sender_email({}) title({}) sender_email({}) receiver_email({}) message({})",
-                 sender_email, title, sender_email, receiver_email, message),
+        &format!("packet Generators.write Handshake: sender_email({}) receiver_email({}) title({}) message({})",
+                 sender_email, receiver_email, title, message),
         constants::Modules::App,
         constants::SecLevel::Info);
     if !status
@@ -449,7 +462,7 @@ pub fn parse_handshake(
         return (false, true);
     }
 
-    let (status, pgp_public_key) = ccrypto::b64_decode(&pgp_public_key);
+    let (_status, pgp_public_key) = ccrypto::b64_decode(&pgp_public_key);
 
     if !email_already_exist
     {
@@ -557,7 +570,7 @@ pub fn flood_email_to_neighbors(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let mut vertice: String = "".to_string();
+    let mut vertice: String;
     let mut is_already_sent: bool;
     for neighbor in active_neighbors
     {

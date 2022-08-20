@@ -1,4 +1,5 @@
 use std::thread;
+use postgres::types::ToSql;
 use crate::lib::constants;
 use crate::{cutils, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
@@ -62,17 +63,20 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         constants::Modules::Trx,
         constants::SecLevel::Trace);
 
+    let b_type=constants::block_types::Normal.to_string();
+    let b_utxo_imported=constants::NO.to_string();
     let mut clauses: ClausesT = vec![
-        ModelClause {
-            m_field_name: "b_type",
-            m_field_single_str_value: "",
-            m_clause_operand: "IN",
-            m_field_multi_values: vec![constants::block_types::Normal],
-        },
-        simple_eq_clause("b_utxo_imported", constants::NO),
+        // ModelClause {
+        //     m_field_name: "b_type",
+        //     m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        //     m_clause_operand: "IN",
+        //     m_field_multi_values: vec![&constants::block_types::Normal.to_string() as &(dyn ToSql + Sync)],
+        // },
+        simple_eq_clause("b_type", &b_type),
+        simple_eq_clause("b_utxo_imported", &b_utxo_imported),
         ModelClause {
             m_field_name: "b_creation_date",
-            m_field_single_str_value: min_creation_date.as_str(),
+            m_field_single_str_value: &min_creation_date as &(dyn ToSql + Sync),
             m_clause_operand: "<=",
             m_field_multi_values: vec![],
         },
@@ -95,7 +99,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         {
             clauses.push(ModelClause {
                 m_field_name: "b_receive_date",
-                m_field_single_str_value: &*min_creation_date,
+                m_field_single_str_value: &min_creation_date as &(dyn ToSql + Sync),
                 m_clause_operand: "<",
                 m_field_multi_values: vec![],
             });

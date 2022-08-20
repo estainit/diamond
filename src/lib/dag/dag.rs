@@ -812,10 +812,10 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
 
     let current_coinbases_in_dag: QVDRecordsT = search_in_dag(
         vec![
-            simple_eq_clause("b_type", constants::block_types::Coinbase),
+            simple_eq_clause("b_type", &constants::block_types::Coinbase.to_string()),
             ModelClause {
                 m_field_name: "b_creation_date",
-                m_field_single_str_value: &*coinbase_from,
+                m_field_single_str_value: &coinbase_from as &(dyn ToSql + Sync),
                 m_clause_operand: ">=",
                 m_field_multi_values: vec![],
             },

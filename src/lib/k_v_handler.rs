@@ -11,7 +11,7 @@ pub fn get_value(kv_key: &str) -> String
     let (status, records) = q_select(
         C_KVALUE,
         vec!["kv_value"],
-        vec![simple_eq_clause("kv_key", kv_key)],
+        vec![simple_eq_clause("kv_key", &kv_key.to_string())],
         vec![],
         0,
         true,

@@ -7,7 +7,6 @@ use crate::lib::custom_types::{JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_CPACKET_TICKETING, C_CPACKET_TICKETING_FIELDS};
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, get_neighbors, handshake_neighbor, NeighborInfo};
-use crate::lib::machine::machine_profile::EmailSettings;
 use crate::lib::pgp::cpgp::{CPGPMessage};
 use crate::lib::pgp::cpgp_decrypt::pgp_decrypt;
 
@@ -158,7 +157,7 @@ pub fn decrypt_and_parse_packet(
         return (false, connection_type, message_obj);
     }
 
-    if (decrypt_res.m_message == "")
+    if decrypt_res.m_message == ""
     {
         dlog(
             &format!("Dropped Invalid Or Insecure Message (empty message body)."),

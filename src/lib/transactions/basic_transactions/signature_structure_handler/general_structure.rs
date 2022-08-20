@@ -24,7 +24,6 @@ pub struct TInput
 }
 
 impl TInput {
-
     //old_name_was getCoinCode
     pub fn get_coin_code(&self) -> CCoinCodeT
     {
@@ -95,7 +94,7 @@ pub fn create_complete_unlock_sets<'a>(
     let signature_version: String = my_get(options, "signature_version", "").to_string();
     let custom_salt: String = my_get(options, "customSalt", "PURE_LEAVE").to_string();
 
-    let mut signers_ids: Vec<String> = vec![];
+    // let signers_ids: Vec<String> = vec![];
 
     // generate permutation of signatures. later will be used as tree leaves
     let mut leave_ids: Vec<String> = individuals_signing_sets
@@ -171,8 +170,8 @@ pub fn create_m_of_n_merkle<'a>(
 
     let mut hashed_unlocks: Vec<String> = vec![];
     let mut tmp_unlockers: HashMap<String, &UnlockSet> = HashMap::new();
-    let mut custom_key: String = "".to_string();
-    let mut leave_hash: String = "".to_string();
+    let mut custom_key: String;
+    let mut leave_hash: String;
     for mut an_unlock_set in unlock_sets
     {
         custom_key = cutils::hash16c(&ccrypto::keccak256(&custom_stringify_signature_sets(&an_unlock_set.m_signature_sets)));
@@ -261,7 +260,7 @@ pub fn calc_unlock_hash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 //  )";
 
 
-    let mut to_be_hashed = unlock_set.m_signature_type.to_owned()
+    let to_be_hashed = unlock_set.m_signature_type.to_owned()
         + ":" + &unlock_set.m_signature_ver
         + ":" + &custom_stringify_signature_sets(&unlock_set.m_signature_sets)
         + ":" + &unlock_set.m_salt;//  hash_algorithm(${sType}:${sVer}:${JSON.stringify(sSet)}:${salt})

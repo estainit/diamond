@@ -43,6 +43,7 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
     let module_ = match module {
         Modules::App => "App",
         Modules::CB => "CB",
+        Modules::Sec => "Sec",
         Modules::Sql => "Sql",
         Modules::Trx => "Trx",
         _ => "Gen"

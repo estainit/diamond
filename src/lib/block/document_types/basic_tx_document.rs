@@ -197,7 +197,7 @@ impl BasicTxDocument {
 */
     pub fn getDocHashableString(&self, doc: &Document) -> String
     {
-        let mut doc_hashables: String = format!(
+        let doc_hashables: String = format!(
             "dCDate:{},dClass:{},dComment:{},dExtHash:{},dLen:{},dPIs:{},dRef:{},dType:{},dVer:{},inputs:{},outputs:{}",
             doc.m_doc_creation_date,
             doc.m_doc_class,
@@ -215,11 +215,11 @@ impl BasicTxDocument {
     }
 
     // TODO: some unit test for pure hashable
-    pub fn extractHPureParts_simple(&self, doc: &Document) -> String
+    pub fn extractHPureParts_simple(&self, _doc: &Document) -> String
     {
         // the hTrx MUST be constant and NEVER change the order of attribiutes (alphabetical)
         // in case of change the version MUST be changed and the code treats it in new manner
-        let mut normalized_inputs: Vec<TInput> = normalize_inputs(&self.m_inputs);
+        let normalized_inputs: Vec<TInput> = normalize_inputs(&self.m_inputs);
 
 
         let (status, normalized_outputs) = normalize_outputs(&self.m_outputs);
@@ -262,7 +262,7 @@ impl BasicTxDocument {
         let mut the_hash = ccrypto::keccak256_dbl(&hashables); // NOTE: absolutely using double hash for more security
 
         // generate deterministic part of trx hash
-        let mut pure_hash = self.getPureHash(doc);
+        let pure_hash = self.getPureHash(doc);
         the_hash = pure_hash.substring(32, 64).to_string() + &*the_hash.substring(32, 64).to_string();
 
         dlog(

@@ -1,7 +1,3 @@
-// use crate::lib::constants as CConsts;
-// use crate::lib::custom_types::CDateT;
-
-
 use std::collections::HashMap;
 use crate::constants;
 use crate::lib::custom_types::{ClausesT, QVDRecordsT};
@@ -19,7 +15,7 @@ pub fn dump_clauses(clauses: &ClausesT) -> String {
         let mvs = format!("{:?}", a_clause_tuple.m_field_multi_values);
         let the_outs: Vec<String> = vec![
             format!("m_field_name: {}", a_clause_tuple.m_field_name),
-            format!("m_field_single_str_value: {}", a_clause_tuple.m_field_single_str_value),
+            format!("m_field_single_str_value: {:?}", a_clause_tuple.m_field_single_str_value),
             format!("m_clause_operand: {}", a_clause_tuple.m_clause_operand),
             format!("m_field_multi_values: {:?}", mvs)];
 

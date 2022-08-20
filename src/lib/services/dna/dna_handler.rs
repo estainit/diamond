@@ -42,7 +42,7 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
     let (_status, records) = q_select(
         C_DNA_SHARES,
         vec!["dn_doc_hash"],
-        vec![simple_eq_clause("dn_doc_hash", single_value.as_str())],
+        vec![simple_eq_clause("dn_doc_hash", &single_value)],
         vec![],
         1,
         false);

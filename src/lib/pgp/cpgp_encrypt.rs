@@ -1,9 +1,8 @@
 use serde_json::json;
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::lib::custom_types::JSonObject;
-use crate::lib::utils::compressor::{compress, decompress};
-use serde::{Serialize, Deserialize};
 use crate::cutils::remove_quotes;
+use crate::lib::utils::compressor::compress;
 
 //old_name_was encryptPGP
 pub fn pgp_encrypt(

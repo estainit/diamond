@@ -169,6 +169,7 @@ JSonObject FloatingSignatureBlock::exportBlockToJSon(const bool ext_info_in_docu
 */
 */
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, DoubleDicT, QVDRecordsT};
 use crate::lib::dag::dag::search_in_dag;
@@ -179,16 +180,16 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
 {
     // retrieve prev cycle info
     if cutils::get_now() > cutils::get_coinbase_range(&machine().get_launch_date()).to {
-        let (cycle_stamp, from, _to, _from_hour, _to_hour) = cutils::get_prev_coinbase_info(c_date);
+        let (cycle_stamp, from_t, _to, _from_hour, _to_hour) = cutils::get_prev_coinbase_info(c_date);
 
         // retrieve prev cycle coinbases
         let prvCoinbaseBlocks: QVDRecordsT = search_in_dag(
             vec![
-                simple_eq_clause("b_type", constants::block_types::Coinbase),
+                simple_eq_clause("b_type", &constants::block_types::Coinbase.to_string()),
                 simple_eq_clause("b_cycle", &cycle_stamp),
                 ModelClause {
                     m_field_name: "b_creation_date",
-                    m_field_single_str_value: &*from,
+                    m_field_single_str_value: &from_t as &(dyn ToSql + Sync),
                     m_clause_operand: ">=",
                     m_field_multi_values: vec![],
                 },
@@ -213,17 +214,17 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
 
         // retrieve all floating signature blocks which are created in prev cycle
         dlog(
-            &format!("retrieve floating signatures for cycle({}) from({}) ", cycle_stamp, from),
+            &format!("retrieve floating signatures for cycle({}) from({}) ", cycle_stamp, from_t),
             constants::Modules::CB,
             constants::SecLevel::Trace);
 
         let fSWBlocks: QVDRecordsT = search_in_dag(
             vec![
-                simple_eq_clause("b_type", constants::block_types::FSign),
+                simple_eq_clause("b_type", &constants::block_types::FSign.to_string()),
                 simple_eq_clause("b_cycle", &cycle_stamp),
                 ModelClause {
                     m_field_name: "b_creation_date",
-                    m_field_single_str_value: &*from,
+                    m_field_single_str_value: &from_t as &(dyn ToSql + Sync),
                     m_clause_operand: ">=",
                     m_field_multi_values: vec![],
                 }], // TODO add a max Date to reduce results
@@ -279,7 +280,7 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
     } else {
         // machine is in init cycle, so there is no floating signture
         let genesis: QVDRecordsT = search_in_dag(
-            vec![simple_eq_clause("b_type", constants::block_types::Genesis)],
+            vec![simple_eq_clause("b_type", &constants::block_types::Genesis.to_string())],
             vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],
             vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },

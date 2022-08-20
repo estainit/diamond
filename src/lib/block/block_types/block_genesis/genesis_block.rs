@@ -97,7 +97,7 @@ pub mod b_genesis {
             ("pr_approved", &pr_approved as &(dyn ToSql + Sync)),
         ]);
 
-        let c1 = simple_eq_clause("pr_hash", &*proposal_hash);
+        let c1 = simple_eq_clause("pr_hash", &proposal_hash);
         DNAProposalDocument::update_proposal(
             &update_values,
             vec![c1],
@@ -113,7 +113,7 @@ pub mod b_genesis {
             ("pll_status", &constants::CLOSE as &(dyn ToSql + Sync)),
             ("pll_ct_done", &constants::YES as &(dyn ToSql + Sync)),
         ]);
-        let c1 = simple_eq_clause("pll_ref", &*proposal_hash);
+        let c1 = simple_eq_clause("pll_ref", &proposal_hash);
         update_polling(
             &pollingUpdValues,
             vec![c1],

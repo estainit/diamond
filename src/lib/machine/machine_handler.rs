@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use postgres::Client;
 use crate::{ccrypto, cutils, dbhandler};
 use crate::lib::constants::NETWORK_LAUNCH_DATE;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
@@ -909,7 +908,7 @@ impl CMachine {
             C_MACHINE_PROFILES,
             vec!["mp_code", "mp_name", "mp_settings"],
             vec![
-                simple_eq_clause("mp_code", &*mp_code)],
+                simple_eq_clause("mp_code", &mp_code.to_string())],
             vec![],
             0,
             true,

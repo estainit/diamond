@@ -1,7 +1,7 @@
-use serde_json::{json, Value};
+use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CDateT, JSonObject};
 use crate::lib::messaging_protocol::dag_message_handler::extract_leaves_and_push_in_sending_q;
 use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
@@ -201,7 +201,7 @@ pub fn dispatch_a_card(
     ];
 
 
-    let gql_types: Vec<&str> = vec![];
+    let _gql_types: Vec<&str> = vec![];
 
 
     if block_types.contains(&card_type)
@@ -342,7 +342,7 @@ pub fn handle_a_single_card(
 //   connection_type);
 // return {push_status, should_purge_file};
 //
-    } else if (card_type == constants::card_types::DAG_INVOKE_LEAVES)
+    } else if card_type == constants::card_types::DAG_INVOKE_LEAVES
     {
         dlog(
             &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_LEAVES sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),

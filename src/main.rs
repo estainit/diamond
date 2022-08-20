@@ -89,11 +89,11 @@ fn main() {
             "",
             "",
             "",
-            0,
+            30,
             "");
         println!("neighbors: {:?}", neighbors);
 
-        let (status, msg) = do_handshake(0);
+        let (status, msg) = do_handshake(30);
         println!("do_handshake: {}, {}", status, msg);
     }
 

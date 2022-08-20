@@ -13,14 +13,12 @@ use rand::Rng;
 
 use aes::Aes128;
 use aes::cipher::{
-    BlockCipher, BlockEncrypt, BlockDecrypt, KeyInit,
+    BlockEncrypt, BlockDecrypt, KeyInit,
     generic_array::GenericArray,
 };
-use postgres::types::ToSql;
 
 use substring::Substring;
 use crate::constants;
-use crate::cutils::right_padding;
 
 use crate::lib::utils::cutils as cutils;
 use crate::lib::bech_32;

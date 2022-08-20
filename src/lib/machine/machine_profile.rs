@@ -3,7 +3,6 @@ use crate::lib::database::abs_psql::{q_select, simple_eq_clause};
 use crate::lib::machine::machine_neighbor::{NeighborPresentation};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
-use crate::dlog;
 use crate::lib::database::tables::C_MACHINE_PROFILES;
 
 
@@ -47,7 +46,7 @@ impl MachineProfile {
             C_MACHINE_PROFILES,
             vec!["mp_code", "mp_name", "mp_settings"],
             vec![
-                simple_eq_clause("mp_code", mp_code)],
+                simple_eq_clause("mp_code", &mp_code.to_string())],
             vec![],   // order
             1,
             true,

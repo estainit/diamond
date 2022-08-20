@@ -25,7 +25,7 @@ pub fn prepare_packets_for_neighbors(
 {
     dlog(
         &format!("prepare Packets For Neighbors args: sq_type: ({}/{}), receivers({:?}) not receivers({:?}) title:{}",
-                 sq_type,sq_code, sq_receivers, no_receivers, sq_title),
+                 sq_type, sq_code, sq_receivers, no_receivers, sq_title),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -292,7 +292,7 @@ pub fn fetch_from_sending_q(
         fields = C_SENDING_Q_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>();
     }
 
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_SENDING_Q,
         fields,
         clauses,
@@ -308,7 +308,7 @@ pub fn cancel_ivoke_block_request(block_hash: &CBlockHashT)
     q_delete(
         C_SENDING_Q,
         vec![
-            simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK),
+            simple_eq_clause("sq_type", &constants::card_types::DAG_INVOKE_BLOCK.to_string()),
             simple_eq_clause("sq_code", block_hash),
         ],
         false);
@@ -319,10 +319,10 @@ pub fn maybe_cancel_ivoke_blocks_request()
 {
 
     // TODO: optimize it
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_SENDING_Q,
         vec!["sq_code"],
-        vec![simple_eq_clause("sq_type", constants::card_types::DAG_INVOKE_BLOCK)],
+        vec![simple_eq_clause("sq_type", &constants::card_types::DAG_INVOKE_BLOCK.to_string())],
         vec![],
         1,
         false,
@@ -344,14 +344,18 @@ pub fn maybe_cancel_ivoke_blocks_request()
         hashes.push(sq_code);
     }
 
-    let hashes = hashes.iter().map(|x| x.as_str()).collect::<Vec<&str>>();
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
     let existed_in_DAG: QVDRecordsT = search_in_dag(
-        vec![ModelClause {
-            m_field_name: "b_hash",
-            m_field_single_str_value: "",
-            m_clause_operand: "IN",
-            m_field_multi_values: hashes.clone(),
-        }],
+        vec![c1],
         vec!["b_hash"],
         vec![],
         0,
@@ -368,13 +372,18 @@ pub fn maybe_cancel_ivoke_blocks_request()
     }
 
     // remove existed in parsing q
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "pq_code",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
     let existed_in_parsing_queue: QVDRecordsT = search_parsing_q(
-        vec![ModelClause {
-            m_field_name: "pq_code",
-            m_field_single_str_value: "",
-            m_clause_operand: "IN",
-            m_field_multi_values: hashes,
-        }],
+        vec![c1],
         vec!["pq_code"],
         vec![],
         0,

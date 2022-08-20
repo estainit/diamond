@@ -1,8 +1,5 @@
 use std::collections::HashMap;
-use serde_json::json;
 use crate::{ccrypto, constants, cutils, dlog, get_value};
-use crate::cutils::remove_quotes;
-use crate::lib::custom_types::JSonObject;
 use crate::lib::file_handler::file_handler::write_email_as_file;
 use crate::lib::k_v_handler::upsert_kvalue;
 use crate::lib::network::email::send_email_wrapper;
@@ -41,7 +38,7 @@ pub fn i_push(
         // in such a way user can send email manually
         // she can sign some transactions and create a proper block, but not send it immideately
         // keeps it in safe place and when it need just send it manually to one or more backers
-        let (status) = write_email_as_file(
+        let status = write_email_as_file(
             title,
             sender,
             receiver,

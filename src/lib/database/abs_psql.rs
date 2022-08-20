@@ -28,7 +28,7 @@ pub struct OrderModifier<'l>
 }
 
 #[derive(Clone)]
-pub struct ModelClause<'l>
+pub struct ModelOldClause<'l>
 {
     pub m_field_name: &'l str,
     // "=";
@@ -36,10 +36,17 @@ pub struct ModelClause<'l>
     pub m_clause_operand: &'l str,
     // "=";
     pub m_field_multi_values: Vec<&'l str>,
+}
 
-    // ModelClause(const String & fieldName, const QVariant & fieldValue);
-    // ModelClause(const String & fieldName, const QVariant & fieldValue, const String & clause_operand);
-    // ModelClause(const String & fieldName, const StringList & fieldValues, const String & clause_operand = "IN");
+#[derive(Clone)]
+pub struct ModelClause<'l>
+{
+    pub m_field_name: &'l str,
+    // "=";
+    pub m_field_single_str_value: &'l (dyn ToSql + Sync),
+    pub m_clause_operand: &'l str,
+    // "=";
+    pub m_field_multi_values: Vec<&'l (dyn ToSql + Sync)>,
 }
 
 // impl fmt::Debug for ModelClause<'static> {
@@ -53,10 +60,11 @@ pub struct ModelClause<'l>
 //     }
 // }
 
-pub fn simple_eq_clause<'s>(field_name: &'s str, single_value: &'s str) -> ModelClause<'s> {
+pub fn simple_eq_clause<'s>(field_name: &'s str, single_value: &'s String) -> ModelClause<'s> {
+    // let field_single = single_value.to_string();
     return ModelClause {
         m_field_name: field_name.clone(),
-        m_field_single_str_value: single_value.clone(),
+        m_field_single_str_value: single_value as &(dyn ToSql + Sync),
         m_clause_operand: "=",
         m_field_multi_values: vec![],
     };
@@ -214,7 +222,7 @@ pub fn clauses_query_generator<'e>(
             if db_model::S_SINGLE_OPERANDS.contains(&a_clause_tuple.m_clause_operand)
             {
                 clauses_list.push(" (".to_owned() + &key + &" ".to_owned() + &a_clause_tuple.m_clause_operand + &format!(" ${placeholder_index} ) "));
-                values_.push(&a_clause_tuple.m_field_single_str_value as &(dyn ToSql + Sync));
+                values_.push(a_clause_tuple.m_field_single_str_value);
             } else if (a_clause_tuple.m_clause_operand == "IN") || (a_clause_tuple.m_clause_operand == "NOT IN")
             {
                 if a_clause_tuple.m_field_multi_values.len() == 0
@@ -227,10 +235,10 @@ pub fn clauses_query_generator<'e>(
                 }
 
                 let mut tmp_placeholders: Vec<String> = vec![];
-                for i in 0..a_clause_tuple.m_field_multi_values.len()
+                for a_val in &a_clause_tuple.m_field_multi_values
                 {
                     tmp_placeholders.push(format!("${}", placeholder_index));
-                    values_.push(&a_clause_tuple.m_field_multi_values[i] as &(dyn ToSql + Sync));
+                    values_.push(*a_val);
                     placeholder_index += 1;
                 }
                 placeholder_index -= 1;
@@ -242,7 +250,7 @@ pub fn clauses_query_generator<'e>(
         }
 
 
-        if (clauses_list.len() > 0) && (values_.len() > 0) {
+        if (clauses_list.len() > 0) && (placeholder_index > placeholder_offset) {
             clauses_ = clauses_list.join(" AND ");
         }
     }
@@ -259,7 +267,11 @@ pub fn pre_query_generator<'e>(
     order_: OrderT,
     limit_: LimitT) -> QueryElements<'e>
 {
-    let (mut concatenated_clauses, values_) = clauses_query_generator(placeholder_offset, clauses_);
+    let (
+        mut concatenated_clauses,
+        values_) = clauses_query_generator(
+        placeholder_offset,
+        clauses_);
     if concatenated_clauses.len() > 0 {
         concatenated_clauses = " WHERE ".to_owned() + &concatenated_clauses;
     }
@@ -705,7 +717,8 @@ pub fn q_upsert(
     values: &HashMap<&str, &(dyn ToSql + Sync)>,
     do_log: bool) -> bool
 {
-    let only_clause = simple_eq_clause(controlled_field, controlled_value);
+    let controlled_value = controlled_value.to_string();
+    let only_clause = simple_eq_clause(controlled_field, &controlled_value);
     let clauses: ClausesT = vec![only_clause];
 
     // controll if the record already existed

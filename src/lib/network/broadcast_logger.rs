@@ -1,10 +1,9 @@
 use std::collections::HashMap;
-use postgres::types::ToSql;
+use postgres::types::{ToSql};
 use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_LOGS_BROADCAST;
-use crate::lib::utils::dumper::{dump_hashmap_of_str_string, dump_it};
 
 //old_name_was listSentBlocks
 pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
@@ -23,7 +22,7 @@ pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
         fields,
         vec![ModelClause {
             m_field_name: "lb_send_date",
-            m_field_single_str_value: &*after_that,
+            m_field_single_str_value: &after_that as &(dyn ToSql + Sync),
             m_clause_operand: ">=",
             m_field_multi_values: vec![],
         }],

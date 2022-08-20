@@ -259,7 +259,7 @@ pub fn push_to_parsing_q(
 {
     let mut prerequisites = prerequisites;
     // check for duplicate entries
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_PARSING_Q,
         vec!["pq_type"],
         vec![
@@ -318,13 +318,18 @@ pub fn push_to_parsing_q(
         if card_ancestors.len() > 0
         {
             // remove if missed anc already exist in DAG?
+            let empty_string = "".to_string();
+            let mut c1 = ModelClause {
+                m_field_name: "b_hash",
+                m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+                m_clause_operand: "IN",
+                m_field_multi_values: vec![],
+            };
+            for an_anc in &card_ancestors{
+                c1.m_field_multi_values.push(an_anc as &(dyn ToSql + Sync));
+            }
             let daged_blocks = search_in_dag(
-                vec![ModelClause {
-                    m_field_name: "b_hash",
-                    m_field_single_str_value: "",
-                    m_clause_operand: "IN",
-                    m_field_multi_values: card_ancestors.iter().map(|x| x.as_str()).collect::<Vec<&str>>(),
-                }],
+                vec![c1],
                 vec!["b_hash"],
                 vec![],
                 0,

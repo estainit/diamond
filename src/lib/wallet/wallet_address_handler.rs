@@ -38,22 +38,27 @@ impl WalletAddress
 
 //old_name_was searchWalletAdress
 pub fn search_wallet_addresses(
-    addresses: Vec<&str>,
+    addresses: Vec<String>,
     mp_code: String,
     fields: Vec<&str>) -> (bool, QVDRecordsT)
 {
     let mut clauses: ClausesT = vec![];
-    if mp_code != constants::ALL
+    if mp_code != constants::ALL.to_string()
     {
-        clauses.push(simple_eq_clause("wa_mp_code", &*mp_code));
+        clauses.push(simple_eq_clause("wa_mp_code", &mp_code));
     }
 
-    clauses.push(ModelClause {
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
         m_field_name: "wa_address",
-        m_field_single_str_value: "",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
         m_clause_operand: "IN",
-        m_field_multi_values: addresses,
-    });
+        m_field_multi_values: vec![],
+    };
+    for an_add in &addresses{
+        c1.m_field_multi_values.push(an_add as &(dyn ToSql + Sync));
+    }
+    clauses.push(c1);
 
     let (status, records) = q_select(
         C_MACHINE_WALLET_ADDRESSES,
@@ -173,7 +178,7 @@ pub fn convert_to_values(w_address: &WalletAddress) -> (bool, HashMap<&str, Stri
 pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
 {
     let (status, addresses) = search_wallet_addresses(
-        vec![&*w_address.m_address],
+        vec![w_address.m_address.clone()],
         w_address.m_mp_code.clone(),
         vec!["wa_address"]);
     if !status
