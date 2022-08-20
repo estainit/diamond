@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{constants, cutils, dlog, machine};
+use crate::cutils::remove_quotes;
 use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{ClausesT, JSonObject, VString};
 use crate::lib::dag::dag::search_in_dag;
@@ -248,7 +249,7 @@ std::tuple<bool, bool> ParsingQHandler::parsePureBlock(
 
 //old_name_was pushToParsingQ
 pub fn push_to_parsing_q(
-    card: &JSonObject,
+    card_j_obj: &JSonObject,
     creation_date: &String,
     card_type: &String,
     card_code: &String,
@@ -274,13 +275,13 @@ pub fn push_to_parsing_q(
 
     // control if needs some initiative prerequisites
     let mut card_ancestors: VString = vec![];
-    if !card["ancestors"].is_null()
+    if !card_j_obj["ancestors"].is_null()
     {
-        if !card["ancestors"][0].is_null()
+        if !card_j_obj["ancestors"][0].is_null()
         {
             let mut i = 0;
-            while !card["ancestors"][i].is_null() {
-                card_ancestors.push(card["ancestors"][i].to_string());
+            while !card_j_obj["ancestors"][i].is_null() {
+                card_ancestors.push(card_j_obj["ancestors"][i].to_string());
                 i += 1;
             }
         }
@@ -348,7 +349,7 @@ pub fn push_to_parsing_q(
     // * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
     // * so depends on voting type(bCat) for, we need proper treatment
 
-    if card["bType"].to_string() == constants::block_types::FVote
+    if remove_quotes(&card_j_obj["bType"].to_string()) == constants::block_types::FVote
     {
         /*
         if (message["bCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
@@ -384,11 +385,11 @@ pub fn push_to_parsing_q(
     // potentially attacks: sql injection, corrupted JSON object ...
 
     let (_status, _safe_version, pq_payload) = wrap_safe_content_for_db(
-        &cutils::serialize_json(&card), constants::DEFAULT_SAFE_VERSION);
+        &cutils::serialize_json(&card_j_obj), constants::DEFAULT_SAFE_VERSION);
     let now_ = cutils::get_now();
-    let pq_prerequisites= prerequisites.join(",");
-    let zero:i32 = 0 ;
-    let pq_v_status="new".to_string();
+    let pq_prerequisites = prerequisites.join(",");
+    let zero: i32 = 0;
+    let pq_v_status = "new".to_string();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("pq_type", card_type as &(dyn ToSql + Sync)),
         ("pq_code", card_code as &(dyn ToSql + Sync)),

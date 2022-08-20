@@ -24,16 +24,17 @@ pub fn prepare_packets_for_neighbors(
     deny_double_send_check: bool) -> VVString
 {
     dlog(
-        &format!("prepare Packets For Neighbors args: sq_type: {}", sq_type),
+        &format!("prepare Packets For Neighbors args: sq_type: ({}/{}), receivers({:?}) not receivers({:?}) title:{}",
+                 sq_type,sq_code, sq_receivers, no_receivers, sq_title),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     if sq_receivers.len() > 0
     {
         dlog(
             &format!("targeted packet to Receivers: {:?}", sq_receivers),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::Info);
     }
 
     if no_receivers.len() > 0
@@ -41,7 +42,7 @@ pub fn prepare_packets_for_neighbors(
         dlog(
             &format!("no targeted packet to {}", dump_it(no_receivers)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::Info);
     }
 
     let mp_code = machine().get_selected_m_profile();
@@ -61,7 +62,7 @@ pub fn prepare_packets_for_neighbors(
     dlog(
         &format!("Active neighbors {:?}", neighbors),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     if no_receivers.len() > 0
     {
@@ -79,14 +80,14 @@ pub fn prepare_packets_for_neighbors(
     dlog(
         &format!("Final Selected Neighbors= {}", dump_hashmap_of_QVDRecordsT(&neighbors)),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     if neighbors.len() == 0
     {
         dlog(
             &format!("There is no neighbor to send prepare Packets For Neighbors"),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::Info);
         return vec![];
     }
 

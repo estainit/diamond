@@ -187,7 +187,7 @@ pub fn write_email_as_file(
     dlog(
         &format!("write Em File args: title({title}) sender({sender}) receiver({receiver})"),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     // let mut to_send_message: String = message.clone();
     // if is_custom
@@ -222,17 +222,14 @@ pub fn write_email_as_file(
     dlog(
         &format!("file Name: {}", file_name),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
     dlog(
         &format!("Try to write1: {}/{}", outbox, file_name),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
-
-    let (status, _msg) = file_write(
-        outbox,
-        file_name,
-        &email_body,
-        app_clone_id);
+    let (status, _msg) = write_exact_file(
+        &format!("{}/{}", outbox, file_name),
+        &email_body);
     status
 }

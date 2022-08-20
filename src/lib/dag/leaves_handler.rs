@@ -7,7 +7,7 @@ use crate::lib::database::abs_psql::q_upsert;
 use crate::lib::database::tables::STBL_KVALUE;
 use crate::lib::k_v_handler::get_value;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LeaveBlock {
     pub m_block_type: String,
     pub m_creation_date: String,

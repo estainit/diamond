@@ -225,6 +225,7 @@ use serde_json::json;
 use crate::{constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::dag::leaves_handler::get_leave_blocks;
 use crate::lib::database::abs_psql::simple_eq_clause;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
 use crate::lib::messaging_protocol::dispatcher::make_a_packet;
@@ -304,7 +305,7 @@ pub fn invoke_leaves() -> bool
     dlog(
         &format!("Invoking for DAG leaves!"),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     let (code, body) = make_a_packet(
         vec![json!({
@@ -397,9 +398,46 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
 
     set_value("maybe_ask_for_latest_blocks", value, false);
 }
+
+//old_name_was extractLeavesAndPushInSendingQ
+pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
+{
+    let leaves = get_leave_blocks(&"".to_string());
+    dlog(
+        &format!("leaves in DAG: {:?}", leaves),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    let (code, body) = make_a_packet(
+        vec![
+            json!({
+                "cdType": constants::card_types::DAG_LEAVES_INFO,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "leaves": leaves
+            }),
+        ],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        cutils::get_now()
+    );
+    dlog(
+        &format!("prepared packet, before insert into DB code({}) to ({}): {}",code, sender, body),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    let status = push_into_sending_q(
+        constants::card_types::DAG_LEAVES_INFO,
+        &code,
+        &body,
+        &format!("DAG info response for {}", sender),
+        &vec![sender.to_string()],
+        &vec![],
+        false,
+    );
+    return (true, status);
+}
+
 /*
-
-
 
 std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
   const String& sender,

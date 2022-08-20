@@ -205,9 +205,9 @@ pub fn maybe_purge_message(full_path: &String, should_purge_message: bool) -> bo
     if should_purge_message || is_expired || reached_tl
     {
         dlog(
-            &format!("should-Purge-Message{}  is-expired {}  reached-Try-Limitation {}", should_purge_message, is_expired, reached_tl),
+            &format!("should Purge Message: {}  is-expired: {}  reached-Try-Limitation: {}", should_purge_message, is_expired, reached_tl),
             constants::Modules::Sec,
-            constants::SecLevel::Error);
+            constants::SecLevel::Info);
 
         if full_path == ""
         {
@@ -240,9 +240,9 @@ pub fn read_email_file() -> (bool, String, String, String, String)
     let inbox: String = machine().get_inbox_path();
 
     dlog(
-        &format!("reading inbox({})", inbox),
+        &format!("Reading inbox({})", inbox),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Info);
 
     let files = list_exact_files(&inbox, "txt");  //FIXME: maybe read files ordered by reverse modify date!
     println!("fileszzzzzzzzzzzzz {:?}", files);

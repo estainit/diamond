@@ -1,6 +1,8 @@
 use serde_json::{json, Value};
 use crate::{ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
+use crate::lib::messaging_protocol::dag_message_handler::extract_leaves_and_push_in_sending_q;
 use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
 
@@ -31,19 +33,19 @@ pub fn parse_a_packet(
     let mut packet_type: String = "".to_string();
     if !packet["pType"].is_null()
     {
-        packet_type = packet["pType"].to_string();
+        packet_type = remove_quotes(&packet["pType"].to_string());
 
-        if packet_type != constants::DEFAULT_PACKET_TYPE
+        if packet_type != constants::DEFAULT_PACKET_TYPE.to_string()
         {
             dlog(
-                &format!("Undefined packet in dispatching: {}", packet_type),
+                &format!("Undefined packet in packet parsing: {}!={}", packet_type, constants::DEFAULT_PACKET_TYPE.to_string()),
                 constants::Modules::App,
                 constants::SecLevel::Error);
             return (false, true);
         }
     } else {
         dlog(
-            &format!("Unknown packet in dispatching"),
+            &format!("Unknown packet in packet parsing"),
             constants::Modules::App,
             constants::SecLevel::Error);
         return (false, true);
@@ -52,7 +54,7 @@ pub fn parse_a_packet(
     let mut packet_version: String = "".to_string();
     if !packet["pVer"].is_null()
     {
-        packet_version = packet["pVer"].to_string();
+        packet_version = remove_quotes(&packet["pVer"].to_string());
     }
 
     dlog(
@@ -73,9 +75,10 @@ pub fn parse_a_packet(
     let mut c_date: String = "".to_string();
     if !packet["pDate"].is_null()
     {
-        c_date = packet["pDate"].to_string();
+        c_date = remove_quotes(&packet["pDate"].to_string());
     }
 
+    println!("packet[card]: {}", packet["cards"]);
     let (status, cards) = match packet["cards"].as_array() {
         Some(r) => (true, r.clone()),
         _ => {
@@ -99,8 +102,8 @@ pub fn parse_a_packet(
             connection_type,
             &c_date,
             &a_card,
-            &a_card["cdType"].to_string(),
-            &a_card["cdVer"].to_string(),
+            &remove_quotes(&a_card["cdType"].to_string()),
+            &remove_quotes(&a_card["cdVer"].to_string()),
             &packet_version.clone(),
         );
 
@@ -171,7 +174,7 @@ pub fn dispatch_a_card(
     // here we need implement a system to control creation date of eache received block(profiled for each neighbor or backer address)
     // and limit creating block(e.g 10 bloocks per minute) in proportion to neighbor's reputation.
 
-    let bloc_types: Vec<String> = vec![
+    let block_types: Vec<String> = vec![
         constants::block_types::Normal.to_string(),
         constants::block_types::Coinbase.to_string(),
         constants::block_types::FSign.to_string(),
@@ -201,7 +204,7 @@ pub fn dispatch_a_card(
     let gql_types: Vec<&str> = vec![];
 
 
-    if (bloc_types.contains(&card_type))
+    if block_types.contains(&card_type)
     {
         /*
     // the essage is a whole block, so push it to table c_parsing_q
@@ -294,7 +297,7 @@ pub fn handle_a_single_card(
 
     if !card["bHash"].is_null()
     {
-        card_code = card["bHash"].to_string();
+        card_code = remove_quotes(&card["bHash"].to_string()).to_string();
     }
 
     if !is_valid_version_number(card_ver)
@@ -307,7 +310,9 @@ pub fn handle_a_single_card(
         return (false, true);
     }
 
-// DAG comunications
+    // DAG comunications
+    println!("card_type == constants::card_types::DAG_INVOKE_BLOCK {}=={}", card_type, constants::card_types::DAG_INVOKE_BLOCK);
+
     if card_type == constants::card_types::DAG_INVOKE_BLOCK
     {
         dlog(
@@ -323,8 +328,8 @@ pub fn handle_a_single_card(
             sender,
             connection_type,
             vec![]);
-    }
-// else if (card_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
+
+// }else if (card_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
 // {
 //
 // CLog::log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_DESCENDENTS @@@@@@@@@@@@@@@@@@@@@@@@@@@@", "app", "trace");
@@ -337,36 +342,25 @@ pub fn handle_a_single_card(
 //   connection_type);
 // return {push_status, should_purge_file};
 //
-// }
-// else if (card_type == constants::card_types::DAG_INVOKE_LEAVES)
-// {
-//
-// //    if (!iutils.isValidVersionNumber(args.pVer)) {
-// //        msg = `invalid pVer for  in dispatcher! ${type}`
-// //        clog.sec.error(msg);
-// //        return { err: true, msg }
-// //    }
-// //    clog.app.info('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_LEAVES @@@@@@@@@@@@@@@@@@@@@@@@@@@');
-// //    clog.app.info(`@@@@@@@@@@@@@@@@@@@@ sender: ${sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@`);
-// //    dspchRes = require("./dag/dag-msg-handler").extractLeavesAndPushInSendingQ({
-// //        sq_type: type,
-// //        sq_code: utils.getNow(),
-// //        sender,
-// //        connection_type
-// //    });
-//
-// }
-// else if (card_type == constants::card_types::DAG_LEAVES_INFO)
-// {
-//
-// //    if (!iutils.isValidVersionNumber(args.pVer)) {
-// //        msg = `invalid pVer for  in dispatcher! ${type}`
-// //        clog.sec.error(msg);
-// //        return { err: true, msg }
-// //    }
-// //    dagMsgHandler.handleReceivedLeaveInfo(message.leaves)
-// //    dspchRes = { err: false, shouldPurgeMessage: true }
-//
+    } else if (card_type == constants::card_types::DAG_INVOKE_LEAVES)
+    {
+        dlog(
+            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_LEAVES sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+        return extract_leaves_and_push_in_sending_q(sender);
+    } else if card_type == constants::card_types::DAG_LEAVES_INFO
+    {
+        dlog(
+            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_LEAVES_INFO sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+
+        return (true, true);//FIXME: implement it ASAP
+
+//    dagMsgHandler.handleReceivedLeaveInfo(message.leaves)
+//    dspchRes = { err: false, shouldPurgeMessage: true }
+
 // }
 // else if (card_type == constants::card_types::HANDSHAKE)
 // {
@@ -429,7 +423,7 @@ pub fn handle_a_single_card(
 // else
 // {
 //
-// }
+    }
 
     return (false, false);
 }
@@ -588,6 +582,7 @@ pub fn make_a_packet(
     packet_version: &str,
     packet_creation_date: CDateT) -> (String, String)
 {
+//FIXME: after finish development, use "wrap_safe_content_for_db" before insert in database(for security reason)
     let body_json: JSonObject = json!({
         "cards": cards,
         "pType": packet_type,
