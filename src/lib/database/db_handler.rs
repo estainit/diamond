@@ -23,6 +23,13 @@ impl DBHandler {
 }
 
 pub fn maybe_switch_db(clone_id: i8) {
+    /**
+    FIXME: there are 2 places in code in which the DB connect happend,
+    1. m_db: get_connection(0),
+    2. dbhandler().m_db = get_connection(self.get_app_clone_id());
+    the problem is not always they initialized by this order!
+    hopefully this method solve the issue, otherwise it will panic.
+     */
     if (clone_id == 0) && (clone_id != dbhandler().m_current_clone)
     {
         panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, clone_id);

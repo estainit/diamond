@@ -31,12 +31,6 @@ fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
-/**
-FIXME: there are 2 places in code in which the DB connect happend,
-1. m_db: get_connection(0),
-2. dbhandler().m_db = get_connection(self.get_app_clone_id());
-the problem is not always they initialized by this order!
-*/
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
