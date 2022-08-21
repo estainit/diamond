@@ -9,14 +9,29 @@ use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
 pub struct DBHandler {
+    pub m_current_clone: i8,
     pub m_db: Client,
 }
 
 impl DBHandler {
     pub(crate) fn new() -> DBHandler {
         DBHandler {
+            m_current_clone: 0,
             m_db: get_connection(0),
         }
+    }
+}
+
+pub fn maybe_switch_db(clone_id: i8) {
+    if (clone_id == 0) && (clone_id != dbhandler().m_current_clone)
+    {
+        panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, clone_id);
+    }
+    if (clone_id > 0) && (clone_id != dbhandler().m_current_clone)
+    {
+        // change database
+        dbhandler().m_db = get_connection(clone_id);
+        dbhandler().m_current_clone = clone_id;
     }
 }
 

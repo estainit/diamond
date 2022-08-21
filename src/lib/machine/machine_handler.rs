@@ -3,7 +3,7 @@ use std::thread;
 use crate::{ccrypto, cutils, dbhandler};
 use crate::lib::constants::NETWORK_LAUNCH_DATE;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
-use crate::lib::database::db_handler::{empty_db, get_connection, maybe_initialize_db};
+use crate::lib::database::db_handler::{maybe_switch_db, empty_db, get_connection, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::constants::HD_ROOT_FILES;
@@ -126,16 +126,11 @@ impl CMachine {
     {
         self.create_folders();
 
-        if self.get_app_clone_id() > 0
-        {
-            // use std::{env, time};
-            // let ten_millis = time::Duration::from_millis(100);
-            // thread::sleep(ten_millis);
-
-            // change database
-            println!(" connnnnnnnecting db to {}", self.get_app_clone_id());
-            dbhandler().m_db = get_connection(self.get_app_clone_id());
-        }
+        // if self.get_app_clone_id() > 0
+        // {
+        //     // change database
+        //     dbhandler().m_db = get_connection(self.get_app_clone_id());
+        // }
 
         self.m_last_sync_status_check = self.get_launch_date();
 
@@ -173,6 +168,8 @@ impl CMachine {
         if args.len() > 2 {
             is_develop_mod = true;
         }
+
+        maybe_switch_db(clone_id);
 
         self.set_clone_dev(clone_id, is_develop_mod);
     }
