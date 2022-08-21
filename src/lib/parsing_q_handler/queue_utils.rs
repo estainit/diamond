@@ -54,7 +54,7 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
     if (missed_hashes_in_parsing_queue.len() > 0)
     {
       CLog::log("Really missed Blocks, so push to invoking: " + cutils::dumpIt(missed_hashes_in_parsing_queue));
-      MissedBlocksHandler::addMissedBlocksToInvoke(missed_hashes_in_parsing_queue);
+      addMissedBlocksToInvoke(missed_hashes_in_parsing_queue);
     }
 
     CLog::log(

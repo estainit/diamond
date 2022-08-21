@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
+use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_NEIGHBORS, C_MACHINE_NEIGHBORS_FIELDS};
 use crate::lib::messaging_protocol::greeting::{create_handshake_request, create_here_is_new_neighbor, create_nice_to_meet_you};
@@ -111,73 +112,7 @@ struct TmpData{
   return false;
   }
 
-
-  std::tuple<bool, bool> CMachine::parseNiceToMeetYou(
-  const String& sender_email,
-  const JSonObject& message,
-  const String& connection_type)
-  {
-  CLog::log("parse Nice To Meet You connection_type(" + connection_type + ") sender(" + sender_email + ") message(" + cutils::dumpIt(message) + ")", "app", "trace");
-
-
-  String email = message.keys().contains("email") ? message["email"].to_string() : "";
-  String sender_pgp_public_key = message.keys().contains("PGPPubKey") ? message["PGPPubKey"].to_string() : "";
-  String sender_backer_address = message.keys().contains("backerAddress") ? message["backerAddress"].to_string() : "";
-
-
-  // just to be sure handshake happends ONLY ONE TIME for each email at the start
-  // if user needs to change publickkey or ... she can send alternate messages like changeMyPublicKey(which MUST be signed with current key)
-  // retreive sender's info
-  QVDRecordsT sender_info = getNeighbors(
-    "",
-    "",
-    "",
-    "",
-    sender_email);
-
-  if (sender_info.len() == 0)
-  {
-    // some security logs
-    CLog::log("!!! Machine has not this sender_email(" + sender_email + ") as a neighbor", "sec", "error");
-    return {false, true};
-  }
-
-  // try {
-
-  if ((sender_email == "") || (sender_pgp_public_key == ""))
-  {
-    CLog::log("!!! invalid sender_email or PGPPubKey received from neighbor sender_email(" + sender_email + ") sender_pgp_public_key(" + sender_pgp_public_key + ") as a neighbor", "sec", "error");
-    return {false, true};
-  }
-
-  sender_pgp_public_key = ccrypto::base64Decode(sender_pgp_public_key);
-
-  QVDicT updates {
-    {"n_info", cutils::serializeJson(JSonObject{})},
-    {"n_pgp_public_key", sender_pgp_public_key},
-    {"n_last_modified", cutils::get_now()}};
-
-  if (sender_backer_address != "")
-    updates["n_info"] = cutils::serializeJson(JSonObject{{"backerAddress", sender_backer_address}});
-
-  // update neighbor info's PGP public key
-  DbModel::update(
-    stbl_machine_neighbors,
-    updates,
-    {{"n_email", sender_email}});
-
-  // TODO: publish this email to my neighbors
-
-  return {true, true};
-
-  // } catch (err) {
-  //     clog.app.error(err)
-  //     return { err: true, msg: err, shouldPurgeMessage: null }
-  // }
-
-  }
-
-  */
+*/
 }
 
 pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64)
@@ -703,4 +638,103 @@ pub fn flood_email_to_neighbors(
     machine().save_settings();
 
     return true;
+}
+
+
+//old_name_was parseNiceToMeetYou
+pub fn parse_nice_to_meet_you(
+    sender_email: &String,
+    message: &JSonObject,
+    connection_type: &String) -> (bool, bool)
+{
+    dlog(
+        &format!("parse Nice To Meet You connection_type({}) sender({}) message: {}", connection_type, sender_email, message),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    let mut email: String = "".to_string();
+    if !message["email"].is_null()
+    {
+        email = message["email"].to_string();
+    }
+
+    let mut sender_pgp_public_key: String = "".to_string();
+    if !message["PGPPubKey"].is_null()
+    {
+        sender_pgp_public_key = message["PGPPubKey"].to_string();
+    }
+
+    let mut sender_backer_address: String = "".to_string();
+    if !message["backerAddress"].is_null()
+    {
+        sender_backer_address = message["backerAddress"].to_string();
+    }
+
+    // just to be sure handshake happends ONLY ONE TIME for each email at the start
+    // if user needs to change publickkey or ...
+    // she can send alternate messages like changeMyPublicKey(which MUST be signed with current key)
+    // retrieve sender's info
+    let sender_info: QVDRecordsT = get_neighbors(
+        "",
+        "",
+        "",
+        0,
+        sender_email);
+
+    if sender_info.len() == 0
+    {
+        // some security logs
+        dlog(
+            &format!("!!! Machine has not this sender_email({}) as a neighbor", sender_email),
+            constants::Modules::Sec,
+            constants::SecLevel::Warning);
+        return (false, true);
+    }
+
+    if (sender_email == "") || (sender_pgp_public_key == "")
+    {
+        dlog(
+            &format!("!!! invalid sender_email or PGPPubKey received from neighbor sender_email({}) sender_pgp_public_key({}) as a neighbor", sender_email, sender_pgp_public_key),
+            constants::Modules::Sec,
+            constants::SecLevel::Warning);
+        return (false, true);
+    }
+    let (status, b64_dec_pgp_public_key) = ccrypto::b64_decode(&sender_pgp_public_key);
+    if !status
+    {
+        dlog(
+            &format!("Failed in pgp b64 decryption! sender({})", sender_email),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return (false, true);
+    }
+    sender_pgp_public_key = b64_dec_pgp_public_key;
+
+    let mut n_info = cutils::serialize_json(&json!({}));
+    if sender_backer_address != ""
+    {
+        n_info = cutils::serialize_json(&json!({"backerAddress": sender_backer_address}));
+    }
+
+    let last_modified = cutils::get_now();
+    let mut updates: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("n_info", &n_info as &(dyn ToSql + Sync)),
+        ("n_pgp_public_key", &sender_pgp_public_key as &(dyn ToSql + Sync)),
+        ("n_last_modified", &last_modified as &(dyn ToSql + Sync))
+    ]);
+
+
+
+    // update neighbor info's PGP public key
+    let c1 = simple_eq_clause("n_email", sender_email);
+    q_update(
+        C_MACHINE_NEIGHBORS,
+        &updates,
+        vec![c1],
+        false,
+    );
+
+    // TODO: publish this email to my neighbors
+
+    return (true, true);
 }

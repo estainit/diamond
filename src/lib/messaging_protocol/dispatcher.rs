@@ -2,8 +2,8 @@ use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject};
-use crate::lib::machine::machine_neighbor::parse_handshake;
-use crate::lib::messaging_protocol::dag_message_handler::extract_leaves_and_push_in_sending_q;
+use crate::lib::machine::machine_neighbor::{parse_handshake, parse_nice_to_meet_you};
+use crate::lib::messaging_protocol::dag_message_handler::{extract_leaves_and_push_in_sending_q, handle_received_leave_info};
 use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
 
@@ -376,7 +376,10 @@ pub fn handle_a_single_card(
 
         return (true, true);//FIXME: implement it ASAP
 
-//    dagMsgHandler.handleReceivedLeaveInfo(message.leaves)
+    let(parse_status, should_purge_file) = handle_received_leave_info(
+        sender,
+        card_body,
+        connection_type);
 //    dspchRes = { err: false, shouldPurgeMessage: true }
     } else if card_type == constants::card_types::HANDSHAKE
     {
@@ -396,27 +399,18 @@ pub fn handle_a_single_card(
             constants::Modules::App,
             constants::SecLevel::Info);
         return (parse_status, should_purge_file);
-
-// }
-// else if (card_type == constants::card_types::NICETOMEETYOU)
-// {
-// if (!CUtils::isValidVersionNumber(pVer))
-// {
-//   CLog::log("invalid pVer for in dispatcher! type(" + type + ") pVer(" + pVer + ") ", "sec", "error");
-//   return {false, true};
-// }
-//
-// auto[parse_status, should_purge_file] = CMachine::parseNiceToMeetYou(
-//   sender,
-//   message,
-//   connection_type);
-//
-// std::thread(invokeDescendents_).detach();
-//
-// CGUI::signalUpdateNeighbors();
-//
-// return {parse_status, should_purge_file};
-//
+    } else if (card_type == constants::card_types::NICE_TO_MEET_YOU)
+    {
+        let (parse_status, should_purge_file) = parse_nice_to_meet_you(
+            sender,
+            card_body,
+            connection_type);
+        // invokeDescendents_(); // FIXME: do it in Async mode
+        dlog(
+            &format!("greeting Parsers parse nice to meet you res: parse_status ({}) should_purge_file({})", parse_status, should_purge_file),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+        return (parse_status, should_purge_file);
     } else if card_type == constants::card_types::HERE_IS_NEW_NEIGHBOR
     {
         // TODO: activate it after add some security and privacy care issues

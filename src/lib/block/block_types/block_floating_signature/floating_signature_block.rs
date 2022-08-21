@@ -239,11 +239,11 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
 
         let mut block_hashes: Vec<String> = vec![];
         let mut backers: DoubleDicT = HashMap::new();
-        for a_fS_w_block in f_s_w_blocks
+        for a_fs_w_block in f_s_w_blocks
         {
             // drop float if it is not linked to proper coinbase block
             let mut is_linked_to_propoer_cb: bool = false;
-            let tmp_ancestors: Vec<String> = a_fS_w_block["b_ncestors"]
+            let tmp_ancestors: Vec<String> = a_fs_w_block["b_ncestors"]
                 .to_string()
                 .split(",")
                 .collect::<Vec<&str>>()
@@ -263,8 +263,8 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
                 continue;
             }
 
-            backers.insert(a_fS_w_block["b_backer"].to_string(), a_fS_w_block["b_confidence"].parse::<f64>().unwrap());
-            block_hashes.push(a_fS_w_block["b_hash"].to_string());
+            backers.insert(a_fs_w_block["b_backer"].to_string(), a_fs_w_block["b_confidence"].parse::<f64>().unwrap());
+            block_hashes.push(a_fs_w_block["b_hash"].to_string());
         }
         let mut confidence: f64 = 0.0;
         for (_bckr, v) in &backers

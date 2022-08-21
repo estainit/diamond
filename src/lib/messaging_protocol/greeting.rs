@@ -54,7 +54,7 @@ pub fn create_handshake_request(
 
     let receiver_info: QVDicT = receivers_info[0].clone();
     let machine_settings = machine().get_profile();
-    let mut email: String;
+    let email: String;
     if connection_type == constants::PRIVATE
     {
         email = machine_settings.m_mp_settings.m_private_email.m_address
@@ -148,9 +148,6 @@ pub fn create_nice_to_meet_you(
             constants::SecLevel::Error);
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
-    let default_message_version = "0.0.0";
-
-
 
     let (code, body) = make_a_packet(
         vec![

@@ -67,7 +67,7 @@ pub fn path_exist(file_full_path: &String) -> bool {
 pub fn mkdir(file_full_path: &String) -> bool {
     let file_full_path = &get_os_care_path(file_full_path);
     return match fs::create_dir(file_full_path) {
-        Ok(r) => { true }
+        Ok(_r) => { true }
         Err(e) => {
             dlog(
                 &format!("make dir failed: {}", e),
@@ -129,7 +129,7 @@ pub fn delete_exact_file(file_path: &String) -> bool
 
     return match fs::remove_file(file_path)
     {
-        Ok(r) =>
+        Ok(_r) =>
             {
                 true
             }
@@ -191,24 +191,7 @@ pub fn write_email_as_file(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    // let mut to_send_message: String = message.clone();
-    // if is_custom
-    // {
-    //     to_send_message = constants::message_tags::customStartEnvelope.to_string() + &to_send_message + &constants::message_tags::customEndEnvelope;
-    // }
-
     let outbox: String = machine().get_outbox_path();
-    let app_clone_id = machine().get_app_clone_id();
-//    if (app_clone_id > 0)
-//        outbox = outbox + app_clone_id;
-
-    // let mut email _body: String = cutils::get_now() + constants::NL;
-    // email _body += &*("time: ".to_owned() + &cutils::get_now_sss() + &constants::NL);
-    // email _body += constants::message_tags::senderStartTag + sender + constants::message_tags::senderEndTag + constants::NL;
-    // email_ body += constants::message_tags::receiverStartTag + receiver + constants::message_tags::receiverEndTag + constants::NL;
-    // email _body += &*(to_send_message.clone() + &constants::NL);
-    // let email hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender + receiver + to_send_message)));
-    // email_ body += constants::message_tags::hashStartTag + email _hash.clone() + constants::message_tags::hashEndTag + constants::NL;
     dlog(
         &format!("email body: {}", email_body),
         constants::Modules::App,

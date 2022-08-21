@@ -1,6 +1,6 @@
 extern crate core;
 
-use std::env;
+use std::{env, time};
 use std::thread;
 use std::time::Duration;
 use once_cell::sync::Lazy;
@@ -27,24 +27,31 @@ use crate::cutils::strip_parentheses_as_break_line;
 use crate::lib::machine::machine_neighbor::get_neighbors;
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-
 fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
+/**
+FIXME: there are 2 places in code in which the DB connect happend,
+1. m_db: get_connection(0),
+2. dbhandler().m_db = get_connection(self.get_app_clone_id());
+the problem is not always they initialized by this order!
+*/
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
-
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 fn main() {
-    //! # Diamond, the Community Maker Engine
+    //! # Diamond, The scalable Blockchain
     //! ```
     //! fn main()
     //! ```
     //!
     //! This starts whole game
     //!
-    //!
+
+    let ten_millis = time::Duration::from_millis(100);
+    thread::sleep(ten_millis);
+
 
     initialize_log();
 
@@ -59,18 +66,22 @@ fn main() {
     // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
     let mut web_server_msg: &str = "";
-    web_server_msg = match tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(lib::rest::apis::run_web_server()) {
-        Ok(r) => {
-            ". Webserver Ready on http://localhost:8080"
-        }
-        Err(e) => {
-            ". Webserver Failed!"
-        }
-    };
+    let should_launch_web_server = false;
+    if should_launch_web_server
+    {
+        web_server_msg = match tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(lib::rest::apis::run_web_server()) {
+            Ok(r) => {
+                ". Webserver Ready on http://localhost:8080"
+            }
+            Err(e) => {
+                ". Webserver Failed!"
+            }
+        };
+    }
 
     let msg = &format!(
         "Running Diamond Node (version {}). started at {} {}",

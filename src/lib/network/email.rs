@@ -56,7 +56,7 @@ void EmailHandler::loopEmailPoper()
   {
     CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
     popPrivateEmail();
-    popPublicEmail();
+    pop_public_email();
 
     CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getPopEmailGap()));
@@ -117,10 +117,10 @@ pub fn send_email_wrapper(
     let machine_public_email: EmailSettings = machine().get_pub_email_info().clone();
     let machine_private_email: EmailSettings = machine().get_priv_email_info().clone();
 
-    let mut sender: String;
-    let mut pass: String;
-    let mut host: String;
-    let mut port: u16;
+    let sender: String;
+    let pass: String;
+    let host: String;
+    let port: u16;
 
     if machine_private_email.m_address == sender_.to_string()
     {
@@ -233,7 +233,7 @@ pub fn send_mail(
         .build();
 
     // Send the email via remote relay
-    let result: Response = match sender.send(&email) {
+    let _result: Response = match sender.send(&email) {
         Ok(r) => {
             dlog(
                 &format!("Email was sent: {:?}", r),
@@ -253,13 +253,20 @@ pub fn send_mail(
     return true;
 }
 
+pub fn received_email_checks() {
+    //popPrivateEmail();
+    pop_public_email();
+}
+
 //old_name_was popPublicEmail
 pub fn pop_public_email() -> (bool, String) // imap::error::Result<Option<String>>
 {
     let pub_email = machine().get_pub_email_info().clone();
-    let domain = pub_email.m_income_imap.clone(); // "imap.example.com";
-
-    return read_email(&domain, &pub_email.m_address.clone(), &pub_email.m_password.clone());
+    return read_email(
+        &pub_email.m_income_imap.clone(),
+        &pub_email.m_address.clone(),
+        &pub_email.m_password,
+    );
 }
 
 pub fn read_email(
@@ -305,7 +312,7 @@ pub fn read_email(
     };
 
     // we want to fetch the first email in the INBOX mailbox
-    let dd = match imap_session.select("INBOX") {
+    let _ddd = match imap_session.select("INBOX") {
         Ok(m) => m,
         Err(e) => {
             dlog(

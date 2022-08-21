@@ -198,7 +198,7 @@ bool DAGMessageHandler::blockInvokingNeeds(
     block_hashes = cutils::arrayUnique(next_level_block_hashes);
   }
   missed_blocks = cutils::arrayUnique(missed_blocks);
-  MissedBlocksHandler::addMissedBlocksToInvoke(missed_blocks);
+  addMissedBlocksToInvoke(missed_blocks);
 //  loopMissedBlocksInvoker();
   return true;
 }
@@ -221,12 +221,17 @@ void DAGMessageHandler::loopMissedBlocksInvoker()
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Missed Blocks Invoker");
 }
 */
+use std::collections::HashMap;
+use postgres::types::ToSql;
 use serde_json::json;
 use crate::{constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::leaves_handler::get_leave_blocks;
-use crate::lib::database::abs_psql::simple_eq_clause;
+use crate::lib::dag::missed_blocks_handler::add_missed_blocks_to_invoke;
+use crate::lib::database::abs_psql::{q_upsert, simple_eq_clause};
+use crate::lib::database::tables::C_KVALUE;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
 use crate::lib::messaging_protocol::dispatcher::make_a_packet;
 use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
@@ -238,7 +243,7 @@ pub fn do_missed_blocks_invoker()
   String cycle = cutils::getCoinbaseCycleStamp();
   CLog::log("ReMiBcInv cycle(" + cycle + ") called recursive MissedBlocks Invoker", "app", "trace");
   StringList missed = getMissedBlocksToInvoke(2);
-  // listener.doCallAsync('APSH_control_if_missed_block');
+  // listener.doCallAsync("APSH_control_if_missed_block");
 
   if (missed.len() > 0)
   {
@@ -418,10 +423,10 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        cutils::get_now()
+        cutils::get_now(),
     );
     dlog(
-        &format!("prepared packet, before insert into DB code({}) to ({}): {}",code, sender, body),
+        &format!("prepared packet, before insert into DB code({}) to ({}): {}", code, sender, body),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -477,3 +482,65 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
 }
 
  */
+
+//old_name_was handleReceivedLeaveInfo
+pub fn handle_received_leave_info(
+    sender_email: &String,
+    message: &JSonObject,
+    connection_type: &String) -> (bool, bool)
+{
+    dlog(
+        &format!("FIX ME: What part of message must be recorded in db? {:?}", message),
+        constants::Modules::App,
+        constants::SecLevel::Error);
+
+    let leaves: Vec<JSonObject> = vec![]; // = message.clone();
+    // update last_received_leaves_info_timestamp
+    set_last_received_leave_info_timestamp(&leaves, &cutils::get_now());
+
+    // control if block exist in local, if not adding to missed blocks to invoke
+    let mut missed_hashes: Vec<String> = vec![];
+    for a_leave in &leaves
+    {
+        let a_leave_hash = a_leave["bHash"].to_string();
+        let already_recorded_in_dag = search_in_dag(
+            vec![simple_eq_clause("b_hash", &a_leave_hash)],
+            vec!["b_hash"],
+            vec![],
+            0,
+            false);
+        if already_recorded_in_dag.len() == 0
+        {
+            missed_hashes.push(a_leave_hash);
+        }
+    }
+
+    add_missed_blocks_to_invoke(missed_hashes);
+
+    //maybe launch missed block invoker
+    //launchMissedBlocksInvoker()   // FIXME: do it in Async mode or thread
+
+    return (true, true);
+}
+
+//old_name_was setLastReceivedLeaveInfoTimestamp
+pub fn set_last_received_leave_info_timestamp(leaves: &Vec<JSonObject>, c_date: &CDateT)
+{
+    let last_modified = cutils::get_now();
+    let kv_value = cutils::serialize_json(&json!({
+        "leaves": leaves,
+        "receiveDate": c_date
+    }));
+    let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("kv_value", &kv_value as &(dyn ToSql + Sync)),
+        ("kv_last_modified", &last_modified as &(dyn ToSql + Sync)),
+    ]);
+
+    q_upsert(
+        C_KVALUE,
+        "kv_key",
+        "last_received_leaves_info_timestamp",
+        &update_values,
+        false,
+    );
+}

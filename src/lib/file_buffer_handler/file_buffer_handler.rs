@@ -120,12 +120,6 @@ void FileBufferHandler::loopReadAndParseHardDiskInbox()
 
  */
 
-pub fn received_email_checks() {
-    // auto[status, sender, receiver, file_name, message] = readEmails();
-    // if (!status)
-    // return status;
-}
-
 //old_name_was doReadAndParseHardDiskInbox
 pub fn do_read_and_parse_hard_disk_inbox() -> bool
 {

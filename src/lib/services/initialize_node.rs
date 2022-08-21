@@ -11,7 +11,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 {
 
     // check if genesis block is created?
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_BLOCKS,
         vec!["b_id", "b_hash"],     // fields
         vec![
@@ -52,7 +52,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 }
 
 
-pub fn does_safely_initialized(machine: &mut CMachine) -> bool
+pub fn does_safely_initialized(_machine: &mut CMachine) -> bool
 {
     // TODO implement it to controll if all intial document are inserted properly?
 

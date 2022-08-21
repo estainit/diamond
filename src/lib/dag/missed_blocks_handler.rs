@@ -1,90 +1,145 @@
-/*
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::{constants, cutils, dlog};
+use crate::lib::custom_types::VString;
+use crate::lib::dag::dag::search_in_dag;
+use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::C_MISSED_BLOCKS;
+use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 
-/**
- *
- * @param {string} hashes an array of block hashes
- */
-bool MissedBlocksHandler::addMissedBlocksToInvoke(StringList hashes)
+//old_name_was addMissedBlocksToInvoke
+pub fn add_missed_blocks_to_invoke(mut hashes: VString) -> bool
 {
-  CLog::log("maybe add Missed Blocks To Invoke hashes: "+ cutils::dumpIt(hashes), "app" "trace");
+    dlog(
+        &format!("maybe add Missed Blocks To Invoke hashes: {:?}", hashes),
+        constants::Modules::App,
+        constants::SecLevel::Info);
 
-  if (hashes.len() == 0)
-    return true;
+    if hashes.len() == 0
+    { return true; }
 
-  // control if already exist in DAG
-  QVDRecordsT existed_in_DAG = DAG::searchInDAG(
-  {{"b_hash", hashes, "IN"}},
-  {"b_hash"});
-
-  if (existed_in_DAG.len() > 0)
-  {
-    StringList existed_in_DAG_hashes = {};
-    for(QVDicT a_block: existed_in_DAG)
-      existed_in_DAG_hashes.push(a_block["b_hash"].to_string());
-
-    CLog::log("The " + String::number(existed_in_DAG_hashes.len()) + " of " + String::number(hashes.len()) + " missed blocks already exist in DAG", "app", "trace");
-    hashes = cutils::arrayDiff(hashes, existed_in_DAG_hashes);
-  }
-
-  // control if already exist in missed block table
-  missedBlocks = cutils::arrayUnique(missedBlocks);
-  if (missedBlocks.len() > 0)
-  {
-    CLog::log("The " + String::number(missedBlocks.len()) + " of " + String::number(hashes.len()) + " missed blocks already exist in table missed blocks");
-    hashes = cutils::arrayDiff(hashes, missedBlocks);
-  }
-
-  // control if already exist in parsing q
-  QVDRecordsT existInParse = ParsingQHandler::searchParsingQ(
-    {{"pq_code", hashes, "IN"}},
-    {"pq_code"});
-
-  if (existInParse.len() > 0)
-  {
-    StringList existed_hashes = {};
-    for(QVDicT elm: existInParse)
-      existed_hashes.push(elm["pq_code"].to_string());
-
-    CLog::log(
-      "The " + String::number(existInParse.len()) + " blocks of seemly missed blocks " +
-      String::number(hashes.len()) + " already exist in table parsing queue",
-      "app", "trace");
-
-    hashes = cutils::arrayDiff(hashes, existed_hashes);
-  }
-
-  CLog::log(
-    "going to insert missed blocks in miised queue: " + cutils::dumpIt(hashes),
-    "app", "trace");
-
-  for (String hash: hashes)
-  {
-    if (hash == "")
-      continue;
-
-    QueryRes dbl = DbModel::select(
-      STBL_MISSED_BLOCKS,
-      {"mb_block_hash"},
-      {{"mb_block_hash", hash}});
-
-    if (dbl.records.len() > 0)
-      continue;
-
-    DbModel::insert(
-      STBL_MISSED_BLOCKS,
-      {
-        {"mb_block_hash", hash},
-        {"mb_insert_date", cutils::get_now()},
-        {"mb_last_invoke_date", cutils::get_now()},
-        {"mb_invoke_attempts", 0},
-        {"mb_descendants_count", 0}
-      }
+    // control if already exist in DAG
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+    let existed_in_dag = search_in_dag(
+        vec![c1],
+        vec!["b_hash"],
+        vec![],
+        0,
+        false,
     );
-  }
-  return true;
+
+    if existed_in_dag.len() > 0
+    {
+        let mut existed_in_dag_hashes: VString = vec![];
+        for a_block in existed_in_dag
+        {
+            existed_in_dag_hashes.push(a_block["b_hash"].to_string());
+        }
+
+        dlog(
+            &format!("The {} of {} missed blocks already exist in DAG", existed_in_dag_hashes.len(), hashes.len()),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+        hashes = cutils::array_diff(&hashes, &existed_in_dag_hashes);
+    }
+
+    // control if already exist in missed block table
+    let mut missed_blocks = get_missed_blocks_to_invoke(0);
+    missed_blocks = cutils::array_unique(&missed_blocks);
+    if missed_blocks.len() > 0
+    {
+        dlog(
+            &format!("The {} of {} missed blocks already exist in table missed blocks.", missed_blocks.len(), hashes.len()),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+        hashes = cutils::array_diff(&hashes, &missed_blocks);
+    }
+
+    // control if already exist in parsing q
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "pq_code",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+
+    let exist_in_parse = search_parsing_q(
+        vec![c1],
+        vec!["pq_code"],
+        vec![],
+        0,
+    );
+
+    if exist_in_parse.len() > 0
+    {
+        let mut existed_hashes: VString = vec![];
+        for elm in &exist_in_parse
+        {
+            existed_hashes.push(elm["pq_code"].to_string());
+        }
+
+        dlog(
+            &format!("The {} blocks of seemly missed blocks {} already exist in table parsing queue", exist_in_parse.len(), hashes.len()),
+            constants::Modules::App,
+            constants::SecLevel::Info);
+
+        hashes = cutils::array_diff(&hashes, &existed_hashes);
+    }
+
+    dlog(
+        &format!("going to insert missed blocks in miised queue: {:?}", hashes),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    for hash in &hashes
+    {
+        if hash == ""
+        { continue; }
+
+        let (status, records) = q_select(
+            C_MISSED_BLOCKS,
+            vec!["mb_block_hash"],
+            vec![simple_eq_clause("mb_block_hash", hash)],
+            vec![],
+            0,
+            false,
+        );
+
+        if records.len() > 0
+        { continue; }
+
+        let zero: i64 = 0;
+        let insert_date = cutils::get_now();
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("mb_block_hash", &hash as &(dyn ToSql + Sync)),
+            ("mb_insert_date", &insert_date as &(dyn ToSql + Sync)),
+            ("mb_last_invoke_date", &insert_date as &(dyn ToSql + Sync)),
+            ("mb_invoke_attempts", &zero as &(dyn ToSql + Sync)),
+            ("mb_descendants_count", &zero as &(dyn ToSql + Sync)),
+        ]);
+        q_insert(
+            C_MISSED_BLOCKS,
+            &values,
+            false,
+        );
+    }
+    return true;
 }
 
-
+/*
 
 QVDRecordsT MissedBlocksHandler::listMissedBlocks(
   StringList fields,
@@ -105,13 +160,11 @@ QVDRecordsT MissedBlocksHandler::listMissedBlocks(
   return res.records;
 }
 */
-use crate::lib::database::abs_psql::q_custom_query;
-use crate::lib::database::tables::C_MISSED_BLOCKS;
 
 //old_name_was getMissedBlocksToInvoke
 pub fn get_missed_blocks_to_invoke(limit: u64) -> Vec<String>
 {
-    let mut complete_query:String = "SELECT mb_block_hash FROM ".to_owned() + C_MISSED_BLOCKS + " ORDER BY mb_invoke_attempts, mb_descendants_count DESC, mb_last_invoke_date, mb_insert_date";
+    let mut complete_query: String = "SELECT mb_block_hash FROM ".to_owned() + C_MISSED_BLOCKS + " ORDER BY mb_invoke_attempts, mb_descendants_count DESC, mb_last_invoke_date, mb_insert_date";
     if limit != 0 {
         complete_query += &*(" LIMIT ".to_owned() + &limit.to_string());
     }

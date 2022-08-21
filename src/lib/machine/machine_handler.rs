@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::thread;
 use crate::{ccrypto, cutils, dbhandler};
 use crate::lib::constants::NETWORK_LAUNCH_DATE;
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
@@ -127,6 +128,10 @@ impl CMachine {
 
         if self.get_app_clone_id() > 0
         {
+            // use std::{env, time};
+            // let ten_millis = time::Duration::from_millis(100);
+            // thread::sleep(ten_millis);
+
             // change database
             println!(" connnnnnnnecting db to {}", self.get_app_clone_id());
             dbhandler().m_db = get_connection(self.get_app_clone_id());
@@ -1022,7 +1027,7 @@ impl CMachine {
         &mut self,
         action: &str,
         blocks: QVDRecordsT,
-        status: &String) -> bool
+        _status: &String) -> bool
     {
         {
             if action == "assign" {

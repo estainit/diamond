@@ -27,7 +27,7 @@ pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
         complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
     }
 
-    let (status, records) = q_custom_query(
+    let (_status, records) = q_custom_query(
         &complete_query,
         &vec![],
         true);

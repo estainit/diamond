@@ -44,16 +44,6 @@ pub fn dump_vec_of_t_output(s: &Vec<TOutput>) -> String {
     return out;
 }
 
-pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
-    let prefix_tabs = constants::TAB;
-
-    let mut out: String = "".to_string();
-    for (k, v) in s {
-        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &v);
-    }
-    return out;
-}
-
 pub fn dump_hashmap_of_qvd_records(s: &QVDRecordsT) -> String {
     let prefix_tabs = constants::TAB;
 
@@ -75,16 +65,6 @@ pub fn dump_hashmap_of_string_string(s: &HashMap<String, String>) -> String {
 }
 
 pub fn dump_hashmap_of_str_string(s: &HashMap<&str, String>) -> String {
-    let prefix_tabs = constants::TAB;
-
-    let mut out: String = "".to_string();
-    for (k, v) in s {
-        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &v);
-    }
-    return out;
-}
-
-pub fn dump_hashmap_of_str_str(s: &HashMap<&str, &str>) -> String {
     let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();
