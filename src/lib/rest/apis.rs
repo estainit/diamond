@@ -1,7 +1,7 @@
 use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
 use crate::dlog;
 use crate::lib::constants;
-use crate::lib::machine::machine_neighbor::handshake_neighbor;
+use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
 
 // #[get("/")]
 // pub async fn hello() -> impl Responder {
@@ -23,19 +23,28 @@ use crate::lib::machine::machine_profile::MachineProfile;
 
 #[get("/")]
 pub async fn hello() -> web::Json<MachineProfile> {
-    let t=tokio::task::spawn_blocking(|| {
+    let t = tokio::task::spawn_blocking(|| {
         crate::lib::machine::machine_profile::MachineProfile::get_profile_from_db(&constants::DEFAULT)
     }).await.expect("Task panicked");
     web::Json(t.1)
 }
 
 
-
-
-
 // frontend methods
 // use get_neighbors to get list of neighbors
 
+
+pub fn do_handshake_by_email(neighbor_email: String) -> (bool, String)
+{
+    // the node only has an email address of new neighbor
+    // so inserts it as a new neighbor
+    let (status, msg, neighbor_id) = add_a_new_neighbor_by_email(neighbor_email);
+    if !status
+    { return (false, msg); }
+
+    // then sends it a handshake request
+    return do_handshake(neighbor_id);
+}
 
 pub fn do_handshake(neighbor_id: i64) -> (bool, String)
 {

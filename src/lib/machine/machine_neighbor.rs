@@ -2,13 +2,14 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
+use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_NEIGHBORS, C_MACHINE_NEIGHBORS_FIELDS};
 use crate::lib::messaging_protocol::greeting::{create_handshake_request, create_here_is_new_neighbor, create_nice_to_meet_you};
 use crate::lib::network::network_handler::i_push;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct NeighborPresentation {
     m_vertice: String,
     m_date: String,
@@ -177,6 +178,44 @@ struct TmpData{
   }
 
   */
+}
+
+pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64)
+{
+    // the node only has an email address of new neighbor
+    // so inserts it as a new neighbor
+    let mp_code = machine().m_profile.m_mp_code.clone();
+    let neighbor_name = neighbor_email.split("@").collect::<Vec<&str>>()[0].to_string();
+    let neighbor_name = format!("{}({})", neighbor_name, mp_code);
+    let neighbor_info = NeighborInfo { m_name: neighbor_name };
+    let (status, msg) = add_a_new_neighbor(
+        neighbor_email.clone(),
+        constants::PUBLIC.to_string(),
+        "".to_string(),
+        mp_code.clone(),
+        constants::YES.to_string(),
+        neighbor_info,
+        cutils::get_now());
+
+    if !status {
+        return (status, msg, 0);
+    }
+
+    // retrieve newly inserted neighbor
+    let neighbors = get_neighbors(
+        constants::PUBLIC,
+        "",
+        mp_code.as_str(),
+        0,
+        neighbor_email.as_str());
+
+    if neighbors.len() == 0
+    {
+        return (false, "Failed in insert new neighbor in db!".to_string(), 0);
+    }
+
+    let neighbor_id = neighbors[0]["n_id"].parse::<i64>().unwrap();
+    return (true, format!("New neighbor({}) was added to your network.", neighbor_email), neighbor_id);
 }
 
 //old_name_was addANewNeighbor
@@ -412,7 +451,7 @@ pub fn parse_handshake(
 
     let pgp_public_key: String;
     if !message["PGPPubKey"].is_null() {
-        pgp_public_key = message["PGPPubKey"].to_string();
+        pgp_public_key = remove_quotes(&message["PGPPubKey"].to_string());
     } else {
         pgp_public_key = "".to_string();
     }
@@ -437,9 +476,9 @@ pub fn parse_handshake(
         email_already_exist = true;
 
         dlog(
-            &format!("!!! the email in parse Handshake ({}) already inserted", sender_email),
+            &format!("!!! the email in parse Handshake already exist ({})", sender_email),
             constants::Modules::Sec,
-            constants::SecLevel::Error);
+            constants::SecLevel::Warning);
     }
 
     if sender_email == ""
@@ -480,17 +519,31 @@ pub fn parse_handshake(
             let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
                 ("n_pgp_public_key", &pgp_public_key as &(dyn ToSql + Sync)),
             ]);
+            let n_id = sender_info[0]["n_id"].parse::<i64>().unwrap();
             q_update(
                 C_MACHINE_NEIGHBORS,
                 &update_values,
-                vec![simple_eq_clause("n_id", &sender_info[0]["n_id"])],
+                vec![
+                    ModelClause {
+                        m_field_name: "n_id",
+                        m_field_single_str_value: &n_id as &(dyn ToSql + Sync),
+                        m_clause_operand: "=",
+                        m_field_multi_values: vec![],
+                    }
+                ],
                 false,
             );
         }
     }
 
+    // FIXME: do it in Async mode
     // send response niceToMeetYou
-    let (status, title, sender_email_, receiver_email, message_) = create_nice_to_meet_you(
+    let (
+        status,
+        title,
+        sender_email_,
+        receiver_email,
+        message_) = create_nice_to_meet_you(
         connection_type,
         sender_email,
         &pgp_public_key);
@@ -509,6 +562,7 @@ pub fn parse_handshake(
         &sender_email_,
         &receiver_email);
 
+    // FIXME: do it in Async mode
     // broadcast the email to other neighbors
     if connection_type == constants::PUBLIC
     {
@@ -520,41 +574,42 @@ pub fn parse_handshake(
 
 //old_name_was floodEmailToNeighbors
 pub fn flood_email_to_neighbors(
-    email: &String,
-    pgp_public_key: &String) -> bool
+    the_new_neighbor_email: &String,
+    the_new_neighbor_pgp_public_key: &String) -> bool
 {
-    let mut pgp_public_key = pgp_public_key.to_string();
+    let mut the_new_neighbor_pgp_public_key = the_new_neighbor_pgp_public_key.to_string();
+    let the_new_neighbor_email = the_new_neighbor_email.to_string();
     dlog(
-        &format!("flood Email To Neighbors: {}", email),
+        &format!("flood this Email To Neighbors: {}", the_new_neighbor_email),
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    if pgp_public_key == ""
+    if the_new_neighbor_pgp_public_key == ""
     {
         let email_info: QVDRecordsT = get_neighbors(
             constants::PUBLIC,
             "",
             "",
             0,
-            email);
+            the_new_neighbor_email.as_str());
         if email_info.len() == 0
         {
             dlog(
-                &format!("email({}) doesn't exist as a neighbor!", email),
+                &format!("email({}) doesn't exist as a neighbor!", &the_new_neighbor_email),
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
             return false;
         }
-        pgp_public_key = email_info[0]["n_pgp_public_key"].to_string();
+        the_new_neighbor_pgp_public_key = email_info[0]["n_pgp_public_key"].to_string();
     }
 
     //  * avoiding duplicate sending email
     //  * [{vertice: "neighborEmail->targetEmail", date:"presenting date"}]
 
     let mut already_presented_neighbors: Vec<NeighborPresentation> = machine().m_profile.m_mp_settings.m_already_presented_neighbors.clone();
-    let pr = &already_presented_neighbors.iter().map(|x| x.m_vertice.clone()).collect::<Vec<String>>().join(",");
+    let al_pr = &already_presented_neighbors.iter().map(|x| x.m_vertice.clone()).collect::<Vec<String>>().join(",");
     dlog(
-        &format!("Already Presented to these Neighbors {:?}", pr),
+        &format!("Already Presented to these Neighbors {:?}", al_pr),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -566,7 +621,7 @@ pub fn flood_email_to_neighbors(
         "");
 
     dlog(
-        &format!("Active Neighbors to flood email to neigbors: {:?}", active_neighbors),
+        &format!("Active Neighbors to flood email to neighbors: {:?}", active_neighbors),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -575,13 +630,13 @@ pub fn flood_email_to_neighbors(
     for neighbor in active_neighbors
     {
         let n_email: String = neighbor["n_email"].to_string();
-        if &n_email == email
+        if n_email == the_new_neighbor_email
         {
             continue;   // not presenting machine to itself
         }
 
         is_already_sent = false;
-        vertice = email.to_owned() + "__to__" + &n_email;
+        vertice = the_new_neighbor_email.to_owned() + "__to__" + &n_email;
         for vert in &already_presented_neighbors
         {
             dlog(
@@ -592,7 +647,7 @@ pub fn flood_email_to_neighbors(
             if vert.m_vertice == vertice
             {
                 dlog(
-                    &format!("!!! the email already broadcasted {}", vertice),
+                    &format!("!!! the email already broadcast {}", vertice),
                     constants::Modules::App,
                     constants::SecLevel::Info);
 
@@ -607,14 +662,22 @@ pub fn flood_email_to_neighbors(
                 m_date: cutils::get_now(),
             });
 
-            let (status, title, sender_email, receiver_email, message) = create_here_is_new_neighbor(
+            let machine_address = machine().get_pub_email_info().m_address.clone();
+            let machine_prv_key = machine().get_pub_email_info().m_pgp_private_key.clone();
+
+            let (
+                status,
+                title,
+                sender_email,
+                receiver_email,
+                message) = create_here_is_new_neighbor(
                 &constants::PUBLIC.to_string(),
-                &machine().get_pub_email_info().m_address,
-                &machine().get_pub_email_info().m_pgp_private_key,
+                &machine_address,
+                &machine_prv_key,
                 &n_email,
-                &neighbor["n_pgp_public_key"].to_string(),
-                email,  //newNeighborEmail
-                &pgp_public_key);
+                &neighbor["n_pgp_public_key"].clone().to_string(),
+                &the_new_neighbor_email,  //newNeighborEmail
+                &the_new_neighbor_pgp_public_key);
 
             dlog(
                 &format!("packet ready to flood email to neigbor: status({}) title({}) sender_email({}) receiver_email({}) message({}) ",
@@ -623,7 +686,7 @@ pub fn flood_email_to_neighbors(
                 constants::SecLevel::Info);
 
             dlog(
-                &format!("the machine presents({}) to ({})", email, n_email),
+                &format!("the machine presents({}) to ({})", &the_new_neighbor_email, n_email),
                 constants::Modules::App,
                 constants::SecLevel::Info);
 

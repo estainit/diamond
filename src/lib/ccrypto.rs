@@ -76,14 +76,16 @@ pub fn b64_encode(message: &String) -> String {
     encode(message.as_bytes())
 }
 
+#[allow(unreachable_code)]
 pub fn b64_decode(message: &String) -> (bool, String)
 {
     let (status, buf) = match decode(&message) {
         Ok(r) => (true, r),
         Err(e) => {
             dlog(&format!("Failed in b64 decoding: {} {}", message, e),
-                 constants::Modules::Sec,
-                 constants::SecLevel::Error);
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+            panic!("ttttttttt");
             (false, vec![])
         }
     };

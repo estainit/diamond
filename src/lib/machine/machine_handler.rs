@@ -302,45 +302,6 @@ impl CMachine {
       bool is_visible = false;
     };
 
-      static void parseArgs(int argc, char *argv[], int manual_clone_id = 0);
-      static void onAboutToQuit(MainWindow* w){ get().IonAboutToQuit(w); };
-
-
-
-      // machine_handler.cpp
-      GenRes initDefaultProfile();
-
-      static bool getDAGIsInitialized(){ return get().s_DAG_is_initialized; }
-
-      static std::tuple<bool, QVDRecordsT> cachedSpendableCoins(
-        const String& action = "read",
-        const QVDRecordsT& coins = {},
-        const CBlockHashT& visible_by = "",
-        const CCoinCodeT& the_coin = "") { return get().IcachedSpendableCoins(action, coins, visible_by, the_coin); };
-
-      static CoinsVisibilityRes cachedCoinsVisibility(
-        const String& action = "read",
-        const StringList& entries = {}){ return get().IcachedCoinsVisibility(action, entries); };
-
-      static bool shouldLoopThreads(){return get().IshouldLoopThreads();}
-      static void setShouldLoopThreads(const bool v){return get().IsetShouldLoopThreads(v); }
-
-      static bool canStartLazyLoadings(){return get().IcanStartLazyLoadings();}
-      static void setCanStartLazyLoadings(bool v){ get().IsetCanStartLazyLoadings(v);}
-      static String mapThreadCodeToPrefix(const String& code){ return get().ImapThreadCodeToPrefix(code);}
-
-      static bool isGUIConnected(){ return get().IisGUIConnected(); }
-      static void setIsGUIConnected(const bool status){ get().IsetIsGUIConnected(status); }
-
-      bool loadSelectedProfile();
-
-      static std::tuple<bool, String, UnlockSet, StringList> signByMachineKey(
-        const String& signMsg,
-        const CSigIndexT& unlockIndex = 0);
-
-
-      static double getMinPollingTimeframeByHour();
-      static TimeByHoursT getMinVotingTimeframe();
 
       static double getMachineServiceInterests(
         const String& dType,
@@ -358,83 +319,8 @@ impl CMachine {
       }
 
 
-      //  -  -  -  -  -  machine_backup.cpp
 
 
-      //  -  -  -  -  -  machine_services_interests.cpp
-
-
-      //  -  -  -  -  -  neighbors handler
-
-      static std::tuple<bool, bool> parseHandshake(
-        const String& sender_email,
-        const JSonObject& message,
-        const String& connection_type);
-
-      static bool deleteNeighbors(
-        const String& n_id,
-        const String& connection_type,
-        const String& mp_code = getSelectedMProfile()){return get().IdeleteNeighbors(n_id, connection_type, mp_code);}
-
-      static std::tuple<bool, bool> parseNiceToMeetYou(
-        const String& sender_email,
-        const JSonObject& message,
-        const String& connection_type);
-
-      //  -  -  -  accounts balances
-      static MachineTransientBalances machineBalanceChk();
-
-
-      //  -  -  -  block buffer part
-      static QVDRecordsT searchBufferedDocs(
-        const ClausesT& clauses = {},
-        const StringList& fields = stb_machine_block_buffer_fields,
-        const OrderT& order = {},
-        const uint64_t limit = 0);
-
-      static std::tuple<bool, String> pushToBlockBuffer(
-        const Document* doc,
-        const CMPAIValueT dp_cost,
-        const String& mp_code = getSelectedMProfile());
-
-      static std::tuple<bool, String> broadcastBlock(
-        const String& cost_pay_mode = "normal",
-        const String& create_date_type = "");
-
-      static std::tuple<bool, bool, String> fetchBufferedTransactions(
-        Block* block,
-        TransientBlockInfo& transient_block_info);
-
-      static std::tuple<bool, bool, String> retrieveAndGroupBufferedDocuments(
-        Block* block,
-        TransientBlockInfo& transient_block_info);
-
-      static bool removeFromBuffer(const ClausesT& clauses);
-
-
-      //  -  -  -  on-chain contracts part
-      static JSonArray searchInMyOnchainContracts(
-        const ClausesT& clauses,
-        const StringList& fields = stbl_machine_onchain_contracts_fields,
-        const OrderT order = {},
-        const uint64_t limit = 0);
-
-      void IsetIsGUIConnected(const bool status)
-      {
-        m_is_GUI_connected = status;
-      }
-
-      bool IisGUIConnected()
-      {
-        return m_is_GUI_connected;
-      }
-
-      static double IgetMachineServiceInterests(
-        const String& dType,
-        const String& dClass = "",
-        const DocLenT& dLen = 0,
-        const DocLenT& extra_length = 0,
-        const int& supported_P4P_trx_count = 1);
     */
 
     //old_name_was getAppCloneId
@@ -495,7 +381,6 @@ impl CMachine {
         if !status
         { return false; }
 
-        println!("serialized_settings to be saved {}", serialized_settings);
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
             ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
@@ -1326,6 +1211,7 @@ impl CMachine {
         if self.is_develop_mod() {
             // this block existed ONLY for test and development environment
 
+            let user_and_hu_are_neighbor = false;
             let clone_id = self.get_app_clone_id();
             println!("Machine is in Dev mode, so make some neighborhoods! clone({})", clone_id);
             if [0, 1, 2, 3].contains(&clone_id) {
@@ -1340,15 +1226,18 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
                     println!("OOOOOOO xx self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
 
-                    // add Hu as a neighbor
-                    add_a_new_neighbor(
-                        HU_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        HU_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
+                    if user_and_hu_are_neighbor
+                    {
+                        // add Hu as a neighbor
+                        add_a_new_neighbor(
+                            HU_PUBLIC_EMAIL.to_string(),
+                            constants::PUBLIC.to_string(),
+                            HU_PUPLIC_KEY.to_string(),
+                            constants::DEFAULT.to_string(),
+                            constants::YES.to_string(),
+                            NeighborInfo::new(),
+                            cutils::get_now());
+                    }
 
                     // add Eve as a neighbor
                     add_a_new_neighbor(
@@ -1362,7 +1251,6 @@ impl CMachine {
 
                     self.save_settings();
                     println!("OOOOOOO yy self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
-
                 } else if clone_id == 1
                 {
                     // set profile as hu@imagine.com
@@ -1371,15 +1259,18 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = HU_PUPLIC_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = HU_PUBLIC_EMAIL.to_string();
 
-                    // add user as a neighbor
-                    add_a_new_neighbor(
-                        USER_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        USER_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
+                    if user_and_hu_are_neighbor
+                    {
+                        // add user as a neighbor
+                        add_a_new_neighbor(
+                            USER_PUBLIC_EMAIL.to_string(),
+                            constants::PUBLIC.to_string(),
+                            USER_PUPLIC_KEY.to_string(),
+                            constants::DEFAULT.to_string(),
+                            constants::YES.to_string(),
+                            NeighborInfo::new(),
+                            cutils::get_now());
+                    }
 
                     // add Eve as a neighbor
                     add_a_new_neighbor(

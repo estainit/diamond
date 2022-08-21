@@ -107,7 +107,6 @@ pub fn file_write(
 
 pub fn write_exact_file(file_path: &String, content: &String) -> (bool, String)
 {
-    println!(":::::write_exact_file file_path: {}", file_path);
     let file_path = &get_os_care_path(file_path);
 
     dlog(
@@ -123,16 +122,19 @@ pub fn write_exact_file(file_path: &String, content: &String) -> (bool, String)
     return (true, "File Writed".to_string());
 }
 
-pub fn delete_exact_file(file_name: &String) -> bool
+pub fn delete_exact_file(file_path: &String) -> bool
 {
-    return match fs::remove_file(file_name)
+    let file_path = &get_os_care_path(file_path);
+    println!(":::::delete_exact_file file_path: {}", file_path);
+
+    return match fs::remove_file(file_path)
     {
         Ok(r) =>
             {
                 true
             }
         Err(e) => {
-            eprintln!("Failed in file delete {}: {}", file_name, e);
+            eprintln!("Failed in file delete {}: {}", file_path, e);
             false
         }
     };

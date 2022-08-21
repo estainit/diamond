@@ -22,7 +22,7 @@ use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 use lib::rest::apis;
-use crate::apis::do_handshake;
+use crate::apis::{do_handshake, do_handshake_by_email};
 use crate::cutils::strip_parentheses_as_break_line;
 use crate::lib::machine::machine_neighbor::get_neighbors;
 
@@ -59,18 +59,18 @@ fn main() {
     // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
     let mut web_server_msg: &str = "";
-    // web_server_msg = match tokio::runtime::Builder::new_multi_thread()
-    //     .enable_all()
-    //     .build()
-    //     .unwrap()
-    //     .block_on(lib::rest::apis::run_web_server()) {
-    //     Ok(r) => {
-    //         ". Webserver Ready on http://localhost:8080"
-    //     }
-    //     Err(e) => {
-    //         ". Webserver Failed!"
-    //     }
-    // };
+    web_server_msg = match tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(lib::rest::apis::run_web_server()) {
+        Ok(r) => {
+            ". Webserver Ready on http://localhost:8080"
+        }
+        Err(e) => {
+            ". Webserver Failed!"
+        }
+    };
 
     let msg = &format!(
         "Running Diamond Node (version {}). started at {} {}",
@@ -85,16 +85,11 @@ fn main() {
 
     {
         // web api part
-        let neighbors = get_neighbors(
-            "",
-            "",
-            "",
-            30,
-            "");
-        println!("neighbors: {:?}", neighbors);
-
-        let (status, msg) = do_handshake(30);
-        println!("do_handshake: {}, {}", status, msg);
+        if machine().get_app_clone_id() == 1
+        {
+            let (status, msg) = do_handshake_by_email("user@imagine.com".to_string());
+            println!("do_handshake: {}, {}", status, msg);
+        }
     }
 
 

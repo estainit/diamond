@@ -91,9 +91,6 @@ pub fn prepare_packets_for_neighbors(
         return vec![];
     }
 
-    // let pub_email_info: &EmailSettings = machine().get_pub_email_info();
-    // let prive_email_info: &EmailSettings = machine().getPrivEmailInfo();
-
     let mut packets: VVString = vec![];
     let mut sender: String;
     for a_neighbor in neighbors

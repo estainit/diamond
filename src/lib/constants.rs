@@ -610,4 +610,4 @@ pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6
 // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
 pub(crate) const TIME_GAIN: u32 = 10;
 
-pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-19 21:50:01";
+pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-21 07:20:00";

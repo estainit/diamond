@@ -596,7 +596,7 @@ pub fn exec_query(
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Failed in Q params: [{:?}] ", &query_elements.m_params),
+                &format!("Failed in Q params: {:?} ", &query_elements.m_params),
                 constants::Modules::Sql,
                 constants::SecLevel::Error);
             (true, vec![])

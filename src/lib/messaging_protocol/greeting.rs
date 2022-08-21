@@ -4,6 +4,7 @@ use crate::lib::custom_types::{QVDicT, QVDRecordsT};
 use crate::lib::pgp::cpgp::{wrap_pgp_envelope};
 use crate::lib::ccrypto;
 use crate::lib::machine::machine_neighbor::get_neighbors;
+use crate::lib::messaging_protocol::dispatcher::make_a_packet;
 use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
 
 //old_name_was createHandshakeRequest
@@ -69,23 +70,28 @@ pub fn create_handshake_request(
         pgp_public_key = machine_settings.m_mp_settings.m_public_email.m_pgp_public_key;
     }
 
-
-    let email_body: String = cutils::serialize_json(&json!({
-         "mType": constants::card_types::HANDSHAKE,
-         "mVer": "0.0.0",
-         "connectionType": connection_type,
-         "email": email, // sender email
-         // the node public key is used to secure comiunication between nodes
-         "PGPPubKey": ccrypto::b64_encode(&pgp_public_key)  //sender's iPGP public key
-    }));
-
+    let (code, body) = make_a_packet(
+        vec![
+            json!({
+                "cdType": constants::card_types::HANDSHAKE,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "connectionType": connection_type,
+                "email": email, // sender email
+                // the node public key is used to secure communication between nodes
+                "PGPPubKey": ccrypto::b64_encode(&pgp_public_key)  //sender's iPGP public key
+            }),
+        ],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        cutils::get_now()
+    );
     dlog(
-        &format!("write Handshake email_body: {}", email_body),
+        &format!("prepared handshake packet, before insert into DB code({}) to ({}): {}",code, email, body),
         constants::Modules::App,
         constants::SecLevel::Info);
 
     let (pgp_status, pgp_msg) = pgp_encrypt(
-        &email_body,
+        &body,
         &"".to_string(), // sender private key
         &"".to_string(), // receiver Public Key
         &"".to_string(), // secert key
@@ -143,20 +149,31 @@ pub fn create_nice_to_meet_you(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
     let default_message_version = "0.0.0";
-    let json_email_body = json!({
-        "mType": constants::card_types::NICETOMEETYOU,
-        "connectionType": connection_type ,
-        "mVer": default_message_version ,
-        "email": machine().get_pub_email_info().m_address ,
-        "PGPPubKey": ccrypto::b64_encode(&machine().get_pub_email_info().m_pgp_public_key)});
-    let email_body: String = cutils::serialize_json(&json_email_body);
+
+
+
+    let (code, body) = make_a_packet(
+        vec![
+            json!({
+                "cdType": constants::card_types::NICETOMEETYOU,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "connectionType": connection_type,
+                "email": machine().get_pub_email_info().m_address,
+                // the node public key is used to secure communication between nodes
+                "PGPPubKey": ccrypto::b64_encode(&machine().get_pub_email_info().m_pgp_public_key)
+            }),
+        ],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        cutils::get_now()
+    );
     dlog(
-        &format!("write NiceToMeetYou email_body1: {}", email_body),
+        &format!("prepared Nice To Meet You packet, before insert into DB code({}) to ({}): {}",code, receiver_email, body),
         constants::Modules::App,
         constants::SecLevel::Info);
 
     let (_pgp_status, encrypted_message) = pgp_encrypt(
-        &email_body,
+        &body,
         &"".to_string(),
         receiver_pgp_public_key,
         &"".to_string(),
@@ -204,47 +221,42 @@ pub fn create_here_is_new_neighbor(
         return (false, "".to_string(), "".to_string(), "".to_string(), "".to_string());
     }
 
-    let default_messaging_ver = "0.0.0";
-    let json_email_body = json!({
-        "mType": constants::card_types::HEREISNEWNEIGHBOR,
-        "mVer": default_messaging_ver ,
-        "connectionType": connection_type ,
-        "newNeighborEmail": new_neighbor_email ,
-        "newNeighborPGPPubKey": ccrypto::b64_encode(new_neighbor_pgp_public_key)});  //sender's iPGP public key
-
-    let email_body: String = cutils::serialize_json(&json_email_body);
-
-
-//  let params = {
-//   shouldSign: true, // in real world you can not sign an email in negotiation step in which the receiver has not your pgp public key
-//   shouldCompress: true,
-//   message: email_body,
-//   sendererPrvKey: machine_pgp_private_key,
-//   receiverPubKey: receiver_pgp_public_key
-//  }
-
+    let (code, body) = make_a_packet(
+        vec![
+            json!({
+                "cdType": constants::card_types::HEREISNEWNEIGHBOR,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "connectionType": connection_type,
+                "newNeighborEmail": new_neighbor_email ,
+                "newNeighborPGPPubKey": ccrypto::b64_encode(new_neighbor_pgp_public_key)
+            }),
+        ],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        cutils::get_now()
+    );
     dlog(
-        &format!("write Here Is New Neighbor going to pgp mVer({}) connection_type({}) new_neighbor_email({})", default_messaging_ver, connection_type, new_neighbor_email),
+        &format!("prepared here is a new neighbor packet, before insert into DB code({}) to ({}): {}",code, new_neighbor_email, body),
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let (_pgp_status, message) = pgp_encrypt(
-        &email_body,
+    let (_pgp_status, pgp_message) = pgp_encrypt(
+        &body,
         machine_pgp_private_key,
         receiver_pgp_public_key,
         &"".to_string(),
         &"".to_string(),
         true,
         true);
-    let mut message = cutils::break_by_br(&message, 128);
-    message = wrap_pgp_envelope(&message);
+    let mut final_message = cutils::break_by_br(&pgp_message, 128);
+    final_message = wrap_pgp_envelope(&final_message);
 
     return (
         true,
         "hereIsNewNeighbor".to_string(),  // title
         machine_email.to_string(),  // sender
         receiver_email.to_string(),
-        email_body  // message
+        final_message  // message
     );
     // TODO after successfull sending must save some part the result and change the email
     // to confirmed

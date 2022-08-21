@@ -175,7 +175,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         &connection_type);
 
     dlog(
-        &format!("Parse packet res: status({}) should purge file({}) ", status, should_purge_file),
+        &format!("Parse packet response: status({}) should purge file({}) ", status, should_purge_file),
         constants::Modules::App,
         constants::SecLevel::Info);
 
