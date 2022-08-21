@@ -188,12 +188,12 @@ pub fn dispatch_a_card(
     // and limit creating block(e.g 10 bloocks per minute) in proportion to neighbor's reputation.
 
     let block_types: Vec<String> = vec![
-        constants::block_types::Normal.to_string(),
-        constants::block_types::Coinbase.to_string(),
-        constants::block_types::FSign.to_string(),
-        constants::block_types::FVote.to_string(),
+        constants::block_types::NORMAL.to_string(),
+        constants::block_types::COINBASE.to_string(),
+        constants::block_types::FLOATING_SIGNATURE.to_string(),
+        constants::block_types::FLOATING_VOTE.to_string(),
         constants::block_types::POW.to_string(),
-        constants::block_types::RpBlock.to_string()];
+        constants::block_types::REPAYMENT_BLOCK.to_string()];
 
     let card_types: Vec<String> = vec![
         constants::card_types::DAG_INVOKE_BLOCK.to_string(),
@@ -201,16 +201,16 @@ pub fn dispatch_a_card(
         constants::card_types::DAG_INVOKE_LEAVES.to_string(),
         constants::card_types::DAG_LEAVES_INFO.to_string(),
         constants::card_types::HANDSHAKE.to_string(),
-        constants::card_types::NICETOMEETYOU.to_string(),
-        constants::card_types::HEREISNEWNEIGHBOR.to_string(),
-        constants::card_types::ProposalLoanRequest.to_string(),
-        constants::card_types::FullDAGDownloadRequest.to_string(),
-        constants::card_types::pleaseRemoveMeFromYourNeighbors.to_string(),
-        constants::card_types::FullDAGDownloadResponse.to_string(),
-        constants::card_types::BallotsReceiveDates.to_string(),
-        constants::card_types::NodeStatusSnapshot.to_string(),
-        constants::card_types::NodeStatusScreenshot.to_string(),
-        constants::card_types::directMsgToNeighbor.to_string(),
+        constants::card_types::NICE_TO_MEET_YOU.to_string(),
+        constants::card_types::HERE_IS_NEW_NEIGHBOR.to_string(),
+        constants::card_types::PROPOSAL_LOAN_REQUEST.to_string(),
+        constants::card_types::FULL_DAG_DOWNLOAD_REQUEST.to_string(),
+        constants::card_types::PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS.to_string(),
+        constants::card_types::FULL_DAG_DOWNLOAD_RESPONSE.to_string(),
+        constants::card_types::BALLOTS_RECEIVE_DATES.to_string(),
+        constants::card_types::NODE_STATUS_SNAPSHOT.to_string(),
+        constants::card_types::NODE_STATUS_SCREENSHOT.to_string(),
+        constants::card_types::DIRECT_MESSAGE_TO_NEIGHBOR.to_string(),
     ];
 
 
@@ -417,7 +417,7 @@ pub fn handle_a_single_card(
 //
 // return {parse_status, should_purge_file};
 //
-    } else if card_type == constants::card_types::HEREISNEWNEIGHBOR
+    } else if card_type == constants::card_types::HERE_IS_NEW_NEIGHBOR
     {
         // TODO: activate it after add some security and privacy care issues
         // parseHereIsNewNeighbor(

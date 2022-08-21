@@ -691,9 +691,9 @@ pub fn remove_dbl_spaces(s: &String) -> String
 pub fn break_by_br(content: &String, chunk_size: u16) -> String
 {
     let chunks = chunk_string(content, chunk_size);
-    let lineBR = constants::message_tags::iPGPEndLineBreak.to_owned() + constants::message_tags::iPGPStartLineBreak;
-    let mut out = chunks.join(&*lineBR);
-    out = constants::message_tags::iPGPStartLineBreak.to_owned() + &out + constants::message_tags::iPGPEndLineBreak;
+    let line_br = constants::message_tags::I_PGP_END_LINEBREAK.to_owned() + constants::message_tags::I_PGP_START_LINEBREAK;
+    let mut out = chunks.join(&*line_br);
+    out = constants::message_tags::I_PGP_START_LINEBREAK.to_owned() + &out + constants::message_tags::I_PGP_END_LINEBREAK;
     return out;
 }
 

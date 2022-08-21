@@ -21,55 +21,6 @@ impl DBHandler {
 }
 
 //old_name_was getConnection
-pub fn get_connectionZ() -> Client {
-    let mut database_name: String = constants::psql_db::DB_NAME.to_string();
-    let clone_id = 0;//machine().get_app_clone_id();
-    if clone_id > 0 {
-        database_name += &clone_id.to_string();
-    }
-
-    let db_connection_full_name = database_name + "_" + "CDB_" + &format!("{:?}", thread::current().id());
-
-    dlog(
-        &format!("db_connection_full_name to create({})", db_connection_full_name),
-        constants::Modules::Sql,
-        constants::SecLevel::Trace);
-    let mut connection_str = format!(
-        "host={host} user={user} password={password}",
-        host = constants::psql_db::DB_HOST,
-        user = constants::psql_db::DB_USER,
-        password = constants::psql_db::DB_PASS,
-    );
-    return Client::connect(&connection_str, NoTls).unwrap();
-
-    // let mut client = Client::connect("host=localhost user=diamond password=diamondpass", NoTls).unwrap();
-    //
-    // return client;
-//     client.batch_execute("
-//     CREATE TABLE person (
-//         id      SERIAL PRIMARY KEY,
-//         name    TEXT NOT NULL,
-//         data    BYTEA
-//     )
-// ");
-//
-//     let name = "Ferris";
-//     let data = None::<&[u8]>;
-//     client.execute(
-//         "INSERT INTO person (name, data) VALUES ($1, $2)",
-//         &[&name, &data],
-//     );
-//
-//     for row in client.query("SELECT id, name, data FROM person", &[]) {
-//         let id: i32 = row.get(0);
-//         let name: &str = row.get(1);
-//         let data: Option<&[u8]> = row.get(2);
-//
-//         println!("found person: {} {} {:?}", id, name, data);
-//     }
-}
-
-//old_name_was getConnection
 pub fn get_connection(clone_id: i8) -> Client {
     let mut database_name: String = constants::psql_db::DB_NAME.to_string();
     // let clone_id = 0;//machine().get_app_clone_id();

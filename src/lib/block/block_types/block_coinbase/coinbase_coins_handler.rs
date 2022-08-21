@@ -64,7 +64,7 @@ pub fn import_coinbased_coins(c_date: &CDateT)
     dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::Trace);
     /*
       QVDRecordsT coinbases = DAG::searchInDAG(
-          {{"b_type", constants::BLOCK_TYPES::Coinbase},
+          {{"b_type", constants::block_types::COINBASE},
            {"b_utxo_imported", constants::NO},
            {"b_creation_date", maxCreationDate, "<="}},
           {"b_hash", "b_body"},

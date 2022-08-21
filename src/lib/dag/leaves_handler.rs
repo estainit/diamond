@@ -13,7 +13,7 @@ pub struct LeaveBlock {
     pub m_creation_date: String,
 }
 
-pub fn removeFromLeaveBlocks(leaves: &Vec<String>) -> (bool, String)
+pub fn remove_from_leave_blocks(leaves: &Vec<String>) -> (bool, String)
 {
     let current_leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
     let mut new_leaves: HashMap<String, LeaveBlock> = HashMap::new();
@@ -64,7 +64,7 @@ pub fn get_leave_blocks(only_before_date: &CDateT) -> HashMap<String, LeaveBlock
     let mut filtered_leaves: HashMap<String, LeaveBlock> = HashMap::new();
     for (a_key, a_leave) in deser_leaves
     {
-        if (a_leave.m_block_type == constants::block_types::Genesis) ||
+        if (a_leave.m_block_type == constants::block_types::GENESIS) ||
             (a_leave.m_creation_date < *only_before_date)
         {
             filtered_leaves.insert(a_key, a_leave);
@@ -74,14 +74,14 @@ pub fn get_leave_blocks(only_before_date: &CDateT) -> HashMap<String, LeaveBlock
     return filtered_leaves;
 }
 
-pub fn addToLeaveBlocks(
+pub fn add_to_leave_blocks(
     block_hash: &CBlockHashT,
     creation_date: &CDateT,
-    bType: &String) -> (bool, String)
+    block_type: &String) -> (bool, String)
 {
     let mut current_leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
     let a_leave: LeaveBlock = LeaveBlock {
-        m_block_type: bType.clone(),
+        m_block_type: block_type.clone(),
         m_creation_date: creation_date.clone(),
     };
     current_leaves.insert(block_hash.to_string(), a_leave);

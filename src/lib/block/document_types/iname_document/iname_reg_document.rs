@@ -27,7 +27,7 @@ struct INameRegDocument
 
 INameRegDocument::INameRegDocument(const JSonObject& obj)
 {
-  setByJsonObj(obj);
+  set_by_json_obj(obj);
 }
 
 INameRegDocument::~INameRegDocument()
@@ -35,9 +35,9 @@ INameRegDocument::~INameRegDocument()
 
 }
 
-bool INameRegDocument::setByJsonObj(const JSonObject& obj)
+bool INameRegDocument::set_by_json_obj(const JSonObject& obj)
 {
-  Document::setByJsonObj(obj);
+  Document::set_by_json_obj(obj);
 
   if (obj.value("iName").to_string() != "")
     m_iname_string = obj.value("iName").to_string();
@@ -49,9 +49,9 @@ bool INameRegDocument::setByJsonObj(const JSonObject& obj)
   return true;
 }
 
-JSonObject INameRegDocument::exportDocToJson(const bool ext_info_in_document) const
+JSonObject INameRegDocument::export_doc_to_json(const bool ext_info_in_document) const
 {
-  JSonObject document = Document::exportDocToJson(ext_info_in_document);
+  JSonObject document = Document::export_doc_to_json(ext_info_in_document);
 
   document["iName"] = m_iname_string;
   document["iNOwner"] = m_iname_owner;
@@ -60,9 +60,9 @@ JSonObject INameRegDocument::exportDocToJson(const bool ext_info_in_document) co
 }
 
 
-String INameRegDocument::safeStringifyDoc(const bool ext_info_in_document) const
+String INameRegDocument::safe_stringify_doc(const bool ext_info_in_document) const
 {
-  JSonObject document_json = exportDocToJson(ext_info_in_document);
+  JSonObject document_json = export_doc_to_json(ext_info_in_document);
 
   if (ext_info_in_document)
     document_json["dExtInfo"] = SignatureStructureHandler::compactUnlockersArray(document_json["dExtInfo"].toArray());
@@ -182,7 +182,7 @@ bool INameRegDocument::veridfyDocSignature() const
 }
 
 
-String INameRegDocument::getDocHashableString() const
+String INameRegDocument::get_doc_hashable_string() const
 {
   String iname = INameHandler::normalizeIName(m_iname_string);
   String hahsables = "{";
@@ -200,8 +200,8 @@ String INameRegDocument::getDocHashableString() const
 // old name was calcHashDINameRegReqS
 String INameRegDocument::calcDocHash() const
 {
-  CLog::log("calc HashDPolling iname reg: " + safeStringifyDoc(), "app", "trace");
-  String hashables = getDocHashableString();
+  CLog::log("calc HashDPolling iname reg: " + safe_stringify_doc(), "app", "trace");
+  String hashables = get_doc_hashable_string();
   String hash = ccrypto::keccak256(hashables);
   CLog::log("\nHashable string for iname reg doc doc(" + m_doc_type + " / " +
     m_doc_class + ") hash(" + hash + ")" + hashables, "app", "trace");

@@ -20,16 +20,16 @@ pub fn i_push(
     let mut to_send_message: String = message.clone();
     if is_custom
     {
-        to_send_message = constants::message_tags::customStartEnvelope.to_string() + &to_send_message + &constants::message_tags::customEndEnvelope;
+        to_send_message = constants::message_tags::ENVELOPE_CUSTOM_START.to_string() + &to_send_message + &constants::message_tags::ENVELOPE_CUSTOM_END;
     }
 
     let mut email_body: String = cutils::get_now() + constants::NL;
     email_body += &*("time: ".to_owned() + &cutils::get_now_sss() + &constants::NL);
-    email_body += &(constants::message_tags::senderStartTag.to_owned() + sender + constants::message_tags::senderEndTag + constants::NL);
-    email_body += &(constants::message_tags::receiverStartTag.to_owned() + receiver + constants::message_tags::receiverEndTag + constants::NL);
+    email_body += &(constants::message_tags::SENDER_START_TAG.to_owned() + sender + constants::message_tags::SENDER_END_TAG + constants::NL);
+    email_body += &(constants::message_tags::RECEIVE_START_TAG.to_owned() + receiver + constants::message_tags::RECEIVE_END_TAG + constants::NL);
     email_body += &(to_send_message.clone() + &constants::NL);
     let mut email_hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender.to_owned() + receiver + &to_send_message)));
-    email_body += &(constants::message_tags::hashStartTag.to_owned() + &email_hash.clone() + constants::message_tags::hashEndTag + constants::NL);
+    email_body += &(constants::message_tags::HASH_START_TAG.to_owned() + &email_hash.clone() + constants::message_tags::HASH_END_TAG + constants::NL);
 
     if constants::DO_HARDCOPY_OUTPUT_EMAILS
     {

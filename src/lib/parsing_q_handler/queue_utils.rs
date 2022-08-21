@@ -85,7 +85,7 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
     // control import new coins
     if (StringList {
           constants::BLOCK_TYPES::Normal,
-          constants::BLOCK_TYPES::Coinbase,
+          constants::block_types::COINBASE,
           constants::BLOCK_TYPES::RpBlock,
           constants::BLOCK_TYPES::RlBlock
         }.contains(bk.value("bType").to_string())&&

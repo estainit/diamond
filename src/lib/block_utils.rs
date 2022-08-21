@@ -73,7 +73,7 @@ std::tuple<bool, uint64_t, uint64_t> BlockUtils::retrieveDPCostInfo(
   const Document* doc,
   const String& backer)
 {
-  std::vector<TOutput*> outputs = doc->getOutputs();
+  std::vector<TOutput*> outputs = doc->get_outputs();
   /**
   * the block cost payment transaction is a document that always has to has no input and 2 outputs.
   * 0. TP_DP   Treasury Payment Data&  Process Cost
@@ -88,7 +88,7 @@ std::tuple<bool, uint64_t, uint64_t> BlockUtils::retrieveDPCostInfo(
     return {false, 0, 0};
   }
 
-  String ddd = doc->safeStringifyDoc();
+  String ddd = doc->safe_stringify_doc();
   DocLenT len = static_cast<DocLenT>(ddd.len());
   if (len > constants::MAX_DPCostPay_DOC_SIZE)
   {

@@ -62,22 +62,24 @@ impl Document
         }
     }
 
-    pub fn getDocExtInfo(&self) -> &Vec<JSonObject>
+    //old_name_was getDocExtInfo
+    pub fn get_doc_ext_info(&self) -> &Vec<JSonObject>
     {
         return &self.m_doc_ext_info;
     }
 
-    pub fn maybeAssignDocExtInfo(
+    //old_name_was maybeAssignDocExtInfo
+    pub fn maybe_assign_doc_ext_info(
         &mut self,
         block: &Block,
         doc_inx: CDocIndexT)
     {
         if self.m_doc_ext_info.len() == 0 {
-            self.m_doc_ext_info = block.getBlockExtInfoByDocIndex(doc_inx as usize).clone();
+            self.m_doc_ext_info = block.get_block_ext_info_by_doc_index(doc_inx as usize).clone();
         }
     }
 
-    pub fn setByJsonObj(
+    pub fn set_by_json_obj(
         &mut self,
         obj: &JSonObject,
         block: &Block,
@@ -126,22 +128,22 @@ impl Document
         let doc_type: String = obj["dType"].to_string();
         self.m_doc_type = doc_type.clone();
 
-        if doc_type == constants::document_types::BasicTx
+        if doc_type == constants::document_types::BASIC_TX
         {
-            self.m_if_basic_tx_doc.setByJsonObj(obj);
-        } else if doc_type == constants::document_types::DPCostPay
+            self.m_if_basic_tx_doc.set_by_json_obj(obj);
+        } else if doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
         {
             /*
             doc = new
             DPCostPayDocument(obj);
             */
-        } else if doc_type == constants::document_types::Coinbase
+        } else if doc_type == constants::document_types::COINBASE
         {
             /*
             doc = new
             CoinbaseDocument(obj);
             */
-        } else if doc_type == constants::document_types::RpDoc
+        } else if doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {
             /*
             doc = new
@@ -153,46 +155,46 @@ impl Document
             //     doc = new
             //     FreeDocument(obj);
             //     */
-        } else if doc_type == constants::document_types::Ballot
+        } else if doc_type == constants::document_types::BALLOT
         {
             /*
             doc = new
             BallotDocument(obj);
             */
-        } else if doc_type == constants::document_types::Polling
+        } else if doc_type == constants::document_types::POLLING
         {
             /*
             doc = new
             PollingDocument(obj);
             */
-        } else if doc_type == constants::document_types::AdmPolling
+        } else if doc_type == constants::document_types::ADMINISTRATIVE_POLLING
         {
             /*
             doc = new
             AdministrativePollingDocument(obj);
             */
-        } else if doc_type == constants::document_types::DNAProposal
+        } else if doc_type == constants::document_types::PROPOSAL
         {
-            self.m_if_proposal_doc.setByJsonObj(obj);
-        } else if doc_type == constants::document_types::Pledge
+            self.m_if_proposal_doc.set_by_json_obj(obj);
+        } else if doc_type == constants::document_types::PLEDGE
         {
             /*
             doc = new
             PledgeDocument(obj);
             */
-        } else if doc_type == constants::document_types::ClosePledge
+        } else if doc_type == constants::document_types::CLOSE_PLEDGE
         {
             /*
             doc = new
             ClosePledgeDocument(obj);
             */
-        } else if doc_type == constants::document_types::INameReg
+        } else if doc_type == constants::document_types::I_NAME_REGISTER
         {
             /*
             doc = new
             INameRegDocument(obj);
             */
-        } else if doc_type == constants::document_types::INameBind
+        } else if doc_type == constants::document_types::I_NAME_BIND
         {
             /*
             doc = new
@@ -203,16 +205,16 @@ impl Document
 
         if (self.m_doc_ext_info.len() > 0) && (doc_index != -1) && (block.m_block_hash != "")
         {
-            self.maybeAssignDocExtInfo(block, doc_index);
+            self.maybe_assign_doc_ext_info(block, doc_index);
         }
 
         return true;
     }
 
 
-    pub fn safeStringifyDoc(&self, ext_info_in_document: bool) -> String
+    pub fn safe_stringify_doc(&self, ext_info_in_document: bool) -> String
     {
-        let mut j_doc: JSonObject = self.exportDocToJson(ext_info_in_document);
+        let mut j_doc: JSonObject = self.export_doc_to_json(ext_info_in_document);
         j_doc["dLen"] = constants::LEN_PROP_PLACEHOLDER.into();
         let serialized_j_doc: String = cutils::serialize_json(&j_doc);
         // recaluculate block final length
@@ -235,7 +237,8 @@ impl Document
         return cutils::serialize_json(&j_doc);
     }
 
-    pub fn getRef(&self) -> String
+    //old_name_was getRef
+    pub fn get_ref(&self) -> String
     {
         return self.m_doc_ref.clone();
     }
@@ -273,13 +276,13 @@ impl Document
         return false;
         }
 
-        bool Document::setDocumentInputs(const QJsonValue& obj)
+        bool Document::set_document_inputs(const QJsonValue& obj)
         {
         cutils::exiter("set Document Inputs is n't implement for Document Base class document(" + m_doc_type + ")", 0);
         return false;
         }
 
-        bool Document::setDocumentOutputs(const QJsonValue& obj)
+        bool Document::set_document_outputs(const QJsonValue& obj)
         {
         cutils::exiter("set Document Outputs is n't implement for Document Base class document(" + m_doc_type + ")", 0);
         return false;
@@ -298,7 +301,7 @@ impl Document
         */
 
 
-    pub fn exportDocToJson_inner(&self, ext_info_in_document: bool) -> JSonObject
+    pub fn export_doc_to_json_inner(&self, ext_info_in_document: bool) -> JSonObject
     {
         let mut document: JSonObject = json!({
             "dHash":self.m_doc_hash,
@@ -351,12 +354,12 @@ impl Document
         return document;
     }
 
-    pub fn exportDocToJson(&self, ext_info_in_document: bool) -> JSonObject
+    pub fn export_doc_to_json(&self, ext_info_in_document: bool) -> JSonObject
     {
-        if self.m_doc_type == constants::document_types::BasicTx {
-            return self.m_if_basic_tx_doc.exportDocToJson(self, ext_info_in_document);
-        } else if self.m_doc_type == constants::document_types::DNAProposal {
-            return self.m_if_proposal_doc.exportDocToJson(self, ext_info_in_document);
+        if self.m_doc_type == constants::document_types::BASIC_TX {
+            return self.m_if_basic_tx_doc.export_doc_to_json(self, ext_info_in_document);
+        } else if self.m_doc_type == constants::document_types::PROPOSAL {
+            return self.m_if_proposal_doc.export_doc_to_json(self, ext_info_in_document);
         }
 
         panic!("should not reach here");
@@ -379,17 +382,17 @@ impl Document
     /*
 
 
-    std::vector<TInput*> Document::getInputs() const
+    std::vector<TInput*> Document::get_inputs() const
     {
     return {};
     }
 
-    std::vector<TOutput*> Document::getOutputs() const
+    std::vector<TOutput*> Document::get_outputs() const
     {
     return {};
     }
 
-    String Document::getDocHashableString() const
+    String Document::get_doc_hashable_string() const
     {
     return "";
     }
@@ -402,12 +405,12 @@ impl Document
 */
     //old_name_was calcDocHash
     pub fn calc_doc_hash(&self) -> CDocHashT {
-        if self.m_doc_type == constants::document_types::BasicTx
+        if self.m_doc_type == constants::document_types::BASIC_TX
         {
             return self.m_if_basic_tx_doc.calc_doc_hash(self);
-        } else if self.m_doc_type == constants::document_types::DPCostPay
-        {} else if self.m_doc_type == constants::document_types::Coinbase
-        {} else if self.m_doc_type == constants::document_types::RpDoc
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {} else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {
 
             // } else if doc_type == constants::document_types::FPost
@@ -416,24 +419,25 @@ impl Document
             //     doc = new
             //     FreeDocument(obj);
             //     */
-        } else if self.m_doc_type == constants::document_types::Ballot
-        {} else if self.m_doc_type == constants::document_types::Polling
-        {} else if self.m_doc_type == constants::document_types::AdmPolling
-        {} else if self.m_doc_type == constants::document_types::DNAProposal
+        } else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
         {
             return self.m_if_proposal_doc.calc_doc_hash(&self);
-        } else if self.m_doc_type == constants::document_types::Pledge
-        {} else if self.m_doc_type == constants::document_types::ClosePledge
-        {} else if self.m_doc_type == constants::document_types::INameReg
-        {} else if self.m_doc_type == constants::document_types::INameBind
+        } else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
         {}
 
 
         return "".to_string();
     }
 
-    pub fn calcDocLength(&self) -> DocLenT {
-        let doc_length: DocLenT = self.safeStringifyDoc(true).len();
+    //old_name_was calcDocLength
+    pub fn calc_doc_length(&self) -> DocLenT {
+        let doc_length: DocLenT = self.safe_stringify_doc(true).len();
         return doc_length;
     }
 
@@ -446,7 +450,7 @@ impl Document
 
     void Document::setDocLength()
     {
-    m_doc_length = calcDocLength();
+    m_doc_length = calc_doc_length();
     }
 
     void Document::setDExtHash()
@@ -464,7 +468,7 @@ impl Document
     {
     String msg;
     // doc length controll
-    DocLenT doc_lenght = safeStringifyDoc(true).len();
+    DocLenT doc_lenght = safe_stringify_doc(true).len();
     if(doc_lenght < 1)
     {
     msg = "Doc length can not be zero or negative! block(" + block.m_block_type + " / " + cutils::hash8c(block.m_block_hash) + ") doc(" + m_doc_type + " / " + cutils::hash8c(get_doc_hash()) + ") doc class(" + m_doc_class + ")";
@@ -494,7 +498,7 @@ impl Document
     // controll doc ext hash
     if(m_doc_ext_hash != calcDocExtInfoHash())
     {
-    msg = "Mismatch doc ext Hash. remote doc ext hash(" + m_doc_ext_hash + ") localy calculated(" + calcDocExtInfoHash() +") block(" + cutils::hash8c(block.m_block_hash) + ") " + safeStringifyDoc();
+    msg = "Mismatch doc ext Hash. remote doc ext hash(" + m_doc_ext_hash + ") localy calculated(" + calcDocExtInfoHash() +") block(" + cutils::hash8c(block.m_block_hash) + ") " + safe_stringify_doc();
     CLog::log(msg, "sec", "error");
     return {false, msg};
     }
@@ -524,7 +528,7 @@ impl Document
      */
     pub fn apply_doc_first_impact(&self, block: &Block) -> bool
     {
-        if self.m_doc_type == constants::document_types::DNAProposal
+        if self.m_doc_type == constants::document_types::PROPOSAL
         {
             return self.m_if_proposal_doc.apply_doc_first_impact(self, block);
         } else {}
@@ -580,18 +584,20 @@ impl Document
         }
 
         */
-    pub fn mapDocToBlock(&self,
-                         block_hash: &CBlockHashT,
-                         doc_index: CDocIndexT)
+
+    //old_name_was mapDocToBlock
+    pub fn map_doc_to_block(&self,
+                            block_hash: &CBlockHashT,
+                            doc_index: CDocIndexT)
     {
-        return mapDocToBlock(&self.m_doc_hash, block_hash, doc_index);
+        return map_doc_to_block(&self.m_doc_hash, block_hash, doc_index);
     }
     /*
 
     bool Document::trxHasInput(const String& document_type)
     {
     return StringList {
-    constants::DOC_TYPES::BasicTx,
+    constants::document_types::BASIC_TX,
     constants::DOC_TYPES::RpDoc
     }.contains(document_type);
     }
@@ -604,7 +610,7 @@ impl Document
     bool Document::trxHasNotInput(const String& document_type)
     {
     return StringList {
-    constants::DOC_TYPES::Coinbase,
+    constants::document_types::COINBASE,
     constants::DOC_TYPES::DPCostPay,
     constants::DOC_TYPES::RlDoc
     }.contains(document_type);
@@ -619,7 +625,7 @@ impl Document
     {
     // Note: the iConsts.DOC_TYPES.Coinbase  and iConsts.DOC_TYPES.DPCostPay altough are transactions, but have special tretmnent
     // Note: the iConsts.DOC_TYPES.RpDoc altough is a transaction, but since is created directly by node and based on validated coinbase info, so does not need validate
-    return StringList{constants::DOC_TYPES::BasicTx}.contains(dType);
+    return StringList{constants::document_types::BASIC_TX}.contains(dType);
     }
 
     bool Document::isBasicTransaction()
@@ -639,7 +645,7 @@ impl Document
 
     bool Document::canBeACostPayerDoc(const String& dType)
     {
-    return StringList{constants::DOC_TYPES::BasicTx}.contains(dType);
+    return StringList{constants::document_types::BASIC_TX}.contains(dType);
     }
 
     /**
@@ -651,7 +657,7 @@ impl Document
     bool Document::isNoNeedCostPayerDoc(const String& dType)
     {
     return (StringList {
-    constants::DOC_TYPES::BasicTx,
+    constants::document_types::BASIC_TX,
     constants::DOC_TYPES::DPCostPay,
     constants::DOC_TYPES::RpDoc,
     constants::DOC_TYPES::RlDoc
@@ -660,20 +666,20 @@ impl Document
 
     String Document::stringify_inputs() const
     {
-    return SignatureStructureHandler::stringify_inputs(getInputs());
+    return SignatureStructureHandler::stringify_inputs(get_inputs());
     }
 
     String Document::stringify_outputs() const
     {
-    return SignatureStructureHandler::stringify_outputs(getOutputs());
+    return SignatureStructureHandler::stringify_outputs(get_outputs());
     }
 
     // old name was trxHasOutput
     bool Document::docHasOutput(const String& document_type)
     {
     return StringList {
-    constants::DOC_TYPES::Coinbase,
-    constants::DOC_TYPES::BasicTx,
+    constants::document_types::COINBASE,
+    constants::document_types::BASIC_TX,
     constants::DOC_TYPES::RpDoc,
     constants::DOC_TYPES::RlDoc,}.contains(document_type);
     }
@@ -708,7 +714,8 @@ impl Document
     */
 }
 
-pub fn mapDocToBlock(
+//old_name_was mapDocToBlock
+pub fn map_doc_to_block(
     doc_hash: &CDocHashT,
     block_hash: &CBlockHashT,
     doc_index: CDocIndexT)

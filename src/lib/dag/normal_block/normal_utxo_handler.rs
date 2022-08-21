@@ -63,7 +63,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         constants::Modules::Trx,
         constants::SecLevel::Trace);
 
-    let b_type=constants::block_types::Normal.to_string();
+    let b_type=constants::block_types::NORMAL.to_string();
     let b_utxo_imported=constants::NO.to_string();
     let mut clauses: ClausesT = vec![
         // ModelClause {

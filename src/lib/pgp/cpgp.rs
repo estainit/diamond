@@ -47,13 +47,13 @@ impl CPGPMessage {
 pub fn strip_pgp_envelope(content: &String) -> String
 {
     let mut content: String = content.trim().to_string(); // remove extra spaces
-    if content.contains(constants::message_tags::iPGPStartEnvelope)
+    if content.contains(constants::message_tags::ENVELOPE_I_PGP_START)
     {
-        content = content.split(constants::message_tags::iPGPStartEnvelope).collect::<Vec<&str>>()[1].to_string().clone();
+        content = content.split(constants::message_tags::ENVELOPE_I_PGP_START).collect::<Vec<&str>>()[1].to_string().clone();
     }
-    if content.contains(constants::message_tags::iPGPEndEnvelope)
+    if content.contains(constants::message_tags::ENVELOPE_I_PGP_END)
     {
-        content = content.split(constants::message_tags::iPGPEndEnvelope).collect::<Vec<&str>>()[0].to_string().clone();
+        content = content.split(constants::message_tags::ENVELOPE_I_PGP_END).collect::<Vec<&str>>()[0].to_string().clone();
     }
     return content;
 }
@@ -61,5 +61,5 @@ pub fn strip_pgp_envelope(content: &String) -> String
 //old_name_was wrapPGPEnvelope
 pub fn wrap_pgp_envelope(content: &String) -> String
 {
-    return constants::message_tags::iPGPStartEnvelope.to_owned() + content + constants::message_tags::iPGPEndEnvelope;
+    return constants::message_tags::ENVELOPE_I_PGP_START.to_owned() + content + constants::message_tags::ENVELOPE_I_PGP_END;
 }

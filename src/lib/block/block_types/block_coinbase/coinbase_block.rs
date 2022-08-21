@@ -16,7 +16,7 @@ impl CoinbaseBlock {
         }
     }
 
-    pub fn setByJsonObj(&mut self, _obj: &JSonObject) -> bool
+    pub fn set_by_json_obj(&mut self, _obj: &JSonObject) -> bool
     {
         // maybe drived class assignings
         return true;
@@ -38,7 +38,7 @@ impl CoinbaseBlock {
         return {false, true};
       }
 
-      CLog::log("dummy log pre add to DAG a CoinbaseBlock: " + cutils::serializeJson(exportBlockToJSon()), "cb", "trace");
+      CLog::log("dummy log pre add to DAG a CoinbaseBlock: " + cutils::serializeJson(export_block_to_json()), "cb", "trace");
 
       addBlockToDAG();
 
@@ -51,7 +51,7 @@ impl CoinbaseBlock {
         bool push_res = SendingQHandler::pushIntoSendingQ(
           m_block_type,
           m_block_hash,
-          safeStringifyBlock(false),
+          safe_stringify_block(false),
           "Broadcasting the confirmed coinbase block(" + cutils::hash8c(m_block_hash) + ") in current cycle(" + m_cycle + ")");
 
         CLog::log("coinbase push_res(" + cutils::dumpIt(push_res) + ")");
@@ -95,7 +95,7 @@ impl CoinbaseBlock {
       Block* tmp_block = BlockFactory::create(local_regenerated_coinbase);
       tmp_block->setBlockHash(tmp_block->calcBlockHash());
       local_regenerated_coinbase["bHash"] = tmp_block->getBlockHash();
-      JSonObject tmp_Jblock = tmp_block->exportBlockToJSon();
+      JSonObject tmp_Jblock = tmp_block->export_block_to_json();
     //  tmp_Jblock["bLen"] = cutils::padding_length_value(cutils::serializeJson(tmp_Jblock).length());
       CLog::log("dummy dumping after calculating it's length(serialized): " + cutils::serializeJson(tmp_Jblock) , "cb", "info");
       delete tmp_block;
@@ -179,9 +179,9 @@ impl CoinbaseBlock {
     }
     /*
 
-    JSonObject CoinbaseBlock::exportBlockToJSon(const bool ext_info_in_document) const
+    JSonObject CoinbaseBlock::export_block_to_json(const bool ext_info_in_document) const
     {
-      JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
+      JSonObject block = Block::export_block_to_json(ext_info_in_document);
 
       // maybe remove add some item in object
       block.remove("bExtInfo");
@@ -209,9 +209,9 @@ impl CoinbaseBlock {
       return block;
     }
 
-    String CoinbaseBlock::safeStringifyBlock(const bool ext_info_in_document) const
+    String CoinbaseBlock::safe_stringify_block(const bool ext_info_in_document) const
     {
-      JSonObject block = exportBlockToJSon(ext_info_in_document);
+      JSonObject block = export_block_to_json(ext_info_in_document);
 
       // recaluculate block final length
       String tmp_stringified = cutils::serializeJson(block);
@@ -230,7 +230,7 @@ impl CoinbaseBlock {
 
     bool CoinbaseBlock::controlBlockLength() const
     {
-      String stringyfied_block = safeStringifyBlock(false);
+      String stringyfied_block = safe_stringify_block(false);
       if (
           (static_cast<BlockLenT>(stringyfied_block.length()) != m_block_length) &&
           (static_cast<BlockLenT>(stringyfied_block.length()) != m_block_length + 136) // legacy JS coinbase created blocks have mis-calculated block length
@@ -242,7 +242,7 @@ impl CoinbaseBlock {
       return true;
     }
 
-    String CoinbaseBlock::stringifyBExtInfo() const
+    String CoinbaseBlock::stringify_block_ext_info() const
     {
       return "";
     }

@@ -18,7 +18,7 @@ pub fn load_document(
     doc_index: CDocIndexT) -> Document
 {
     let mut doc: Document = Document::new();
-    let  _status = doc.setByJsonObj(obj,block,doc_index);
+    let  _status = doc.set_by_json_obj(obj,block,doc_index);
 
     return doc;
 }

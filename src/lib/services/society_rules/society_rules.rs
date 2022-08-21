@@ -202,7 +202,7 @@ QVDicT SocietyRules::prepareDocExpenseDict(
   const DocLenT& dLen)
 {
   QVDicT servicePrices {
-    {constants::DOC_TYPES::BasicTx, QVariant::fromValue(getBasicTxDPCost(dLen, cDate))},
+    {constants::document_types::BASIC_TX, QVariant::fromValue(getBasicTxDPCost(dLen, cDate))},
     {constants::DOC_TYPES::AdmPolling, QVariant::fromValue(getPollingDPCost(cDate))},
     {constants::DOC_TYPES::Polling, QVariant::fromValue(getPollingDPCost(cDate))},
     {constants::DOC_TYPES::Pledge, QVariant::fromValue(getPledgeDPCost(cDate))},
@@ -256,7 +256,7 @@ CMPAIValueT SocietyRules::getTransactionMinimumFee(const CDateT& cDate)
     constants::TRANSACTION_MINIMUM_LENGTH *
     getBasePricePerChar(cDate) *
     getDocExpense(
-      constants::DOC_TYPES::BasicTx,
+      constants::document_types::BASIC_TX,
       constants::TRANSACTION_MINIMUM_LENGTH,
       cDate)
   ));
@@ -283,7 +283,7 @@ BlockLenT SocietyRules::getMaxBlockSize(const String& block_type)
   BlockLenT DEFAULT_MAX = 10000000 * 10; //MAX_BLOCK_LENGTH_BY_CHAR
   QHash<String, BlockLenT> max_block_size = {
     {constants::BLOCK_TYPES::Normal, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::Coinbase, DEFAULT_MAX},
+    {constants::block_types::COINBASE, DEFAULT_MAX},
     {constants::BLOCK_TYPES::RpBlock, DEFAULT_MAX},
     {constants::BLOCK_TYPES::FSign, DEFAULT_MAX},
     {constants::BLOCK_TYPES::SusBlock, DEFAULT_MAX},

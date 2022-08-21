@@ -165,7 +165,7 @@ pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 
 // TODO: since shares are counting for before 2 last cycles, so implementing a caching system will be much helpfull where we have millions of shareholders
 //old_name_was getSharesInfo
-pub fn get_shares_info(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
+pub fn get_shares_info(c_date: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
 {
     // cDate = cutils::get_now();
 
@@ -177,11 +177,11 @@ pub fn get_shares_info(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNASh
     // -------------< 11:59 of 6 May |         --- 24 hours ---        |12:00 of 7 May     --- 2 hours ---     14:00 of 7 May
 
     dlog(
-        &format!("get Share info: calc shares for date({cDate})"),
+        &format!("get Share info: calc shares for date({})", c_date),
         constants::Modules::App,
         constants::SecLevel::Trace);
 
-    let (min_creation_date, max_creation_date) = get_dna_active_date_range(cDate);
+    let (min_creation_date, max_creation_date) = get_dna_active_date_range(c_date);
 
 
     let mut query = "".to_string();
@@ -195,7 +195,7 @@ pub fn get_shares_info(cDate: &CDateT) -> (DNAShareCountT, HashMap<String, DNASh
         query += &*(" WHERE dn_creation_date between \"".to_owned() + &min_creation_date + &"\" AND \"".to_owned() + &max_creation_date + "\" GROUP BY dn_shareholder ORDER BY sum_ DESC");
     }
     dlog(
-        &format!("Retrieve shares for range cDate({}) -> ({}, {})", cDate, min_creation_date, max_creation_date),
+        &format!("Retrieve shares for range cDate({}) -> ({}, {})", c_date, min_creation_date, max_creation_date),
         constants::Modules::App,
         constants::SecLevel::Info);
 

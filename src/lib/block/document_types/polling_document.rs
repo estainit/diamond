@@ -39,12 +39,12 @@ impl PollingDocument
 
     PollingDocument::PollingDocument(const JSonObject& obj)
     {
-      setByJsonObj(obj);
+      set_by_json_obj(obj);
     }
 
-    bool PollingDocument::setByJsonObj(const JSonObject& obj)
+    bool PollingDocument::set_by_json_obj(const JSonObject& obj)
     {
-      Document::setByJsonObj(obj);
+      Document::set_by_json_obj(obj);
 
       if (obj.value("pTimeframe").toDouble() != 0)
         m_voting_timeframe = obj.value("pTimeframe").toDouble();
@@ -73,9 +73,9 @@ impl PollingDocument
       return true;
     }
 
-    JSonObject PollingDocument::exportDocToJson(const bool ext_info_in_document) const
+    JSonObject PollingDocument::export_doc_to_json(const bool ext_info_in_document) const
     {
-      JSonObject document = Document::exportDocToJson(ext_info_in_document);
+      JSonObject document = Document::export_doc_to_json(ext_info_in_document);
 
       document["dCreator"] = m_polling_creator;
       document["dRefType"] = m_polling_ref_type;
@@ -85,9 +85,9 @@ impl PollingDocument
       return document;
     }
 
-    String PollingDocument::safeStringifyDoc(const bool ext_info_in_document) const
+    String PollingDocument::safe_stringify_doc(const bool ext_info_in_document) const
     {
-      JSonObject document = exportDocToJson(ext_info_in_document);
+      JSonObject document = export_doc_to_json(ext_info_in_document);
 
       // recaluculate block final length
       document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).length());
@@ -98,7 +98,9 @@ impl PollingDocument
     }
 
     */
-    pub fn getDocHashableString(&self, doc: &Document) -> String
+
+    //old_name_was getDocHashableString
+    pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
         let mut hahsables: String = format!(
             "dExtHash:{},dLen:{},",
@@ -117,7 +119,7 @@ impl PollingDocument
     pub fn calc_doc_hash(&self, doc: &Document) -> String // old name was calcHashDPolling
     {
         // as always alphabetical sort
-        let hashables: String = self.getDocHashableString(doc);
+        let hashables: String = self.get_doc_hashable_string(doc);
         let hashed: String = ccrypto::keccak256(&hashables);
         dlog(
             &format!("Hashable string for Polling doc{} doc({}/{}) hash({})", hashables, doc.m_doc_type, doc.m_doc_class, hashed),
@@ -175,7 +177,7 @@ impl PollingDocument
         this);
     }
 
-    String PollingDocument::getRef() const
+    String PollingDocument::get_ref() const
     {
       return m_polling_ref;
     }
@@ -197,7 +199,7 @@ impl PollingDocument
       signables += "\"dClass\":\"" + m_doc_class + "\",";
       signables += "\"dComment\":\"" + m_polling_comment + "\",";
       signables += "\"dCreator\":\"" + m_polling_creator + "\",";
-      signables += "\"dRef\":\"" + getRef() + "\",";
+      signables += "\"dRef\":\"" + get_ref() + "\",";
       signables += "\"dRefClass\":\"" + m_polling_ref_class + "\",";
       signables += "\"dRefType\":\"" + m_polling_ref_type + "\",";
       signables += "\"dType\":\"" + m_doc_type + "\",";
@@ -291,7 +293,7 @@ impl PollingDocument
               String ref_type = polling_doc->getRefType();
               if (ref_type == constants::DOC_TYPES::ReqForRelRes)
               {
-                ResevedCoinsHandler::removeReqRelRes(polling_doc->getRef());
+                ResevedCoinsHandler::removeReqRelRes(polling_doc->get_ref());
 
               }else{
 

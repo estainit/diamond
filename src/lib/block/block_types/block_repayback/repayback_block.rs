@@ -1,7 +1,7 @@
 /*
 RepaybackBlock::RepaybackBlock(const JSonObject& obj)
 {
-  setByJsonObj(obj);
+  set_by_json_obj(obj);
 }
 
 RepaybackBlock::~RepaybackBlock()
@@ -14,9 +14,9 @@ RepaybackBlock::~RepaybackBlock()
     delete d;
 }
 
-bool RepaybackBlock::setByJsonObj(const JSonObject& obj)
+bool RepaybackBlock::set_by_json_obj(const JSonObject& obj)
 {
-  Block::setByJsonObj(obj);
+  Block::set_by_json_obj(obj);
 
 //  m_rp_documents = obj.value("docs").toArray();
 
@@ -75,7 +75,7 @@ String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 //  StringList docs {};
 //  for (QJsonValueRef a_doc: Jblock.value("docs").toArray())
 //  {
-//    String a_doc_str = RepaymentDocument::getDocHashableString(a_doc.toObject());
+//    String a_doc_str = RepaymentDocument::get_doc_hashable_string(a_doc.toObject());
 //    docs.push(a_doc_str);
 //  }
 //  hashables += "\"docs\":[" + docs.join(",") + "],";
@@ -112,9 +112,9 @@ String RepaybackBlock::getBlockHashableString() const
   return hashables;
 }
 
-JSonObject RepaybackBlock::exportBlockToJSon(const bool ext_info_in_document) const
+JSonObject RepaybackBlock::export_block_to_json(const bool ext_info_in_document) const
 {
-  JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
+  JSonObject block = Block::export_block_to_json(ext_info_in_document);
 //  out.insert("bCycle", m_cycle);
 
   // maybe remove add some item in object
@@ -149,19 +149,19 @@ JSonObject RepaybackBlock::getRepayBlockTpl()
     {"docs", {}}};
 }
 
-JSonArray RepaybackBlock::exportDocumentsToJSon(const bool ext_info_in_document) const
+JSonArray RepaybackBlock::export_documents_to_json(const bool ext_info_in_document) const
 {
   JSonArray documents {};
   for(auto a_doc: m_rp_documents)
   {
-    documents.push(a_doc->exportDocToJson(ext_info_in_document));
+    documents.push(a_doc->export_doc_to_json(ext_info_in_document));
   }
   return documents;
 }
 
-String RepaybackBlock::safeStringifyBlock(const bool ext_info_in_document) const
+String RepaybackBlock::safe_stringify_block(const bool ext_info_in_document) const
 {
-  JSonObject block = exportBlockToJSon(ext_info_in_document);
+  JSonObject block = export_block_to_json(ext_info_in_document);
 
   // recaluculate block final length
   block["bLen"] = cutils::padding_length_value(cutils::serializeJson(block).len());
@@ -225,11 +225,11 @@ void RepaybackBlock::createRepaymentBlock(
   Q_UNUSED(levels);
   Q_UNUSED(leaves);
   tmp_repay_block.m_documents_root_hash = root;
-  tmp_repay_block.m_block_length = tmp_repay_block->safeStringifyBlock(false).len();
+  tmp_repay_block.m_block_length = tmp_repay_block->safe_stringify_block(false).len();
   CBlockHashT block_hash = tmp_repay_block->calcBlockHash();
   tmp_repay_block->setBlockHash(block_hash);
   tmp_repay_block.m_block_backer = CMachine::getBackerAddress();
-  CLog::log("the Repayment Jblock(" + cutils::hash8c(block_hash) + ") is created: " + tmp_repay_block->safeStringifyBlock(false), "trx", "trace");
+  CLog::log("the Repayment Jblock(" + cutils::hash8c(block_hash) + ") is created: " + tmp_repay_block->safe_stringify_block(false), "trx", "trace");
 
   tmp_repay_block->addBlockToDAG();
 
@@ -327,7 +327,7 @@ pub fn import_double_check()
 }
 
 /*
-String RepaybackBlock::stringifyBExtInfo() const
+String RepaybackBlock::stringify_block_ext_info() const
 {
   return "";
 }

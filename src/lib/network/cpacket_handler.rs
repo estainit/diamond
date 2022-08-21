@@ -188,7 +188,7 @@ pub fn t_log(file_name: &String) -> bool
     {
         i_create(file_name);
     } else {
-        iUpdate(file_name);
+        i_update(file_name);
     }
     return true;
 }
@@ -224,7 +224,7 @@ return 0;
 }
 
 */
-pub fn iUpdate(_file_name: &String) -> bool
+pub fn i_update(_file_name: &String) -> bool
 {
 // TODO: implement it ASAP
 //  DbModel::customQuery("",

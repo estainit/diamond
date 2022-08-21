@@ -492,7 +492,7 @@ bool UTXOHandler::removeUsedCoinsByBlock(const Block* block)
 {
   CLog::log("remove spent UXTOs of Block(" + cutils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
   for (Document* doc: block->getDocuments())
-    for (TInput* input: doc->getInputs())
+    for (TInput* input: doc->get_inputs())
       removeCoin(input->getCoinCode());
   return true;
 }

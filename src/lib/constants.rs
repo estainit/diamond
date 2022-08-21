@@ -143,14 +143,14 @@ pub const MAX_BLOCK_LENGTH_BY_CHAR: BlockLenT = 10000000 * 10;
 
 // 10 Mega Byte is actually block size
 pub const MAX_DOC_LENGTH_BY_CHAR: DocLenT = 10 * 1024 * 1024 * 9;
-pub const MAX_DPCostPay_DOC_SIZE: DocLenT = 600;
-pub const MAX_FullDAGDownloadResponse_LENGTH_BY_CHAR: u64 = 1500000;
+pub const MAX_DP_COST_PAY_DOCUMENT_SIZE: DocLenT = 600;
+pub const MAX_FULL_DAG_DOWNLOAD_RESPONSE_LENGTH_BY_CHAR: u64 = 1500000;
 
 pub mod stages
 {
-    pub const Creating: &str = "Creating";
-    pub const Regenerating: &str = "Regenerating";
-    pub const Validating: &str = "Validating";
+    pub const CREATING: &str = "Creating";
+    pub const REGENERATING: &str = "Regenerating";
+    pub const VALIDATING: &str = "Validating";
 }
 
 pub mod thread_state
@@ -277,82 +277,87 @@ pub const TREASURY_PAYMENTS: [&str; 13] =
 */
 pub mod block_types
 {
-    pub const Genesis: &str = "Genesis";
-    pub const Coinbase: &str = "Coinbase";
+    pub const GENESIS: &str = "Genesis";
+    pub const COINBASE: &str = "Coinbase";
     // floating signature
-    pub const FSign: &str = "FSign";
-    pub const Normal: &str = "Normal";
+    pub const FLOATING_SIGNATURE: &str = "FSign";
+    pub const NORMAL: &str = "Normal";
     pub const POW: &str = "POW";
     // suspicious/suspended block
-    pub const SusBlock: &str = "SusBlock";
-    pub const FVote: &str = "FVote";
+    pub const SUS_BLOCK: &str = "SusBlock";
+    pub const FLOATING_VOTE: &str = "FVote";
     // repayment blocks which are used to record repayments in DAG immediately after Coinbase block isuance
-    pub const RpBlock: &str = "RpBlock";
+    pub const REPAYMENT_BLOCK: &str = "RpBlock";
 }
 
-pub mod doc_types
+
+pub mod document_types
 {
-    pub const Coinbase: &str = "Coinbase";
-    pub const RpDoc: &str = "RpDoc";
+    pub const COINBASE: &str = "Coinbase";
+    pub const REPAYMENT_DOCUMENT: &str = "RpDoc";
     // Repayment doc
-    pub const RlDoc: &str = "RlDoc";
+    pub const RELEASE_DOCUMENT: &str = "RlDoc";
     // Release Reserved coins
-    pub const BasicTx: &str = "BasicTx";    // simple "m of n" trx
+    pub const BASIC_TX: &str = "BasicTx";
+    // simple "m of n" trx
+    pub const DATA_AND_PROCESS_COST_PAYMENT: &str = "DPCostPay";
 
     // mimblewimble transactions
-    pub const MWIngress: &str = "MWIngress";
+    pub const MW_INGRESS: &str = "MWIngress";
     // move PAIs from basic transaction to a mimble transaction
-    pub const MWTx: &str = "MWIngress";
+    pub const MW_TX: &str = "MWTx";
     // a mimble transaction
-    pub const MWEgress: &str = "MWEgress";    // move back PAIs from a mimble transaction to a basic transaction
+    pub const MW_EGRESS: &str = "MWEgress";    // move back PAIs from a mimble transaction to a basic transaction
 
     // ZKP zk-snarks transactions
-    pub const ZKIngress: &str = "MWIngress";
-    // move PAIs from basic transaction to a Zero Knowladge Proof transaction
-    pub const ZKTx: &str = "MWIngress";
-    // a Zero Knowladge Proof transaction
-    pub const ZKEgress: &str = "MWEgress";    // move back PAIs from a Zero Knowladge Proof transaction to a basic transaction
+    pub const ZK_INGRESS: &str = "ZKIngress";
+    // move PAIs from basic transaction to a Zero Knowledge Proof transaction
+    pub const ZK_TX: &str = "ZKTx";
+    // a Zero Knowledge Proof transaction
+    pub const ZK_EGRESS: &str = "ZKEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
     // confidential trx Monero-like
-    pub const MNIngress: &str = "MWIngress";
-    // move PAIs from basic transaction to a Zero Knowladge Proof transaction
-    pub const MNTx: &str = "MWIngress";
-    // a Zero Knowladge Proof transaction
-    pub const MNEgress: &str = "MWEgress";    // move back PAIs from a Zero Knowladge Proof transaction to a basic transaction
+    pub const MN_INGRESS: &str = "MNIngress";
+    // move PAIs from basic transaction to a Zero Knowledge Proof transaction
+    pub const MN_TX: &str = "MNTx";
+    // a Zero Knowledge Proof transaction
+    pub const MN_EGRESS: &str = "MNEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
     // RGB (colored coins) Transactions
-    pub const RGBIngress: &str = "MWIngress";
-    // move PAIs from basic transaction to a Zero Knowladge Proof transaction
-    pub const RGBTx: &str = "MWIngress";
-    // a Zero Knowladge Proof transaction
-    pub const RGBEgress: &str = "MWEgress";    // move back PAIs from a Zero Knowladge Proof transaction to a basic transaction
+    pub const RGB_INGRESS: &str = "RGBIngress";
+    // move PAIs from basic transaction to a Zero Knowledge Proof transaction
+    pub const RGB_TX: &str = "RGBTx";
+    // a Zero Knowledge Proof transaction
+    pub const RGB_EGRESS: &str = "RGBEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
 
-    pub const DPCostPay: &str = "DPCostPay";
+    pub const PROPOSAL: &str = "Proposal";
 
-    pub const DNAProposal: &str = "DNAProposal";
+    pub const ADMINISTRATIVE_POLLING: &str = "AdmPolling";
+    // pub const ReqForRelRes: &str = "ReqForRelRes";    // remove it to AdmPolling
 
-    pub const AdmPolling: &str = "AdmPolling";
-    pub const ReqForRelRes: &str = "ReqForRelRes";    // remove it to AdmPolling
+    pub const PLEDGE: &str = "Pledge";
+    pub const CLOSE_PLEDGE: &str = "ClosePledge";
 
+    pub const POLLING: &str = "Polling";
+    pub const BALLOT: &str = "Ballot";
 
-    pub const Pledge: &str = "Pledge";
-    pub const ClosePledge: &str = "ClosePledge";
+    pub const FREE_POST: &str = "FPost"; // Custom Posts (files, Agora posts, wiki pages...)
 
-    pub const Polling: &str = "Polling";
-    pub const Ballot: &str = "Ballot";
-
-    pub const FPost: &str = "FPost"; // Custom Posts (files, Agora posts, wiki pages...)
-
-    pub const INameReg: &str = "INameReg";
+    pub const I_NAME_REGISTER: &str = "INameReg";
     // Flens: imagine flexible & largly extensible name service
-    pub const INameBind: &str = "INameBind";
+    pub const I_NAME_BIND: &str = "INameBind";
     // binds a iPGP(later GNU GPG) to an iName
-    pub const INameMsgTo: &str = "INameMsgTo"; // general message to a registered iName
+    pub const I_NAME_MESSAGE_TO: &str = "INameMsgTo"; // general message to a registered iName
+
+    pub const CALL_OPTION: &str = "CallOption";
+    pub const PUT_OPTION: &str = "PutOptions";
+
+    pub const CUSTOM_DOCUMENT: &str = "customDoc"; // custom usages
 }
 
 // message parsing settings
-pub const MAX_PARSE_ATTEMPS_COUNT: u8 = 5; // parse message tentative
+pub const MAX_PARSE_ATTEMPTS_COUNT: u8 = 5; // parse message tentative
 
 /*
 pub const NO_EXT_HASH = "NEH";
@@ -364,40 +369,6 @@ pub const Trx = "Trx";     // collision on spending a coin in some transactions
 pub const FleNS = "FleNS"; // collision on registring an iName
 }
 */
-
-pub mod document_types {
-    pub const Coinbase: &str = "Coinbase";
-    pub const RpDoc: &str = "RpDoc";
-    // Repayment doc
-    pub const BasicTx: &str = "BasicTx";    // simple "m of n" trx
-
-    pub const DPCostPay: &str = "DPCostPay";
-
-    pub const DNAProposal: &str = "DNAProposal";
-
-    pub const AdmPolling: &str = "AdmPolling";
-// ReqForRelRes : &str = "ReqForRelRes";    remove it to AdmPolling
-
-
-    pub const Pledge: &str = "Pledge";
-    pub const ClosePledge: &str = "ClosePledge";
-
-    pub const Polling: &str = "Polling";
-    pub const Ballot: &str = "Ballot";
-
-    pub const INameReg: &str = "INameReg";
-    // Flens: imagine flexible & largly extensible name service
-    pub const INameBind: &str = "INameBind";
-    // binds a iPGP(later GNU GPG) to an iName
-    pub const INameMsgTo: &str = "INameMsgTo"; // general message to a registered iName
-
-
-    pub const CallOption: &str = "CallOption";
-    pub const PutOptions: &str = "PutOptions";
-
-
-    pub const customDoc: &str = "customDoc"; // custom usages
-}
 
 /*
 
@@ -446,31 +417,31 @@ pub const YesDomain = "YesDomain";      // TODO: after implementing a method to 
 */
 pub mod message_tags
 {
-    pub const senderStartTag: &str = "---START_SENDER_TAG---";
-    pub const senderEndTag: &str = "---END_SENDER_TAG---";
-    pub const receiverStartTag: &str = "---START_RECEIVER_TAG---";
-    pub const receiverEndTag: &str = "---END_RECEIVER_TAG---";
-    pub const hashStartTag: &str = "---START_HASH_TAG---";
-    pub const hashEndTag: &str = "---END_HASH_TAG---";
+    pub const SENDER_START_TAG: &str = "---SENDER_START_TAG---";
+    pub const SENDER_END_TAG: &str = "---SENDER_END_TAG---";
+    pub const RECEIVE_START_TAG: &str = "---RECEIVER_START_TAG---";
+    pub const RECEIVE_END_TAG: &str = "---RECEIVER_END_TAG---";
+    pub const HASH_START_TAG: &str = "---HASH_START_TAG---";
+    pub const HASH_END_TAG: &str = "---HASH_END_TAG---";
 
-    pub const customEnvelopeTag: &str = "CUSTOM ENVELOPE";
-    pub const customStartEnvelope: &str = "-----START_CUSTOM_ENVELOPE-----";
-    pub const customEndEnvelope: &str = "-----END_CUSTOM_ENVELOPE-----";
+    pub const ENVELOPE_CUSTOM_TAG: &str = "CUSTOM ENVELOPE";
+    pub const ENVELOPE_CUSTOM_START: &str = "-----ENVELOPE_CUSTOM_START-----";
+    pub const ENVELOPE_CUSTOM_END: &str = "-----ENVELOPE_CUSTOM_END-----";
     pub const NO_ENCRYPTION: &str = "NO-ENCRYPTION";
 
-    pub const iPGPStartEnvelope: &str = "-----START_iPGP_ENVELOPE-----";
-    pub const iPGPEndEnvelope: &str = "-----END_iPGP_ENVELOPE-----";
+    pub const ENVELOPE_I_PGP_START: &str = "-----ENVELOPE_I_PGP_START-----";
+    pub const ENVELOPE_I_PGP_END: &str = "-----ENVELOPE_I_PGP_END-----";
 
-    pub const iPGPStartLineBreak: &str = "(";
-    pub const iPGPEndLineBreak: &str = ")\n\r<br>";
+    pub const I_PGP_START_LINEBREAK: &str = "(";
+    pub const I_PGP_END_LINEBREAK: &str = ")\n\r<br>";
 }
 
 pub mod polling_ref_types
 {
-    pub const Proposal: &str = "Proposal";
-    pub const ReqForRelRes: &str = "ReqForRelRes";
+    pub const PROPOSAL: &str = "Proposal";
+    pub const REQ_FOR_REL_RES: &str = "ReqForRelRes";
     // Request For release Reserved
-    pub const AdmPolling: &str = "AdmPolling";
+    pub const ADMINISTRATIVE_POOLING: &str = "AdmPolling";
 }
 
 pub mod pledge_classes
@@ -482,7 +453,7 @@ pub mod pledge_classes
 // by activating field "applyableAfter" the contract can be realy closed after certain minute of concluding it.
 // e.g. customer must use atleast 3 month of service(in order to get discount)
 // TODO: implement it since it cost couple of hours to implementing
-    pub const PledgeSA: &str = "PledgeSA";
+    pub const PLEDGE_SA: &str = "PledgeSA";
 
     // pledge class P is designated to pledge an account in order to getting loan to apply proposal for voting.
 // in return if proposal accepted by community part of incomes will repayed to loaner untile get paid all loan+interest
@@ -491,26 +462,26 @@ pub mod pledge_classes
 // 2. pledgee, sign and accepts pledging and publish all proposal, pledge-contract and payment-transaction at once in one block
 // 3. arbiter, in case of existance, the arbiters sign pledge-contract and they publish ALL 3(proposal, pledge-contract and payment-transaction),
 //    surely by arbiters signature(arbiterSignsPledge) the pledge hash will be changed.
-    pub const PledgeP: &str = "PledgeP";
+    pub const PLEDGE_P: &str = "PledgeP";
 
     // Zero-Knowledge Proof implementation of PledgeP TODO: implement it
-    pub const PledgePZKP: &str = "PledgePZKP";
+    pub const PLEDGE_PZKP: &str = "PledgePZKP";
 
 
     // gneric pledge in which pledger can pledge an address(either has sufficent income from DNA or not) and get a loan
 // and by time payback the loan to same account
 // of course there is no garanty to payback PAIs excep reputation of pledger or her bussiness account which is pledged
 // TODO: implement it ASAP
-    pub const PledgeG: &str = "PledgeG";
+    pub const PLEDGE_G: &str = "PledgeG";
 
 
     // lending PAIs by pledging an account with sufficent income
 // TODO: implement it ASAP
-    pub const PledgeL: &str = "PledgeL";
+    pub const PLEDGE_L: &str = "PledgeL";
 }
 
 
-pub const PLDEGE_ACTIVATE_OR_DEACTIVATE_MATURATION_CYCLE_COUNT: u8 = 2;
+pub const PLEDGE_ACTIVATE_OR_DEACTIVATE_MATURATION_CYCLE_COUNT: u8 = 2;
 
 /*
 // there are 3 ways to unpledge an account
@@ -570,8 +541,8 @@ pub mod card_types
 {
     // simple cards
     pub const HANDSHAKE: &str = "handshake";
-    pub const NICETOMEETYOU: &str = "niceToMeetYou";
-    pub const HEREISNEWNEIGHBOR: &str = "hereIsNewNeighbor";
+    pub const NICE_TO_MEET_YOU: &str = "niceToMeetYou";
+    pub const HERE_IS_NEW_NEIGHBOR: &str = "hereIsNewNeighbor";
 
     // TODO: move these commands to GQL format
     pub const DAG_INVOKE_LEAVES: &str = "dagInvokeLeaves";
@@ -580,15 +551,15 @@ pub mod card_types
     pub const DAG_INVOKE_DESCENDENTS: &str = "dagInvokeDescendents";
 
     // complicated cards
-    pub const ProposalLoanRequest: &str = "ProposalLoanRequest";
-    pub const FullDAGDownloadRequest: &str = "FullDAGDownloadRequest";
-    pub const FullDAGDownloadResponse: &str = "FullDAGDownloadResponse";
-    pub const BallotsReceiveDates: &str = "BallotsReceiveDates";
-    pub const NodeStatusScreenshot: &str = "NodeStatusScreenshot";
-    pub const NodeStatusSnapshot: &str = "NodeStatusSnapshot";
+    pub const PROPOSAL_LOAN_REQUEST: &str = "ProposalLoanRequest";
+    pub const FULL_DAG_DOWNLOAD_REQUEST: &str = "FullDAGDownloadRequest";
+    pub const FULL_DAG_DOWNLOAD_RESPONSE: &str = "FullDAGDownloadResponse";
+    pub const BALLOTS_RECEIVE_DATES: &str = "BallotsReceiveDates";
+    pub const NODE_STATUS_SCREENSHOT: &str = "NodeStatusScreenshot";
+    pub const NODE_STATUS_SNAPSHOT: &str = "NodeStatusSnapshot";
 
-    pub const pleaseRemoveMeFromYourNeighbors: &str = "pleaseRemoveMeFromYourNeighbors";
-    pub const directMsgToNeighbor: &str = "directMsgToNeighbor";
+    pub const PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS: &str = "pleaseRemoveMeFromYourNeighbors";
+    pub const DIRECT_MESSAGE_TO_NEIGHBOR: &str = "directMsgToNeighbor";
 }
 
 pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";
@@ -610,4 +581,4 @@ pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6
 // in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
 pub(crate) const TIME_GAIN: u32 = 10;
 
-pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-21 07:20:00";
+pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-21 15:30:00";

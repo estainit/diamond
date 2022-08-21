@@ -54,7 +54,7 @@ pub fn dump_hashmap_of_str(s: &HashMap<&str, &str>) -> String {
     return out;
 }
 
-pub fn dump_hashmap_of_QVDRecordsT(s: &QVDRecordsT) -> String {
+pub fn dump_hashmap_of_qvd_records(s: &QVDRecordsT) -> String {
     let prefix_tabs = constants::TAB;
 
     let mut out: String = "".to_string();

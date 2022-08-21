@@ -1224,7 +1224,6 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = USER_PRIVATE_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
-                    println!("OOOOOOO xx self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
 
                     if user_and_hu_are_neighbor
                     {
@@ -1250,7 +1249,6 @@ impl CMachine {
                         cutils::get_now());
 
                     self.save_settings();
-                    println!("OOOOOOO yy self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
                 } else if clone_id == 1
                 {
                     // set profile as hu@imagine.com
@@ -1282,7 +1280,6 @@ impl CMachine {
                         NeighborInfo::new(),
                         cutils::get_now());
 
-                    println!("OOOOOOO1 self.m_profile.m_mp_settings.m_public_email.m_address: {}", self.m_profile.m_mp_settings.m_public_email.m_address);
 
                     self.save_settings();
                 } else if self.m_clone_id == 2

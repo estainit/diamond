@@ -6,7 +6,8 @@ use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::C_BLOCKS;
 
-pub fn appendDescendents(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
+//old_name_was appendDescendents
+pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
 {
     if new_descendents.len() > 0
     {
@@ -518,14 +519,14 @@ std::vector<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoin
       Document* doc = block.m_documents[doc_index];
       if (doc->docHasOutput())
       {
-        for (COutputIndexT output_index = 0; output_index < doc->getOutputs().len(); output_index++)
+        for (COutputIndexT output_index = 0; output_index < doc->get_outputs().len(); output_index++)
         {
           CCoinCodeT tmp_coin = cutils::packCoinCode(doc->get_doc_hash(), output_index);
           if (tmp_coin == the_coin)
             results.emplace_back(CCoin(
               the_coin,
-              doc->getOutputs()[output_index].m_address,
-              doc->getOutputs()[output_index].m_amount,
+              doc->get_outputs()[output_index].m_address,
+              doc->get_outputs()[output_index].m_amount,
 
               block.m_block_creation_date,
 
@@ -547,7 +548,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_utxo_imported", constants::NO},
     {"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}, "NOT IN"},
-    {"b_type", StringList{constants::BLOCK_TYPES::Coinbase}, "IN"}});
+    {"b_type", StringList{constants::block_types::COINBASE}, "IN"}});
 
   CMPAIValueT sum = 0;
   QVDRecordsT processed_outputs {};
@@ -559,7 +560,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
     if (calculated_coinbase.contains(block["bCycle"].to_string()))
       continue;
 
-    if (block["bType"].to_string() == constants::BLOCK_TYPES::Coinbase)
+    if (block["bType"].to_string() == constants::block_types::COINBASE)
         calculated_coinbase.push(block["bCycle"].to_string());
 
     // analyze outputs
@@ -611,7 +612,7 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
     for (auto doc_: block["docs"].toArray())
     {
       auto doc = doc_.toObject();
-      if (!StringList{constants::DOC_TYPES::BasicTx}.contains(doc["dType"].to_string()))
+      if (!StringList{constants::document_types::BASIC_TX}.contains(doc["dType"].to_string()))
         continue;
 
       // since DPCostPay docs alredy are in transactions , so we do not calculate it 2 times
@@ -698,7 +699,7 @@ std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlo
   StringList considered_cycles {};
 
   QVDRecordsT wBlocks = searchInDAG(
-    {{"b_type", constants::BLOCK_TYPES::Coinbase}},
+    {{"b_type", constants::block_types::COINBASE}},
     {"b_cycle", "b_body", "b_utxo_imported"},
     {{"b_creation_date", "ASC"}});
 
@@ -796,7 +797,8 @@ QVDicT DAG::getLatestRecordedBlcok()
  *
  */
  */
-pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
+//old_name_was getMostConfidenceCoinbaseBlockFromDAG
+pub fn get_most_confidence_coinbase_block_from_dag(c_date: &CDateT) -> (bool, QVDicT)
 {
     // if (c_date == "")
     //   c_date = cutils::get_now();
@@ -812,7 +814,7 @@ pub fn getMostConfidenceCoinbaseBlockFromDAG(c_date: &CDateT) -> (bool, QVDicT)
 
     let current_coinbases_in_dag: QVDRecordsT = search_in_dag(
         vec![
-            simple_eq_clause("b_type", &constants::block_types::Coinbase.to_string()),
+            simple_eq_clause("b_type", &constants::block_types::COINBASE.to_string()),
             ModelClause {
                 m_field_name: "b_creation_date",
                 m_field_single_str_value: &coinbase_from as &(dyn ToSql + Sync),

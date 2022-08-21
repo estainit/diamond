@@ -848,7 +848,7 @@ std::tuple<bool, String, PollingDocument*> prepareNewPolling(
   polling_doc->setDocLength();
   polling_doc->setDocHash();
 
-  CLog::log("prepared polling request: " + polling_doc->safeStringifyDoc(true), "app", "info");
+  CLog::log("prepared polling request: " + polling_doc->safe_stringify_doc(true), "app", "info");
 
   return {true, "", polling_doc};
 }
@@ -939,7 +939,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   adm_polling_doc->setDocLength();
   adm_polling_doc->setDocHash();
 
-  CLog::log("prepared adm-polling request: " + adm_polling_doc->safeStringifyDoc(true), "app", "info");
+  CLog::log("prepared adm-polling request: " + adm_polling_doc->safe_stringify_doc(true), "app", "info");
 
   // 2. create a administrative-polling for block release
   auto [polling_status, polling_msg, polling_doc] = prepareNewPolling(
@@ -999,7 +999,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   if (!tx_status)
     return {false, res_msg1};
 
-  CLog::log("Signed trx for adm-polling cost: " + adm_polling_payer_trx->safeStringifyDoc(true), "app", "info");
+  CLog::log("Signed trx for adm-polling cost: " + adm_polling_payer_trx->safe_stringify_doc(true), "app", "info");
 
   // mark UTXOs as used in local machine
   Wallet::locallyMarkUTXOAsUsed(adm_polling_payer_trx);
@@ -1048,7 +1048,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   if (!tx_status2)
     return {false, res_msg2};
 
-  CLog::log("Signed trx for polling cost: " + polling_payer_trx->safeStringifyDoc(true), "app", "info");
+  CLog::log("Signed trx for polling cost: " + polling_payer_trx->safe_stringify_doc(true), "app", "info");
 
   // mark UTXOs as used in local machine
   Wallet::locallyMarkUTXOAsUsed(polling_payer_trx);

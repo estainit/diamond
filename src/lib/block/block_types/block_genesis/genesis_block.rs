@@ -10,18 +10,19 @@ pub mod b_genesis {
     use crate::lib::services::dna::dna_handler::insert_a_share;
     use crate::lib::services::polling::polling_handler::update_polling;
 
-    pub fn initGenesisBlock(machine: &mut CMachine) -> (bool, String)
+    //old_name_was initGenesisBlock
+    pub fn init_genesis_block(machine: &mut CMachine) -> (bool, String)
     {
         let mut block: Block = Block::new();
         block.m_block_ancestors = vec![",".to_string()];
-        block.m_block_type = constants::block_types::Genesis.to_string();
+        block.m_block_type = constants::block_types::GENESIS.to_string();
         block.m_block_creation_date = machine.get_launch_date();
 
         let mut doc = Document::new();
         let proposal_creation_date: CDateT = cutils::minutes_before(
             (cutils::get_cycle_by_minutes() * 2) as u64,
             &machine.get_launch_date());
-        doc.m_doc_type = constants::document_types::DNAProposal.to_string();
+        doc.m_doc_type = constants::document_types::PROPOSAL.to_string();
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
         doc.m_doc_tags = "initialize, DNA".to_string();
@@ -48,7 +49,7 @@ pub mod b_genesis {
         block.m_block_hash = block.calc_block_hash();//"7a2e58190452d3764afd690ffd13a1360193fdf30f932fc1b2572e834b72c291";
         block.m_block_backer = constants::HU_DNA_SHARE_ADDRESS.to_string();
 
-        let (status, msg) = block.addBlockToDAG(machine);
+        let (status, msg) = block.add_block_to_dag(machine);
         if !status
         {
             let msg = format!("Failed in add genesis block to DAG. {}", msg);
@@ -61,7 +62,7 @@ pub mod b_genesis {
         }
 
         // set initial shares
-        return initShares(machine, &block);
+        return init_shares(machine, &block);
     }
 
     /*
@@ -72,16 +73,17 @@ pub mod b_genesis {
     }
 
 */
-    pub fn genesis_setByJsonObj(block: &mut Block, obj: &JSonObject) -> bool
+    pub fn genesis_set_by_json_obj(block: &mut Block, obj: &JSonObject) -> bool
     {
         // custom settings for Genesis block
-        block.m_block_type = constants::block_types::Genesis.to_string();
+        block.m_block_type = constants::block_types::GENESIS.to_string();
         return true;
     }
 
-    pub fn initShares(machine: &CMachine, block: &Block) -> (bool, String)
+    //old_name_was initShares
+    pub fn init_shares(machine: &CMachine, block: &Block) -> (bool, String)
     {
-        let startVotingDate: String = cutils::minutes_before(
+        let start_voting_date: String = cutils::minutes_before(
             (5 * cutils::get_cycle_by_minutes()) as u64,
             &machine.get_launch_date());
 
@@ -92,7 +94,7 @@ pub mod b_genesis {
         let conclude_date = machine.get_launch_date();
         let pr_approved = constants::YES.to_string();
         let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
-            ("pr_start_voting_date", &startVotingDate as &(dyn ToSql + Sync)),
+            ("pr_start_voting_date", &start_voting_date as &(dyn ToSql + Sync)),
             ("pr_conclude_date", &conclude_date as &(dyn ToSql + Sync)),
             ("pr_approved", &pr_approved as &(dyn ToSql + Sync)),
         ]);
@@ -106,16 +108,16 @@ pub mod b_genesis {
         // conclude the polling
         let pll_end_date = cutils::minutes_after(
             36 * 60,
-            &startVotingDate.clone());
-        let pollingUpdValues: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
-            ("pll_start_date", &startVotingDate as &(dyn ToSql + Sync)),
+            &start_voting_date.clone());
+        let polling_upd_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("pll_start_date", &start_voting_date as &(dyn ToSql + Sync)),
             ("pll_end_date", &pll_end_date as &(dyn ToSql + Sync)),
             ("pll_status", &constants::CLOSE as &(dyn ToSql + Sync)),
             ("pll_ct_done", &constants::YES as &(dyn ToSql + Sync)),
         ]);
         let c1 = simple_eq_clause("pll_ref", &proposal_hash);
         update_polling(
-            &pollingUpdValues,
+            &polling_upd_values,
             vec![c1],
             false);
 
@@ -124,15 +126,15 @@ pub mod b_genesis {
     }
 
     /*
-    JSonObject GenesisBlock::exportBlockToJSon(const bool ext_info_in_document) const
+    JSonObject GenesisBlock::export_block_to_json(const bool ext_info_in_document) const
     {
-      JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
+      JSonObject block = Block::export_block_to_json(ext_info_in_document);
       return block;
         }
 
-    String GenesisBlock::safeStringifyBlock(const bool ext_info_in_document) const
+    String GenesisBlock::safe_stringify_block(const bool ext_info_in_document) const
     {
-      JSonObject block = exportBlockToJSon(ext_info_in_document);
+      JSonObject block = export_block_to_json(ext_info_in_document);
 
       // recaluculate block final length
       String tmp_stringified = cutils::serializeJson(block);

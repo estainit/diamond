@@ -32,12 +32,12 @@ class FloatingSignatureBlock : public Block
 
 FloatingSignatureBlock::FloatingSignatureBlock(const JSonObject& obj)
 {
-  setByJsonObj(obj);
+  set_by_json_obj(obj);
 }
 
-bool FloatingSignatureBlock::setByJsonObj(const JSonObject& obj)
+bool FloatingSignatureBlock::set_by_json_obj(const JSonObject& obj)
 {
-  Block::setByJsonObj(obj);
+  Block::set_by_json_obj(obj);
 
   // drived class assignings
   m_fsign_ext_info = FSignExtInfo {
@@ -135,7 +135,7 @@ std::tuple<bool, bool> FloatingSignatureBlock::handleReceivedBlock() const
     bool pushRes = SendingQHandler::pushIntoSendingQ(
       m_block_type,
       m_block_hash,
-      safeStringifyBlock(false),
+      safe_stringify_block(false),
       "Broadcasting the confirmed FS block(" + cutils::hash8c(m_block_hash) + ") in current cycle(" + m_cycle + ")");
 
     CLog::log("FS pushRes(" + cutils::dumpIt(pushRes) + ")");
@@ -146,9 +146,9 @@ std::tuple<bool, bool> FloatingSignatureBlock::handleReceivedBlock() const
 
 }
 
-JSonObject FloatingSignatureBlock::exportBlockToJSon(const bool ext_info_in_document) const
+JSonObject FloatingSignatureBlock::export_block_to_json(const bool ext_info_in_document) const
 {
-  JSonObject block = Block::exportBlockToJSon(ext_info_in_document);
+  JSonObject block = Block::export_block_to_json(ext_info_in_document);
 
   block.remove("docs");
   block.remove("fVotes");
@@ -174,18 +174,19 @@ use crate::{constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, DoubleDicT, QVDRecordsT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
-use crate::lib::utils::dumper::dump_hashmap_of_QVDRecordsT;
+use crate::lib::utils::dumper::dump_hashmap_of_qvd_records;
 
-pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<String>)
+//old_name_was aggrigateFloatingSignatures
+pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<String>)
 {
     // retrieve prev cycle info
     if cutils::get_now() > cutils::get_coinbase_range(&machine().get_launch_date()).to {
         let (cycle_stamp, from_t, _to, _from_hour, _to_hour) = cutils::get_prev_coinbase_info(c_date);
 
         // retrieve prev cycle coinbases
-        let prvCoinbaseBlocks: QVDRecordsT = search_in_dag(
+        let prv_coinbase_blocks: QVDRecordsT = search_in_dag(
             vec![
-                simple_eq_clause("b_type", &constants::block_types::Coinbase.to_string()),
+                simple_eq_clause("b_type", &constants::block_types::COINBASE.to_string()),
                 simple_eq_clause("b_cycle", &cycle_stamp),
                 ModelClause {
                     m_field_name: "b_creation_date",
@@ -203,13 +204,13 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
             true,
         );
         dlog(
-            &format!("prvCoinbaseBlocks: {}", dump_hashmap_of_QVDRecordsT(&prvCoinbaseBlocks)),
+            &format!("prvCoinbaseBlocks: {}", dump_hashmap_of_qvd_records(&prv_coinbase_blocks)),
             constants::Modules::CB,
             constants::SecLevel::Trace);
-        let mut prvCoinbaseBlocks_: Vec<String> = vec![];
-        for a_row in prvCoinbaseBlocks
+        let mut prv_coinbase_blocks_: Vec<String> = vec![];
+        for a_row in prv_coinbase_blocks
         {
-            prvCoinbaseBlocks_.push(a_row["b_hash"].to_string());
+            prv_coinbase_blocks_.push(a_row["b_hash"].to_string());
         }
 
         // retrieve all floating signature blocks which are created in prev cycle
@@ -218,9 +219,9 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
             constants::Modules::CB,
             constants::SecLevel::Trace);
 
-        let fSWBlocks: QVDRecordsT = search_in_dag(
+        let f_s_w_blocks: QVDRecordsT = search_in_dag(
             vec![
-                simple_eq_clause("b_type", &constants::block_types::FSign.to_string()),
+                simple_eq_clause("b_type", &constants::block_types::FLOATING_SIGNATURE.to_string()),
                 simple_eq_clause("b_cycle", &cycle_stamp),
                 ModelClause {
                     m_field_name: "b_creation_date",
@@ -236,13 +237,13 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
             0,
             true);
 
-        let mut blockHashes: Vec<String> = vec![];
+        let mut block_hashes: Vec<String> = vec![];
         let mut backers: DoubleDicT = HashMap::new();
-        for fSWBlock in fSWBlocks
+        for a_fS_w_block in f_s_w_blocks
         {
             // drop float if it is not linked to proper coinbase block
             let mut is_linked_to_propoer_cb: bool = false;
-            let tmpAncs: Vec<String> = fSWBlock["b_ncestors"]
+            let tmp_ancestors: Vec<String> = a_fS_w_block["b_ncestors"]
                 .to_string()
                 .split(",")
                 .collect::<Vec<&str>>()
@@ -250,9 +251,9 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
                 .map(|&x| x.to_string())
                 .collect::<Vec<String>>();
 
-            for anAnc in tmpAncs
+            for an_ancestor in tmp_ancestors
             {
-                if prvCoinbaseBlocks_.contains(&anAnc)
+                if prv_coinbase_blocks_.contains(&an_ancestor)
                 {
                     is_linked_to_propoer_cb = true;
                 }
@@ -262,8 +263,8 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
                 continue;
             }
 
-            backers.insert(fSWBlock["b_backer"].to_string(), fSWBlock["b_confidence"].parse::<f64>().unwrap());
-            blockHashes.push(fSWBlock["b_hash"].to_string());
+            backers.insert(a_fS_w_block["b_backer"].to_string(), a_fS_w_block["b_confidence"].parse::<f64>().unwrap());
+            block_hashes.push(a_fS_w_block["b_hash"].to_string());
         }
         let mut confidence: f64 = 0.0;
         for (_bckr, v) in &backers
@@ -274,13 +275,13 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
 
         return (
             confidence,
-            blockHashes,
+            block_hashes,
             backers.keys().cloned().collect::<Vec<String>>()
         );
     } else {
         // machine is in init cycle, so there is no floating signture
         let genesis: QVDRecordsT = search_in_dag(
-            vec![simple_eq_clause("b_type", &constants::block_types::Genesis.to_string())],
+            vec![simple_eq_clause("b_type", &constants::block_types::GENESIS.to_string())],
             vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],
             vec![
                 &OrderModifier { m_field: "b_confidence", m_order: "DESC" },
@@ -298,9 +299,9 @@ pub fn aggrigateFloatingSignatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<St
 }
 /*
 
-String FloatingSignatureBlock::safeStringifyBlock(const bool ext_info_in_document) const
+String FloatingSignatureBlock::safe_stringify_block(const bool ext_info_in_document) const
 {
-  JSonObject block = exportBlockToJSon(ext_info_in_document);
+  JSonObject block = export_block_to_json(ext_info_in_document);
 
   // maybe remove add some item in object
   if (m_block_descriptions == "")
@@ -322,7 +323,7 @@ bool FloatingSignatureBlock::createDocuments(const QJsonValue& documents)
 }
 
 
-String FloatingSignatureBlock::stringifyBExtInfo() const
+String FloatingSignatureBlock::stringify_block_ext_info() const
 {
   JSonArray block_ext_info {m_block_ext_info[0].toObject()};
   String out = cutils::serializeJson(block_ext_info);

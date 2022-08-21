@@ -5,7 +5,7 @@ use crate::cutils::remove_quotes;
 use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{ClausesT, JSonObject, VString};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::dag::dag_walk_through::getCachedBlocksHashes;
+use crate::lib::dag::dag_walk_through::get_cached_blocks_hashes;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{CDEV_PARSING_Q, C_PARSING_Q};
 
@@ -80,7 +80,7 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
 
   if (StringList {constants::BLOCK_TYPES::Normal,
-  constants::BLOCK_TYPES::Coinbase,
+  constants::block_types::COINBASE,
   constants::BLOCK_TYPES::FSign,
   constants::BLOCK_TYPES::SusBlock,
   constants::BLOCK_TYPES::FVote,
@@ -313,7 +313,7 @@ pub fn push_to_parsing_q(
             constants::SecLevel::Info);
 
         // remove if missed anc already exist in cache?
-        card_ancestors = cutils::array_diff(&card_ancestors, &getCachedBlocksHashes());
+        card_ancestors = cutils::array_diff(&card_ancestors, &get_cached_blocks_hashes());
 
         if card_ancestors.len() > 0
         {
@@ -354,7 +354,7 @@ pub fn push_to_parsing_q(
     // * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
     // * so depends on voting type(bCat) for, we need proper treatment
 
-    if remove_quotes(&card_j_obj["bType"].to_string()) == constants::block_types::FVote
+    if remove_quotes(&card_j_obj["bType"].to_string()) == constants::block_types::FLOATING_VOTE
     {
         /*
         if (message["bCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
@@ -426,10 +426,10 @@ pub fn push_to_parsing_q(
     }
 
 
-    rmoveFromParsingQ(vec![
+    rmove_from_parsing_q(vec![
         ModelClause {
             m_field_name: "pq_parse_attempts",
-            m_field_single_str_value: &constants::MAX_PARSE_ATTEMPS_COUNT.to_string(),
+            m_field_single_str_value: &constants::MAX_PARSE_ATTEMPTS_COUNT.to_string(),
             m_clause_operand: ">",
             m_field_multi_values: vec![],
         },
@@ -443,7 +443,7 @@ pub fn push_to_parsing_q(
     return (true, true);
 }
 
-pub fn rmoveFromParsingQ(clauses: ClausesT) -> bool
+pub fn rmove_from_parsing_q(clauses: ClausesT) -> bool
 {
     return q_delete(
         C_PARSING_Q,

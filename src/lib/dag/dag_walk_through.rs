@@ -12,14 +12,14 @@ use crate::lib::database::tables::C_BLOCKS_FIELDS;
 //old_name_was getLatestBlockRecord
 pub fn get_latest_block_record() -> (bool, Block)
 {
-    let last_recorded_bLock: QVDRecordsT = search_in_dag(
+    let last_recorded_block: QVDRecordsT = search_in_dag(
         vec![],
         C_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,
         true,
     );
-    if last_recorded_bLock.len() == 0 {
+    if last_recorded_block.len() == 0 {
         dlog(
             &format!("The DAG hasn't any node!"),
             constants::Modules::Sec,
@@ -29,7 +29,7 @@ pub fn get_latest_block_record() -> (bool, Block)
         return (false, b);
     }
 
-    return load_block_by_db_record(&last_recorded_bLock[0]);
+    return load_block_by_db_record(&last_recorded_block[0]);
 }
 
 /*
@@ -225,7 +225,7 @@ std::tuple<bool, QVDRecordsT, double> DAG::getAllDescendents(
 
 */
 
-pub fn refreshCachedBlocks() -> bool
+pub fn refresh_cached_blocks() -> bool
 {
     // auto[, cachedBlocks] = CMachine::cachedBlocks();
 
@@ -276,7 +276,7 @@ pub fn refreshCachedBlocks() -> bool
     return true;
 }
 
-pub fn updateCachedBlocks(
+pub fn update_cached_blocks(
     machine: &mut CMachine,
     b_type: &String,
     b_hash: &CBlockHashT,
@@ -295,15 +295,15 @@ pub fn updateCachedBlocks(
     return true;
 }
 
-pub fn loadCachedBlocks() -> QVDRecordsT
+pub fn load_cached_blocks() -> QVDRecordsT
 {
-    refreshCachedBlocks();
+    refresh_cached_blocks();
     machine().m_dag_cached_blocks.clone()
 }
 
-pub fn getCachedBlocksHashes() -> Vec<String>
+pub fn get_cached_blocks_hashes() -> Vec<String>
 {
-    refreshCachedBlocks();
+    refresh_cached_blocks();
     machine().m_dag_cached_block_hashes.clone()
 }
 

@@ -277,16 +277,16 @@ pub fn read_email_file() -> (bool, String, String, String, String)
     }
 
     if
-    content.contains(constants::message_tags::senderStartTag) &&
-        content.contains(constants::message_tags::senderEndTag) &&
-        content.contains(constants::message_tags::receiverStartTag) &&
-        content.contains(constants::message_tags::receiverEndTag) &&
-        content.contains(constants::message_tags::iPGPStartEnvelope) &&
-        content.contains(constants::message_tags::iPGPEndEnvelope)
+    content.contains(constants::message_tags::SENDER_START_TAG) &&
+        content.contains(constants::message_tags::SENDER_END_TAG) &&
+        content.contains(constants::message_tags::RECEIVE_START_TAG) &&
+        content.contains(constants::message_tags::RECEIVE_END_TAG) &&
+        content.contains(constants::message_tags::ENVELOPE_I_PGP_START) &&
+        content.contains(constants::message_tags::ENVELOPE_I_PGP_END)
     {
-        let sender: String = content.split(constants::message_tags::senderStartTag).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::senderEndTag).collect::<Vec<&str>>()[0].to_string();
-        let receiver: String = content.split(constants::message_tags::receiverStartTag).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::receiverEndTag).collect::<Vec<&str>>()[0].to_string();
-        let mut pure_content: String = content.split(constants::message_tags::iPGPStartEnvelope).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::iPGPEndEnvelope).collect::<Vec<&str>>()[0].to_string();
+        let sender: String = content.split(constants::message_tags::SENDER_START_TAG).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::SENDER_END_TAG).collect::<Vec<&str>>()[0].to_string();
+        let receiver: String = content.split(constants::message_tags::RECEIVE_START_TAG).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::RECEIVE_END_TAG).collect::<Vec<&str>>()[0].to_string();
+        let mut pure_content: String = content.split(constants::message_tags::ENVELOPE_I_PGP_START).collect::<Vec<&str>>()[1].to_string().split(constants::message_tags::ENVELOPE_I_PGP_END).collect::<Vec<&str>>()[0].to_string();
         if pure_content != ""
         {
             pure_content = cutils::strip_parentheses_as_break_line(pure_content);

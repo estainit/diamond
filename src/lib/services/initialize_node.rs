@@ -1,5 +1,5 @@
 use crate::{CMachine, constants};
-use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::initGenesisBlock;
+use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::init_genesis_block;
 use crate::lib::database::abs_psql::{OrderModifier, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_BLOCKS;
 use crate::lib::k_v_handler::set_value;
@@ -15,7 +15,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
         C_BLOCKS,
         vec!["b_id", "b_hash"],     // fields
         vec![
-            simple_eq_clause( "b_type", &constants::block_types::Genesis.to_string())],
+            simple_eq_clause( "b_type", &constants::block_types::GENESIS.to_string())],
         vec![
             &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
             &OrderModifier { m_field: "b_id", m_order: "ASC" },
@@ -30,7 +30,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 
 
     // create Genisis Block
-    initGenesisBlock(machine);
+    init_genesis_block(machine);
 
     // init Administrative Configurations History
     init_administrative_configurations_history(machine);
@@ -48,11 +48,11 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 
     // initialize wiki pages
 
-    return doesSafelyInitialized(machine);
+    return does_safely_initialized(machine);
 }
 
 
-pub fn doesSafelyInitialized(machine: &mut CMachine) -> bool
+pub fn does_safely_initialized(machine: &mut CMachine) -> bool
 {
     // TODO implement it to controll if all intial document are inserted properly?
 

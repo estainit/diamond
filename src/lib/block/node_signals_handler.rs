@@ -1,6 +1,7 @@
 use crate::lib::block::block_types::block::Block;
 
-pub fn logSignals(block:&Block)
+//old_name_was logSignals
+pub fn log_signals(block:&Block)
 {
     /*
   for (QJsonValue aSignal_ : block.m_signals)

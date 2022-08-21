@@ -11,7 +11,7 @@ use crate::lib::network::network_handler::i_push;
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 use crate::lib::pgp::cpgp::{wrap_pgp_envelope};
 use crate::lib::pgp::cpgp_encrypt::pgp_encrypt;
-use crate::lib::utils::dumper::{dump_hashmap_of_QVDRecordsT, dump_it};
+use crate::lib::utils::dumper::{dump_hashmap_of_qvd_records, dump_it};
 
 //old_name_was preparePacketsForNeighbors
 pub fn prepare_packets_for_neighbors(
@@ -78,7 +78,7 @@ pub fn prepare_packets_for_neighbors(
         neighbors = selected_neighbors;
     }
     dlog(
-        &format!("Final Selected Neighbors= {}", dump_hashmap_of_QVDRecordsT(&neighbors)),
+        &format!("Final Selected Neighbors= {}", dump_hashmap_of_qvd_records(&neighbors)),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -351,7 +351,7 @@ pub fn maybe_cancel_ivoke_blocks_request()
     for a_hash in &hashes {
         c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
     }
-    let existed_in_DAG: QVDRecordsT = search_in_dag(
+    let existed_in_dag: QVDRecordsT = search_in_dag(
         vec![c1],
         vec!["b_hash"],
         vec![],
@@ -359,11 +359,11 @@ pub fn maybe_cancel_ivoke_blocks_request()
         false,
     );
     dlog(
-        &format!("Potentially block invoke but existed In DAG({})", existed_in_DAG.len()),
+        &format!("Potentially block invoke but existed In DAG({})", existed_in_dag.len()),
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    for a_block in existed_in_DAG
+    for a_block in existed_in_dag
     {
         cancel_ivoke_block_request(&a_block["b_hash"].to_string());
     }

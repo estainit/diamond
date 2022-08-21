@@ -36,7 +36,7 @@ pub fn load_block(obj: &JSonObject) -> (bool, Block)
 
 {
     let mut block: Block = Block::new();
-    let status = block.setByJsonObj(obj);
+    let status = block.set_by_json_obj(obj);
     if !status {
         println!("Failed in set block by JSON obj: {}", serde_json::to_string(&obj).unwrap());
 
@@ -60,7 +60,7 @@ Block* BlockFactory::create(const JSonObject &obj)
     return new NormalBlock(obj);
 
   }
-  else if (block_type == constants::BLOCK_TYPES::Coinbase)
+  else if (block_type == constants::block_types::COINBASE)
   {
     Block *b{new CoinbaseBlock(obj)};
     return b;

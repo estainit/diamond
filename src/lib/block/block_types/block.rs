@@ -5,15 +5,15 @@ use serde::{Serialize, Deserialize};
 use crate::{CMachine, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
-use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_setByJsonObj};
+use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_set_by_json_obj};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::block::node_signals_handler::logSignals;
+use crate::lib::block::node_signals_handler::log_signals;
 use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT};
-use crate::lib::dag::dag::appendDescendents;
-use crate::lib::dag::dag_walk_through::updateCachedBlocks;
-use crate::lib::dag::leaves_handler::{addToLeaveBlocks, removeFromLeaveBlocks};
+use crate::lib::dag::dag::append_descendants;
+use crate::lib::dag::dag_walk_through::update_cached_blocks;
+use crate::lib::dag::leaves_handler::{add_to_leave_blocks, remove_from_leave_blocks};
 use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCK_EXTINFOS, C_BLOCKS};
@@ -263,7 +263,7 @@ impl Block {
      */
      */
 
-    pub fn setByJsonObj(&mut self, obj: &JSonObject) -> bool
+    pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
         if !obj["local_receive_date"].is_null() {
             self.m_block_receive_date = remove_quotes(&obj["local_receive_date"].to_string());
@@ -354,17 +354,17 @@ impl Block {
 
 
         let block_type = remove_quotes(&obj["bType"].to_string());
-        if block_type == constants::block_types::Normal {
+        if block_type == constants::block_types::NORMAL {
             return true;
-        } else if block_type == constants::block_types::Coinbase {
-            return self.m_if_coinbase_block.setByJsonObj(obj);
-        } else if block_type == constants::block_types::RpBlock
-        {} else if block_type == constants::block_types::FSign
-        {} else if block_type == constants::block_types::FVote
+        } else if block_type == constants::block_types::COINBASE {
+            return self.m_if_coinbase_block.set_by_json_obj(obj);
+        } else if block_type == constants::block_types::REPAYMENT_BLOCK
+        {} else if block_type == constants::block_types::FLOATING_SIGNATURE
+        {} else if block_type == constants::block_types::FLOATING_VOTE
         {} else if block_type == constants::block_types::POW
-        {} else if block_type == constants::block_types::Genesis
+        {} else if block_type == constants::block_types::GENESIS
         {
-            return genesis_setByJsonObj(self, obj);
+            return genesis_set_by_json_obj(self, obj);
         }
 
         println!("Invalid block type1 {:?} in received JSon Obj {:?}", block_type, serde_json::to_string(&obj).unwrap());
@@ -393,7 +393,7 @@ impl Block {
         return false;
       }
 
-      if ((m_block_type != constants::BLOCK_TYPES::Coinbase) && !ccrypto::isValidBech32(m_block_backer))
+      if ((m_block_type != constants::block_types::COINBASE) && !ccrypto::isValidBech32(m_block_backer))
       {
         CLog::log("Invalid block backer after js assignment", "sec", "error");
         return false;
@@ -406,10 +406,11 @@ impl Block {
     }
 
 */
-    pub fn stringifyBExtInfo(&self) -> String
+    //old_name_was stringifyBExtInfo
+    pub fn stringify_block_ext_info(&self) -> String
     {
-        if !vec![constants::block_types::Coinbase,
-                 constants::block_types::Normal,
+        if !vec![constants::block_types::COINBASE,
+                 constants::block_types::NORMAL,
                  constants::block_types::POW].contains(&&*self.m_block_type)
         {
             dlog(
@@ -425,9 +426,10 @@ impl Block {
         return out;
     }
 
-    pub fn safeStringifyBlock(&self, ext_info_in_document: bool) -> String
+    //old_name_was safeStringifyBlock
+    pub fn safe_stringify_block(&self, ext_info_in_document: bool) -> String
     {
-        let mut j_block: JSonObject = self.exportBlockToJSon(ext_info_in_document);
+        let mut j_block: JSonObject = self.export_block_to_json(ext_info_in_document);
 
         // maybe remove add some item in object
 
@@ -491,22 +493,24 @@ impl Block {
     {
       m_block_ext_info = {};
       for (Document* doc: m_documents)
-        m_block_ext_info.push(SignatureStructureHandler::compactUnlockersArray(doc->getDocExtInfo()));
+        m_block_ext_info.push(SignatureStructureHandler::compactUnlockersArray(doc->get_doc_ext_info()));
       return true;
     }
 
     */
 
-    pub fn exportDocumentsToJSon(&self, ext_info_in_document: bool) -> Vec<JSonObject>
+    //old_name_was exportDocumentsToJSon
+    pub fn export_documents_to_json(&self, ext_info_in_document: bool) -> Vec<JSonObject>
     {
         let mut documents: Vec<JSonObject> = vec![];
         for a_doc in &self.m_block_documents {
-            documents.push(a_doc.exportDocToJson(ext_info_in_document));
+            documents.push(a_doc.export_doc_to_json(ext_info_in_document));
         }
         return documents;
     }
 
-    pub fn exportBlockToJSon(&self, ext_info_in_document: bool) -> JSonObject
+    //old_name_was exportBlockToJSon
+    pub fn export_block_to_json(&self, ext_info_in_document: bool) -> JSonObject
     {
         let mut out: JSonObject = json!({
             "bAncestors": self.m_block_ancestors,
@@ -517,7 +521,7 @@ impl Block {
             "bLen": cutils::padding_length_value(self.m_block_length.to_string(), constants::LEN_PROP_LENGTH),
             "bType": self.m_block_type,
             "bVer": self.m_block_version,
-            "bDocs": self.exportDocumentsToJSon(ext_info_in_document),
+            "bDocs": self.export_documents_to_json(ext_info_in_document),
             "bDocsRootHash": self.m_block_documents_root_hash,
             "bFVotes": self.m_block_floating_votes,
             "bNet": self.m_block_net,
@@ -534,7 +538,7 @@ impl Block {
 
     void Block::calcAndSetBlockLength()
     {
-      String stringyfied_block = safeStringifyBlock(false);
+      String stringyfied_block = safe_stringify_block(false);
       m_block_length = static_cast<BlockLenT>(stringyfied_block.len());
     }
 
@@ -555,7 +559,7 @@ impl Block {
 
     bool Block::controlBlockLength() const
     {
-      String stringyfied_block = safeStringifyBlock(false);
+      String stringyfied_block = safe_stringify_block(false);
       if (static_cast<BlockLenT>(stringyfied_block.len()) != m_block_length)
       {
         CLog::log("Mismatch (Base class)block length Block(" + cutils::hash8c(m_block_hash) + ") local length(" + String::number(stringyfied_block.len()) + ") remote length(" + String::number(m_block_length) + ") stringyfied_block:" + stringyfied_block, "sec", "error");
@@ -654,7 +658,7 @@ impl Block {
         String re_calc_block_hash = calcBlockHash();
         if (re_calc_block_hash != m_block_hash)
         {
-          CLog::log("Mismatch block kHash. localy calculated(" + cutils::hash8c(re_calc_block_hash) +") remote(" + m_block_type + " / " + cutils::hash8c(m_block_hash) + ") " + safeStringifyBlock(true), "sec", "error");
+          CLog::log("Mismatch block kHash. localy calculated(" + cutils::hash8c(re_calc_block_hash) +") remote(" + m_block_type + " / " + cutils::hash8c(m_block_hash) + ") " + safe_stringify_block(true), "sec", "error");
           return {false, true};
         }
 
@@ -683,16 +687,16 @@ impl Block {
     */
 
     pub fn calc_block_hash(&self) -> CBlockHashT {
-        if self.m_block_type == constants::block_types::Genesis {
+        if self.m_block_type == constants::block_types::GENESIS {
             return genesis_calc_block_hash(self);
-        } else if self.m_block_type == constants::block_types::Coinbase {
+        } else if self.m_block_type == constants::block_types::COINBASE {
             return self.m_if_coinbase_block.calc_block_hash(self);
         }
 
         panic!("Undefined block type: {}", self.m_block_type);
     }
 
-    pub fn setBlockHash(&mut self, hash: &CBlockHashT)
+    pub fn set_block_hash(&mut self, hash: &CBlockHashT)
     {
         self.m_block_hash = hash.parse().unwrap();
     }
@@ -714,10 +718,10 @@ impl Block {
     {
       return "dumpBlock not implemented!";
     }
-
     */
 
-    pub fn addBlockToDAG(&self, machine: &mut CMachine) -> (bool, String)
+    //old_name_was addBlockToDAG
+    pub fn add_block_to_dag(&self, machine: &mut CMachine) -> (bool, String)
     {
         // duplicate check
         let (_status, records) = q_select(
@@ -743,7 +747,7 @@ impl Block {
             file_write(
                 machine.get_dag_backup(),
                 cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt",
-                &self.safeStringifyBlock(false),
+                &self.safe_stringify_block(false),
                 machine.get_app_clone_id());
         }
 
@@ -753,7 +757,7 @@ impl Block {
         let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
         let confidence_float = confidence_string.parse::<f64>().unwrap();
         let signals = cutils::serialize_json(&self.m_block_signals);
-        let (_status, _sf_version, body) = wrap_safe_content_for_db(&self.safeStringifyBlock(false), constants::WRAP_SAFE_CONTENT_VERSION);
+        let (_status, _sf_version, body) = wrap_safe_content_for_db(&self.safe_stringify_block(false), constants::WRAP_SAFE_CONTENT_VERSION);
         let docs_count = self.m_block_documents.len() as i32;
         let ancestors = self.m_block_ancestors.join(",");
         let ancestors_count = self.m_block_ancestors.len() as i32;
@@ -796,7 +800,7 @@ impl Block {
             true);
 
         // add newly recorded block to cache in order to reduce DB load. TODO: improve it
-        updateCachedBlocks(
+        update_cached_blocks(
             machine,
             &self.m_block_type,
             &self.m_block_hash,
@@ -804,17 +808,17 @@ impl Block {
             &constants::NO.to_string());
 
         // recording block ext Info (if exist)
-        let bExtInfo: String = self.stringifyBExtInfo();
-        if bExtInfo != "" {
-            self.insertBlockExtInfoToDB(&bExtInfo, &self.m_block_hash, &self.m_block_creation_date);
+        let block_ext_info: String = self.stringify_block_ext_info();
+        if block_ext_info != "" {
+            self.insert_block_ext_info_to_db(&block_ext_info, &self.m_block_hash, &self.m_block_creation_date);
         }
 
         // adjusting leave blocks
-        removeFromLeaveBlocks(&self.m_block_ancestors);
-        addToLeaveBlocks(&self.m_block_hash, &self.m_block_creation_date, &self.m_block_type);
+        remove_from_leave_blocks(&self.m_block_ancestors);
+        add_to_leave_blocks(&self.m_block_hash, &self.m_block_creation_date, &self.m_block_type);
 
         // insert block signals
-        logSignals(&self);
+        log_signals(&self);
 
         if self.m_block_documents.len() > 0
         {
@@ -826,12 +830,12 @@ impl Block {
                 a_doc.apply_doc_first_impact(self);
 
                 // connect documents and blocks
-                a_doc.mapDocToBlock(&self.m_block_hash, doc_inx as CDocIndexT);
+                a_doc.map_doc_to_block(&self.m_block_hash, doc_inx as CDocIndexT);
             }
         }
 
         // update ancestor's descendent info
-        appendDescendents(&self.m_block_ancestors, &vec![self.m_block_hash.clone()]);
+        append_descendants(&self.m_block_ancestors, &vec![self.m_block_hash.clone()]);
 
         // sceptical_dag_integrity_controls
         let (status, _msg) = controls_of_new_block_insertion(&self.m_block_hash);
@@ -961,12 +965,14 @@ impl Block {
     }
 
 */
-    pub fn getBlockExtInfoByDocIndex(&self, document_index: usize) -> &Vec<JSonObject>
+    //old_name_was getBlockExtInfoByDocIndex
+    pub fn get_block_ext_info_by_doc_index(&self, document_index: usize) -> &Vec<JSonObject>
     {
         return &self.m_block_ext_info[document_index];
     }
 
-    pub fn searchInBlockExtInfo(
+    //old_name_was searchInBlockExtInfo
+    pub fn search_in_block_ext_info(
         clauses: ClausesT,
         fields: Vec<&str>,
         order: OrderT,
@@ -1019,16 +1025,16 @@ impl Block {
 
 
             // document length control
-            Document *tmp_doc = DocumentFactory::create(a_doc->exportDocToJson(), this, doc_inx);
+            Document *tmp_doc = DocumentFactory::create(a_doc->export_doc_to_json), this, doc_inx);
 
-            DocLenT recalculate_doc_length = static_cast<DocLenT>(tmp_doc->calcDocLength());
+            DocLenT recalculate_doc_length = static_cast<DocLenT>(tmp_doc->calc_doc_length());
             if ((tmp_doc.m_doc_type != constants::DOC_TYPES::DPCostPay) &&
                 ((tmp_doc.m_doc_length != recalculate_doc_length) ||
                  (tmp_doc.m_doc_length != a_doc.m_doc_length))
                 )
             {
               String msg = "The doc stated dLen is not same as real length. stage(" + stage + ") doc type(" + tmp_doc.m_doc_type + "/" + cutils::hash8c(tmp_doc->get_doc_hash()) + ") stated dLen(" + String::number(a_doc.m_doc_length) + "), ";
-              msg += " real length(" + String::number(tmp_doc->calcDocLength()) + ")";
+              msg += " real length(" + String::number(tmp_doc->calc_doc_length()) + ")";
               CLog::log(msg, "sec", "error");
 
               delete tmp_doc;
@@ -1043,16 +1049,16 @@ impl Block {
 
             transient_block_info.m_groupped_documents[a_doc.m_doc_type].push(a_doc);
 
-            if (a_doc->getRef() != "")
+            if (a_doc->get_ref() != "")
             {
               if (Document::canBeACostPayerDoc(a_doc.m_doc_type))
               {
                 transient_block_info.m_transactions_dict[a_doc->get_doc_hash()] = a_doc;
-                transient_block_info.m_map_trx_hash_to_trx_ref[a_doc->get_doc_hash()] = a_doc->getRef();
-                transient_block_info.m_map_trx_ref_to_trx_hash[a_doc->getRef()] = a_doc->get_doc_hash();
+                transient_block_info.m_map_trx_hash_to_trx_ref[a_doc->get_doc_hash()] = a_doc->get_ref();
+                transient_block_info.m_map_trx_ref_to_trx_hash[a_doc->get_ref()] = a_doc->get_doc_hash();
               } else {
-                transient_block_info.m_map_referencer_to_referenced[a_doc->get_doc_hash()] = a_doc->getRef();
-                transient_block_info.m_map_referenced_to_referencer[a_doc->getRef()] = a_doc->get_doc_hash();
+                transient_block_info.m_map_referencer_to_referenced[a_doc->get_doc_hash()] = a_doc->get_ref();
+                transient_block_info.m_map_referenced_to_referencer[a_doc->get_ref()] = a_doc->get_doc_hash();
               }
             }
           }
@@ -1180,8 +1186,9 @@ impl Block {
         //}
 
     */
-    // old name was insertToDB
-    pub fn insertBlockExtInfoToDB(
+    //old_name_was insertToDB
+    //old_name_was insertBlockExtInfoToDB
+    pub fn insert_block_ext_info_to_db(
         &self,
         serialized_block_ext_info: &String,
         block_hash: &CBlockHashT,

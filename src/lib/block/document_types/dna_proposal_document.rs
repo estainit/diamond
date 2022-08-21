@@ -46,7 +46,7 @@ impl DNAProposalDocument {
         }
     }
 
-    pub fn setByJsonObj(&mut self, obj: &JSonObject) -> bool
+    pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
         self.m_help_hours = obj["helpHours"].to_string().parse::<i64>().unwrap();
         self.m_help_level = obj["helpLevel"].to_string().parse::<i64>().unwrap();
@@ -64,8 +64,8 @@ impl DNAProposalDocument {
         return true;
     }
 
-    pub fn exportDocToJson(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject {
-        let mut document: JSonObject = doc.exportDocToJson_inner(ext_info_in_document);
+    pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject {
+        let mut document: JSonObject = doc.export_doc_to_json_inner(ext_info_in_document);
 
         document["projectHash"] = self.m_project_hash.clone().into();
         document["helpHours"] = self.m_help_hours.clone().into();
@@ -110,9 +110,9 @@ impl DNAProposalDocument {
     //}
 
     */
-    pub fn safeStringifyDoc(&self, doc: &Document, ext_info_in_document: bool) -> String
+    pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
     {
-        let mut j_doc: JSonObject = self.exportDocToJson(doc, ext_info_in_document);
+        let mut j_doc: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);
 
         // recaluculate block final length
         j_doc["dLen"] = cutils::padding_length_value(
@@ -233,7 +233,7 @@ impl DNAProposalDocument {
 
     // js name was extractHashableParts
     //old_name_was getDocHashableString
-    pub fn getDocHashableString(&self, doc: &Document) -> String
+    pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
         let doc_hahsables: String = format!(
             "dCDate:{},dClass:{},dComment:{},dLen:{},dTags:{},dTitle:{},dType:{},dVer:{},contributor:{},helpHours:{},helpLevel:{},pollingProfile:{},pollingVersion:{},projectHash:{},pTimeframe:{}",
@@ -261,11 +261,11 @@ impl DNAProposalDocument {
     pub fn calc_doc_hash(&self, doc: &Document) -> String
     {
         dlog(
-            &format!("calc DNA proposal Hash: {}", self.safeStringifyDoc(doc, true)),
+            &format!("calc DNA proposal Hash: {}", self.safe_stringify_doc(doc, true)),
             constants::Modules::App,
             constants::SecLevel::Trace);
 
-        let hashables: String = self.getDocHashableString(doc);
+        let hashables: String = self.get_doc_hashable_string(doc);
 
         let the_hash = ccrypto::keccak256(&hashables);
         dlog(
@@ -288,12 +288,12 @@ impl DNAProposalDocument {
       return {false, JSonArray {}};
     }
 
-    std::vector<TInput*> DNAProposalDocument::getInputs() const
+    std::vector<TInput*> DNAProposalDocument::get_inputs() const
     {
       return {};
     }
 
-    std::vector<TOutput*> DNAProposalDocument::getOutputs() const
+    std::vector<TOutput*> DNAProposalDocument::get_outputs() const
     {
       return {};
     }
@@ -524,12 +524,12 @@ impl DNAProposalDocument {
 
         // create a new polling
         let mut params: JSonObject = json!({
-            "dType": constants::document_types::Polling,
+            "dType": constants::document_types::POLLING,
             "dClass": doc.m_if_proposal_doc.m_polling_profile , // default is iConsts.POLLING_PROFILE_CLASSES.Basic.ppNae
             "dVer": doc.m_doc_version ,
             "dRef": doc.m_doc_hash ,
-            "dRefType": constants::polling_ref_types::Proposal ,
-            "dRefClass": constants::pledge_classes::PledgeP,
+            "dRefType": constants::polling_ref_types::PROPOSAL,
+            "dRefClass": constants::pledge_classes::PLEDGE_P,
             "startDate": block.m_block_creation_date ,
             "pTimeframe": cutils::convert_float_to_string(self.m_voting_timeframe, constants::FLOAT_LENGTH),
             "dCreator": doc.m_if_proposal_doc.m_contributor_account ,

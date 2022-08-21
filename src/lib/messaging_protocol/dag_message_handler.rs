@@ -44,7 +44,7 @@ bool DAGMessageHandler::invokeDescendents(
     // control if block's potentially descendent(s) exist in parsing q
     QVDRecordsT likeHashRes = ParsingQHandler::searchParsingQ(
       {
-        {"pq_type", {constants::BLOCK_TYPES::Normal, constants::BLOCK_TYPES::Coinbase}, "IN"},
+        {"pq_type", {constants::BLOCK_TYPES::Normal, constants::block_types::COINBASE}, "IN"},
         {"pq_code", block_hash}
       },
       {"pq_type", "pq_code", "pq_payload"});
@@ -467,7 +467,7 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
   bool push_res = SendingQHandler::pushIntoSendingQ(
     block.m_block_type,
     block_hash,
-    block->safeStringifyBlock(false),
+    block->safe_stringify_block(false),
     "Replay to invoke for block(" + short_hash + ") type(" + block.m_block_type  + ")",
     {sender});
 

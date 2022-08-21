@@ -155,7 +155,7 @@ pub fn create_nice_to_meet_you(
     let (code, body) = make_a_packet(
         vec![
             json!({
-                "cdType": constants::card_types::NICETOMEETYOU,
+                "cdType": constants::card_types::NICE_TO_MEET_YOU,
                 "cdVer": constants::DEFAULT_CARD_VERSION,
                 "connectionType": connection_type,
                 "email": machine().get_pub_email_info().m_address,
@@ -224,7 +224,7 @@ pub fn create_here_is_new_neighbor(
     let (code, body) = make_a_packet(
         vec![
             json!({
-                "cdType": constants::card_types::HEREISNEWNEIGHBOR,
+                "cdType": constants::card_types::HERE_IS_NEW_NEIGHBOR,
                 "cdVer": constants::DEFAULT_CARD_VERSION,
                 "connectionType": connection_type,
                 "newNeighborEmail": new_neighbor_email ,

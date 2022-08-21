@@ -23,7 +23,8 @@ impl BasicTxDocument {
         }
     }
 
-    pub fn setByJsonObj(&mut self, json_obj: &JSonObject) -> bool {
+    //old_name_was setByJsonObj
+    pub fn set_by_json_obj(&mut self, json_obj: &JSonObject) -> bool {
         self.m_data_and_process_payment_indexes = vec![];
         let mut inx: usize = 0;
         while !json_obj["dPIs"][inx].is_null() {
@@ -36,19 +37,20 @@ impl BasicTxDocument {
         }
 
         if json_obj["inputs"].is_array() {
-            self.setDocumentInputs(&json_obj["inputs"]);
+            self.set_document_inputs(&json_obj["inputs"]);
         }
 
         if json_obj["outputs"].is_array() {
-            self.setDocumentOutputs(&json_obj["outputs"]);
+            self.set_document_outputs(&json_obj["outputs"]);
         }
 
         return true;
     }
 
-    pub fn safeStringifyDoc(&self, doc: &Document, ext_info_in_document: bool) -> String
+    //old_name_was safeStringifyDoc
+    pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
     {
-        let document: JSonObject = self.exportDocToJson(doc, ext_info_in_document);
+        let document: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);
 
 //  // recaluculate block final length
 //  document["dLen"] = constants::LEN_PROP_PLACEHOLDER;
@@ -107,15 +109,15 @@ impl BasicTxDocument {
 
       if (stage == constants::STAGES::Validating)
       {
-        if (dLen != static_cast<DocLenT>(calcDocLength()))
+        if (dLen != static_cast<DocLenT>(calc_doc_length()))
         {
-          CLog::log("The trx len and local re-calc len are not same! stage(" + stage + ") remoteLen(" + String::number(dLen) + ") local Len(" + String::number(calcDocLength()) + ") trx(" + cutils::hash8c(m_doc_hash) + ")", "trx", "error");
+          CLog::log("The trx len and local re-calc len are not same! stage(" + stage + ") remoteLen(" + String::number(dLen) + ") local Len(" + String::number(calc_doc_length()) + ") trx(" + cutils::hash8c(m_doc_hash) + ")", "trx", "error");
           return {false, 0};
         }
       } else {
-        if (dLen < static_cast<DocLenT>(calcDocLength()))
+        if (dLen < static_cast<DocLenT>(calc_doc_length()))
         {
-          CLog::log("The trx len and local re-calc len are not same! stage(" + stage + ") remoteLen(" + String::number(dLen) + ") local Len(" + String::number(calcDocLength()) + ") trx(" + cutils::hash8c(m_doc_hash) + ")", "trx", "error");
+          CLog::log("The trx len and local re-calc len are not same! stage(" + stage + ") remoteLen(" + String::number(dLen) + ") local Len(" + String::number(calc_doc_length()) + ") trx(" + cutils::hash8c(m_doc_hash) + ")", "trx", "error");
           return {false, 0};
         }
       }
@@ -154,10 +156,10 @@ impl BasicTxDocument {
     }
 
     */
-
-    pub fn exportDocToJson(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject
+    //old_name_was exportDocToJson
+    pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject
     {
-        let mut document: JSonObject = doc.exportDocToJson_inner(ext_info_in_document);
+        let mut document: JSonObject = doc.export_doc_to_json_inner(ext_info_in_document);
 
         // impacting uSets
         if ext_info_in_document
@@ -195,7 +197,7 @@ impl BasicTxDocument {
     return {true, outputs};
     }
 */
-    pub fn getDocHashableString(&self, doc: &Document) -> String
+    pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
         let doc_hashables: String = format!(
             "dCDate:{},dClass:{},dComment:{},dExtHash:{},dLen:{},dPIs:{},dRef:{},dType:{},dVer:{},inputs:{},outputs:{}",
@@ -205,17 +207,18 @@ impl BasicTxDocument {
             doc.m_doc_ext_hash,
             cutils::padding_length_value(doc.m_doc_length.to_string(), constants::LEN_PROP_LENGTH),
             serde_json::to_string(&self.m_data_and_process_payment_indexes).unwrap(),
-            doc.getRef(),
+            doc.get_ref(),
             doc.m_doc_type,
             doc.m_doc_version,
-            stringify_inputs(self.getInputs()),
-            stringify_outputs(self.getOutputs())
+            stringify_inputs(self.get_inputs()),
+            stringify_outputs(self.get_outputs())
         );
         return doc_hashables;
     }
 
     // TODO: some unit test for pure hashable
-    pub fn extractHPureParts_simple(&self, _doc: &Document) -> String
+    //old_name_was extractHPureParts_simple
+    pub fn extract_hash_pure_parts_simple(&self, _doc: &Document) -> String
     {
         // the hTrx MUST be constant and NEVER change the order of attribiutes (alphabetical)
         // in case of change the version MUST be changed and the code treats it in new manner
@@ -234,18 +237,20 @@ impl BasicTxDocument {
         return doc_hahsables.to_string();
     }
 
-    pub fn extractTransactionPureHashableParts(&self, doc: &Document) -> String
+    //old_name_was extractTransactionPureHashableParts
+    pub fn extract_transaction_pure_hashable_parts(&self, doc: &Document) -> String
     {
-        if doc.m_doc_type == constants::doc_types::BasicTx
+        if doc.m_doc_type == constants::document_types::BASIC_TX
         {
-            return self.extractHPureParts_simple(doc);
+            return self.extract_hash_pure_parts_simple(doc);
         }
         return "".to_string();
     }
 
-    pub fn getPureHash(&self, doc: &Document) -> String
+    //old_name_was getPureHash
+    pub fn get_pure_hash(&self, doc: &Document) -> String
     {
-        let hashable_string = self.extractTransactionPureHashableParts(doc);
+        let hashable_string = self.extract_transaction_pure_hashable_parts(doc);
         let the_hash = ccrypto::keccak256_dbl(&hashable_string);    // NOTE: useing double hash for more security
         dlog(
             &format!("get Pure Hash res! hash({}) version({}) hashable string: ({}) trx({})",
@@ -258,11 +263,11 @@ impl BasicTxDocument {
 
     pub fn calc_doc_hash(&self, doc: &Document) -> String
     {
-        let hashables = self.getDocHashableString(doc);
+        let hashables = self.get_doc_hashable_string(doc);
         let mut the_hash = ccrypto::keccak256_dbl(&hashables); // NOTE: absolutely using double hash for more security
 
         // generate deterministic part of trx hash
-        let pure_hash = self.getPureHash(doc);
+        let pure_hash = self.get_pure_hash(doc);
         the_hash = pure_hash.substring(32, 64).to_string() + &*the_hash.substring(32, 64).to_string();
 
         dlog(
@@ -280,7 +285,7 @@ impl BasicTxDocument {
         return false;
         }
 
-        String BasicTxDocument::getRef() const
+        String BasicTxDocument::get_ref() const
         {
         return m_doc_ref;
         }
@@ -290,17 +295,21 @@ impl BasicTxDocument {
         return m_data_and_process_payment_indexes;
         }
     */
-    pub fn getInputs(&self) -> &Vec<TInput>
+
+    //old_name_was getInputs
+    pub fn get_inputs(&self) -> &Vec<TInput>
     {
         return &self.m_inputs;
     }
 
-    pub fn getOutputs(&self) -> &Vec<TOutput>
+    //old_name_was getOutputs
+    pub fn get_outputs(&self) -> &Vec<TOutput>
     {
         return &self.m_outputs;
     }
 
-    pub fn setDocumentInputs(&mut self, obj: &JSonArray) -> bool
+    //old_name_was setDocumentInputs
+    pub fn set_document_inputs(&mut self, obj: &JSonArray) -> bool
     {
         // JSonArray inputs = obj.toArray();
         for an_input in obj.as_array().unwrap() {
@@ -319,8 +328,8 @@ impl BasicTxDocument {
         return true;
     }
 
-
-    pub fn setDocumentOutputs(&mut self, obj: &JSonArray) -> bool
+    //old_name_was setDocumentOutputs
+    pub fn set_document_outputs(&mut self, obj: &JSonArray) -> bool
     {
         // JSonArray outputs = obj.toArray();
         for an_output in obj.as_array().unwrap() {
@@ -603,7 +612,7 @@ impl BasicTxDocument {
         return false;
         // TODO: implement input time lock (both flexible and strict input timelock) ASAP
         return (
-        (m_doc_type == constants::DOC_TYPES::BasicTx) &&
+        (m_doc_type == constants::document_types::BASIC_TX) &&
         StringList{constants::TRX_CLASSES::SimpleTx, constants::TRX_CLASSES::P4P}.contains(m_doc_class)
         );
         }
