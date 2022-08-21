@@ -115,13 +115,13 @@ pub fn parse_a_packet(
             &format!("Dispatch a card response card type ({}) status({}) should purge file({})",
                      remove_quotes(&a_card["cdType"].to_string()), status_, should_purge_file_),
             constants::Modules::App,
-            constants::SecLevel::Info);
+            constants::SecLevel::Debug);
     }
 
     dlog(
         &format!("Dispatch all cards response status({}) should purge file({})", status, should_purge_file),
         constants::Modules::App,
-        constants::SecLevel::Info);
+        constants::SecLevel::Debug);
 
     return (status, should_purge_file);
 

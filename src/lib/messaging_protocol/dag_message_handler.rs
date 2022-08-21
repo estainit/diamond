@@ -228,7 +228,7 @@ use crate::{constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::dag::leaves_handler::get_leave_blocks;
+use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
 use crate::lib::dag::missed_blocks_handler::add_missed_blocks_to_invoke;
 use crate::lib::database::abs_psql::{q_upsert, simple_eq_clause};
 use crate::lib::database::tables::C_KVALUE;
@@ -407,9 +407,18 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
 //old_name_was extractLeavesAndPushInSendingQ
 pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
 {
-    let leaves = get_leave_blocks(&"".to_string());
+    let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
+    let mut new_leaves: Vec<JSonObject> = vec![];
+    for (_k, v) in leaves
+    {
+        new_leaves.push(json!({
+            "bType": v.m_block_type,
+            "bHash": v.m_block_hash,
+            "cDate": v.m_creation_date
+        }));
+    }
     dlog(
-        &format!("leaves in DAG: {:?}", leaves),
+        &format!("leaves in DAG: {:?}", new_leaves),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -418,7 +427,7 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
             json!({
                 "cdType": constants::card_types::DAG_LEAVES_INFO,
                 "cdVer": constants::DEFAULT_CARD_VERSION,
-                "leaves": leaves
+                "leaves": new_leaves
             }),
         ],
         constants::DEFAULT_PACKET_TYPE,

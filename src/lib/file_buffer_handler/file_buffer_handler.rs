@@ -134,14 +134,14 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         dlog(
             &format!("Nothing in reading inbox files!"),
             constants::Modules::App,
-            constants::SecLevel::Info);
+            constants::SecLevel::Debug);
         return false;
     }
 
     dlog(
         &format!("have read packet from HD sender({}) receiver({}) file_name({})", sender, receiver, file_name),
         constants::Modules::App,
-        constants::SecLevel::Info);
+        constants::SecLevel::Debug);
 
     let (
         dec_status,
@@ -236,7 +236,7 @@ pub fn read_email_file() -> (bool, String, String, String, String)
     dlog(
         &format!("Reading inbox({})", inbox),
         constants::Modules::App,
-        constants::SecLevel::Info);
+        constants::SecLevel::Debug);
 
     let files = list_exact_files(&inbox, "txt");  //FIXME: maybe read files ordered by reverse modify date!
     println!("fileszzzzzzzzzzzzz {:?}", files);

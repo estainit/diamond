@@ -10,6 +10,7 @@ use crate::lib::k_v_handler::get_value;
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct LeaveBlock {
     pub m_block_type: String,
+    pub m_block_hash: String,
     pub m_creation_date: String,
 }
 
@@ -82,6 +83,7 @@ pub fn add_to_leave_blocks(
     let mut current_leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
     let a_leave: LeaveBlock = LeaveBlock {
         m_block_type: block_type.clone(),
+        m_block_hash: block_hash.to_string(),
         m_creation_date: creation_date.clone(),
     };
     current_leaves.insert(block_hash.to_string(), a_leave);

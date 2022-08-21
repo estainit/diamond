@@ -112,7 +112,7 @@ pub fn write_exact_file(file_path: &String, content: &String) -> (bool, String)
     dlog(
         &format!("wirting file: {}", file_path),
         constants::Modules::App,
-        constants::SecLevel::Info);
+        constants::SecLevel::Debug);
 
     let mut file = File::create(file_path)
         .expect("Error encountered while creating file!");

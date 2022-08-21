@@ -152,26 +152,53 @@ impl CMachine {
     // func name was parseArgs
     pub fn parse_args(&mut self, args: VString, manual_clone_id: i8)
     {
-        println!("Env args: {:?}", args);
+        // cargo run cid=0 dev verbose
+        // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;
+        let mut config_file: String = "".to_string();
         let mut is_develop_mod: bool = false;
+        let mut verbose: bool = false;
 
-        if args.len() > 1 {
-            clone_id = args[1].parse().unwrap();
+        let mut args_dic: HashMap<String, String> = HashMap::new();
+        for a_param in args {
+            if a_param.contains("=")
+            {
+                let arg_details = a_param.split("=").collect::<Vec<&str>>();
+                args_dic.insert(arg_details[0].to_string(), arg_details[1].to_string());
+            } else {
+                if a_param == "dev"
+                {
+                    is_develop_mod = true;
+                } else if a_param == "verbose"
+                {
+                    verbose = true;
+                }
+            }
+        }
+
+        // cid: clone id
+        if  args_dic.contains_key("cid") {
+            clone_id = args_dic["cid"].parse::<i8>().unwrap();
+        }
+
+        // cfile: config file
+        if args_dic.contains_key("cfile") {
+            config_file = args_dic["cfile"].clone();
         }
 
         if manual_clone_id > 0 {
             clone_id = manual_clone_id;
         }
 
-        if args.len() > 2 {
-            is_develop_mod = true;
-        }
+
+        self.m_clone_id = clone_id;
+        self.m_is_develop_mod = is_develop_mod;
 
         maybe_switch_db(clone_id);
 
-        self.set_clone_dev(clone_id, is_develop_mod);
+
+        // self.set_clone_dev(clone_id, is_develop_mod);
     }
 
     // func name was setCloneDev
@@ -512,15 +539,17 @@ impl CMachine {
         self.m_profile.m_mp_name = constants::DEFAULT.to_string();
         self.m_profile.m_mp_last_modified = cutils::get_now();
 
+        println!("Generating RSA key pairs.");
         {
             // initializing email PGP pair keys (it uses native node.js crypto lib. TODO: probably depricated and must refactor to use new one)
             let (status, private_pgp, public_pgp) = ccrypto::rsa_generate_key_pair(0);
             if !status {
-                return (false, "Couldn't creat RSA key pairs (for private channel)".to_string());
+                return (false, "Couldn't create RSA key pairs (for private channel)".to_string());
             }
             self.m_profile.m_mp_settings.m_private_email.m_pgp_private_key = private_pgp;
             self.m_profile.m_mp_settings.m_private_email.m_pgp_public_key = public_pgp;
         }
+        println!("RSA 1 Done.");
 
         {
             // initializing email PGP pair keys (it uses native node.js crypto lib. TODO: probably depricated and must refactor to use new one)
@@ -531,7 +560,9 @@ impl CMachine {
             self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = private_pgp;
             self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = public_pgp;
         }
+        println!("RSA 2 Done.");
 
+        println!("Generating Node Master Private Key.");
         let (status, unlock_doc) = create_a_new_address(
             constants::signature_types::STRICT,
             "2/3",
@@ -540,6 +571,7 @@ impl CMachine {
         {
             return (false, "Couldn't creat ECDSA key pairs (for public channel)".to_string());
         }
+        println!("Master Private Key Done.");
 
         self.m_profile.m_mp_settings.m_machine_alias = "node-".to_owned() + &cutils::hash6c(&ccrypto::keccak256(&unlock_doc.m_account_address));
         self.m_profile.m_mp_settings.m_backer_detail = unlock_doc;
