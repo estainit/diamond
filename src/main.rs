@@ -7,7 +7,6 @@ use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
 
-mod config;
 mod lib;
 mod tests;
 
