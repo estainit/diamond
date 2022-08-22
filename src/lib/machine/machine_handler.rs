@@ -162,7 +162,7 @@ impl CMachine {
     // func name was parseArgs
     pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8)
     {
-        // cargo run cid=0 dev verbose config=c:\Document...
+        // cargo run cid=1 dev verbose config=/Users/silver/Documents/Diamond_files/config.txt
         // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;
@@ -197,10 +197,11 @@ impl CMachine {
         if std::env::consts::OS == "windows" {
             config_file = "c:\\Documents\\config.ini".to_string();
         }
+
         let mut config_source = "Default";
         if args_dic.contains_key("config") {
             config_file = args_dic["config"].clone();
-            config_source = "Commandline";
+            config_source = "Command-line";
         }
 
         if forcing_manual_clone_id > 0 {
@@ -251,12 +252,6 @@ impl CMachine {
         println!("Config file was loaded({}). {}", self.m_config_source, self.m_config_file);
         // remove "/config.txt" from the end of path
         self.m_hard_root_path = self.m_config_file.substring(0, self.m_config_file.len() - 11).to_string();
-
-        println!("the config: {:?}", configs_map);
-
-        let db_host = config.get("database", "db_host").unwrap();
-
-        println!("the config: db_host {}", db_host);
 
         self.m_launch_date = config.get("default", "launch_date").unwrap();
         self.m_cycle_length = config.getuint("default", "cycle_length").unwrap().unwrap() as u32;
