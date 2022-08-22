@@ -281,11 +281,16 @@ impl CMachine {
         true
     }
 
-
+    //old_name_was getAppCloneId
+    pub fn get_app_clone_id(&self) -> i8
+    {
+        return self.m_clone_id;
+    }
 
     pub fn root_path(&self) -> String {
         self.m_hard_root_path.clone()
     }
+
     pub fn cycle(&self) -> u32 {
         self.m_cycle_length
     }
@@ -435,17 +440,6 @@ impl CMachine {
             supported_P4P_trx_count);
       }
 
-
-
-
-    */
-
-    //old_name_was getAppCloneId
-    pub fn get_app_clone_id(&self) -> i8
-    {
-        return self.m_clone_id;
-    }
-    /*
       void IsetShouldLoopThreads(const bool v)
       {
         m_should_loop_threads = v;

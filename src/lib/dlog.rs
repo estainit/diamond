@@ -10,12 +10,23 @@ use log4rs::filter::threshold::ThresholdFilter;
 use crate::{machine};
 use crate::constants::{Modules, SecLevel};
 
-pub fn initialize_log(){
+pub fn initialize_log() {
     let window_size = 1; // log0, log1, log2
-    let fixed_window_roller = FixedWindowRoller::builder().build("log{}", window_size).unwrap();
+    let fixed_window_roller = FixedWindowRoller::builder()
+        .build("log{}", window_size)
+        .unwrap();
     let size_limit = 2000 * 1024; // 50 KB as max log file size to roll
     let size_trigger = SizeTrigger::new(size_limit);
-    let compound_policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(fixed_window_roller));
+    let compound_policy = CompoundPolicy::new(
+        Box::new(size_trigger),
+        Box::new(fixed_window_roller));
+
+    let path_= machine().get_logs_path().clone();
+    let log_file_path = format!(
+        "{}/{}_dlog.log",
+        path_,
+        machine().get_app_clone_id());
+
     let config = Config::builder()
         .appender(
             Appender::builder()
@@ -25,7 +36,7 @@ pub fn initialize_log(){
                     Box::new(
                         RollingFileAppender::builder()
                             .encoder(Box::new(PatternEncoder::new("{d} {l}::{m}{n}")))
-                            .build(machine().get_logs_path()+&"/dlog.log", Box::new(compound_policy)).unwrap(),
+                            .build(log_file_path, Box::new(compound_policy)).unwrap(),
                     ),
                 ),
         )
@@ -35,8 +46,6 @@ pub fn initialize_log(){
                 .build(LevelFilter::Debug),
         ).unwrap();
     let _handle = log4rs::init_config(config).unwrap();
-
-
 }
 
 pub fn dlog(msg: &String, module: Modules, level: SecLevel) {

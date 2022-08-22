@@ -1,14 +1,14 @@
 extern crate core;
 
+mod lib;
+mod tests;
+
 use std::{env, time};
 use std::thread;
 use std::time::Duration;
 use once_cell::sync::Lazy;
 use std::sync::{LockResult, Mutex, MutexGuard};
 use std::thread::sleep as std_sleep;
-
-mod lib;
-mod tests;
 
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
@@ -38,7 +38,6 @@ fn main() {
     //! ```
     //! fn main()
     //! ```
-    //!
     //! This starts whole game
     //!
 
