@@ -35,6 +35,8 @@ pub struct CMachine {
 
     m_threads_status: QSDicT,
     m_map_thread_code_to_prefix: QSDicT,
+    m_config_file: String,
+    m_config_source: String,
     m_is_develop_mod: bool,
 
     m_develop_launch_date: CDateT,
@@ -119,6 +121,8 @@ impl CMachine {
             m_dag_cached_blocks: vec![],
             m_dag_cached_block_hashes: vec![],
             m_profile: MachineProfile::new(),
+            m_config_file: "".to_string(),
+            m_config_source: "".to_string(),
         }
     }
 
@@ -150,9 +154,9 @@ impl CMachine {
     }
 
     // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, manual_clone_id: i8)
+    pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8)
     {
-        // cargo run cid=0 dev verbose
+        // cargo run cid=0 dev verbose config=c:\Document...
         // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;
@@ -178,34 +182,85 @@ impl CMachine {
         }
 
         // cid: clone id
-        if  args_dic.contains_key("cid") {
+        if args_dic.contains_key("cid") {
             clone_id = args_dic["cid"].parse::<i8>().unwrap();
         }
 
-        // cfile: config file
-        if args_dic.contains_key("cfile") {
-            config_file = args_dic["cfile"].clone();
+        // config: config file
+        config_file = "/Users/silver/Documents/Diamond_files/config.txt".to_string();
+        if std::env::consts::OS == "windows" {
+            config_file = "c:\\Documents\\config.ini".to_string();
+        }
+        let mut config_source = "Default";
+        if args_dic.contains_key("config") {
+            config_file = args_dic["config"].clone();
+            config_source = "Commandline";
         }
 
-        if manual_clone_id > 0 {
-            clone_id = manual_clone_id;
+        if forcing_manual_clone_id > 0 {
+            clone_id = forcing_manual_clone_id;
         }
 
 
         self.m_clone_id = clone_id;
         self.m_is_develop_mod = is_develop_mod;
+        self.m_config_file = config_file.clone();
 
-        maybe_switch_db(clone_id);
+        if args_dic.contains_key("config") {
+            // update database
+            set_value("config_file", &config_file.to_string(), false);
+        } else {
+            // probably it should be loaded from db
+            let db_config_file = get_value("config_file");
+            if db_config_file != ""
+            {
+                self.m_config_file = db_config_file;
+                config_source = "DB";
+            }
+        }
 
-
-        // self.set_clone_dev(clone_id, is_develop_mod);
+        self.m_config_source = config_source.to_string();
+        self.parse_config_file();
     }
 
     // func name was setCloneDev
-    pub fn set_clone_dev(&mut self, clone_id: i8, is_develop_mod: bool) -> bool
+    pub fn parse_config_file(&mut self) -> bool
     {
-        self.m_clone_id = clone_id;
-        self.m_is_develop_mod = is_develop_mod;
+        use configparser::ini::Ini;
+
+        let mut config = Ini::new();
+        let (status, configs_map) = match config.load(&self.m_config_file) {
+            Ok(r) => (true, r),
+            Err(e) => {
+                eprintln!("{}", e);
+                (false, HashMap::new())
+            }
+        };
+        if !status
+        {
+            eprintln!("Please give the config file path through commandline (config=\"C:\\Documents\\config.txt\") or copy the config.txt file from source folder to default path \"C:\\Home\\config.txt\"");
+            panic!("Invalid config file path");
+        }
+
+        println!("Config file was loaded({}). {}", self.m_config_source, self.m_config_file);
+
+        println!("the config: {:?}", configs_map);
+
+        let db_host = config.get("database", "db_host").unwrap();
+
+        println!("the config: db_host {}", db_host);
+
+        dbhandler().m_db_host = db_host;
+        maybe_switch_db(self.m_clone_id);
+
+        // config.read(String::from("[somesection] someintvalue = 5"));
+        // let my_value = config.getint("somesection", "someintvalue").unwrap().unwrap();
+        // assert_eq!(my_value, 5); // value accessible!
+        //
+        // //You can ofcourse just choose to parse the values yourself:
+        // let my_string = String::from("1984");
+        // let my_int = my_string.parse::<i32>().unwrap();
+
         true
     }
 
