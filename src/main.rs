@@ -23,7 +23,11 @@ use crate::machine_handler::CMachine;
 use lib::rest::apis;
 use crate::apis::{do_handshake, do_handshake_by_email};
 use crate::cutils::strip_parentheses_as_break_line;
+use crate::lib::machine::app_params::AppParams;
 use crate::lib::machine::machine_neighbor::get_neighbors;
+
+static APPGLOBAL: Lazy<Mutex<AppParams>> = Lazy::new(|| Mutex::new(AppParams::new()));
+fn application() -> MutexGuard<'static, AppParams> { APPGLOBAL.lock().unwrap() }
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
 fn machine() -> MutexGuard<'static, CMachine> {
@@ -40,6 +44,8 @@ fn main() {
     //! ```
     //! This starts whole game
     //!
+
+    application().dummy_init();
 
     let force_clone_id: i8 = 0;
     machine().parse_args(env::args().collect(), force_clone_id);
@@ -68,7 +74,7 @@ fn main() {
     let msg = &format!(
         "Running Diamond Node (version {}). started at {} {}",
         constants::CLIENT_VERSION,
-        cutils::get_now(),
+        application().get_now(),
         web_server_msg);
     dlog(
         msg,
@@ -78,7 +84,7 @@ fn main() {
 
     {
         // web api part
-        if machine().get_app_clone_id() == 1
+        if application().id() == 1
         {
             let (status, msg) = do_handshake_by_email("user@imagine.com".to_string());
             println!("do_handshake: {}, {}", status, msg);

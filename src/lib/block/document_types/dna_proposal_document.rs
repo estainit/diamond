@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{ccrypto, constants, cutils, dlog, machine};
+use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, CDocHashT, ClausesT, JSonObject, TimeByHoursT};
@@ -11,26 +11,26 @@ use crate::lib::database::tables::C_PROPOSALS;
 use crate::lib::services::polling::polling_handler::auto_create_polling_for_proposal;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct DNAProposalDocument
+pub struct ProposalDocument
 {
     pub m_project_hash: CDocHashT,
     // "";//58be4875eaa3736f60622e26bda746fb81812e8d7ecad50a2c3f97f0605a662c
     pub m_approval_date: CDateT,
     pub m_contributor_account: CAddressT,
-    pub m_help_hours: i64,
-    pub m_help_level: i64,
+    pub m_help_hours: i32,
+    pub m_help_level: i32,
     pub m_shares: i64,
-    pub m_votes_yes: u64,
-    pub m_votes_abstain: u64,
-    pub m_votes_no: u64,
+    pub m_votes_yes: i64,
+    pub m_votes_abstain: i64,
+    pub m_votes_no: i64,
     pub m_voting_timeframe: TimeByHoursT,
     pub m_polling_profile: String,
     pub m_polling_version: String,
 }
 
-impl DNAProposalDocument {
-    pub fn new() -> DNAProposalDocument {
-        DNAProposalDocument {
+impl ProposalDocument {
+    pub fn new() -> ProposalDocument {
+        ProposalDocument {
             m_project_hash: "".to_string(),
             m_approval_date: "".to_string(),
             m_contributor_account: "".to_string(),
@@ -48,15 +48,16 @@ impl DNAProposalDocument {
 
     pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
-        self.m_help_hours = obj["helpHours"].to_string().parse::<i64>().unwrap();
-        self.m_help_level = obj["helpLevel"].to_string().parse::<i64>().unwrap();
+        panic!("gggggg");
+        self.m_help_hours = obj["helpHours"].to_string().parse::<i32>().unwrap();
+        self.m_help_level = obj["helpLevel"].to_string().parse::<i32>().unwrap();
         self.m_project_hash = obj["projectHash"].to_string();
         self.m_contributor_account = obj["contributor"].to_string();
         self.m_polling_profile = obj["pollingProfile"].to_string();
         self.m_polling_version = obj["pollingVersion"].to_string();
 
         self.m_voting_timeframe = obj["pTimeframe"].to_string().parse::<TimeByHoursT>().unwrap();
-        if machine().cycle() == 1
+        if application().cycle() == 1
         {
             self.m_voting_timeframe = self.m_voting_timeframe as TimeByHoursT;
         }     // because of test ambient the longivity can be float and les than 1 hour
@@ -141,7 +142,7 @@ impl DNAProposalDocument {
     {
       Q_UNUSED(extraLength);
       if (cDate == "")
-        cDate =cutils::get_now();
+        cDate =application().get_now();
 
       DocLenT dLen = m_doc_length;
 

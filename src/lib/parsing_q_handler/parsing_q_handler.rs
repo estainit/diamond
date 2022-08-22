@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{ClausesT, JSonObject, VString};
@@ -41,7 +41,7 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 
   CLog::log("handle Pulled Packet: " + cutils::dumpIt(packet), "app", "trace");
 
-  String receive_date = packet["pq_receive_date"] cutils::get_now()).to_string();
+  String receive_date = packet["pq_receive_date"] application().get_now()).to_string();
   String pq_type = packet["pq_type"] "").to_string();
   String pq_code = packet["pq_code"] "").to_string();
   String pq_sender = packet["pq_sender"] "").to_string();
@@ -325,7 +325,7 @@ pub fn push_to_parsing_q(
                 m_clause_operand: "IN",
                 m_field_multi_values: vec![],
             };
-            for an_anc in &card_ancestors{
+            for an_anc in &card_ancestors {
                 c1.m_field_multi_values.push(an_anc as &(dyn ToSql + Sync));
             }
             let daged_blocks = search_in_dag(
@@ -391,7 +391,7 @@ pub fn push_to_parsing_q(
 
     let (_status, _safe_version, pq_payload) = wrap_safe_content_for_db(
         &cutils::serialize_json(&card_j_obj), constants::DEFAULT_SAFE_VERSION);
-    let now_ = cutils::get_now();
+    let now_ = application().get_now();
     let pq_prerequisites = prerequisites.join(",");
     let zero: i32 = 0;
     let pq_v_status = "new".to_string();
@@ -426,6 +426,8 @@ pub fn push_to_parsing_q(
     }
 
 
+    let back_in_time = application().get_cycle_by_minutes();
+    let now_ = application().get_now();
     rmove_from_parsing_q(vec![
         ModelClause {
             m_field_name: "pq_parse_attempts",
@@ -435,7 +437,7 @@ pub fn push_to_parsing_q(
         },
         ModelClause {
             m_field_name: "pq_creation_date",
-            m_field_single_str_value: &cutils::minutes_before(cutils::get_cycle_by_minutes(), &cutils::get_now()),
+            m_field_single_str_value: &application().minutes_before(back_in_time, &now_),
             m_clause_operand: "<",
             m_field_multi_values: vec![],
         }]);

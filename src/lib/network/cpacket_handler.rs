@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use actix_web::cookie::time::format_description::parse;
 use postgres::types::ToSql;
 use serde_json::json;
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_CPACKET_TICKETING, C_CPACKET_TICKETING_FIELDS};
@@ -63,7 +63,7 @@ pub fn decrypt_and_parse_packet(
             machine().get_selected_m_profile(),
             constants::YES.to_string(),
             NeighborInfo::new(),
-            cutils::get_now(),
+            application().get_now(),
         );
 
 // retrieve id of newly inserted email
@@ -238,7 +238,7 @@ pub fn i_update(_file_name: &String) -> bool
 pub fn i_create(file_id: &String) -> bool
 {
     let zero: i32 = 0;
-    let now_ = cutils::get_now();
+    let now_ = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("msg_file_id", file_id as &(dyn ToSql + Sync)),
         ("msg_try_count", &zero as &(dyn ToSql + Sync)),

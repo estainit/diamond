@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VVString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
@@ -164,13 +164,13 @@ pub fn prepare_packets_for_neighbors(
                 email_body,   //sqPyload
             ]);
 
-
+        let now_ = application().get_now();
         add_sent_block(&mut HashMap::from([
             ("lb_type", &sq_type as &(dyn ToSql + Sync)),
             ("lb_code", &sq_code as &(dyn ToSql + Sync)),
             ("lb_title", &sq_title as &(dyn ToSql + Sync)),
             ("lb_sender", &sender as &(dyn ToSql + Sync)),
-            ("lb_send_date", &cutils::get_now() as &(dyn ToSql + Sync)),
+            ("lb_send_date", &now_ as &(dyn ToSql + Sync)),
             ("lb_receiver", &receiver_email as &(dyn ToSql + Sync)),
             ("lb_connection_type", &connection_type as &(dyn ToSql + Sync))
         ]));
@@ -233,7 +233,7 @@ pub fn push_into_sending_q(
 
         if records.len() == 0
         {
-            let now = cutils::get_now();
+            let now = application().get_now();
             let sq_send_attempts = 0;
             let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
                 ("sq_type", &packet[2] as &(dyn ToSql + Sync)),

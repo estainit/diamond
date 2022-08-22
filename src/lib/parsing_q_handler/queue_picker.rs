@@ -169,7 +169,7 @@ bool ParsingQHandler::increaseToparseAttempsCountSync(const QVDicT &packet)
     return DbModel::update(
       stbl_parsing_q,
       {{"pq_parse_attempts", packet.value("pq_parse_attempts").toUInt() + 1},
-      {"pq_last_modified", cutils::get_now() }},
+      {"pq_last_modified", application().get_now() }},
       {{"pq_type", packet.value("pq_type").to_string()},
       {"pq_code", packet.value("pq_code").to_string()},
       {"pq_sender", packet.value("pq_sender").to_string()}});

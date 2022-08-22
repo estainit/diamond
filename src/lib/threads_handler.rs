@@ -1,6 +1,6 @@
 use std::thread::sleep;
 use std::time::Duration;
-use crate::{cutils, machine};
+use crate::{application, machine};
 use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::import_coinbased_coins;
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
@@ -20,8 +20,11 @@ use crate::lib::services::polling::polling_handler::do_conclude_treatment;
 pub fn launch_giga_loop(only_lazy_loadings: bool) {
     maybe_boot_dag_from_bundle();
 
+    let mut giga_loop_counter = 0;
     while machine().should_loop_threads()
     {
+        giga_loop_counter += 1;
+        println!("{}. Loop Top", giga_loop_counter);
         dlog(
             &format!("Looping Giga loop"),
             constants::Modules::App,
@@ -40,19 +43,21 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
         // coin importing
         {
             // import new minted coins
-            import_coinbased_coins(&cutils::get_now());
+            let now_ = application().get_now();
+            import_coinbased_coins(&now_);
             // double checking repayblock importing
             import_double_check();
             if constants::DATABASAE_AGENT == "sqlite"
             {
                 // // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-                // NormalUTXOHandler::doImportUTXOs(cutils::get_now());
+                // NormalUTXOHandler::doImportUTXOs(application().get_now());
                 // PollingHandler::doConcludeTreatment();
                 // ParsingQHandler::smartPullQ();
             }
 
             // import Normal Coins
-            do_import_coins(&cutils::get_now());
+            let now_ = application().get_now();
+            do_import_coins(&now_);
 
             // remove unusefull visibility in order to lightening coins table
             do_coin_clean(&"".to_string());

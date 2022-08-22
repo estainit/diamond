@@ -2,7 +2,7 @@ use std::thread;
 use crate::lib::constants;
 use crate::lib::custom_types::CDateT;
 use crate::lib::dlog::dlog;
-use crate::{cutils, machine};
+use crate::{application, machine};
 
 /*
 
@@ -45,7 +45,7 @@ pub fn do_coin_clean( c_date:&CDateT)
   // * they are placed 4 level backward(or older) in history
   // * since it is a optional process to lightening DB loadness, it could be done for 8 level previous too
 
-  let minimum_date:CDateT = cutils::get_now();
+  let minimum_date:CDateT = application().get_now();
   // JSonObject leaves = LeavesHandler::getLeaveBlocks();
     /*
   StringList leaves_hashes = leaves.keys();
@@ -83,7 +83,7 @@ pub fn do_coin_clean( c_date:&CDateT)
 bool UTXOHandler::refreshVisibility(CDateT c_date)
 {
   if (c_date == "")
-    c_date = cutils::get_now();
+    c_date = application().get_now();
 
   String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + stbl_trx_utxos +
   " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";

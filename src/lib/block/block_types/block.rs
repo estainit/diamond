@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{CMachine, constants, cutils, dlog};
+use crate::{application, CMachine, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_set_by_json_obj};
@@ -746,7 +746,7 @@ impl Block {
         if constants::DO_HARDCOPY_DAG_BACKUP {
             file_write(
                 machine.get_dag_backup(),
-                cutils::get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt",
+                application().get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt",
                 &self.safe_stringify_block(false),
                 machine.get_app_clone_id());
         }
@@ -762,11 +762,12 @@ impl Block {
         let ancestors = self.m_block_ancestors.join(",");
         let ancestors_count = self.m_block_ancestors.len() as i32;
         let descendants = self.m_block_descendants.join(",");
-        let cycle = cutils::get_coinbase_cycle_stamp(&self.m_block_creation_date);
+        let cycle = application().get_coinbase_cycle_stamp(&self.m_block_creation_date);
         let b_trxs_count = 0;
-        let b_receive_date = cutils::get_now();
-        let b_confirm_date = cutils::get_now();
+        let b_receive_date = application().get_now();
+        let b_confirm_date = application().get_now();
         let b_utxo_imported = constants::NO.to_string();
+
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("b_hash", &self.m_block_hash as &(dyn ToSql + Sync)),
             ("b_type", &self.m_block_type as &(dyn ToSql + Sync)),
@@ -1004,7 +1005,7 @@ impl Block {
           if (m_documents.len() == 0)
             return transient_block_info;
 
-          String now_ = cutils::get_now();
+          String now_ = application().get_now();
           for (CDocIndexT doc_inx = 0; doc_inx < m_documents.len(); doc_inx++)
           {
             Document *a_doc = m_documents[doc_inx];

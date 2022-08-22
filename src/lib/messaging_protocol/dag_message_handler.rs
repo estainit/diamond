@@ -27,7 +27,7 @@ bool DAGMessageHandler::setLastReceivedBlockTimestamp(
         {"last_block_hash", block_hash},
         {"last_block_receive_date", receive_date}
       })},
-      {"kv_last_modified", cutils::get_now()}
+      {"kv_last_modified", application().get_now()}
     });
   return true;
 }
@@ -224,7 +224,7 @@ void DAGMessageHandler::loopMissedBlocksInvoker()
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::json;
-use crate::{constants, cutils, dlog, get_value, machine};
+use crate::{application, constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::dag::dag::search_in_dag;
@@ -318,7 +318,7 @@ pub fn invoke_leaves() -> bool
             "cdVer": constants::DEFAULT_CARD_VERSION})],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        cutils::get_now(),
+        application().get_now(),
     );
     // let payload: JSonObject = json!({
     //     "mType": constants::card_types::DAG_INVOKE_LEAVES,
@@ -367,7 +367,11 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         if last_leave_invoke_response_str != "" {
             let last_leave_invoke_response: JSonObject = cutils::parse_to_json_obj(&last_leave_invoke_response_str);
             // TODO: tune the gap time
-            if cutils::time_diff(last_leave_invoke_response["receiveDate"].to_string(), cutils::get_now()).as_seconds < machine().get_invoke_leaves_gap() {
+            let now_ = application().get_now();
+            if application().time_diff(
+                last_leave_invoke_response["receiveDate"].to_string(),
+                now_).as_seconds
+                < machine().get_invoke_leaves_gap() {
                 return;
             }
         }
@@ -377,7 +381,12 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         // this case happends in runing a new machin in which the machine has to download entire DAG.
         let last_block: JSonObject = get_last_received_block_timestamp();
         // TODO: tune the gap time
-        if cutils::time_diff(remove_quotes(&last_block["last_block_receive_date"].to_string()), cutils::get_now()).as_seconds < machine().get_invoke_leaves_gap() {
+        let now_ = application().get_now();
+        if application().time_diff(
+            remove_quotes(&last_block["last_block_receive_date"].to_string()),
+            now_).as_seconds
+            <
+            machine().get_invoke_leaves_gap() {
             return;
         }
 
@@ -387,7 +396,10 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
             vec![],
             0);
         if machine_request_status.len() > 0 {
-            let invoke_age: TimeBySecT = cutils::time_diff(machine_request_status[0]["kv_last_modified"].to_string(), cutils::get_now()).as_seconds;
+            let now_ = application().get_now();
+            let invoke_age: TimeBySecT = application().time_diff(
+                machine_request_status[0]["kv_last_modified"].to_string(),
+                now_).as_seconds;
             dlog(
                 &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().get_invoke_leaves_gap()),
                 constants::Modules::App,
@@ -432,7 +444,7 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        cutils::get_now(),
+        application().get_now(),
     );
     dlog(
         &format!("prepared packet, before insert into DB code({}) to ({}): {}", code, sender, body),
@@ -505,7 +517,7 @@ pub fn handle_received_leave_info(
 
     let leaves: Vec<JSonObject> = vec![]; // = message.clone();
     // update last_received_leaves_info_timestamp
-    set_last_received_leave_info_timestamp(&leaves, &cutils::get_now());
+    set_last_received_leave_info_timestamp(&leaves, &application().get_now());
 
     // control if block exist in local, if not adding to missed blocks to invoke
     let mut missed_hashes: Vec<String> = vec![];
@@ -535,7 +547,7 @@ pub fn handle_received_leave_info(
 //old_name_was setLastReceivedLeaveInfoTimestamp
 pub fn set_last_received_leave_info_timestamp(leaves: &Vec<JSonObject>, c_date: &CDateT)
 {
-    let last_modified = cutils::get_now();
+    let last_modified = application().get_now();
     let kv_value = cutils::serialize_json(&json!({
         "leaves": leaves,
         "receiveDate": c_date

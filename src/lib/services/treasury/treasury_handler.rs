@@ -1,13 +1,13 @@
-use crate::{constants, cutils, dlog};
-use crate::cutils::TimeRange;
+use crate::{application, constants, dlog};
 use crate::lib::custom_types::{CDateT, CMPAIValueT};
 use crate::lib::database::abs_psql::q_custom_query;
 use crate::lib::database::tables::C_TREASURY;
+use crate::lib::machine::app_params::TimeRange;
 
 //old_name_was getTreasureIncomesDateRange
 pub fn get_treasure_incomes_date_range(c_date: &CDateT) -> TimeRange
 {
-    return cutils::get_a_cycle_range(c_date, constants::TREASURY_MATURATION_CYCLES, 0);
+    return application().get_a_cycle_range(c_date, constants::TREASURY_MATURATION_CYCLES, 0);
 }
 
 //old_name_was calcTreasuryIncomes

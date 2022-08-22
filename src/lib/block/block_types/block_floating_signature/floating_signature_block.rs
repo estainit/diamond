@@ -170,7 +170,7 @@ JSonObject FloatingSignatureBlock::export_block_to_json(const bool ext_info_in_d
 */
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::custom_types::{CDateT, DoubleDicT, QVDRecordsT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
@@ -180,8 +180,9 @@ use crate::lib::utils::dumper::dump_hashmap_of_qvd_records;
 pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<String>)
 {
     // retrieve prev cycle info
-    if cutils::get_now() > cutils::get_coinbase_range(&machine().get_launch_date()).to {
-        let (cycle_stamp, from_t, _to, _from_hour, _to_hour) = cutils::get_prev_coinbase_info(c_date);
+    let launch_date  = application().launch_date();
+    if application().get_now() > application().get_coinbase_range(&launch_date).to {
+        let (cycle_stamp, from_t, _to, _from_hour, _to_hour) = application().get_prev_coinbase_info(c_date);
 
         // retrieve prev cycle coinbases
         let prv_coinbase_blocks: QVDRecordsT = search_in_dag(

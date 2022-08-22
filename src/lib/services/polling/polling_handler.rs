@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{ccrypto, constants, cutils, dlog};
+use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
@@ -97,7 +97,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::Modules::App,
         constants::SecLevel::Trace);
 
-    let pll_end_date: CDateT = cutils::minutes_after(
+    let pll_end_date: CDateT = application().minutes_after(
         abs_no_timeframe_by_minutes,
         &remove_quotes(&params["startDate"].to_string()));
 
@@ -244,7 +244,7 @@ pub fn init_polling_profiles()
 
 TimeByHoursT normalizeVotingTimeframe(TimeByHoursT voting_timeframe)
 {
-  if (machine().cycle() == 1)
+  if (application().cycle() == 1)
      return static_cast<uint64_t>(voting_timeframe);
   // because of test ambient the longivity can be float and less than 1 hour
   return cutils::customFloorFloat(static_cast<double>(voting_timeframe), 2);
@@ -398,7 +398,7 @@ bool maybeUpdatePollingStat(const CDocHashT& polling_hash)
     }
   }
 
-  vStatistics.m_polling_status = (polling.value("pll_end_date").to_string() < cutils::get_now()) ? constants::CLOSE : constants::OPEN;
+  vStatistics.m_polling_status = (polling.value("pll_end_date").to_string() < application().get_now()) ? constants::CLOSE : constants::OPEN;
 
   CLog::log("vStatistics: " + vStatistics.dumpMe(), "app", "trace");
 
@@ -491,7 +491,7 @@ void doOnePollingConcludeTreatment(
   CLog::log("retrive for conclude Treatment polling(" + cutils::hash8c(aPolling.value("pll_hash").to_string()) + ") polling_end_date(" + polling_end_date + ")", "app", "info");
 
   // generaly Close the pollings which are finished the voting time
-  if (polling_end_date < cutils::get_now())
+  if (polling_end_date < application().get_now())
   {
     maybeUpdatePollingStat(aPolling.value("pll_hash").to_string());
 
@@ -958,7 +958,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   // calculate ballot cost
   auto[adm_cost_status, adm_dp_cost] = adm_polling_doc->calcDocDataAndProcessCost(
     constants::STAGES::Creating,
-    cutils::get_now());
+    application().get_now());
   if (!adm_cost_status)
   {
     msg = "Failed in Adm-polling calculation for: " + adm_polling_doc.m_doc_comment;
@@ -1007,7 +1007,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   // 4. create trx to pay real polling costs
   auto[polling_cost_status, polling_dp_cost] = polling_doc->calcDocDataAndProcessCost(
     constants::STAGES::Creating,
-    cutils::get_now());
+    application().get_now());
   if (!polling_cost_status)
   {
     msg = "Failed in polling calculation for: " + adm_polling_doc.m_doc_comment;

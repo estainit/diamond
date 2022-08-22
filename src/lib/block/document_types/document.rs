@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{constants, cutils, dlog};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
-use crate::lib::block::document_types::dna_proposal_document::DNAProposalDocument;
+use crate::lib::block::document_types::dna_proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
 use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, DocLenT, JSonObject};
 use crate::lib::database::abs_psql::q_insert;
@@ -30,7 +30,7 @@ pub struct Document
     pub m_doc_ext_info: Vec<JSonObject>,
     pub m_doc_length: DocLenT,
 
-    pub m_if_proposal_doc: DNAProposalDocument,
+    pub m_if_proposal_doc: ProposalDocument,
     pub m_if_polling_doc: PollingDocument,
     pub m_if_basic_tx_doc: BasicTxDocument,
     pub m_if_coinbase: CoinbaseDocument,
@@ -55,7 +55,7 @@ impl Document
             m_doc_ext_info: vec![],
             m_doc_length: 0,
 
-            m_if_proposal_doc: DNAProposalDocument::new(),
+            m_if_proposal_doc: ProposalDocument::new(),
             m_if_polling_doc: PollingDocument::new(),
             m_if_basic_tx_doc: BasicTxDocument::new(),
             m_if_coinbase: CoinbaseDocument::new(),
@@ -721,7 +721,7 @@ pub fn map_doc_to_block(
     doc_index: CDocIndexT)
 {
     let dbm_doc_index = doc_index;
-    let dbm_last_control = cutils::get_now();
+    let dbm_last_control = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("dbm_block_hash", &block_hash as &(dyn ToSql + Sync)),
         ("dbm_doc_index", &dbm_doc_index as &(dyn ToSql + Sync)),

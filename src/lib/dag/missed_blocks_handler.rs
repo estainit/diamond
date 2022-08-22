@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils, dlog};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::custom_types::VString;
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
@@ -122,7 +122,7 @@ pub fn add_missed_blocks_to_invoke(mut hashes: VString) -> bool
         { continue; }
 
         let zero: i64 = 0;
-        let insert_date = cutils::get_now();
+        let insert_date = application().get_now();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("mb_block_hash", &hash as &(dyn ToSql + Sync)),
             ("mb_insert_date", &insert_date as &(dyn ToSql + Sync)),
@@ -206,7 +206,7 @@ bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
     STBL_MISSED_BLOCKS,
     {
       {"mb_invoke_attempts", attemps_count + 1},
-      {"mb_last_invoke_date", cutils::get_now()}
+      {"mb_last_invoke_date", application().get_now()}
     },
     {{"mb_block_hash", block_hash}});
 

@@ -5,7 +5,7 @@ use crate::lib::dlog::dlog;
 use std::path::Path;
 use std::fs;
 use substring::Substring;
-use crate::{ccrypto, constants, cutils, machine};
+use crate::{application, ccrypto, constants, machine};
 
 pub fn file_read(
     mut file_path: String,
@@ -200,9 +200,9 @@ pub fn write_email_as_file(
     let mut file_name: String = "".to_string();
     if machine().is_develop_mod()
     {
-        file_name = [&cutils::get_now_sss(), sender, receiver, title, ".txt"].join(",");
+        file_name = [receiver, sender, &application().get_now_sss(), title, ".txt"].join(",");
     } else {
-        file_name = [receiver, &cutils::get_now_sss(), &ccrypto::get_random_number(5), ".txt"].join(" ");
+        file_name = [receiver, sender, &application().get_now_sss(), &ccrypto::get_random_number(5), ".txt"].join(" ");
     }
     dlog(
         &format!("file Name: {}", file_name),

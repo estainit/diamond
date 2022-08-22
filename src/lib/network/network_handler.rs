@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{ccrypto, constants, cutils, dlog, get_value, machine};
+use crate::{application, ccrypto, constants, cutils, dlog, get_value, machine};
 use crate::lib::file_handler::file_handler::write_email_as_file;
 use crate::lib::k_v_handler::upsert_kvalue;
 use crate::lib::network::email::send_email_wrapper;
@@ -23,8 +23,8 @@ pub fn i_push(
         to_send_message = constants::message_tags::ENVELOPE_CUSTOM_START.to_string() + &to_send_message + &constants::message_tags::ENVELOPE_CUSTOM_END;
     }
 
-    let mut email_body: String = cutils::get_now() + constants::NL;
-    email_body += &*("time: ".to_owned() + &cutils::get_now_sss() + &constants::NL);
+    let mut email_body: String = application().get_now() + constants::NL;
+    email_body += &*("time: ".to_owned() + &application().get_now_sss() + &constants::NL);
     email_body += &(constants::message_tags::SENDER_START_TAG.to_owned() + sender + constants::message_tags::SENDER_END_TAG + constants::NL);
     email_body += &(constants::message_tags::RECEIVE_START_TAG.to_owned() + receiver + constants::message_tags::RECEIVE_END_TAG + constants::NL);
     email_body += &(to_send_message.clone() + &constants::NL);
@@ -78,7 +78,7 @@ pub fn i_push(
             constants::SecLevel::Trace);
         return true;
     } else {
-        sent_emails_obj.insert(email_hash, cutils::get_now());
+        sent_emails_obj.insert(email_hash, application().get_now());
         upsert_kvalue(
             "SENT_EMAILS",
             &serde_json::to_string(&sent_emails_obj).unwrap(),
@@ -86,9 +86,11 @@ pub fn i_push(
     }
 
     let mut refresh_sents: HashMap<String, String> = HashMap::new();
-    let c_date: String = cutils::minutes_before(
-        cutils::get_cycle_by_minutes(),
-        &cutils::get_now());
+    let back_in_time = application().get_cycle_by_minutes();
+    let now_=application().get_now();
+    let c_date: String = application().minutes_before(
+        back_in_time,
+        &now_);
     for a_hash in sent_emails_obj.keys()
         .cloned()
         .collect::<Vec<String>>() {

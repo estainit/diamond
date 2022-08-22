@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::Row;
 use postgres::types::{ToSql, Type, FromSql};
-use crate::{cutils, dbhandler, machine};
+use crate::{cutils, dbhandler};
 use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
@@ -68,15 +68,6 @@ pub fn simple_eq_clause<'s>(field_name: &'s str, single_value: &'s String) -> Mo
         m_clause_operand: "=",
         m_field_multi_values: vec![],
     };
-}
-
-pub struct ModelParams<'l>
-{
-    pub m_table: &'l str,
-    pub m_clauses: ClausesT<'l>,
-    pub m_fields: Vec<&'l str>,
-    pub m_order: OrderT<'l>,
-    pub m_limit: LimitT,
 }
 
 // pub struct PTRRes
@@ -370,7 +361,7 @@ pub fn q_custom_query(
                             let col_value: String = Row::get::<_, String>(a_row, col_inx);
                             col_value
                         }
-                        ("bool") => {
+                        "bool" => {
                             let col_value: bool = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }

@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::cutils::is_greater_than_now;
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, DNAShareCountT, DNASharePercentT};
 use crate::lib::database::abs_psql::{q_custom_query, q_insert, q_select, simple_eq_clause};
@@ -52,17 +51,17 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
         return (false, "share already exist!".to_string()); // "The DNA document (${utils.hash6c(dna.hash)}) is already recorded"};
     }
 
-    if is_greater_than_now(&doc.m_doc_creation_date)
+    if application().is_greater_than_now(&doc.m_doc_creation_date)
     {
         return (false, format!("share is newer than now! {}", doc.m_doc_creation_date));
     }
 
-    let dn_help_hours = doc.m_if_proposal_doc.m_help_hours.to_string();
-    let dn_help_level = doc.m_if_proposal_doc.m_help_level.to_string();
-    let dn_shares = doc.m_if_proposal_doc.m_shares.to_string();
-    let dn_votes_y= doc.m_if_proposal_doc.m_votes_yes.to_string();
-    let dn_votes_a= doc.m_if_proposal_doc.m_votes_abstain.to_string();
-    let dn_votes_n= doc.m_if_proposal_doc.m_votes_no.to_string();
+    let dn_help_hours = doc.m_if_proposal_doc.m_help_hours;
+    let dn_help_level = doc.m_if_proposal_doc.m_help_level;
+    let dn_shares = doc.m_if_proposal_doc.m_shares;
+    let dn_votes_y= doc.m_if_proposal_doc.m_votes_yes;
+    let dn_votes_a= doc.m_if_proposal_doc.m_votes_abstain;
+    let dn_votes_n= doc.m_if_proposal_doc.m_votes_no;
 
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("dn_doc_hash", &doc.m_doc_hash as &(dyn ToSql + Sync)),
@@ -147,18 +146,19 @@ GenRes DNAHandler::insertAShare(JSonObject& params)
 //old_name_was getDNAActiveDateRange
 pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 {
-    // cDate = cutils::get_now();
+    // cDate = application().get_now();
 
-    let mut the_range = cutils::get_a_cycle_range(
+    let mut the_range = application().get_a_cycle_range(
         c_date,
         constants::SHARE_MATURITY_CYCLE,
         0);
 
-    if machine().cycle() == 1
+    if application().cycle() == 1
     {
-        the_range.from = cutils::years_before(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
+        the_range.from = application().years_before(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
     } else {
-        the_range.from = cutils::minutes_before(100 * cutils::get_cycle_by_minutes(), &the_range.from);
+        let back_in_time = 100 * application().get_cycle_by_minutes();
+        the_range.from = application().minutes_before(back_in_time, &the_range.from);
     }
     return (the_range.from, the_range.to);
 }
@@ -167,7 +167,7 @@ pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 //old_name_was getSharesInfo
 pub fn get_shares_info(c_date: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
 {
-    // cDate = cutils::get_now();
+    // cDate = application().get_now();
 
     // retrieve the total shares in last 24 hours, means -36 to -24 based on greenwich time
     // (Note: it is not the machine local time)
@@ -229,7 +229,7 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
   CDateT cDate)
 {
   if(cDate == "")
-    cDate = cutils::get_now();
+    cDate = application().get_now();
 
   auto[sum_shares, share_amount_per_holder, tmp_] = getSharesInfo(cDate);
   Q_UNUSED(tmp_);

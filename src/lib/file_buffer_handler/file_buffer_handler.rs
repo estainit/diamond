@@ -1,4 +1,4 @@
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::file_handler::file_handler::{delete_exact_file, file_read, list_exact_files, read_exact_file};
 use crate::lib::messaging_protocol::dispatcher::parse_a_packet;
 use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
@@ -6,7 +6,7 @@ use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
 
 //old_name_was maybeBootDAGFromBundle
 pub fn maybe_boot_dag_from_bundle() -> bool {
-    let clone_id: i8 = machine().get_app_clone_id();
+    let clone_id: i8 = application().id();
     // let mut bundle = String::from("");
     let (status, bundle) = read_dag_bundle_if_exist(clone_id);
 
@@ -54,7 +54,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     return file_read(
-        machine().root_path(),
+        machine().get_root_path(),
         format!("DAGBundle.txt"),
         clone_id);
 }
@@ -239,7 +239,10 @@ pub fn read_email_file() -> (bool, String, String, String, String)
         constants::SecLevel::Debug);
 
     let files = list_exact_files(&inbox, "txt");  //FIXME: maybe read files ordered by reverse modify date!
-    println!("fileszzzzzzzzzzzzz {:?}", files);
+    if files.len() > 0
+    {
+        println!("{} new packets are received", files.len());
+    }
 
     // the live system never delet outbox, instead can delete inbox after parsing
     if files.len() == 0

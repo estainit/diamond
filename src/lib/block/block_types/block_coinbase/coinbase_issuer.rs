@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::cmerkle::generate_m;
-use crate::{ccrypto, cutils, machine};
+use crate::{application, ccrypto, cutils, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_factory::load_block;
 use crate::lib::block::block_types::block_floating_signature::floating_signature_block::aggrigate_floating_signatures;
@@ -78,22 +78,27 @@ pub fn create_coinbase_core(
 
     if cycle == ""
     {
-        c_date = cutils::get_now();
-        cycle = cutils::get_coinbase_cycle_stamp(&cutils::get_now());
+        c_date = application().get_now();
+        cycle = application().get_coinbase_cycle_stamp(&c_date);
     } else {
-        if machine().cycle() == 1
+        if application().cycle() == 1
         {
             // normally the cycle time is 12 hours
             c_date = cycle.clone();
         } else {
             // here is for test net in which the cycle time is accelerated to have a faster block generator(even 2 minutes)
-            let minutes = cycle.split(" ").collect::<Vec<&str>>()[1].to_string().parse::<TimeByMinutesT>().unwrap() * cutils::get_cycle_by_minutes();
-            let minutes_ = cutils::convert_minutes_to_hhmm(minutes);
+            let minutes = cycle.split(" ")
+                .collect::<Vec<&str>>()[1]
+                .to_string()
+                .parse::<TimeByMinutesT>()
+                .unwrap() * application().get_cycle_by_minutes();
+
+            let minutes_ = application().convert_minutes_to_hhmm(minutes);
             c_date = cycle.split(" ").collect::<Vec<&str>>()[0].to_string().clone() + " " + &minutes_ + ":00";
         }
     }
 
-    let block_creation_date: CDateT = cutils::get_coinbase_range_by_cycle_stamp(&cycle).from;
+    let block_creation_date: CDateT = application().get_coinbase_range_by_cycle_stamp(&cycle).from;
     let mut doc: Document = Document::new();
     doc.m_doc_type = constants::document_types::COINBASE.to_string();
     // doc.m_if_coinbase = get_coinbase_doc_template_object();
@@ -242,8 +247,9 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
 
+    let now_ = application().get_now();
     let (_cycle_stamp, from, to, _from_hour, _to_hour) =
-        cutils::get_coinbase_info(&cutils::get_now(), cycle);
+        application().get_coinbase_info(&now_, cycle);
 
     let (status, mut block) = create_coinbase_core(cycle, mode, version);
     if !status {
@@ -268,15 +274,16 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-    let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&cutils::get_now());
+    let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&application().get_now());
     leaves_hashes = cutils::array_add(&leaves_hashes, &block_hashes);
     leaves_hashes.sort();
     leaves_hashes.dedup();
 
 // if requested cycle is current cycle and machine hasn't fresh leaves, so can not generate a CB block
+    let now_ = application().get_now();
     if (mode == constants::stages::CREATING) &&
         (leaves_hashes.len() == 0) &&
-        (cycle == cutils::get_coinbase_cycle_stamp(&cutils::get_now()))
+        (cycle == application().get_coinbase_cycle_stamp(&now_))
     {
         if mode == constants::stages::CREATING
         {
@@ -319,7 +326,7 @@ pub fn calc_potential_micro_pai_per_one_cycle(year_: &String) -> CMPAIValueT
     let mut year = year_.to_string();
     if year == ""
     {
-        year = cutils::get_current_year();
+        year = application().get_current_year();
     }
 
     let year = year.parse::<u16>().unwrap();
@@ -347,12 +354,12 @@ CDateT due,
 CDateT c_date)
 {
 if (c_date == "")
-c_date = cutils::get_now();
+c_date = application().get_now();
 
 if (due == "")
-due = cutils::get_now();
+due = application().get_now();
 
-if (c_date > cutils::get_now())
+if (c_date > application().get_now())
 {
 CLog::log("for now the formule does not support future contribute calculation. TODO: implement it", "app", "error");
 return {0, 0, 0};
@@ -400,7 +407,7 @@ DNAShareCountT current_total_sahres,
 uint32_t annualContributeGrowthRate)
 {
 if (c_date == "")
-c_date = cutils::get_now();
+c_date = application().get_now();
 
 CMPAIValueT total_incomes = 0;
 std::vector<MonthCoinsReport> monthly_incomes {};
@@ -481,7 +488,8 @@ CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loo
 //old_name_was doesDAGHasMoreConfidenceCB
 pub fn does_dag_has_more_confidence_cb() -> bool
 {
-    let current_cycle_range_from: CDateT = cutils::get_coinbase_range(&cutils::get_now()).from;
+    let now_ = application().get_now();
+    let current_cycle_range_from: CDateT = application().get_coinbase_range(&now_).from;
 
     let already_recorded_coinbase_blocks: QVDRecordsT = search_in_dag(
         vec![
@@ -539,7 +547,7 @@ pub fn does_dag_has_more_confidence_cb() -> bool
 
     let max_recorded_confident: f64 = already_recorded_confidents[0];
 
-    let (the_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&cutils::get_now());
+    let (the_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&application().get_now());
     let not_recorded_blocks: Vec<String> = cutils::array_diff(&block_hashes, &already_recorded_ancestors);
     if (the_confidence > max_recorded_confident) || (not_recorded_blocks.len() > 0) {
         return true;
@@ -552,7 +560,8 @@ pub fn does_dag_has_more_confidence_cb() -> bool
 pub fn make_email_hash_dictionary() -> (String, String, String, QSDicT)
 {
     let mut emails_hash_dict: QSDicT = HashMap::new();
-    let cycle: CDateT = cutils::get_coinbase_cycle_stamp(&cutils::get_now());
+    let now_ = application().get_now();
+    let cycle: CDateT = application().get_coinbase_cycle_stamp(&now_);
     let machine_email: String = machine().get_pub_email_info().m_address.clone();
     let machine_key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &*machine_email));
     emails_hash_dict.insert(machine_key.clone(), machine_email.clone());
@@ -612,13 +621,19 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
 
     // if the machine email hash is not the smalest,
     // control it if based on time passed from coinbase-cycle can create the coinbase?
-    let (_backer_address, _shares, mut percentage) = get_machine_shares(&cutils::get_now());
+    let (
+        _backer_address,
+        _shares,
+        mut percentage) = get_machine_shares(&application().get_now());
+
     percentage = (percentage / 5.0) + 1.0;
     let mut sub_cycle = 12.0 + percentage;
-    if machine().cycle() != 1 {
+    if application().cycle() != 1 {
         sub_cycle = 6.0 + percentage; // who has more shares should try more times to create a coinbase block
     }
-    let cb_email_counter = cutils::get_coinbase_age_by_seconds(&cutils::get_now()) / (cutils::get_cycle_by_seconds() / sub_cycle as TimeBySecT);
+
+    let now_ = application().get_now();
+    let cb_email_counter = application().get_coinbase_age_by_seconds(&now_) / (application().get_cycle_by_seconds() / sub_cycle as TimeBySecT);
     dlog(
         &format!("cb_email_counter cycle {} {} > {}", cb_email_counter, cb_email_counter, machine_index),
         constants::Modules::CB,
@@ -642,7 +657,8 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
 //old_name_was controlCoinbaseIssuanceCriteria
 pub fn control_coinbase_issuance_criteria() -> bool
 {
-    let current_cycle_range = cutils::get_coinbase_range(&cutils::get_now());
+    let now_ = application().get_now();
+    let current_cycle_range = application().get_coinbase_range(&now_);
     dlog(
         &format!("Coinbase check Range (from {} to {} ", current_cycle_range.from, current_cycle_range.to),
         constants::Modules::CB,
@@ -696,9 +712,10 @@ pub fn control_coinbase_issuance_criteria() -> bool
         //     return res;
         // }
 
-        let latenancy_factor: f64 = ((missed_blocks.len() + 1) as f64 / (constants::MAX_TOLERATED_MISS_BLOCKS as f64)) * cutils::get_coinbase_age_by_seconds(&cutils::get_now()) as f64;
-        let are_we_in_4_of_5: bool = cutils::get_coinbase_age_by_seconds(&cutils::get_now()) < (cutils::get_cycle_by_seconds() * 4 / 5);
-        if are_we_in_4_of_5 && (cutils::get_coinbase_age_by_seconds(&cutils::get_now()) < latenancy_factor as TimeBySecT)
+        let now_ = application().get_now();
+        let latenancy_factor: f64 = ((missed_blocks.len() + 1) as f64 / (constants::MAX_TOLERATED_MISS_BLOCKS as f64)) * application().get_coinbase_age_by_seconds(&now_) as f64;
+        let are_we_in_4_of_5: bool = application().get_coinbase_age_by_seconds(&now_) < (application().get_cycle_by_seconds() * 4 / 5);
+        if are_we_in_4_of_5 && (application().get_coinbase_age_by_seconds(&now_) < latenancy_factor as TimeBySecT)
         {
             dlog(
                 &format!("Because of {} missed blocks, machine can not create a CB before {} second age of cycle or atleast 4/5 of cycle age passed", missed_blocks.len(), latenancy_factor),
@@ -734,12 +751,12 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
         constants::SecLevel::Trace);
 
     let mut cycle_by_minutes: TimeByMinutesT = constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
-    if machine().cycle() != 1 {
-        cycle_by_minutes = machine().cycle() as TimeByMinutesT;
+    if application().cycle() != 1 {
+        cycle_by_minutes = application().cycle() as TimeByMinutesT;
     }
-    let res: bool = cutils::time_diff(
-        cutils::get_coinbase_range(c_date).from,
-        cutils::get_now()).as_seconds
+    let from_t_ = application().get_coinbase_range(c_date).from;
+    let to_t_ = application().get_now();
+    let res: bool = application().time_diff(from_t_, to_t_).as_seconds
         >= (cycle_by_minutes as f64 * 60.0 * constants::COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG * (1 + (machine_index.pow(7) / 131)) as f64) as u64;
     dlog(
         &format!("passed CertainTimeOfCycleToRecordInDAG? {}", res),
@@ -762,21 +779,20 @@ pub fn maybe_create_coinbase_block() -> bool
 //old_name_was tryCreateCoinbaseBlock
 pub fn try_create_coinbase_block() -> bool
 {
+    let now_ = application().get_now();
     let (
         _coinbase_cycle_stamp,
         coinbase_from,
         coinbase_to,
         _coinbase_from_hour,
-        _coinbase_to_hour) = cutils::get_coinbase_info(&cutils::get_now(), "");
-// listener.doCallAsync('APSH_create_coinbase_block', { cbInfo });
+        _coinbase_to_hour) = application().get_coinbase_info(&now_, "");
 
     dlog(
         &format!("Try to Create Coinbase for Range ({}, {})", coinbase_from, coinbase_to),
         constants::Modules::CB,
         constants::SecLevel::Trace);
-
     let (status, mut block) = do_generate_coinbase_block(
-        &cutils::get_coinbase_cycle_stamp(&cutils::get_now()),
+        &application().get_coinbase_cycle_stamp(&now_),
         constants::stages::CREATING,
         "0.0.1");
     if !status {
@@ -808,7 +824,7 @@ pub fn try_create_coinbase_block() -> bool
     let tmp_local_confidence: f64 = block.m_block_confidence as f64;
 
 // if local machine can create a coinbase block with more confidence or ancestors, broadcast it
-    let (atleast_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&cutils::get_now());
+    let (atleast_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&application().get_now());
 
     let mut tmp_dag_confidence: f64 = 0.0;
     let mut tmp_dag_ancestors: Vec<String> = vec![];
@@ -908,7 +924,7 @@ pub fn try_create_coinbase_block() -> bool
     {
 
         // broadcast coin base
-        if cutils::is_in_current_cycle(&block.m_block_creation_date.to_string())
+        if application().is_in_current_cycle(&block.m_block_creation_date.to_string())
         {
             let push_res: bool = push_into_sending_q(
                 constants::block_types::COINBASE,
@@ -937,7 +953,7 @@ pub fn try_create_coinbase_block() -> bool
 
             return true;
         }
-    } else if if_passed_certain_time_of_cycle_to_record_in_dag(&cutils::get_now()) && !atleast_one_coinbase_block_exist
+    } else if if_passed_certain_time_of_cycle_to_record_in_dag(&application().get_now()) && !atleast_one_coinbase_block_exist
     {
         // another psudo random emulatore
         // if already passed more than 1/4 of cycle and still no coinbase block recorded in DAG,
@@ -966,7 +982,10 @@ pub fn try_create_coinbase_block() -> bool
     } else {
         dlog(
             &format!("Coinbase can be issued by clause 3 but local hasn't neither more confidence nor more ancestors and still not riched to 1/4 of cycle time. CB({}) issued by({} for cycle range({}, {})",
-                     cutils::hash8c(&block.m_block_hash), &machine().get_pub_email_info().m_address, coinbase_from, coinbase_to),
+                     cutils::hash8c(&block.m_block_hash),
+                     &machine().get_pub_email_info().m_address,
+                     coinbase_from,
+                     coinbase_to),
             constants::Modules::CB,
             constants::SecLevel::Trace);
         return true;

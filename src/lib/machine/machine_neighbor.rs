@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use crate::{ccrypto, CMachine, constants, cutils, dlog, machine};
+use crate::{application, ccrypto, CMachine, constants, cutils, dlog, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
@@ -130,7 +130,7 @@ pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64
         mp_code.clone(),
         constants::YES.to_string(),
         neighbor_info,
-        cutils::get_now());
+        application().get_now());
 
     if !status {
         return (status, msg, 0);
@@ -195,10 +195,10 @@ pub fn add_a_new_neighbor(
         return if neighbor_public_key != ""
         {
             //update pgp key
-            let now = cutils::get_now();
+            let now_ = application().get_now();
             let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
                 ("n_pgp_public_key", &neighbor_public_key as &(dyn ToSql + Sync)),
-                ("n_last_modified", &now as &(dyn ToSql + Sync)),
+                ("n_last_modified", &now_ as &(dyn ToSql + Sync)),
             ]);
             let clauses: ClausesT = vec![
                 simple_eq_clause("n_mp_code", &mp_code),
@@ -217,9 +217,8 @@ pub fn add_a_new_neighbor(
         };
     }
 
-
     if creation_date == "" {
-        creation_date = cutils::get_now();
+        creation_date = application().get_now();
     }
 
     let (status, serialized_neighbor_info) = match serde_json::to_string(&neighbor_info) {
@@ -235,7 +234,7 @@ pub fn add_a_new_neighbor(
     if !status
     { return (false, "Failed in serialization neighbor_info".to_string()); }
 
-    let now = cutils::get_now();
+    let now_ = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("n_mp_code", &mp_code as &(dyn ToSql + Sync)),
         ("n_email", &neighbor_email as &(dyn ToSql + Sync)),
@@ -244,10 +243,10 @@ pub fn add_a_new_neighbor(
         ("n_connection_type", &connection_type as &(dyn ToSql + Sync)),
         ("n_creation_date", &creation_date as &(dyn ToSql + Sync)),
         ("n_info", &serialized_neighbor_info as &(dyn ToSql + Sync)),
-        ("n_last_modified", &now as &(dyn ToSql + Sync))
+        ("n_last_modified", &now_ as &(dyn ToSql + Sync))
     ]);
     dlog(
-        &format!("goint to add new Neighbor: {:?}", &values),
+        &format!("going to add new Neighbor: {:?}", &values),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -447,7 +446,7 @@ pub fn parse_handshake(
             "".to_string(),
             constants::YES.to_string(),
             NeighborInfo::new(),
-            cutils::get_now());
+            application().get_now());
     } else {
         if sender_info[0]["n_pgp_public_key"].to_string() == ""
         {
@@ -594,7 +593,7 @@ pub fn flood_email_to_neighbors(
             //TODO: adding some expiration control to have availabality to re-broadcast email
             already_presented_neighbors.push(NeighborPresentation {
                 m_vertice: vertice,
-                m_date: cutils::get_now(),
+                m_date: application().get_now(),
             });
 
             let machine_address = machine().get_pub_email_info().m_address.clone();
@@ -716,7 +715,7 @@ pub fn parse_nice_to_meet_you(
         n_info = cutils::serialize_json(&json!({"backerAddress": sender_backer_address}));
     }
 
-    let last_modified = cutils::get_now();
+    let last_modified = application().get_now();
     let mut updates: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("n_info", &n_info as &(dyn ToSql + Sync)),
         ("n_pgp_public_key", &sender_pgp_public_key as &(dyn ToSql + Sync)),

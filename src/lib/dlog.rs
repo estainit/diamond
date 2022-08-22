@@ -7,7 +7,7 @@ use log4rs::Config;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::filter::threshold::ThresholdFilter;
-use crate::{machine};
+use crate::{application, machine};
 use crate::constants::{Modules, SecLevel};
 
 pub fn initialize_log() {
@@ -25,7 +25,7 @@ pub fn initialize_log() {
     let log_file_path = format!(
         "{}/{}_dlog.log",
         path_,
-        machine().get_app_clone_id());
+        application().id());
 
     let config = Config::builder()
         .appender(

@@ -755,9 +755,9 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     dn_doc_hash varchar(256) NOT NULL UNIQUE,    -- document hash in blockchain
     dn_shareholder varchar(128) NOT NULL,    -- the bech32 address of share holder
     dn_project_hash varchar(256) NOT NULL,
-    dn_help_hours INT NOT NULL,
-    dn_help_level INT NOT NULL,    -- 1 to 7, the signer states the importance of the help
-    dn_shares INT NOT NULL DEFAULT 0,
+    dn_help_hours INT4 NOT NULL,
+    dn_help_level INT4 NOT NULL,    -- 1 to 7, the signer states the importance of the help
+    dn_shares INT8 NOT NULL DEFAULT 0,
     dn_title TEXT NULL,
     dn_descriptions TEXT NULL,    -- some descriptions
     dn_tags TEXT NULL,    -- some useful tags fro statistic reason (e.g js, performance, UI, optimise, consultant, translate ...)

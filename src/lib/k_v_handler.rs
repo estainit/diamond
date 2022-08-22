@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::cutils;
+use crate::{application};
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
 use crate::lib::database::tables::C_KVALUE;
@@ -64,7 +64,7 @@ bool KVHandler::updateKValue(const String &key, const String &value)
 {
   return DbModel::update(
     STBL_KVALUE,
-    {{"kv_value", value}, {"kv_last_modified", cutils::get_now()}},
+    {{"kv_value", value}, {"kv_last_modified", application().get_now()}},
     {{"kv_key", key}});
 }
 
@@ -75,7 +75,7 @@ pub fn upsert_kvalue(
     value: &str,
     log: bool) -> bool
 {
-    let dt = cutils::get_now();
+    let dt = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> =
         [("kv_value", &value as &(dyn ToSql + Sync)),
             ("kv_last_modified", &dt as &(dyn ToSql + Sync))]

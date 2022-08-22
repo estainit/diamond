@@ -5,7 +5,7 @@ use serde::{Serialize, Deserialize};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
-use crate::{ccrypto, constants, cutils, dlog, PermutationHandler};
+use crate::{application, ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{generate_m, get_root_by_a_prove};
 use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject};
 
@@ -192,7 +192,7 @@ pub fn create_m_of_n_merkle<'a>(
             an_unlock_set.m_salt = cutils::hash16c(
                 &ccrypto::keccak256(
                     &(an_unlock_set.dump()
-                        + &cutils::get_now()
+                        + &application().get_now()
                         + &format!("{}", rand::thread_rng().gen::<u32>())
                     )
                 )

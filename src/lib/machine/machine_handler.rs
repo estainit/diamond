@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 use std::thread;
-use crate::{ccrypto, cutils, dbhandler};
+use crate::{application, ccrypto, cutils, dbhandler};
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, TimeByMinutesT, VString};
-use crate::lib::database::db_handler::{maybe_switch_db, empty_db, get_connection, maybe_initialize_db};
+use crate::lib::database::db_handler::{maybe_switch_db, empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
-use substring::Substring;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
 use crate::lib::dag::dag_walk_through::get_latest_block_record;
@@ -24,19 +23,18 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
 pub struct CMachine {
-    m_clone_id: i8,
+    pub(crate) m_clone_id: i8,
     m_should_loop_threads: bool,
 
     pub m_is_db_connected: bool,
     pub m_is_db_initialized: bool,
     pub m_is_in_sync_process: bool,
-    m_last_sync_status_check: CDateT,
+    pub(crate) m_last_sync_status_check: CDateT,
 
     m_threads_status: QSDicT,
     m_map_thread_code_to_prefix: QSDicT,
-    m_config_file: String,
-    m_is_develop_mod: bool,
-
+    pub(crate) m_config_file: String,
+    pub(crate) m_is_develop_mod: bool,
 
     /*
 
@@ -70,6 +68,12 @@ pub struct CMachine {
     pub m_hard_root_path: String,
     pub m_launch_date: String,
     pub m_cycle_length: u32,
+
+    pub m_db_host: String,
+    pub m_db_name: String,
+    pub m_db_user: String,
+    pub m_db_pass: String,
+
 }
 /*
 pub trait CMachineThreadGaps {
@@ -83,6 +87,8 @@ pub trait CMachineThreadGaps {
 impl CMachine {
     pub(crate) fn new() -> CMachine {
         // let (_status, profile) = MachineProfile::get_profile_from_db(constants::DEFAULT);
+        eprintln!("New CMachine was create.");
+
         CMachine {
             m_clone_id: 0,
             m_should_loop_threads: true,
@@ -93,7 +99,6 @@ impl CMachine {
 
             m_threads_status: HashMap::new(),
             m_map_thread_code_to_prefix: HashMap::new(),
-
 
             m_selected_profile: "".to_string(),
             m_is_db_connected: false,
@@ -129,6 +134,12 @@ impl CMachine {
             m_last_sync_status_check: "2024-00-00 00:00:00".to_string(),
             m_launch_date: "2024-00-00 00:00:00".to_string(),
             m_cycle_length: 1,
+
+            m_db_host: "".to_string(),
+            m_db_name: "".to_string(),
+            m_db_user: "".to_string(),
+            m_db_pass: "".to_string(),
+
         }
     }
 
@@ -159,148 +170,23 @@ impl CMachine {
         true
     }
 
-    // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8)
-    {
-        // cargo run cid=1 dev verbose config=/Users/silver/Documents/Diamond_files/config.txt
-        // println!("Env args: {:?}", args);
-
-        let mut clone_id: i8 = 0;
-        let mut config_file: String = "".to_string();
-        let mut is_develop_mod: bool = false;
-        let mut verbose: bool = false;
-
-        let mut args_dic: HashMap<String, String> = HashMap::new();
-        for a_param in args {
-            if a_param.contains("=")
-            {
-                let arg_details = a_param.split("=").collect::<Vec<&str>>();
-                args_dic.insert(arg_details[0].to_string(), arg_details[1].to_string());
-            } else {
-                if a_param == "dev"
-                {
-                    is_develop_mod = true;
-                } else if a_param == "verbose"
-                {
-                    verbose = true;
-                }
-            }
-        }
-
-        // cid: clone id
-        if args_dic.contains_key("cid") {
-            clone_id = args_dic["cid"].parse::<i8>().unwrap();
-        }
-
-        // config: config file
-        config_file = "/Users/silver/Documents/Diamond_files/config.txt".to_string();
-        if std::env::consts::OS == "windows" {
-            config_file = "c:\\Documents\\config.ini".to_string();
-        }
-
-        let mut config_source = "Default";
-        if args_dic.contains_key("config") {
-            config_file = args_dic["config"].clone();
-            config_source = "Command-line";
-        }
-
-        if forcing_manual_clone_id > 0 {
-            clone_id = forcing_manual_clone_id;
-        }
-
-
-        self.m_clone_id = clone_id;
-        self.m_is_develop_mod = is_develop_mod;
-        self.m_config_file = config_file.clone();
-
-        if args_dic.contains_key("config") {
-            // update database
-            set_value("config_file", &config_file.to_string(), false);
-        } else {
-            // probably it should be loaded from db
-            let db_config_file = get_value("config_file");
-            if db_config_file != ""
-            {
-                self.m_config_file = db_config_file;
-                config_source = "DB";
-            }
-        }
-
-        self.m_config_source = config_source.to_string();
-        self.parse_config_file();
-    }
-
-    // func name was setCloneDev
-    pub fn parse_config_file(&mut self) -> bool
-    {
-        use configparser::ini::Ini;
-
-        let mut config = Ini::new();
-        let (status, configs_map) = match config.load(&self.m_config_file) {
-            Ok(r) => (true, r),
-            Err(e) => {
-                eprintln!("{}", e);
-                (false, HashMap::new())
-            }
-        };
-        if !status
-        {
-            eprintln!("Please give the config file path through commandline (config=\"C:\\Documents\\config.txt\") or copy the config.txt file from source folder to default path \"C:\\Home\\config.txt\"");
-            panic!("Invalid config file path");
-        }
-
-        println!("Config file was loaded({}). {}", self.m_config_source, self.m_config_file);
-        // remove "/config.txt" from the end of path
-        self.m_hard_root_path = self.m_config_file.substring(0, self.m_config_file.len() - 11).to_string();
-
-        self.m_launch_date = config.get("default", "launch_date").unwrap();
-        self.m_cycle_length = config.getuint("default", "cycle_length").unwrap().unwrap() as u32;
-        self.m_last_sync_status_check = self.m_launch_date.clone();
-        self.m_email_is_active = config.getbool("default", "email_is_active").unwrap().unwrap();
-        self.m_use_hard_disk_as_a_buffer = Ini::getbool(&config, "default", "use_hard_disk_as_a_buffer").unwrap().unwrap();
-
-        dbhandler().m_db_host = config.get("database", "db_host").unwrap();
-        dbhandler().m_db_name = config.get("database", "db_name").unwrap();
-        dbhandler().m_db_user = config.get("database", "db_user").unwrap();
-        dbhandler().m_db_pass = config.get("database", "db_pass").unwrap();
-        maybe_switch_db(self.m_clone_id);
-
-        // config.read(String::from("[somesection] someintvalue = 5"));
-        // let my_value = config.getint("somesection", "someintvalue").unwrap().unwrap();
-        // assert_eq!(my_value, 5); // value accessible!
-        //
-        // //You can ofcourse just choose to parse the values yourself:
-        // let my_string = String::from("1984");
-        // let my_int = my_string.parse::<i32>().unwrap();
-
-        true
-    }
-
     //old_name_was getAppCloneId
     pub fn get_app_clone_id(&self) -> i8
     {
         return self.m_clone_id;
     }
-
-    pub fn root_path(&self) -> String {
-        self.m_hard_root_path.clone()
-    }
-
-    pub fn cycle(&self) -> u32 {
+    pub fn get_cycle_length(&self) -> u32
+    {
         self.m_cycle_length
     }
 
-    pub fn get_cycle_by_zminutes(&self) -> TimeByMinutesT {
-        if self.m_cycle_length == 1 {
-            return constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
-        }
-        return self.m_cycle_length as TimeByMinutesT;
+    pub fn get_root_path(&self) -> String {
+        self.m_hard_root_path.clone()
     }
 
 
     //func name was shouldLoopThreads
     pub fn should_loop_threads(&self) -> bool {
-        println!("should_ loop_ threads > {:?}", self.m_should_loop_threads);
         self.m_should_loop_threads
     }
 
@@ -318,28 +204,37 @@ impl CMachine {
             return false;
         }
 
-        if cutils::time_diff(
+        if application().time_diff(
             self.m_last_sync_status_check.clone(),
-            "".to_string()).as_minutes < 2 {
+            "".to_string()).as_minutes < 2
+        {
             return self.m_is_in_sync_process;
         }
 
         let mut last_sync_status = get_value("last_sync_status");
-        if last_sync_status == "" {
+        if last_sync_status == ""
+        {
             self.init_last_sync_status();
             last_sync_status = get_value("last_sync_status");
         }
         let mut last_sync_status_json_obj: JSonObject = cutils::parse_to_json_obj(&last_sync_status);
 
 
-        let cycle_by_minutes = self.get_cycle_by_zminutes();
+        let cycle_by_minutes = application().get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
+        let now_ = application().get_now();
         if !force_to_control_based_on_dag_status &&
-            (last_sync_status_json_obj["checkDate"].to_string() > cutils::minutes_before(
-                cycle_by_minutes / 24,
-                &cutils::get_now())) {
-            let is_in_sync: bool = last_sync_status_json_obj["lastDAGBlockCreationDate"].to_string() < cutils::minutes_before(2 * cycle_by_minutes, &cutils::get_now());
-            self.set_is_in_sync_process(is_in_sync, &cutils::get_now());
+            (last_sync_status_json_obj["checkDate"].to_string() >
+                application().minutes_before(
+                    cycle_by_minutes / 24,
+                    &now_))
+        {
+            let is_in_sync: bool = last_sync_status_json_obj["lastDAGBlockCreationDate"].to_string()
+                <
+                application().minutes_before(
+                    2 * cycle_by_minutes,
+                    &now_);
+            self.set_is_in_sync_process(is_in_sync, &application().get_now());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
@@ -347,21 +242,21 @@ impl CMachine {
             if !status {
                 panic!("No block in DAG exit!!");
             }
-
-            let is_in_sync_process: bool = block.m_block_creation_date < cutils::minutes_before(2 * cycle_by_minutes, &cutils::get_now());
+            let now_ = application().get_now();
+            let is_in_sync_process: bool = block.m_block_creation_date < application().minutes_before(2 * cycle_by_minutes, &now_);
 
             if is_in_sync_process {
                 last_sync_status_json_obj["isInSyncMode"] = "Y".into();
             } else {
                 last_sync_status_json_obj["isInSyncMode"] = "N".into();
             }
-            last_sync_status_json_obj["checkDate"] = cutils::get_now().into();
+            last_sync_status_json_obj["checkDate"] = application().get_now().into();
             last_sync_status_json_obj["lastDAGBlockCreationDate"] = block.m_block_creation_date.into();
             if is_in_sync_process {
-                last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = cutils::get_now().into();
+                last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = application().get_now().into();
             }
             upsert_kvalue("last_sync_status", &cutils::serialize_json(&last_sync_status_json_obj), false);
-            self.set_is_in_sync_process(is_in_sync_process, &cutils::get_now());
+            self.set_is_in_sync_process(is_in_sync_process, &application().get_now());
             return is_in_sync_process;
         }
     }
@@ -603,7 +498,7 @@ impl CMachine {
         // initializing default valuies and save it
         self.m_profile.m_mp_code = constants::DEFAULT.to_string();
         self.m_profile.m_mp_name = constants::DEFAULT.to_string();
-        self.m_profile.m_mp_last_modified = cutils::get_now();
+        self.m_profile.m_mp_last_modified = application().get_now();
 
         println!("Generating RSA key pairs.");
         {
@@ -665,7 +560,7 @@ impl CMachine {
             "Backer Address (".to_owned() +
                 &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_type + &" ".to_owned() +
                 &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_ver + &")".to_owned(),
-            cutils::get_now(),
+            application().get_now(),
         );
         let (_status, _msg) = insert_address(&w_address);
 
@@ -683,7 +578,6 @@ impl CMachine {
         if self.is_develop_mod() {
             devel_msg = " (develop mode)".to_string();
         }
-
         let mut sync_msg: String = "".to_string();
         if self.is_in_sync_process(false) {
             sync_msg = " Syncing".to_string();
@@ -738,6 +632,7 @@ impl CMachine {
                 }
               }
             */
+
         return true;
     }
     /*
@@ -772,9 +667,9 @@ impl CMachine {
     {
         if self.get_app_clone_id() == 0
         {
-            return self.root_path();
+            return self.get_root_path();
         }
-        return format!("{}/{}", self.root_path(), self.get_app_clone_id());
+        return format!("{}/{}", self.get_root_path(), self.get_app_clone_id());
     }
 
 
@@ -814,10 +709,10 @@ impl CMachine {
     //old_name_was createFolders
     pub fn create_folders(&self) -> bool
     {
-        if self.root_path() != ""
+        if self.get_root_path() != ""
         {
-            if !path_exist(&self.root_path())
-            { mkdir(&self.root_path()); }
+            if !path_exist(&self.get_root_path())
+            { mkdir(&self.get_root_path()); }
         }
 
         if !path_exist(&self.get_clone_path())
@@ -1010,11 +905,21 @@ impl CMachine {
     //old_name_was initLastSyncStatus
     pub fn init_last_sync_status(&self) -> bool
     {
+        let back_in_time = application().get_cycle_by_minutes() * 2;
+        let now_ = application().get_now();
+        let last_time_machine_was_in_sync_mode = application().minutes_before(
+            back_in_time,
+            &now_);
+
+        let back_in_time = application().get_cycle_by_minutes();
+        let check_date = application().minutes_before(
+            back_in_time,
+            &now_);
+
         let last_sync_status: JSonObject = json!({
               "isInSyncMode": "Unknown",
-              "lastTimeMachineWasInSyncMode":
-                          cutils::minutes_before(self.get_cycle_by_zminutes() * 2, &cutils::get_now()),
-              "checkDate": cutils::minutes_before(self.get_cycle_by_zminutes(), &cutils::get_now()),
+              "lastTimeMachineWasInSyncMode": last_time_machine_was_in_sync_mode,
+              "checkDate": check_date,
               "lastDAGBlockCreationDate": "Unknown"
             });
         return upsert_kvalue(
@@ -1292,197 +1197,5 @@ impl CMachine {
 
         */
 
-    pub fn maybe_add_seed_neighbors(&mut self) -> bool
-    {
-        let (status, msg) = add_a_new_neighbor(
-            "seed1@seed.pro".to_string(),
-            constants::PUBLIC.to_string(),
-            "-----BEGIN PUBLIC KEY-----\nMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEA1RG+nLSuYWszuVQL9ZaJ\nMflUZXlGfPKk+tmFxUnEGLKG4/QuTN/1m/Bm6AkFnHZkXWhGisyHG8ujgSAQZQnK\nUWsI+VGJ41YnqvxAKYIL3qvBSPLo8ppvN21tr7pbCL3uR0isHjXSp6XGH3mVBTd6\ntaJhRBtuQKdeFd3QMZCyofnaagA1wPHtT8wCz4X+7LckrfSRGhdjPUoT3pZ2R3Z8\noyAOtBzr7IRHDObs11Z5sdFmZVRQV1iSgxZyS3jEYjMqZN5FaxVYLq64MHIEYIdw\nLpofmWqkDrKUws9jTmiirmDfaAqsu6siHdCbCpnV026QMtbQukguJv3UFbdN/lh2\n2Obz9OKw802xMSgt4nULDSAvt8mrJsbyWbX66yVNkmN3OKiy36Ig9faCoxJTjzjW\nS5Kr7JXcBCyavog1n0NcNCOApde3TsoHNAt/5GJ8pMON2jG+i58Ug4/1mtz1tYEs\ndKFj4tbAVXgNPKNl0MlmReSjFati3K8H14twvOLsN0wnycWqJThwFCRFRfSV2weY\nw1w+k4hmsL0FvbZtl0OdQePvqbTQQTQc8SROc3Ejq/04oyc5S9D1MdaDEfdXqcqk\nnFzc3u3rzw1BPGdkw0LoiwDjp0WOSSB5u5NRI9UYxDOWdTaEPGpChKycm4kgUjYK\nvucjKoPGeLsBGmH8+NRT+RsCAwEAAQ==\n-----END PUBLIC KEY-----\n".to_string(),
-            constants::DEFAULT.to_string(),
-            constants::YES.to_string(),
-            NeighborInfo::new(),
-            cutils::get_now());
-        dlog(
-            &format!("result of add a new neighbor({}): {}", status, msg),
-            constants::Modules::App,
-            constants::SecLevel::Info);
 
-
-        if self.is_develop_mod() {
-            // this block existed ONLY for test and development environment
-
-            let user_and_hu_are_neighbor = false;
-            let clone_id = self.get_app_clone_id();
-            println!("Machine is in Dev mode, so make some neighborhoods! clone({})", clone_id);
-            if [0, 1, 2, 3].contains(&clone_id) {
-                println!("Machine is a fake neighbor, so make some connections!");
-
-                if clone_id == 0 {
-                    // update machine settings to dev mode settings (user@imagine.com)
-                    println!("Setting machine as a developing user node");
-                    self.m_profile.m_mp_settings.m_machine_alias = "node-user".to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = USER_PRIVATE_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
-
-                    if user_and_hu_are_neighbor
-                    {
-                        // add Hu as a neighbor
-                        add_a_new_neighbor(
-                            HU_PUBLIC_EMAIL.to_string(),
-                            constants::PUBLIC.to_string(),
-                            HU_PUPLIC_KEY.to_string(),
-                            constants::DEFAULT.to_string(),
-                            constants::YES.to_string(),
-                            NeighborInfo::new(),
-                            cutils::get_now());
-                    }
-
-                    // add Eve as a neighbor
-                    add_a_new_neighbor(
-                        EVE_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        EVE_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    self.save_settings();
-                } else if clone_id == 1
-                {
-                    // set profile as hu@imagine.com
-                    self.m_profile.m_mp_settings.m_machine_alias = "node-hu".to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = HU_PRIVATE_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = HU_PUPLIC_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_address = HU_PUBLIC_EMAIL.to_string();
-
-                    if user_and_hu_are_neighbor
-                    {
-                        // add user as a neighbor
-                        add_a_new_neighbor(
-                            USER_PUBLIC_EMAIL.to_string(),
-                            constants::PUBLIC.to_string(),
-                            USER_PUPLIC_KEY.to_string(),
-                            constants::DEFAULT.to_string(),
-                            constants::YES.to_string(),
-                            NeighborInfo::new(),
-                            cutils::get_now());
-                    }
-
-                    // add Eve as a neighbor
-                    add_a_new_neighbor(
-                        EVE_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        EVE_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-
-                    self.save_settings();
-                } else if self.m_clone_id == 2
-                {
-                    // set profile as eve@imagine.com
-                    self.m_profile.m_mp_settings.m_machine_alias = "node-eve".to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_address = EVE_PUBLIC_EMAIL.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = EVE_PRIVATE_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = EVE_PUPLIC_KEY.to_string();
-
-                    // add User as a neighbor
-                    add_a_new_neighbor(
-                        USER_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        USER_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    // add Hu as a neighbor
-                    add_a_new_neighbor(
-                        HU_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        HU_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    // add Bob as a neighbor
-                    add_a_new_neighbor(
-                        HU_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        BOB_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    self.save_settings();
-                } else if self.m_clone_id == 3
-                {
-                    // set profile as bob@imagine.com
-                    self.m_profile.m_mp_settings.m_machine_alias = "node-bob".to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_address = BOB_PUBLIC_EMAIL.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = BOB_PRIVATE_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = BOB_PUPLIC_KEY.to_string();
-
-                    // add Eve as a neighbor
-                    add_a_new_neighbor(
-                        EVE_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        EVE_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    // add Alice as a neighbor
-                    add_a_new_neighbor(
-                        ALICE_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        ALICE_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    self.save_settings();
-                } else if self.m_clone_id == 4
-                {
-                    // set profile as alice@imagine.com
-                    self.m_profile.m_mp_settings.m_machine_alias = "node-alice".to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_address = ALICE_PUBLIC_EMAIL.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = ALICE_PRIVATE_KEY.to_string();
-                    self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = ALICE_PUPLIC_KEY.to_string();
-
-                    // add Hu as a neighbor
-                    add_a_new_neighbor(
-                        HU_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        HU_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    // add Bob as a neighbor
-                    add_a_new_neighbor(
-                        BOB_PUBLIC_EMAIL.to_string(),
-                        constants::PUBLIC.to_string(),
-                        BOB_PUPLIC_KEY.to_string(),
-                        constants::DEFAULT.to_string(),
-                        constants::YES.to_string(),
-                        NeighborInfo::new(),
-                        cutils::get_now());
-
-                    self.save_settings();
-                }
-            }
-        }
-
-        return true;
-    }
 }

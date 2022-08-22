@@ -1,4 +1,4 @@
-use crate::{CMachine, constants};
+use crate::{application, CMachine, constants};
 use crate::lib::custom_types::TimeBySecT;
 
 impl CMachine{
@@ -8,7 +8,7 @@ impl CMachine{
         fn get_coinbase_import_gap(&self) -> TimeBySecT
         {
             let mut gap_by_seconds: TimeBySecT;
-            if machine().cycle() == 1 {
+            if application().cycle() == 1 {
                 // live mode
                 if machine().is_in_sync_process(false)
                 {
@@ -36,9 +36,9 @@ impl CMachine{
                 // develope mode
                 if machine().is_in_sync_process(false)
                 {
-                    gap_by_seconds = (machine().cycle() * 3) as TimeBySecT;
+                    gap_by_seconds = (application().cycle() * 3) as TimeBySecT;
                 } else {
-                    gap_by_seconds = (machine().cycle() * 6) as TimeBySecT;
+                    gap_by_seconds = (application().cycle() * 6) as TimeBySecT;
                 }
             }
 
@@ -51,7 +51,7 @@ impl CMachine{
         {
             //      return 500;
             let mut gap_by_seconds: TimeBySecT;
-            if machine().cycle() == 1
+            if application().cycle() == 1
             {
                 if machine().is_in_sync_process(false)
                 {
@@ -78,7 +78,7 @@ impl CMachine{
             if machine().is_in_sync_process(false)
             { return 333; }
 
-            if machine().cycle() == 1
+            if application().cycle() == 1
             {
                 // live mode
                 //     if machine().is_in_sync_process(false)
@@ -106,9 +106,9 @@ impl CMachine{
                 //     // develope mode
                 //     if machine().is_in_sync_process(false)
                 //     {
-                //         gap_by_seconds = (machine().cycle() * 3) as TimeBySecT;
+                //         gap_by_seconds = (application().cycle() * 3) as TimeBySecT;
                 //     } else {
-                //         gap_by_seconds = (machine().cycle() * 6) as TimeBySecT;
+                //         gap_by_seconds = (application().cycle() * 6) as TimeBySecT;
                 //     }
             }
 
@@ -124,13 +124,13 @@ impl CMachine{
         TimeBySecT CMachine::getAcceptableBlocksGap()
         {
           uint32_t gapByMinutes;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             // live
             gapByMinutes = is_in_sync_process() ? 600 : 1200;
           } else {
             // devel
-            gapByMinutes = is_in_sync_process() ? (uint32_t)(machine().cycle() / 0.15) : (uint32_t)(machine().cycle() / 0.5);
+            gapByMinutes = is_in_sync_process() ? (uint32_t)(application().cycle() / 0.15) : (uint32_t)(application().cycle() / 0.5);
           }
 
           CLog::log("acceptable block gap By Minutes(" + String::number(gapByMinutes) + ") ", "app", "trace");
@@ -144,7 +144,7 @@ impl CMachine{
     {
         //      return 500;
         let mut gap_by_seconds: TimeBySecT;
-        if self.cycle() == 1 {
+        if application().cycle() == 1 {
             if self.is_in_sync_process(false) {
                 gap_by_seconds = 60 * 17;  // every 17 minutesd
             } else {
@@ -152,9 +152,9 @@ impl CMachine{
             }
         } else {
             if self.is_in_sync_process(false) {
-                gap_by_seconds = ((self.cycle() * 60) / 9) as TimeBySecT;  // every 17 second
+                gap_by_seconds = ((application().cycle() * 60) / 9) as TimeBySecT;  // every 17 second
             } else {
-                gap_by_seconds = ((self.cycle() * 60) / 3) as TimeBySecT;
+                gap_by_seconds = ((application().cycle() * 60) / 3) as TimeBySecT;
             }
         }
         return gap_by_seconds;
@@ -166,7 +166,7 @@ impl CMachine{
             TimeBySecT CMachine::getPrerequisitiesRemoverGap()
             {
             //      return 500;
-              if (machine().cycle() == 1)
+              if (application().cycle() == 1)
               {
                 if is_in_sync_process()                {
                   return 17;  // every 17 second
@@ -187,7 +187,7 @@ impl CMachine{
             TimeBySecT CMachine::getParsingQGap()
             {
               TimeBySecT gap_by_seconds;
-              if (machine().cycle() == 1)
+              if (application().cycle() == 1)
               {
                 // live
                 if is_in_sync_process()                {
@@ -223,9 +223,9 @@ impl CMachine{
               } else {
                 //develop
                 if is_in_sync_process()                {
-                  gap_by_seconds = machine().cycle() / 5;
+                  gap_by_seconds = application().cycle() / 5;
                 } else {
-                  gap_by_seconds = machine().cycle() / 1;
+                  gap_by_seconds = application().cycle() / 1;
                 }
               }
               CLog::log("parsing Q Gap every " + String::number(gap_by_seconds) + " second");
@@ -235,7 +235,7 @@ impl CMachine{
             TimeBySecT CMachine::getCoinbaseImportGap()
             {
               TimeBySecT gap_by_seconds;
-              if (machine().cycle() == 1)
+              if (application().cycle() == 1)
               {
                 // live mode
                 if is_in_sync_process()                {
@@ -269,9 +269,9 @@ impl CMachine{
               } else {
                 // develope mode
                 if is_in_sync_process()                {
-                    gap_by_seconds = machine().cycle() * 3;
+                    gap_by_seconds = application().cycle() * 3;
                 } else {
-                    gap_by_seconds = machine().cycle() * 6;
+                    gap_by_seconds = application().cycle() * 6;
                 }
               }
 
@@ -282,7 +282,7 @@ impl CMachine{
         TimeBySecT CMachine::getPopEmailGap()
         {
         //  return 900;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             // live ambient
             if is_in_sync_process()              return 180; // every 3 minutes check email
@@ -290,15 +290,15 @@ impl CMachine{
 
           } else {
             // test ambient
-            if is_in_sync_process()              return machine().cycle() / 1; // it is testing ambianet value
-            return machine().cycle() / 1; // it is testing ambianet value
+            if is_in_sync_process()              return application().cycle() / 1; // it is testing ambianet value
+            return application().cycle() / 1; // it is testing ambianet value
           }
         }
 
         TimeBySecT CMachine::getSendEmailGap()
         {
         //  return 900;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             // live ambient
             if is_in_sync_process()              return 180; // every 3 minutes check email
@@ -306,8 +306,8 @@ impl CMachine{
 
           } else {
             // test ambient
-            if is_in_sync_process()              return machine().cycle() / 1; // it is testing ambianet value
-            return machine().cycle() / 1; // it is testing ambianet value
+            if is_in_sync_process()              return application().cycle() / 1; // it is testing ambianet value
+            return application().cycle() / 1; // it is testing ambianet value
           }
         }
 
@@ -315,14 +315,14 @@ impl CMachine{
         {
         //  return 900;
           if is_in_sync_process()          {
-            if (machine().cycle() == 1)
+            if (application().cycle() == 1)
               return 20; // every 20 seconds check read a file from inbox folder (if exists)
             return 30; // it is testing ambianet value
 
           } else {
-            if (machine().cycle() == 1)
+            if (application().cycle() == 1)
                 return 120; // every 2 minutes check read a file from inbox folder (if exists)
-            return machine().cycle() / 1; // it is testing ambianet value
+            return application().cycle() / 1; // it is testing ambianet value
 
           }
         }
@@ -330,7 +330,7 @@ impl CMachine{
         TimeBySecT CMachine::getConcludeTreatmentGap()
         {
         //  return 900;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             if is_in_sync_process()            {
                 return 11; // every 11 seconds run concluding process
@@ -342,7 +342,7 @@ impl CMachine{
             if is_in_sync_process()            {
               return 120; // every 2 minutes run concluding process
             }else{
-              return machine().cycle() / 2; // it is testing ambianet value
+              return application().cycle() / 2; // it is testing ambianet value
             }
 
           }
@@ -351,7 +351,7 @@ impl CMachine{
         TimeBySecT CMachine::getINamesSettlementGap()
         {
         //  return 900;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             if is_in_sync_process()            {
                 return 11; // every 11 seconds run concluding process
@@ -363,7 +363,7 @@ impl CMachine{
             if is_in_sync_process()            {
               return 120; // every 2 minutes run concluding process
             }else{
-              return machine().cycle() / 2; // it is testing ambianet value
+              return application().cycle() / 2; // it is testing ambianet value
             }
 
           }
@@ -373,7 +373,7 @@ impl CMachine{
         {
         //  return 900;
           TimeBySecT gap_by_seconds;
-          if (machine().cycle() == 1)
+          if (application().cycle() == 1)
           {
             // live
             if is_in_sync_process()            {
@@ -385,9 +385,9 @@ impl CMachine{
           } else {
             //develop
             if is_in_sync_process()            {
-              gap_by_seconds = machine().cycle() / 2;
+              gap_by_seconds = application().cycle() / 2;
             } else {
-              gap_by_seconds = machine().cycle();
+              gap_by_seconds = application().cycle();
             }
           }
           CLog::log("sending Q fetch Gap = " + String::number(gap_by_seconds), "app", "trace");

@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{ccrypto, CMachine, constants, cutils, machine};
+use crate::{application, ccrypto, CMachine, constants, cutils, machine};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
 pub mod polling_types
 {
-    pub const REQUEST_FOR_RELEASE_RESERVED_COINS: &str = "RFRlRsCoins";
     pub const REQUEST_FOR_REFINE_BASE_PRICE: &str = "RFRfBasePrice";
     // char base price
     pub const REQUEST_FOR_REFINE_TX_PRICE: &str = "RFRfTxBPrice";
@@ -33,7 +32,7 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
 
     //minimum cost(100 trx * 2 PAI per trx * 1000000 micropPAI) for atleast 100 simple/light transaction
     let block_fix_cost: f64;
-    if machine().cycle() == 1
+    if application().cycle() == 1
     {
         block_fix_cost = 100.0 * 2.0 * 1_000_000.0;
     } else {
@@ -68,17 +67,16 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
 pub fn init_administrative_configurations_history(machine: &CMachine)
 {
     let admin_cost_params: HashMap<String, f64> = get_administrative_default_values();
-
+    let launch_date = application().launch_date();
     for (a_key, a_value) in admin_cost_params
     {
-        let arh_hash: String = ccrypto::keccak256(&(machine.get_launch_date() + "-" + &a_key));
+        let arh_hash: String = ccrypto::keccak256(&(launch_date.clone() + "-" + &a_key));
         let arh_value = cutils::convert_float_to_string(a_value, constants::FLOAT_LENGTH);
-        let arh_apply_date = machine.get_launch_date();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("arh_hash", &arh_hash as &(dyn ToSql + Sync)),
             ("arh_subject", &a_key as &(dyn ToSql + Sync)),
             ("arh_value", &arh_value as &(dyn ToSql + Sync)),
-            ("arh_apply_date", &arh_apply_date as &(dyn ToSql + Sync))
+            ("arh_apply_date", &launch_date as &(dyn ToSql + Sync))
         ]);
         q_insert(
             C_ADMINISTRATIVE_REFINES_HISTORY,
@@ -86,6 +84,7 @@ pub fn init_administrative_configurations_history(machine: &CMachine)
             false,
         );
     }
+
 }
 
 /*
@@ -540,7 +539,7 @@ QVDicT SocietyRules::readAdministrativeCurrentValues()
   /**
   * instead of fetching from a single table, tha values are retrived from proper functions in ConfParamsHandler
   */
-  CDateT cDate = cutils::get_now();
+  CDateT cDate = application().get_now();
   CDateT cycleStartDate = cutils::getACycleRange().from;
 
   QVDicT res {
@@ -859,7 +858,7 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     };
 
     CDateT end_y_date;
-    if (machine().cycle() == 1)
+    if (application().cycle() == 1)
     {
       end_y_date = cutils::minutesAfter(a_society_polling.value("pll_timeframe").toDouble() * 60, a_society_polling.value("pll_start_date").to_string());
 

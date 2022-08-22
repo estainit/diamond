@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils};
+use crate::{application, constants};
 use crate::cutils::{array_add, array_unique};
 use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
@@ -391,7 +391,7 @@ void DAG::updateUtxoImported(
 bool DAG::isDAGUptodated(String c_date)
 {
   if (c_date == "")
-    c_date = cutils::get_now();
+    c_date = application().get_now();
 
   QVDRecordsT latestBlockDate = searchInDAG(
     {},
@@ -466,7 +466,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
 {
     let mut c_date = c_date_.to_string();
     if c_date == ""
-    { c_date = cutils::get_now(); }
+    { c_date = application().get_now(); }
 
     let latest_blocks: QVDRecordsT = search_in_dag(
         vec![],
@@ -478,7 +478,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
     if latest_blocks.len() == 0
     { return false; }
     let latest_block_date = latest_blocks[0]["b_creation_date"].to_string();
-    return cutils::time_diff(latest_block_date, c_date).as_minutes < cutils::get_cycle_by_minutes() as u64;
+    return application().time_diff(latest_block_date, c_date).as_minutes < application().get_cycle_by_minutes() as u64;
 }
 
 /*
@@ -591,7 +591,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
 //  }
 //  processed_outputs = processed_outputs.map(x => x.join('\t   ')).join('\n');
 
-  CMPAIValueT coinbase_value = (calculated_coinbase.len() * CoinbaseIssuer::calcPotentialMicroPaiPerOneCycle(cutils::get_now().split("-")[0]));
+  CMPAIValueT coinbase_value = (calculated_coinbase.len() * CoinbaseIssuer::calcPotentialMicroPaiPerOneCycle(application().get_now().split("-")[0]));
 
   return {sum, processed_outputs, coinbase_value};
 }
@@ -801,7 +801,7 @@ QVDicT DAG::getLatestRecordedBlcok()
 pub fn get_most_confidence_coinbase_block_from_dag(c_date: &CDateT) -> (bool, QVDicT)
 {
     // if (c_date == "")
-    //   c_date = cutils::get_now();
+    //   c_date = application().get_now();
 
     let (
         _coinbase_cycle_stamp,
@@ -809,7 +809,7 @@ pub fn get_most_confidence_coinbase_block_from_dag(c_date: &CDateT) -> (bool, QV
         _coinbase_to,
         _coinbase_from_hour,
         _coinbase_to_hour) =
-        cutils::get_coinbase_info(c_date, "");
+        application().get_coinbase_info(c_date, "");
 
 
     let current_coinbases_in_dag: QVDRecordsT = search_in_dag(

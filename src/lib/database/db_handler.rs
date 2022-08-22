@@ -6,7 +6,7 @@ use std::thread;
 use postgres::{Client, NoTls};
 use crate::lib::{constants};
 use crate::lib::dlog::dlog;
-use crate::{CMachine, dbhandler, machine};
+use crate::{application, CMachine, dbhandler, machine};
 use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
@@ -21,14 +21,20 @@ pub struct DBHandler {
 
 impl DBHandler {
     pub(crate) fn new() -> DBHandler {
-        DBHandler {
+        eprintln!("New DBHandler is going to be created.");
+
+        let db =DBHandler {
             m_db_host: "".to_string(),
             m_db_name: "".to_string(),
             m_db_user: "".to_string(),
             m_db_pass: "".to_string(),
             m_current_clone: 0,
-            m_db: get_null_connection(),
-        }
+            m_db: get_connection(),
+        };
+
+        eprintln!("New DBHandler was create.");
+
+        return db;
     }
 }
 
@@ -44,12 +50,12 @@ pub fn maybe_switch_db(forced_clone_id: i8) {
     {
         panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, forced_clone_id);
     }
-    if (forced_clone_id > 0) && (forced_clone_id != dbhandler().m_current_clone)
-    {
+    // if (forced_clone_id > 0) && (forced_clone_id != dbhandler().m_current_clone)
+    // {
         // change database
         dbhandler().m_current_clone = forced_clone_id;
         dbhandler().m_db = get_connection();
-    }
+    // }
 }
 
 //old_name_was getConnection
@@ -59,13 +65,13 @@ pub fn get_null_connection() -> Client {
 }
 
 pub fn get_connection() -> Client {
-    let db_host: String = dbhandler().m_db_host.clone();
-    let mut db_name: String = dbhandler().m_db_name.clone();
-    let db_user: String = dbhandler().m_db_user.clone();
-    let db_pass: String = dbhandler().m_db_pass.clone();
+    let db_host: String = application().m_app_db_host.clone();
+    let mut db_name: String = application().m_app_db_name.clone();
+    let db_user: String = application().m_app_db_user.clone();
+    let db_pass: String = application().m_app_db_pass.clone();
 
-    if dbhandler().m_current_clone > 0 {
-        db_name = format!("{}{}", db_name, &dbhandler().m_current_clone);
+    if application().id() > 0 {
+        db_name = format!("{}{}", db_name, &application().id());
     }
 
     let mut connection_str = format!(
@@ -74,7 +80,7 @@ pub fn get_connection() -> Client {
         db_name,
         db_user
     );
-    println!("Establish db connection for client {} => {}", &dbhandler().m_current_clone, connection_str);
+    println!("Establish db connection for client {} => {}", &application().id(), connection_str);
 
     connection_str = format!("{} password={}", connection_str, db_pass);
     return Client::connect(&connection_str, NoTls).unwrap();
@@ -112,16 +118,6 @@ pub fn maybe_initialize_db<'a>(machine: &mut CMachine) -> (bool, String)
         };
     }
     return (false, "Unknown db agent!".to_string());
-}
-
-pub fn s_databases<'l>() -> Vec<&'l str> {
-    return vec![
-        "db_comen_blocks",
-        "db_comen_block_ext_info",
-        "db_comen_spendable_coins",
-        "db_comen_spent_coins",
-        "db_comen_general",
-        "db_comen_wallets"];
 }
 
 /*
@@ -216,7 +212,7 @@ pub fn empty_db(machine: &mut CMachine) -> bool
 //old_name_was createTablesPSQL
 pub fn create_tables_in_psql() -> bool
 {
-    println!("create_ tables _in _psql");
+    println!("Create tables in PSQL");
     for a_query in psql_init_query()
     {
         let mut qstr = a_query.clone();
@@ -243,7 +239,7 @@ pub fn create_tables_in_psql() -> bool
         { return false; }
     }
 
-    println!("@@@@@@@@@@");
+    println!("PSQL tables are created.");
     return true;
 }
 

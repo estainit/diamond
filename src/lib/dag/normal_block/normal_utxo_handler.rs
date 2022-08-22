@@ -1,7 +1,7 @@
 use std::thread;
 use postgres::types::ToSql;
 use crate::lib::constants;
-use crate::{cutils, machine};
+use crate::{application, cutils, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::dag::dag::{dag_has_blocks_which_are_created_in_current_cycle, search_in_dag};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
@@ -25,7 +25,7 @@ pub fn loop_import_normal_coins()
     while machine().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        do_import_coins(&cutils::get_now());
+        do_import_coins(&application().get_now());
 
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
         // sleep(Duration::from_secs(machine().get_nb_coins_import_gap()));
@@ -43,7 +43,7 @@ pub fn do_import_coins(c_date_: &CDateT)
 {
     let mut c_date = c_date_.clone();
     if c_date == ""
-    { c_date = cutils::get_now(); }
+    { c_date = application().get_now(); }
 
     import_normal_block_coins(&c_date);
 
@@ -57,14 +57,18 @@ pub fn do_import_coins(c_date_: &CDateT)
 pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
 {
     //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
-    let min_creation_date = cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, c_date);
+    let back_in_time = application().get_cycle_by_minutes() as u64;
+    let min_creation_date = application().minutes_before(
+        back_in_time,
+        c_date);
+
     dlog(
         &format!("importing matured UTXOs(Nornam Block) before({})", min_creation_date.clone()),
         constants::Modules::Trx,
         constants::SecLevel::Trace);
 
-    let b_type=constants::block_types::NORMAL.to_string();
-    let b_utxo_imported=constants::NO.to_string();
+    let b_type = constants::block_types::NORMAL.to_string();
+    let b_utxo_imported = constants::NO.to_string();
     let mut clauses: ClausesT = vec![
         // ModelClause {
         //     m_field_name: "b_type",
@@ -82,7 +86,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         },
     ];  // (12 hours * 60 minutes) from now
 
-    if dag_has_blocks_which_are_created_in_current_cycle(&cutils::get_now())
+    if dag_has_blocks_which_are_created_in_current_cycle(&application().get_now())
     {
         //  * by (DAG-Has-Blocks-Which-Are-Created-In-Currrent-Cycle) clause we are almost sure the machine is synched
         //  * so must avoiding immidiately importing blocks with fake-old-creation Date
@@ -95,7 +99,9 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
             constants::Modules::Trx,
             constants::SecLevel::Trace);
 
-        if last_sync_status["lastTimeMachineWasInSyncMode"].to_string() < cutils::minutes_before(cutils::get_cycle_by_minutes() as u64, &cutils::get_now())
+        let back_in_time = application().get_cycle_by_minutes();
+        let now_=application().get_now();
+        if last_sync_status["lastTimeMachineWasInSyncMode"].to_string() < application().minutes_before(back_in_time, &now_)
         {
             clauses.push(ModelClause {
                 m_field_name: "b_receive_date",

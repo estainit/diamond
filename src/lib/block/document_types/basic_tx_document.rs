@@ -100,7 +100,7 @@ impl BasicTxDocument {
       const uint32_t& extra_length) const //calcTrxDPCost
     {
       if (cDate == "")
-        cDate =cutils::get_now();
+        cDate =application().get_now();
 
       DocLenT dLen = m_doc_length;
 
@@ -497,7 +497,7 @@ impl BasicTxDocument {
 
 
         String msg;
-        CDateT cDate = cutils::get_now();
+        CDateT cDate = application().get_now();
 
         // for each input must control if given unlock structutr will be finished in a right(and valid) output address?
         // the order of inputs and ext Info ARE IMPORTANT. the wallet MUST sign and send inputs in order to bip 69

@@ -1,7 +1,7 @@
 use std::thread;
 
 use crate::lib::constants;
-use crate::{cutils, machine};
+use crate::{application, machine};
 use crate::lib::custom_types::{CDateT};
 use crate::lib::dlog::dlog;
 
@@ -25,7 +25,7 @@ pub fn loop_import_coinbase_coins()
     while machine().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        import_coinbased_coins(&cutils::get_now());
+        import_coinbased_coins(&application().get_now());
         /*
 
         // double checking repayblock importing
@@ -34,7 +34,7 @@ pub fn loop_import_coinbase_coins()
         if ( (constants::DATABASAE_AGENT == "sqlite") && (CMachine::shouldLoopThreads()) )
         {
         // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-        NormalUTXOHandler::doImportUTXOs(cutils::get_now());
+        NormalUTXOHandler::doImportUTXOs(application().get_now());
 
         PollingHandler::doConcludeTreatment();
 
@@ -60,7 +60,7 @@ pub fn import_coinbased_coins(c_date: &CDateT)
     dlog(&format!("import Coinbased UTXOs {}", c_date.clone()), constants::Modules::App, constants::SecLevel::Trace);
 
     // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_utxos
-    let max_creation_date = cutils::get_cb_coins_date_range(&c_date).to;
+    let max_creation_date = application().get_cb_coins_date_range(&c_date).to;
     dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::Trace);
     /*
       QVDRecordsT coinbases = DAG::searchInDAG(
@@ -162,9 +162,10 @@ pub fn import_coinbased_coins(c_date: &CDateT)
 //old_name_was calcCoinbasedOutputMaturationDate
 #[allow(dead_code)]
 pub fn calc_coinbased_output_maturation_date(c_date: &CDateT) -> CDateT {
-    let mature_date: String = cutils::minutes_after(
-        constants::COINBASE_MATURATION_CYCLES as u64 * cutils::get_cycle_by_minutes() as u64,
+    let cycle_by_minutes = application().get_cycle_by_minutes() as u64;
+    let mature_date: String = application().minutes_after(
+        constants::COINBASE_MATURATION_CYCLES as u64 * cycle_by_minutes,
         c_date);
-    return cutils::get_coinbase_range(&mature_date).from;
+    return application().get_coinbase_range(&mature_date).from;
 }
 

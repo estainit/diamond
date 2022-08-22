@@ -1,9 +1,9 @@
 pub mod b_genesis {
     use std::collections::HashMap;
     use postgres::types::ToSql;
-    use crate::{ccrypto, CMachine, constants, cutils, dlog};
+    use crate::{application, ccrypto, CMachine, constants, dlog};
     use crate::lib::block::block_types::block::Block;
-    use crate::lib::block::document_types::dna_proposal_document::{DNAProposalDocument};
+    use crate::lib::block::document_types::dna_proposal_document::{ProposalDocument};
     use crate::lib::block::document_types::document::Document;
     use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject};
     use crate::lib::database::abs_psql::{simple_eq_clause};
@@ -16,19 +16,21 @@ pub mod b_genesis {
         let mut block: Block = Block::new();
         block.m_block_ancestors = vec![",".to_string()];
         block.m_block_type = constants::block_types::GENESIS.to_string();
-        block.m_block_creation_date = machine.get_launch_date();
+        block.m_block_creation_date = application().launch_date();
 
         let mut doc = Document::new();
-        let proposal_creation_date: CDateT = cutils::minutes_before(
-            (cutils::get_cycle_by_minutes() * 2) as u64,
-            &machine.get_launch_date());
+        let back_in_time = (application().get_cycle_by_minutes() * 2) as u64;
+        let launch_date = application().launch_date();
+        let proposal_creation_date: CDateT = application().minutes_before(
+            back_in_time,
+            &launch_date);
         doc.m_doc_type = constants::document_types::PROPOSAL.to_string();
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
         doc.m_doc_tags = "initialize, DNA".to_string();
         doc.m_doc_comment = "Imagine all the people living life in peace".to_string();
 
-        let mut dna = DNAProposalDocument::new();
+        let mut dna = ProposalDocument::new();
         dna.m_project_hash = ccrypto::convert_title_to_hash(&"imagine".to_string());
         dna.m_help_hours = 1_000_000;
         dna.m_help_level = 1;
@@ -83,15 +85,16 @@ pub mod b_genesis {
     //old_name_was initShares
     pub fn init_shares(machine: &CMachine, block: &Block) -> (bool, String)
     {
-        let start_voting_date: String = cutils::minutes_before(
-            (5 * cutils::get_cycle_by_minutes()) as u64,
-            &machine.get_launch_date());
+        let back_in_time = (5 * application().get_cycle_by_minutes()) as u64;
+        let conclude_date = application().launch_date();
+        let start_voting_date: String = application().minutes_before(
+        back_in_time,
+        &conclude_date);
 
         let initial_proposal: &Document = &block.m_block_documents[0];
         let proposal_hash: String = initial_proposal.get_doc_hash();
 
         // update proposal status in DB
-        let conclude_date = machine.get_launch_date();
         let pr_approved = constants::YES.to_string();
         let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("pr_start_voting_date", &start_voting_date as &(dyn ToSql + Sync)),
@@ -100,13 +103,13 @@ pub mod b_genesis {
         ]);
 
         let c1 = simple_eq_clause("pr_hash", &proposal_hash);
-        DNAProposalDocument::update_proposal(
+        ProposalDocument::update_proposal(
             &update_values,
             vec![c1],
             false);
 
         // conclude the polling
-        let pll_end_date = cutils::minutes_after(
+        let pll_end_date = application().minutes_after(
             36 * 60,
             &start_voting_date.clone());
         let polling_upd_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([

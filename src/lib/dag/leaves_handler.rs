@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
-use crate::{constants, cutils, dlog};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::custom_types::{CBlockHashT, CDateT, TimeByMinutesT};
 use crate::lib::database::abs_psql::q_upsert;
 use crate::lib::database::tables::C_KVALUE;
@@ -30,7 +30,7 @@ pub fn remove_from_leave_blocks(leaves: &Vec<String>) -> (bool, String)
     let serialized_leaves: String = serde_json::to_string(&new_leaves).unwrap();
 
     // update db
-    let kv_last_modified = cutils::get_now();
+    let kv_last_modified = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("kv_value", &serialized_leaves as &(dyn ToSql + Sync)),
         ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
@@ -89,7 +89,7 @@ pub fn add_to_leave_blocks(
     current_leaves.insert(block_hash.to_string(), a_leave);
 
     let kv_value = serde_json::to_string(&current_leaves).unwrap();
-    let kv_last_modified = cutils::get_now();
+    let kv_last_modified = application().get_now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("kv_value", &kv_value as &(dyn ToSql + Sync)),
         ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
@@ -121,10 +121,11 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
     }
 
     let mut refreshes: HashMap<String, LeaveBlock> = HashMap::new();
+    let now_ = application().get_now();
     for (a_key, a_leave) in leaves {
-        let leave_age: TimeByMinutesT = cutils::time_diff(a_leave.m_creation_date.clone(), cutils::get_now()).as_minutes;
+        let leave_age: TimeByMinutesT = application().time_diff(a_leave.m_creation_date.clone(), now_.clone()).as_minutes;
         let mut msg: String = format!("leave({}) age ({}) minutes is ", cutils::hash8c(&a_key), leave_age);
-        if leave_age < cutils::get_cycle_by_minutes() * 2 {
+        if leave_age < application().get_cycle_by_minutes() * 2 {
             msg += " younger ";
         } else {
             msg += " older ";
@@ -135,7 +136,7 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
             constants::Modules::App,
             constants::SecLevel::Info);
 
-        if leave_age < cutils::get_cycle_by_minutes() * 2 {
+        if leave_age < application().get_cycle_by_minutes() * 2 {
             refreshes.insert(a_key, a_leave);
         }
     }

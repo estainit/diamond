@@ -185,7 +185,7 @@ void RepaybackBlock::createRepaymentBlock(
   tmp_repay_block.m_ancestors = StringList {related_coinbase_block.value("bHash").to_string()};
   tmp_repay_block.m_block_type = constants::BLOCK_TYPES::RpBlock;
   tmp_repay_block.m_cycle = related_coinbase_block.value("bCycle").to_string();
-  tmp_repay_block.m_block_creation_date = (machine().cycle() == 1) ? cutils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : cutils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
+  tmp_repay_block.m_block_creation_date = (application().cycle() == 1) ? cutils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : cutils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
 
   QHash<CDocHashT, RepaymentDocument*> map_doc_hash_to_doc {};
   for (JSonObject a_repay: repayment_docs)

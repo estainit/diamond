@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::{ToSql};
-use crate::{constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_LOGS_BROADCAST;
@@ -11,10 +11,13 @@ pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
     let mut after_that = after_that_.clone();
     if after_that == ""
     {
+        let now_ = application().get_now();
         if machine().is_in_sync_process(false) {
-            after_that = cutils::minutes_before(cutils::get_cycle_by_minutes() / 40, &cutils::get_now());
+            let back_in_time = application().get_cycle_by_minutes()  / 40;
+            after_that = application().minutes_before(back_in_time, &now_);
         } else {
-            after_that = cutils::minutes_before(cutils::get_cycle_by_minutes() / 20, &cutils::get_now());
+            let back_in_time = application().get_cycle_by_minutes()  / 20;
+            after_that = application().minutes_before(back_in_time, &now_);
         }
     }
     let (status, records) = q_select(
