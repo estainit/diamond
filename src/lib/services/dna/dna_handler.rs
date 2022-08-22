@@ -154,7 +154,7 @@ pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
         constants::SHARE_MATURITY_CYCLE,
         0);
 
-    if constants::TIME_GAIN == 1
+    if machine().cycle() == 1
     {
         the_range.from = cutils::years_before(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
     } else {

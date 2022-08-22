@@ -6,7 +6,7 @@ use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::json;
-use crate::{constants, dlog};
+use crate::{constants, dlog, machine};
 use crate::lib::custom_types::{CCoinCodeT, CDateT, CDocHashT, COutputIndexT, JSonArray, JSonObject, TimeByMinutesT, TimeBySecT, VVString};
 
 pub fn remove_quotes(inp_str: &String) -> String {
@@ -202,7 +202,7 @@ pub fn get_coinbase_cycle_number(c_date: &CDateT) -> String {
     }
 
     let cycle_number: String;
-    if constants::TIME_GAIN == 1 {
+    if machine().cycle() == 1 {
         cycle_number = is_am_or_pm(minutes);
     } else {
         cycle_number = (minutes / get_cycle_by_minutes() as u32).to_string();
@@ -212,10 +212,10 @@ pub fn get_coinbase_cycle_number(c_date: &CDateT) -> String {
 
 //old name was getCycleByMinutes
 pub fn get_cycle_by_minutes() -> TimeByMinutesT {
-    if constants::TIME_GAIN == 1 {
+    if machine().cycle() == 1 {
         return constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
     }
-    return constants::TIME_GAIN as TimeByMinutesT;
+    return machine().cycle() as TimeByMinutesT;
 }
 
 //old_name_was getCycleBySeconds
@@ -367,7 +367,7 @@ pub fn get_a_cycle_range(
         c_date = get_now();
     }
 
-    if constants::TIME_GAIN == 1
+    if machine().cycle() == 1
     {
         // one extra step to resolve +- summer time
         let h_: Vec<&str> = c_date.split(" ").collect();
@@ -456,14 +456,14 @@ pub fn minutes_after(forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT
 }
 
 //old name was getCoinbaseRange
-#[allow(dead_code)]
 pub fn get_coinbase_range(c_date: &CDateT) -> TimeRange {
     return get_a_cycle_range(c_date, 0, 0);
 }
 
 //old_name_was getCoinbaseCycleStamp
 pub fn get_coinbase_cycle_stamp(c_date: &CDateT) -> String {
-    if constants::TIME_GAIN == 1 {
+    if machine().cycle() == 1
+    {
         return get_a_cycle_range(c_date, 0, 0).from;
     }
 

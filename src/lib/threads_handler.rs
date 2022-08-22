@@ -80,7 +80,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             // fetching sending queue
             send_out_the_packet();
 
-            if constants::EMAIL_IS_ACTIVE
+            if machine().m_email_is_active
             {
                 // read from hard disk and send by email
                 send_private_email();
@@ -95,15 +95,18 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 
         {
 //         // ingress cpackets and parsing
-            if constants::EMAIL_IS_ACTIVE
+            if machine().m_email_is_active
             {
                 // fetch mailboxes
                 received_email_checks();
             }
 
             {
-                // read messages from hard drive
-                do_read_and_parse_hard_disk_inbox();
+                if machine().m_use_hard_disk_as_a_buffer
+                {
+                    // read messages from hard drive
+                    do_read_and_parse_hard_disk_inbox();
+                }
 
                 // read messages from database queue
                 refresh_missed_block();
@@ -264,7 +267,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 //
 //         {
 //         // ingress cpackets and parsing
-//         if (constants::EMAIL_IS_ACTIVE)
+//         if (machine().m_email_is_active)
 //         std::thread(launchEmailPoper).detach();
 //
 //         // read messages from hard drive

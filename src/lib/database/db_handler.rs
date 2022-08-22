@@ -1,5 +1,7 @@
 extern crate postgres;
 
+use std::borrow::Borrow;
+use std::collections::HashMap;
 use std::thread;
 use postgres::{Client, NoTls};
 use crate::lib::{constants};
@@ -9,6 +11,10 @@ use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
 pub struct DBHandler {
+    pub m_db_host: String,
+    pub m_db_name: String,
+    pub m_db_user: String,
+    pub m_db_pass: String,
     pub m_current_clone: i8,
     pub m_db: Client,
 }
@@ -16,48 +22,61 @@ pub struct DBHandler {
 impl DBHandler {
     pub(crate) fn new() -> DBHandler {
         DBHandler {
+            m_db_host: "".to_string(),
+            m_db_name: "".to_string(),
+            m_db_user: "".to_string(),
+            m_db_pass: "".to_string(),
             m_current_clone: 0,
-            m_db: get_connection(0),
+            m_db: get_null_connection(),
         }
     }
 }
 
-pub fn maybe_switch_db(clone_id: i8) {
+pub fn maybe_switch_db(forced_clone_id: i8) {
     /**
     FIXME: there are 2 places in code in which the DB connect happend,
-    1. m_db: get_connection(0),
-    2. dbhandler().m_db = get_connection(self.get_app_clone_id());
+    1. m_db: get_connection (0),
+    2. get23Con() = get_connection (self.get_app_clone_id());
     the problem is not always they initialized by this order!
     hopefully this method solve the issue, otherwise it will panic.
      */
-    if (clone_id == 0) && (clone_id != dbhandler().m_current_clone)
+    if (forced_clone_id == 0) && (forced_clone_id != dbhandler().m_current_clone)
     {
-        panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, clone_id);
+        panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, forced_clone_id);
     }
-    if (clone_id > 0) && (clone_id != dbhandler().m_current_clone)
+    if (forced_clone_id > 0) && (forced_clone_id != dbhandler().m_current_clone)
     {
         // change database
-        dbhandler().m_db = get_connection(clone_id);
-        dbhandler().m_current_clone = clone_id;
+        dbhandler().m_current_clone = forced_clone_id;
+        dbhandler().m_db = get_connection();
     }
 }
 
 //old_name_was getConnection
-pub fn get_connection(clone_id: i8) -> Client {
-    let mut database_name: String = constants::psql_db::DB_NAME.to_string();
-    // let clone_id = 0;//machine().get_app_clone_id();
-    if clone_id > 0 {
-        database_name = format!("{}{}", database_name, clone_id);
+pub fn get_null_connection() -> Client {
+    println!("Establish NULL db connection");
+    return Client::connect(&"host=localhost dbname=diamond user=diamond password=diamondpass".to_string(), NoTls).unwrap();
+}
+
+pub fn get_connection() -> Client {
+    let db_host: String = dbhandler().m_db_host.clone();
+    let mut db_name: String = dbhandler().m_db_name.clone();
+    let db_user: String = dbhandler().m_db_user.clone();
+    let db_pass: String = dbhandler().m_db_pass.clone();
+
+    if dbhandler().m_current_clone > 0 {
+        db_name = format!("{}{}", db_name, &dbhandler().m_current_clone);
     }
-    println!("Stablish db connection for client {} database_name: {}", clone_id, database_name);
 
     let mut connection_str = format!(
-        "host={host} dbname={database} user={user} password={password}",
-        host = constants::psql_db::DB_HOST,
-        user = constants::psql_db::DB_USER,
-        password = constants::psql_db::DB_PASS,
-        database = database_name,
+        "host={} dbname={} user={}",
+        db_host,
+        db_name,
+        db_user
     );
+    println!("Establish db connection for client {} => {}", &dbhandler().m_current_clone, connection_str);
+
+    connection_str = format!("{} password={}", connection_str, db_pass);
     return Client::connect(&connection_str, NoTls).unwrap();
 }
 

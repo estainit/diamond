@@ -43,21 +43,11 @@ fn main() {
     //! This starts whole game
     //!
 
-    let ten_millis = time::Duration::from_millis(100);
-    thread::sleep(ten_millis);
-
-
+    let force_clone_id: i8 = 0;
+    machine().parse_args(env::args().collect(), force_clone_id);
     initialize_log();
-
-    // config::print_config();
-
-    let manual_clone_id: i8 = 0;
-    // CMachine::onAboutToQuit(&w);
-    machine().parse_args(env::args().collect(), manual_clone_id);
     machine().initialize_machine();
     machine().boot_machine();
-
-    // machine().set_launch_date_and_clone_id("2021-03-02 00:20:00".to_string(), manual_clone_id);
 
     let mut web_server_msg: &str = "";
     let should_launch_web_server = false;

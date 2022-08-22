@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{ccrypto, constants, cutils, dlog, get_value};
+use crate::{ccrypto, constants, cutils, dlog, get_value, machine};
 use crate::lib::file_handler::file_handler::write_email_as_file;
 use crate::lib::k_v_handler::upsert_kvalue;
 use crate::lib::network::email::send_email_wrapper;
@@ -31,7 +31,7 @@ pub fn i_push(
     let mut email_hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender.to_owned() + receiver + &to_send_message)));
     email_body += &(constants::message_tags::HASH_START_TAG.to_owned() + &email_hash.clone() + constants::message_tags::HASH_END_TAG + constants::NL);
 
-    if constants::DO_HARDCOPY_OUTPUT_EMAILS
+    if machine().m_use_hard_disk_as_a_buffer
     {
         // create emails and write it on local hard drive
         // create an email copy in local hard drive
@@ -49,7 +49,7 @@ pub fn i_push(
             constants::SecLevel::Trace);
     }
 
-    if !constants::EMAIL_IS_ACTIVE
+    if !machine().m_email_is_active
     { return true; }
 
     // avoid duplicate sending

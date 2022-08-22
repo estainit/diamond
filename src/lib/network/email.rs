@@ -255,7 +255,11 @@ pub fn send_mail(
 
 pub fn received_email_checks() {
     //popPrivateEmail();
-    pop_public_email();
+    let (status, email)=pop_public_email();
+    if machine().m_use_hard_disk_as_a_buffer
+    {
+
+    }
 }
 
 //old_name_was popPublicEmail

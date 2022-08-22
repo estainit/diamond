@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{ccrypto, CMachine, constants, cutils};
+use crate::{ccrypto, CMachine, constants, cutils, machine};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
@@ -33,7 +33,7 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
 
     //minimum cost(100 trx * 2 PAI per trx * 1000000 micropPAI) for atleast 100 simple/light transaction
     let block_fix_cost: f64;
-    if constants::TIME_GAIN == 1
+    if machine().cycle() == 1
     {
         block_fix_cost = 100.0 * 2.0 * 1_000_000.0;
     } else {
@@ -859,7 +859,7 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     };
 
     CDateT end_y_date;
-    if (constants::TIME_GAIN == 1)
+    if (machine().cycle() == 1)
     {
       end_y_date = cutils::minutesAfter(a_society_polling.value("pll_timeframe").toDouble() * 60, a_society_polling.value("pll_start_date").to_string());
 

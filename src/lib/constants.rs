@@ -35,7 +35,6 @@ const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with J
 pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
 
-pub(crate) const EMAIL_IS_ACTIVE: bool = false;
 /*
   const bool BROADCAST_TO_NEIGHBOR_OF_NEIGHBOR = true;    // if machine allowed to publish email of neightbors of neighbors to hei neighbors?
   const bool SUPPORTS_CLONED_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
@@ -64,7 +63,6 @@ pub const TREASURY_MATURATION_CYCLES: u8 = 4;
 pub const DUMPER_INDENT: &str = "  ";
 pub const DO_HARDCOPY_DAG_BACKUP: bool = true;
 // it creates a DAG backup in sense of blocks
-pub const DO_HARDCOPY_OUTPUT_EMAILS: bool = true;
 
 // it creates a local copy of what your machine will send via email
 /*
@@ -171,16 +169,6 @@ pub mod thread_state
 
 */
 
-pub(crate) const HD_ROOT_FILES: &str = "/Users/silver/Documents/Diamond_files";
-
-pub(crate) mod psql_db
-{
-    pub(crate) const DB_HOST: &str = "localhost";
-    pub(crate) const DB_NAME: &str = "diamond";
-    pub(crate) const DB_USER: &str = "diamond";
-    pub(crate) const DB_PASS: &str = "diamondpass";
-}
-
 pub const DEFAULT_LANG: &str = "eng";
 pub const DEFAULT_VERSION: &str = "0.0.0";
 pub const WRAP_SAFE_CONTENT_VERSION: &str = "0.0.0";
@@ -260,7 +248,6 @@ pub const TREASURY_PAYMENTS: [&str; 13] =
         "TP_INAME_MSG",      // send message to iName costs
         "TP_FDOC",           // custom posts
         "TP_REP_FAILED",      // Reputation failed
-        // 'TP_REQRELRES',     // Request for Release Reserved coins
     ];
 /*
   // (FLENS) for every 180 shares the share holder has permitted to register one iName.
@@ -526,11 +513,9 @@ pub mod signature_types
     // Strict signature by which some signer are allowed to pledge/unpledge account or delegate it
     pub const STRICTITL: &str = "STRICTITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
 }
-/*
-  pub const DEFAULT_SIGNATURE_MOD = "2/3"; // needs 2 signature of 3
 
+pub const DEFAULT_SIGNATURE_MOD: &str = "2/3"; // needs 2 signature of 3
 
-*/
 
 pub const DEFAULT_PACKET_VERSION: &str = "0.0.3";
 pub const DEFAULT_PACKET_TYPE: &str = "Standard";
@@ -578,7 +563,3 @@ pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 pub const HU_DNA_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
 
-// in live environment time gain must be 1, in develop mode it is equal one cycle by minutes e.g. 5
-pub(crate) const TIME_GAIN: u32 = 10;
-
-pub(crate) const NETWORK_LAUNCH_DATE: &str = "2023-08-21 21:30:00";

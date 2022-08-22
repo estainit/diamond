@@ -244,7 +244,7 @@ pub fn init_polling_profiles()
 
 TimeByHoursT normalizeVotingTimeframe(TimeByHoursT voting_timeframe)
 {
-  if (constants::TIME_GAIN == 1)
+  if (machine().cycle() == 1)
      return static_cast<uint64_t>(voting_timeframe);
   // because of test ambient the longivity can be float and less than 1 hour
   return cutils::customFloorFloat(static_cast<double>(voting_timeframe), 2);

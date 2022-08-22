@@ -54,7 +54,7 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
     return file_read(
-        constants::HD_ROOT_FILES.to_string(),
+        machine().root_path(),
         format!("DAGBundle.txt"),
         clone_id);
 }

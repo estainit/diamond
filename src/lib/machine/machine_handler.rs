@@ -1,12 +1,11 @@
 use std::collections::HashMap;
 use std::thread;
 use crate::{ccrypto, cutils, dbhandler};
-use crate::lib::constants::NETWORK_LAUNCH_DATE;
-use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, TimeByMinutesT, VString};
 use crate::lib::database::db_handler::{maybe_switch_db, empty_db, get_connection, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
-use crate::constants::HD_ROOT_FILES;
+use substring::Substring;
 use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
 use crate::lib::dag::dag_walk_through::get_latest_block_record;
@@ -36,10 +35,8 @@ pub struct CMachine {
     m_threads_status: QSDicT,
     m_map_thread_code_to_prefix: QSDicT,
     m_config_file: String,
-    m_config_source: String,
     m_is_develop_mod: bool,
 
-    m_develop_launch_date: CDateT,
 
     /*
 
@@ -67,6 +64,12 @@ pub struct CMachine {
     // TODO: optimize it ASAP
     pub(crate) m_profile: MachineProfile,
 
+    pub m_email_is_active: bool,
+    pub m_use_hard_disk_as_a_buffer: bool,
+    pub m_config_source: String,
+    pub m_hard_root_path: String,
+    pub m_launch_date: String,
+    pub m_cycle_length: u32,
 }
 /*
 pub trait CMachineThreadGaps {
@@ -86,18 +89,17 @@ impl CMachine {
 
             m_is_in_sync_process: true,
 
-            m_last_sync_status_check: NETWORK_LAUNCH_DATE.to_string(),
-
             m_is_develop_mod: false,
 
             m_threads_status: HashMap::new(),
             m_map_thread_code_to_prefix: HashMap::new(),
 
-            m_develop_launch_date: "".to_string(),
 
             m_selected_profile: "".to_string(),
             m_is_db_connected: false,
             m_is_db_initialized: false,
+            m_email_is_active: false,
+            m_use_hard_disk_as_a_buffer: false,
 
             /*
           const static String stb_machine_block_buffer;
@@ -122,7 +124,11 @@ impl CMachine {
             m_dag_cached_block_hashes: vec![],
             m_profile: MachineProfile::new(),
             m_config_file: "".to_string(),
+            m_hard_root_path: "".to_string(),
             m_config_source: "".to_string(),
+            m_last_sync_status_check: "2024-00-00 00:00:00".to_string(),
+            m_launch_date: "2024-00-00 00:00:00".to_string(),
+            m_cycle_length: 1,
         }
     }
 
@@ -243,6 +249,8 @@ impl CMachine {
         }
 
         println!("Config file was loaded({}). {}", self.m_config_source, self.m_config_file);
+        // remove "/config.txt" from the end of path
+        self.m_hard_root_path = self.m_config_file.substring(0, self.m_config_file.len() - 11).to_string();
 
         println!("the config: {:?}", configs_map);
 
@@ -250,7 +258,16 @@ impl CMachine {
 
         println!("the config: db_host {}", db_host);
 
-        dbhandler().m_db_host = db_host;
+        self.m_launch_date = config.get("default", "launch_date").unwrap();
+        self.m_cycle_length = config.getuint("default", "cycle_length").unwrap().unwrap() as u32;
+        self.m_last_sync_status_check = self.m_launch_date.clone();
+        self.m_email_is_active = config.getbool("default", "email_is_active").unwrap().unwrap();
+        self.m_use_hard_disk_as_a_buffer = Ini::getbool(&config, "default", "use_hard_disk_as_a_buffer").unwrap().unwrap();
+
+        dbhandler().m_db_host = config.get("database", "db_host").unwrap();
+        dbhandler().m_db_name = config.get("database", "db_name").unwrap();
+        dbhandler().m_db_user = config.get("database", "db_user").unwrap();
+        dbhandler().m_db_pass = config.get("database", "db_pass").unwrap();
         maybe_switch_db(self.m_clone_id);
 
         // config.read(String::from("[somesection] someintvalue = 5"));
@@ -262,6 +279,22 @@ impl CMachine {
         // let my_int = my_string.parse::<i32>().unwrap();
 
         true
+    }
+
+
+
+    pub fn root_path(&self) -> String {
+        self.m_hard_root_path.clone()
+    }
+    pub fn cycle(&self) -> u32 {
+        self.m_cycle_length
+    }
+
+    pub fn get_cycle_by_zminutes(&self) -> TimeByMinutesT {
+        if self.m_cycle_length == 1 {
+            return constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
+        }
+        return self.m_cycle_length as TimeByMinutesT;
     }
 
 
@@ -299,7 +332,7 @@ impl CMachine {
         let mut last_sync_status_json_obj: JSonObject = cutils::parse_to_json_obj(&last_sync_status);
 
 
-        let cycle_by_minutes = cutils::get_cycle_by_minutes();
+        let cycle_by_minutes = self.get_cycle_by_zminutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
         if !force_to_control_based_on_dag_status &&
             (last_sync_status_json_obj["checkDate"].to_string() > cutils::minutes_before(
@@ -564,18 +597,7 @@ impl CMachine {
     //old_name_was getLaunchDate
     pub fn get_launch_date(&self) -> String
     {
-        if constants::NETWORK_LAUNCH_DATE != "" {
-            return constants::NETWORK_LAUNCH_DATE.to_string();
-        }
-        return self.m_develop_launch_date.clone();
-    }
-
-    //old_name_was setLaunchDateAndCloneId
-    pub fn set_launch_date_and_clone_id(&mut self, c_date: CDateT, clone_id: i8)
-    {
-        self.m_develop_launch_date = c_date;
-        if clone_id != 0
-        { self.m_clone_id = clone_id; }
+        self.m_launch_date.clone()
     }
 
     //old_name_was initDefaultProfile
@@ -761,9 +783,9 @@ impl CMachine {
     {
         if self.get_app_clone_id() == 0
         {
-            return HD_ROOT_FILES.to_string();
+            return self.root_path();
         }
-        return format!("{}/{}", HD_ROOT_FILES, self.get_app_clone_id());
+        return format!("{}/{}", self.root_path(), self.get_app_clone_id());
     }
 
 
@@ -803,10 +825,10 @@ impl CMachine {
     //old_name_was createFolders
     pub fn create_folders(&self) -> bool
     {
-        if constants::HD_ROOT_FILES != ""
+        if self.root_path() != ""
         {
-            if !path_exist(&constants::HD_ROOT_FILES.to_string())
-            { mkdir(&constants::HD_ROOT_FILES.to_string()); }
+            if !path_exist(&self.root_path())
+            { mkdir(&self.root_path()); }
         }
 
         if !path_exist(&self.get_clone_path())
@@ -1002,8 +1024,8 @@ impl CMachine {
         let last_sync_status: JSonObject = json!({
               "isInSyncMode": "Unknown",
               "lastTimeMachineWasInSyncMode":
-                          cutils::minutes_before(cutils::get_cycle_by_minutes() * 2, &cutils::get_now()),
-              "checkDate": cutils::minutes_before(cutils::get_cycle_by_minutes(), &cutils::get_now()),
+                          cutils::minutes_before(self.get_cycle_by_zminutes() * 2, &cutils::get_now()),
+              "checkDate": cutils::minutes_before(self.get_cycle_by_zminutes(), &cutils::get_now()),
               "lastDAGBlockCreationDate": "Unknown"
             });
         return upsert_kvalue(

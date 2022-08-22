@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{ccrypto, constants, cutils, dlog};
+use crate::{ccrypto, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, CDocHashT, ClausesT, JSonObject, TimeByHoursT};
@@ -56,7 +56,7 @@ impl DNAProposalDocument {
         self.m_polling_version = obj["pollingVersion"].to_string();
 
         self.m_voting_timeframe = obj["pTimeframe"].to_string().parse::<TimeByHoursT>().unwrap();
-        if constants::TIME_GAIN == 1
+        if machine().cycle() == 1
         {
             self.m_voting_timeframe = self.m_voting_timeframe as TimeByHoursT;
         }     // because of test ambient the longivity can be float and les than 1 hour
