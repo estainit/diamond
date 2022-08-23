@@ -33,12 +33,13 @@ impl CMachine {
 
                 if clone_id == 0 {
                     // update machine settings to dev mode settings (user@imagine.com)
-                    println!("Setting machine as a developing user node");
+                    println!("Setting machine as a developing node (User)");
                     self.m_profile.m_mp_settings.m_machine_alias = "node-user".to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = USER_PRIVATE_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
 
+                    let now_ = application().get_now();
                     if user_and_hu_are_neighbor
                     {
                         // add Hu as a neighbor
@@ -49,10 +50,11 @@ impl CMachine {
                             constants::DEFAULT.to_string(),
                             constants::YES.to_string(),
                             NeighborInfo::new(),
-                            application().get_now());
+                            now_);
                     }
 
                     // add Eve as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -60,11 +62,12 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     self.save_settings();
                 } else if clone_id == 1
                 {
+                    println!("Setting machine as a developing node (Hu)");
                     // set profile as hu@imagine.com
                     self.m_profile.m_mp_settings.m_machine_alias = "node-hu".to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_private_key = HU_PRIVATE_KEY.to_string();
@@ -74,6 +77,7 @@ impl CMachine {
                     if user_and_hu_are_neighbor
                     {
                         // add user as a neighbor
+                        let now_ = application().get_now();
                         add_a_new_neighbor(
                             USER_PUBLIC_EMAIL.to_string(),
                             constants::PUBLIC.to_string(),
@@ -81,10 +85,11 @@ impl CMachine {
                             constants::DEFAULT.to_string(),
                             constants::YES.to_string(),
                             NeighborInfo::new(),
-                            application().get_now());
+                            now_);
                     }
 
                     // add Eve as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -92,12 +97,13 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
 
                     self.save_settings();
                 } else if self.m_clone_id == 2
                 {
+                    println!("Setting machine as a developing node (Eve)");
                     // set profile as eve@imagine.com
                     self.m_profile.m_mp_settings.m_machine_alias = "node-eve".to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = EVE_PUBLIC_EMAIL.to_string();
@@ -105,6 +111,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = EVE_PUPLIC_KEY.to_string();
 
                     // add User as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         USER_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -112,9 +119,10 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     // add Hu as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -122,9 +130,10 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     // add Bob as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -132,11 +141,12 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     self.save_settings();
                 } else if self.m_clone_id == 3
                 {
+                    println!("Setting machine as a developing node (Bob)");
                     // set profile as bob@imagine.com
                     self.m_profile.m_mp_settings.m_machine_alias = "node-bob".to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = BOB_PUBLIC_EMAIL.to_string();
@@ -144,6 +154,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = BOB_PUPLIC_KEY.to_string();
 
                     // add Eve as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -151,9 +162,10 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     // add Alice as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         ALICE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -161,11 +173,12 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     self.save_settings();
                 } else if self.m_clone_id == 4
                 {
+                    println!("Setting machine as a developing node (Alice)");
                     // set profile as alice@imagine.com
                     self.m_profile.m_mp_settings.m_machine_alias = "node-alice".to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = ALICE_PUBLIC_EMAIL.to_string();
@@ -173,6 +186,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = ALICE_PUPLIC_KEY.to_string();
 
                     // add Hu as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -180,9 +194,10 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     // add Bob as a neighbor
+                    let now_ = application().get_now();
                     add_a_new_neighbor(
                         BOB_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -190,7 +205,7 @@ impl CMachine {
                         constants::DEFAULT.to_string(),
                         constants::YES.to_string(),
                         NeighborInfo::new(),
-                        application().get_now());
+                        now_);
 
                     self.save_settings();
                 }

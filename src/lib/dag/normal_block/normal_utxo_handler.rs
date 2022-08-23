@@ -22,7 +22,7 @@ pub fn loop_import_normal_coins()
     //     constants::Modules::App,
     //     constants::SecLevel::Info);
 
-    while machine().should_loop_threads()
+    while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_import_coins(&application().get_now());

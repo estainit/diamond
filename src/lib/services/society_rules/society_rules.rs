@@ -32,7 +32,7 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
 
     //minimum cost(100 trx * 2 PAI per trx * 1000000 micropPAI) for atleast 100 simple/light transaction
     let block_fix_cost: f64;
-    if application().cycle() == 1
+    if application().cycle_length() == 1
     {
         block_fix_cost = 100.0 * 2.0 * 1_000_000.0;
     } else {

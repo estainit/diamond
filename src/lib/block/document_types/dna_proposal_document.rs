@@ -57,7 +57,7 @@ impl ProposalDocument {
         self.m_polling_version = obj["pollingVersion"].to_string();
 
         self.m_voting_timeframe = obj["pTimeframe"].to_string().parse::<TimeByHoursT>().unwrap();
-        if application().cycle() == 1
+        if application().cycle_length() == 1
         {
             self.m_voting_timeframe = self.m_voting_timeframe as TimeByHoursT;
         }     // because of test ambient the longivity can be float and les than 1 hour

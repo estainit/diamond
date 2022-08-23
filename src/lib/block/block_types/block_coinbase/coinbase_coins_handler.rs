@@ -8,7 +8,7 @@ use crate::lib::dlog::dlog;
 //func old name was loopImportCoinbaseUTXOs
 pub fn loop_import_coinbase_coins()
 {
-    println!("DDDDDDDD1: {}", machine().should_loop_threads());
+    println!("DDDDDDDD1: {}", application().should_loop_threads());
     let thread_prefix = "import_coinbase_UTXOs_".to_string();
     let thread_code = format!("{:?}", thread::current().id());
     println!("thread id: {:?}", thread_code);
@@ -19,10 +19,10 @@ pub fn loop_import_coinbase_coins()
     //              &thread_code ),
     //     constants::Modules::App,
     //     constants::SecLevel::Info);
-    println!("____________________should_loop_threads(): {}", machine().should_loop_threads());
+    println!("____________________should_loop_threads(): {}", application().should_loop_threads());
 
 
-    while machine().should_loop_threads()
+    while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         import_coinbased_coins(&application().get_now());

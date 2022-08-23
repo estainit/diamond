@@ -11,8 +11,6 @@ pub struct AppParams {
 
     m_app_is_db_connected: bool,
     m_app_is_db_initialized: bool,
-    m_app_is_in_sync_process: bool,
-    m_app_last_sync_status_check: CDateT,
 
     m_app_email_is_active: bool,
     m_app_use_hard_disk_as_a_buffer: bool,
@@ -43,8 +41,6 @@ impl AppParams {
             m_app_should_loop_threads: false,
             m_app_is_db_connected: false,
             m_app_is_db_initialized: false,
-            m_app_is_in_sync_process: false,
-            m_app_last_sync_status_check: "".to_string(),
             m_app_email_is_active: false,
             m_app_use_hard_disk_as_a_buffer: false,
             m_app_config_source: "".to_string(),
@@ -68,6 +64,9 @@ impl AppParams {
         self.m_app_db_user = machine.m_db_user.clone();
         self.m_app_db_pass = machine.m_db_pass.clone();
 
+        self.m_app_should_loop_threads = machine.m_should_loop_threads;
+        self.m_app_email_is_active = machine.m_email_is_active;
+
         true
     }
 
@@ -75,13 +74,46 @@ impl AppParams {
         self.m_app_clone_id
     }
 
-    pub fn cycle(&self) -> u32 {
+    pub fn cycle_length(&self) -> u32 {
         self.m_app_cycle_length
     }
 
+    pub fn email_is_active(&self) -> bool
+    {
+        self.m_app_email_is_active
+    }
+
+    pub fn set_db_connected(&mut self, status: bool)
+    {
+        self.m_app_is_db_connected = status;
+    }
+
+    pub fn is_db_connected(&self) -> bool
+    {
+        self.m_app_is_db_connected
+    }
+
+    pub fn set_db_initialized(&mut self, status: bool)
+    {
+        self.m_app_is_db_initialized = status;
+    }
+
+    pub fn is_db_initialized(&self) -> bool
+    {
+        self.m_app_is_db_initialized
+    }
+
+    pub fn should_loop_threads(&self) -> bool
+    {
+        self.m_app_should_loop_threads
+    }
+
+
+    // time functionalities
+
     //old_name_was getCoinbaseCycleStamp
     pub fn get_coinbase_cycle_stamp(&self, c_date: &CDateT) -> String {
-        if self.cycle() == 1
+        if self.cycle_length() == 1
         {
             return self.get_a_cycle_range(c_date, 0, 0).from;
         }
@@ -102,7 +134,7 @@ impl AppParams {
             c_date = self.get_now();
         }
 
-        if self.cycle() == 1
+        if self.cycle_length() == 1
         {
             // one extra step to resolve +- summer time
             let h_: Vec<&str> = c_date.split(" ").collect();
@@ -150,16 +182,18 @@ impl AppParams {
 
 
     //old name was getCycleByMinutes
-    pub fn get_cycle_by_minutes(&self) -> TimeByMinutesT {
-        if self.cycle() == 1 {
+    pub fn get_cycle_by_minutes(&self) -> TimeByMinutesT
+    {
+        if self.cycle_length() == 1 {
             return constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
         }
-        return self.cycle() as TimeByMinutesT;
+        return self.cycle_length() as TimeByMinutesT;
     }
 
 
     //old name was minutesBefore
-    pub fn minutes_before(&self, back_in_time_by_minutes: u64, c_date: &CDateT) -> String {
+    pub fn minutes_before(&self, back_in_time_by_minutes: u64, c_date: &CDateT) -> String
+    {
         let mut since_epoch: i64;
         if c_date == "" {
             // since_epoch = QDateTime::currentDateTimeUtc().toSecsSinceEpoch();
@@ -175,7 +209,8 @@ impl AppParams {
 
 
     //old_name_was minutesAfter
-    pub fn minutes_after(&self, forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT) -> String {
+    pub fn minutes_after(&self, forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT) -> String
+    {
         let mut since_epoch: i64;
         if c_date == "" {
             since_epoch = Utc::now().timestamp();
@@ -204,7 +239,7 @@ impl AppParams {
         }
 
         let cycle_number: String;
-        if self.cycle() == 1 {
+        if self.cycle_length() == 1 {
             cycle_number = self.is_am_or_pm(minutes);
         } else {
             cycle_number = (minutes / self.get_cycle_by_minutes() as u32).to_string();
@@ -238,13 +273,24 @@ impl AppParams {
     }
 
     //old_name_was getPrevCoinbaseInfo
-    pub fn get_prev_coinbase_info(&self, c_date: &CDateT) -> (String, String, String, String, String)
+    pub fn get_prev_coinbase_info(
+        &self,
+        c_date: &CDateT)
+        -> (String, String, String, String, String)
     {
-        return self.get_coinbase_info(&self.get_a_cycle_range(c_date, 1, 0).from, "");
+        let cycle_range = self.get_a_cycle_range(
+            c_date,
+            1,
+            0);
+
+        return self.get_coinbase_info(
+            &cycle_range.from,
+            "");
     }
 
     //old_name_was timeDiff
-    pub fn time_diff(&self, from_t_: CDateT, to_t_: CDateT) -> TimeDiff {
+    pub fn time_diff(&self, from_t_: CDateT, to_t_: CDateT) -> TimeDiff
+    {
         let mut from_t = from_t_;
         if from_t == ""
         {
@@ -294,7 +340,8 @@ impl AppParams {
         Utc::now().timestamp()
     }
 
-    pub fn make_date_from_str(&self, yyyymmddhhmmss: &CDateT) -> DateTime<FixedOffset> {
+    pub fn make_date_from_str(&self, yyyymmddhhmmss: &CDateT) -> DateTime<FixedOffset>
+    {
         return match DateTime::parse_from_str(&self.add_fff_zzzz_to_yyyymmdd(yyyymmddhhmmss.clone()), "%Y-%m-%d %H:%M:%S%.3f %z") {
             Ok(dt) => { dt }
             Err(e) => {
@@ -317,7 +364,8 @@ impl AppParams {
 
     //old name was isAmOrPm
     #[allow(dead_code)]
-    pub fn is_am_or_pm(&self, minutes: u32) -> String {
+    pub fn is_am_or_pm(&self, minutes: u32) -> String
+    {
         if minutes >= 720
         { return "12:00:00".to_string(); }
         return "00:00:00".to_string();
@@ -341,7 +389,8 @@ impl AppParams {
     }
 
     //old name was getNowByMinutes
-    pub fn get_now_by_minutes(&self) -> u32 {
+    pub fn get_now_by_minutes(&self) -> u32
+    {
         let minutes_dtl: String = self.get_now().clone();
         let minutes_dtl: Vec<&str> = minutes_dtl.split(" ").collect();
         let minutes_dtl: Vec<&str> = minutes_dtl[1].split(":").collect();
@@ -350,7 +399,8 @@ impl AppParams {
     }
 
     //old_name_was getCycleElapsedByMinutes
-    pub fn get_cycle_elapsed_by_minutes(&self, c_date_: CDateT) -> u64 {
+    pub fn get_cycle_elapsed_by_minutes(&self, c_date_: CDateT) -> u64
+    {
         let mut c_date = c_date_;
         if c_date == "".to_string() {
             c_date = self.get_now();
@@ -368,7 +418,8 @@ impl AppParams {
     }
 
     //old_name_was convertMinutesToHHMM
-    pub fn convert_minutes_to_hhmm(&self, minutes: TimeByMinutesT) -> String {
+    pub fn convert_minutes_to_hhmm(&self, minutes: TimeByMinutesT) -> String
+    {
         let h: TimeByMinutesT = minutes / 60;
         let mut h: String = h.to_string();
         h = left_padding(h, 2);
@@ -381,19 +432,23 @@ impl AppParams {
     }
 
     //old name was getCoinbaseRange
-    pub fn get_coinbase_range(&self, c_date: &CDateT) -> TimeRange {
+    pub fn get_coinbase_range(&self, c_date: &CDateT) -> TimeRange
+    {
         return self.get_a_cycle_range(c_date, 0, 0);
     }
 
     //old_name_was getCbUTXOsDateRange
     #[allow(dead_code)]
-    pub fn get_cb_coins_date_range(&self, c_date: &CDateT) -> TimeRange {
+    pub fn get_cb_coins_date_range(&self, c_date: &CDateT) -> TimeRange
+    {
         return self.get_a_cycle_range(c_date, constants::COINBASE_MATURATION_CYCLES, 0);
     }
 
     //old_name_was getCoinbaseInfo
     #[allow(dead_code)]
-    pub fn get_coinbase_info(&self, c_date: &CDateT, cycle: &str) -> (String, String, String, String, String) {
+    pub fn get_coinbase_info(&self, c_date: &CDateT, cycle: &str) ->
+    (String, String, String, String, String)
+    {
         if c_date != "" {
             let the_range = self.get_coinbase_range(c_date);
             let from_hour: Vec<&str> = the_range.from.split(' ').collect();
@@ -438,7 +493,8 @@ impl AppParams {
 
     //old_name_was getCoinbaseRangeByCycleStamp
     #[allow(dead_code)]
-    pub fn get_coinbase_range_by_cycle_stamp(&self, cycle: &str) -> TimeRange {
+    pub fn get_coinbase_range_by_cycle_stamp(&self, cycle: &str) -> TimeRange
+    {
         let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
         let cycle_dtl = cycle
             .to_string()

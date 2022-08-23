@@ -81,7 +81,7 @@ pub fn create_coinbase_core(
         c_date = application().get_now();
         cycle = application().get_coinbase_cycle_stamp(&c_date);
     } else {
-        if application().cycle() == 1
+        if application().cycle_length() == 1
         {
             // normally the cycle time is 12 hours
             c_date = cycle.clone();
@@ -628,7 +628,7 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
 
     percentage = (percentage / 5.0) + 1.0;
     let mut sub_cycle = 12.0 + percentage;
-    if application().cycle() != 1 {
+    if application().cycle_length() != 1 {
         sub_cycle = 6.0 + percentage; // who has more shares should try more times to create a coinbase block
     }
 
@@ -751,8 +751,8 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
         constants::SecLevel::Trace);
 
     let mut cycle_by_minutes: TimeByMinutesT = constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
-    if application().cycle() != 1 {
-        cycle_by_minutes = application().cycle() as TimeByMinutesT;
+    if application().cycle_length() != 1 {
+        cycle_by_minutes = application().cycle_length() as TimeByMinutesT;
     }
     let from_t_ = application().get_coinbase_range(c_date).from;
     let to_t_ = application().get_now();

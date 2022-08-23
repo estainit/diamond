@@ -56,6 +56,7 @@ pub fn decrypt_and_parse_packet(
             constants::Modules::Sec,
             constants::SecLevel::Info);
 
+        let now_ = application().get_now();
         add_a_new_neighbor(
             sender.clone(),
             constants::PUBLIC.to_string(),
@@ -63,7 +64,7 @@ pub fn decrypt_and_parse_packet(
             machine().get_selected_m_profile(),
             constants::YES.to_string(),
             NeighborInfo::new(),
-            application().get_now(),
+            now_
         );
 
 // retrieve id of newly inserted email

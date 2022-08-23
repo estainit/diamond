@@ -49,7 +49,7 @@ pub fn i_push(
             constants::SecLevel::Trace);
     }
 
-    if !machine().m_email_is_active
+    if !application().email_is_active()
     { return true; }
 
     // avoid duplicate sending

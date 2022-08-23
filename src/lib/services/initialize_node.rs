@@ -30,6 +30,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
 
     // create Genisis Block
     init_genesis_block(machine);
+
     // init Administrative Configurations History
     init_administrative_configurations_history(machine);
 

@@ -24,10 +24,8 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 // #[derive(Default)]
 pub struct CMachine {
     pub(crate) m_clone_id: i8,
-    m_should_loop_threads: bool,
+    pub(crate) m_should_loop_threads: bool,
 
-    pub m_is_db_connected: bool,
-    pub m_is_db_initialized: bool,
     pub m_is_in_sync_process: bool,
     pub(crate) m_last_sync_status_check: CDateT,
 
@@ -101,8 +99,6 @@ impl CMachine {
             m_map_thread_code_to_prefix: HashMap::new(),
 
             m_selected_profile: "".to_string(),
-            m_is_db_connected: false,
-            m_is_db_initialized: false,
             m_email_is_active: false,
             m_use_hard_disk_as_a_buffer: false,
 
@@ -156,11 +152,18 @@ impl CMachine {
         self.m_last_sync_status_check = self.get_launch_date();
 
         // control DataBase
-        let (status, msg) = maybe_initialize_db(self);
+        let (status, msg) = maybe_initialize_db();
         if !status
         {
-            panic!("failed on maybe initialize db {}", msg)
+            panic!("failed on maybe initialize db1 {}", msg)
         }
+
+        if !application().is_db_initialized()
+        {
+            panic!("failed on maybe initialize db2 {}", msg)
+        }
+
+        self.maybe_add_seed_neighbors();
 
         maybe_init_dag(self);
 

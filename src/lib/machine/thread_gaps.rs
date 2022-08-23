@@ -144,7 +144,7 @@ impl CMachine{
     {
         //      return 500;
         let mut gap_by_seconds: TimeBySecT;
-        if application().cycle() == 1 {
+        if application().cycle_length() == 1 {
             if self.is_in_sync_process(false) {
                 gap_by_seconds = 60 * 17;  // every 17 minutesd
             } else {
@@ -152,9 +152,9 @@ impl CMachine{
             }
         } else {
             if self.is_in_sync_process(false) {
-                gap_by_seconds = ((application().cycle() * 60) / 9) as TimeBySecT;  // every 17 second
+                gap_by_seconds = ((application().cycle_length() * 60) / 9) as TimeBySecT;  // every 17 second
             } else {
-                gap_by_seconds = ((application().cycle() * 60) / 3) as TimeBySecT;
+                gap_by_seconds = ((application().cycle_length() * 60) / 3) as TimeBySecT;
             }
         }
         return gap_by_seconds;

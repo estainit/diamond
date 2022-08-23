@@ -23,7 +23,7 @@ impl DBHandler {
     pub(crate) fn new() -> DBHandler {
         eprintln!("New DBHandler is going to be created.");
 
-        let db =DBHandler {
+        let db = DBHandler {
             m_db_host: "".to_string(),
             m_db_name: "".to_string(),
             m_db_user: "".to_string(),
@@ -52,9 +52,9 @@ pub fn maybe_switch_db(forced_clone_id: i8) {
     }
     // if (forced_clone_id > 0) && (forced_clone_id != dbhandler().m_current_clone)
     // {
-        // change database
-        dbhandler().m_current_clone = forced_clone_id;
-        dbhandler().m_db = get_connection();
+    // change database
+    dbhandler().m_current_clone = forced_clone_id;
+    dbhandler().m_db = get_connection();
     // }
 }
 
@@ -83,11 +83,12 @@ pub fn get_connection() -> Client {
     println!("Establish db connection for client {} => {}", &application().id(), connection_str);
 
     connection_str = format!("{} password={}", connection_str, db_pass);
+    application().set_db_connected(true);
     return Client::connect(&connection_str, NoTls).unwrap();
 }
 
 //old_name_was initDb
-pub fn maybe_initialize_db<'a>(machine: &mut CMachine) -> (bool, String)
+pub fn maybe_initialize_db() -> (bool, String)
 {
     if constants::DATABASAE_AGENT == "psql"
     {
@@ -101,21 +102,15 @@ pub fn maybe_initialize_db<'a>(machine: &mut CMachine) -> (bool, String)
             }
         };
 
-        return if is_created
+        if is_created
         {
-            machine.m_is_db_connected = true;
-            machine.m_is_db_initialized = true;
-            (true, "connected".to_string())
-        } else {
-            let creation_status = create_tables_in_psql();
-            machine.m_is_db_connected = creation_status;
-            machine.m_is_db_initialized = creation_status;
-            if machine.m_is_db_initialized
-            {
-                machine.maybe_add_seed_neighbors();
-            }
-            (creation_status, "connected".to_string())
-        };
+            application().set_db_initialized(true);
+            return (true, "connected".to_string());
+        }
+
+        let creation_status = create_tables_in_psql();
+        application().set_db_initialized(creation_status);
+        return (creation_status, "connected".to_string());
     }
     return (false, "Unknown db agent!".to_string());
 }

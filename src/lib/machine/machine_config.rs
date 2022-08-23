@@ -55,7 +55,6 @@ impl CMachine {
             clone_id = forcing_manual_clone_id;
         }
 
-
         self.m_clone_id = clone_id;
         self.m_is_develop_mod = is_develop_mod;
         self.m_config_file = config_file.clone();

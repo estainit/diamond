@@ -21,7 +21,7 @@ pub fn loop_coin_cleaner(c_date: &CDateT)
     //     constants::Modules::App,
     //     constants::SecLevel::Info);
 
-    while machine().should_loop_threads() {
+    while application().should_loop_threads() {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         do_coin_clean(&"".to_string());
 

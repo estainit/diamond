@@ -123,6 +123,7 @@ pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64
     let neighbor_name = neighbor_email.split("@").collect::<Vec<&str>>()[0].to_string();
     let neighbor_name = format!("{}({})", neighbor_name, mp_code);
     let neighbor_info = NeighborInfo { m_name: neighbor_name };
+    let now_ = application().get_now();
     let (status, msg) = add_a_new_neighbor(
         neighbor_email.clone(),
         constants::PUBLIC.to_string(),
@@ -130,7 +131,7 @@ pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64
         mp_code.clone(),
         constants::YES.to_string(),
         neighbor_info,
-        application().get_now());
+        now_);
 
     if !status {
         return (status, msg, 0);
@@ -168,7 +169,7 @@ pub fn add_a_new_neighbor(
     let neighbor_email = neighbor_email.to_string();
 
     dlog(
-        &format!("add new Neighbor email({neighbor_email}) connection_type({connection_type}) "),
+        &format!("Add new Neighbor email({neighbor_email}) connection_type({connection_type}) "),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -192,7 +193,7 @@ pub fn add_a_new_neighbor(
 
     if records.len() > 0
     {
-        return if neighbor_public_key != ""
+        if neighbor_public_key != ""
         {
             //update pgp key
             let now_ = application().get_now();
@@ -211,10 +212,10 @@ pub fn add_a_new_neighbor(
                 &values,
                 clauses,
                 true);
-            (true, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) updated"))
-        } else {
-            (false, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) was missed"))
-        };
+            return (true, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) updated"));
+        }
+
+        return (false, format!("The iPGP key for email({neighbor_email}) connection({connection_type}) profile({mp_code}) was missed"));
     }
 
     if creation_date == "" {
@@ -225,14 +226,16 @@ pub fn add_a_new_neighbor(
         Ok(ser) => { (true, ser) }
         Err(e) => {
             dlog(
-                &format!("Failed in serialization neighbor_info {:?}", e),
+                &format!("Failed in serialization neighbor_info 1 {:?}", e),
                 constants::Modules::App,
                 constants::SecLevel::Error);
             (false, "".to_string())
         }
     };
     if !status
-    { return (false, "Failed in serialization neighbor_info".to_string()); }
+    {
+        return (false, "Failed in serialization neighbor_info 2".to_string());
+    }
 
     let now_ = application().get_now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
@@ -439,6 +442,7 @@ pub fn parse_handshake(
 
     if !email_already_exist
     {
+        let now_ = application().get_now();
         add_a_new_neighbor(
             sender_email.to_string(),
             connection_type.to_string(),
@@ -446,7 +450,7 @@ pub fn parse_handshake(
             "".to_string(),
             constants::YES.to_string(),
             NeighborInfo::new(),
-            application().get_now());
+            now_);
     } else {
         if sender_info[0]["n_pgp_public_key"].to_string() == ""
         {
@@ -721,7 +725,6 @@ pub fn parse_nice_to_meet_you(
         ("n_pgp_public_key", &sender_pgp_public_key as &(dyn ToSql + Sync)),
         ("n_last_modified", &last_modified as &(dyn ToSql + Sync))
     ]);
-
 
 
     // update neighbor info's PGP public key

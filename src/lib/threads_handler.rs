@@ -21,7 +21,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
     maybe_boot_dag_from_bundle();
 
     let mut giga_loop_counter = 0;
-    while machine().should_loop_threads()
+    while application().should_loop_threads()
     {
         giga_loop_counter += 1;
         println!("{}. Loop Top", giga_loop_counter);
@@ -85,7 +85,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             // fetching sending queue
             send_out_the_packet();
 
-            if machine().m_email_is_active
+            if application().email_is_active()
             {
                 // read from hard disk and send by email
                 send_private_email();
@@ -100,7 +100,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 
         {
 //         // ingress cpackets and parsing
-            if machine().m_email_is_active
+            if application().email_is_active()
             {
                 // fetch mailboxes
                 received_email_checks();
@@ -272,7 +272,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 //
 //         {
 //         // ingress cpackets and parsing
-//         if (machine().m_email_is_active)
+//         if (application().email_is_active())
 //         std::thread(launchEmailPoper).detach();
 //
 //         // read messages from hard drive
@@ -300,7 +300,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 //
 // // launchThreads
 // pub fn launch_threads() {
-//     println!("should_ loop_ threads in launch_ threads: {}", machine().should_loop_threads());
+//     println!("should_ loop_ threads in launch_ threads: {}", application().should_loop_threads());
 //     dlog(
 //         &String::from("launch threads bunch"),
 //         constants::Modules::App,
