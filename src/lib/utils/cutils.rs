@@ -7,8 +7,8 @@ use serde_json::json;
 use crate::{constants, dlog };
 use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonArray, JSonObject, VVString};
 
-pub fn remove_quotes(inp_str: &String) -> String {
-    inp_str.substring(1, inp_str.len() - 1).to_string()
+pub fn remove_quotes(input_value: &JSonObject) -> String {
+    input_value.as_str().unwrap().to_string()
 }
 
 pub fn right_padding(inp_str: String, length: u8) -> String {

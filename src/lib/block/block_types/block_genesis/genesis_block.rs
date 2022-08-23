@@ -3,7 +3,7 @@ pub mod b_genesis {
     use postgres::types::ToSql;
     use crate::{application, ccrypto, CMachine, constants, dlog};
     use crate::lib::block::block_types::block::Block;
-    use crate::lib::block::document_types::dna_proposal_document::{ProposalDocument};
+    use crate::lib::block::document_types::proposal_document::{ProposalDocument};
     use crate::lib::block::document_types::document::Document;
     use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject};
     use crate::lib::database::abs_psql::{simple_eq_clause};
@@ -25,25 +25,26 @@ pub mod b_genesis {
             back_in_time,
             &launch_date);
         doc.m_doc_type = constants::document_types::PROPOSAL.to_string();
+        doc.m_doc_class = "Classic".to_string();
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
-        doc.m_doc_tags = "initialize, DNA".to_string();
+        doc.m_doc_tags = "initialize, contribute, shares".to_string();
         doc.m_doc_comment = "Imagine all the people living life in peace".to_string();
 
-        let mut dna = ProposalDocument::new();
-        dna.m_project_hash = ccrypto::convert_title_to_hash(&"imagine".to_string());
-        dna.m_help_hours = 1_000_000;
-        dna.m_help_level = 1;
-        dna.m_shares = 1_000_000;
-        dna.m_contributor_account = constants::HU_SHARE_ADDRESS.to_string();
-        dna.m_approval_date = proposal_creation_date;
-        dna.m_polling_profile = "Basic".to_string();
-        dna.m_voting_timeframe = 24.0;
-        dna.m_votes_yes = 1_000_000;
-        dna.m_votes_abstain = 0;
-        dna.m_votes_no = 0;
+        let mut proposal = ProposalDocument::new();
+        proposal.m_project_hash = ccrypto::convert_title_to_hash(&"imagine".to_string());
+        proposal.m_help_hours = constants::INITIAL_SHARES;
+        proposal.m_help_level = 1;
+        proposal.m_shares = constants::INITIAL_SHARES as i64;
+        proposal.m_contributor_account = constants::HU_SHARE_ADDRESS.to_string();
+        proposal.m_approval_date = proposal_creation_date;
+        proposal.m_polling_profile = "Basic".to_string();
+        proposal.m_voting_timeframe = 24.0;
+        proposal.m_votes_yes = constants::INITIAL_SHARES as i64;
+        proposal.m_votes_abstain = 0;
+        proposal.m_votes_no = 0;
 
-        doc.m_if_proposal_doc = dna;
+        doc.m_if_proposal_doc = proposal;
         doc.m_doc_hash = doc.m_if_proposal_doc.calc_doc_hash(&doc);
 
         block.m_block_documents_root_hash = doc.get_doc_hash(); // since the genesis block has only 1 document // "fb20e4323d695db7728eabcf3a44a1c0516d23362622fa3093e7cf887ef88396";

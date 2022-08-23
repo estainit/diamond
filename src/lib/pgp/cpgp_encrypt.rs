@@ -47,7 +47,7 @@ pub fn pgp_encrypt(
 
     if should_compress {
         // TODO: implementing compress function
-        pgp_enc_jobj["message"] = compress(&remove_quotes(&pgp_enc_jobj["message"].to_string())).into();
+        pgp_enc_jobj["message"] = compress(&remove_quotes(&pgp_enc_jobj["message"])).into();
         pgp_enc_jobj["isCompressed"] = "true".into();
         pgp_enc_jobj["zipVersion"] = "0.0.0".into();
         pgp_enc_jobj["zipAlgorithm"] = "zip...".into();
@@ -72,7 +72,7 @@ pub fn pgp_encrypt(
         }
         // conventional symmetric encryption
         let (aes_status, aes_encoded) = ccrypto::aes_encrypt(
-            remove_quotes(&pgp_enc_jobj["message"].to_string()),
+            remove_quotes(&pgp_enc_jobj["message"]),
             secret_key.clone());
 
 

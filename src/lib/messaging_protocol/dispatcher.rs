@@ -34,7 +34,7 @@ pub fn parse_a_packet(
     let mut packet_type: String = "".to_string();
     if !packet["pType"].is_null()
     {
-        packet_type = remove_quotes(&packet["pType"].to_string());
+        packet_type = remove_quotes(&packet["pType"]);
 
         if packet_type != constants::DEFAULT_PACKET_TYPE.to_string()
         {
@@ -55,7 +55,7 @@ pub fn parse_a_packet(
     let mut packet_version: String = "".to_string();
     if !packet["pVer"].is_null()
     {
-        packet_version = remove_quotes(&packet["pVer"].to_string());
+        packet_version = remove_quotes(&packet["pVer"]);
     }
 
     dlog(
@@ -76,7 +76,7 @@ pub fn parse_a_packet(
     let mut c_date: String = "".to_string();
     if !packet["pDate"].is_null()
     {
-        c_date = remove_quotes(&packet["pDate"].to_string());
+        c_date = remove_quotes(&packet["pDate"]);
     }
 
     println!("packet[cards]: {}", packet["cards"]);
@@ -103,8 +103,8 @@ pub fn parse_a_packet(
             connection_type,
             &c_date,
             &a_card,
-            &remove_quotes(&a_card["cdType"].to_string()),
-            &remove_quotes(&a_card["cdVer"].to_string()),
+            &remove_quotes(&a_card["cdType"]),
+            &remove_quotes(&a_card["cdVer"]),
             &packet_version.clone(),
         );
 
@@ -113,7 +113,7 @@ pub fn parse_a_packet(
 
         dlog(
             &format!("Dispatch a card response card type ({}) status({}) should purge file({})",
-                     remove_quotes(&a_card["cdType"].to_string()), status_, should_purge_file_),
+                     remove_quotes(&a_card["cdType"]), status_, should_purge_file_),
             constants::Modules::App,
             constants::SecLevel::Debug);
     }
@@ -317,7 +317,7 @@ pub fn handle_a_single_card(
 
     if !card_body["bHash"].is_null()
     {
-        card_code = remove_quotes(&card_body["bHash"].to_string()).to_string();
+        card_code = remove_quotes(&card_body["bHash"]).to_string();
     }
 
     if !is_valid_version_number(card_ver)

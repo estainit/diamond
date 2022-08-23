@@ -609,4 +609,5 @@ pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 //im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
 pub const HU_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
+pub const INITIAL_SHARES: i32 = 10_000_000;
 

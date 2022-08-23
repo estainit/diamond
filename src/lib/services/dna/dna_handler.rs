@@ -4,13 +4,14 @@ use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, SharesCountT, SharesPercentT};
 use crate::lib::database::abs_psql::{q_custom_query, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::C_DNA_SHARES;
+use crate::lib::database::tables::C_SHARES;
 
 
 pub struct Shareholder {
     account: CAddressT,
     shares: SharesCountT,
 }
+
 /*
 
 
@@ -39,7 +40,7 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
 {
     let single_value = doc.get_doc_hash().clone();
     let (_status, records) = q_select(
-        C_DNA_SHARES,
+        C_SHARES,
         vec!["dn_doc_hash"],
         vec![simple_eq_clause("dn_doc_hash", &single_value)],
         vec![],
@@ -85,7 +86,7 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
         constants::SecLevel::Trace);
 
     q_insert(
-        C_DNA_SHARES,    // table
+        C_SHARES,    // table
         &values, // values to insert
         true,
     );
@@ -187,11 +188,11 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
     let mut query = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
     {
-        query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_DNA_SHARES;
+        query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_SHARES;
         query += &*(" WHERE dn_creation_date between '".to_owned() + &min_creation_date + &"' AND '".to_owned() + &max_creation_date + "' GROUP BY dn_shareholder ORDER BY sum_ DESC");
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
-        query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_DNA_SHARES;
+        query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_SHARES;
         query += &*(" WHERE dn_creation_date between \"".to_owned() + &min_creation_date + &"\" AND \"".to_owned() + &max_creation_date + "\" GROUP BY dn_shareholder ORDER BY sum_ DESC");
     }
     dlog(

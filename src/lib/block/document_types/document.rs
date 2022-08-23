@@ -3,10 +3,11 @@ use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{application, constants, cutils, dlog};
+use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
-use crate::lib::block::document_types::dna_proposal_document::ProposalDocument;
+use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
 use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, DocLenT, JSonObject};
 use crate::lib::database::abs_psql::q_insert;
@@ -85,47 +86,69 @@ impl Document
         block: &Block,
         doc_index: CDocIndexT) -> bool
     {
-        if obj["dHash"].to_string() != ""
+        if !obj["dHash"].is_null()
         {
-            self.m_doc_hash = obj["dHash"].to_string();
+            self.m_doc_hash = remove_quotes(&obj["dHash"]);
         }
-        /*
-                if obj["dType"].to_string() != "")
-                m_doc_type = obj["dType"].to_string();
 
-                if obj["dClass"].to_string() != "")
-                m_doc_class = obj["dClass"].to_string();
+        if !obj["dType"].is_null()
+        {
+            self.m_doc_type = remove_quotes(&obj["dType"]);
+        }
 
-                if obj["dRef"].to_string() != "")
-                m_doc_ref = obj["dRef"].to_string();
+        if !obj["dClass"].is_null()
+        {
+            self.m_doc_class = remove_quotes(&obj["dClass"]);
+        }
 
-                if obj["dCDate"].to_string() != "")
-                m_doc_creation_date = obj["dCDate"].to_string();
+        if !obj["dRef"].is_null()
+        {
+            self.m_doc_ref = remove_quotes(&obj["dRef"]);
+        }
 
-                if obj["dVer"].to_string() != "")
-                m_doc_version = obj["dVer"].to_string();
+        if !obj["dCDate"].is_null()
+        {
+            self.m_doc_creation_date = remove_quotes(&obj["dCDate"]);
+        }
 
-                if obj["dLen"].to_string() != "")
-                m_doc_length = cutils::convertPaddedStringToInt(obj["dLen"].to_string());
+        if !obj["dVer"].is_null()
+        {
+            self.m_doc_version = remove_quotes(&obj["dVer"]);
+        }
 
-                if obj["dComment"].to_string() != "")
-                m_doc_comment = obj["dComment"].to_string();
+        if !obj["dLen"].is_null()
+        {
+            self.m_doc_length = remove_quotes(&obj["dLen"]).parse::<DocLenT>().unwrap();
+        }
 
-                if obj["dTitle"].to_string() != "")
-                m_doc_title = obj["dTitle"].to_string();
+        if !obj["dComment"].is_null()
+        {
+            self.m_doc_comment = remove_quotes(&obj["dComment"]);
+        }
 
-                if (obj.keys().contains("dExtInfo"))
-                m_doc_ext_info = obj["dExtInfo"].toArray();
+        if !obj["dTitle"].is_null()
+        {
+            self.m_doc_title = remove_quotes(&obj["dTitle"]);
+        }
 
-                if obj["dExtHash"].to_string() != "")
-                m_doc_ext_hash = obj["dExtHash"].to_string();
+        if !obj["dExtInfo"].is_null()
+        {
+            println!("iiii i i i i i iiiii: {}", obj["dExtInfo"]);
+            //self.m_doc_ext_info = remove_quotes(&obj[");
+        }
 
-                if obj["dTags"].to_string() != "")
-                m_doc_tags = obj["dTags"].to_string();
+        if !obj["dExtHash"].is_null()
+        {
+            self.m_doc_ext_hash = remove_quotes(&obj["dExtHash"]);
+        }
 
-        */
+        if !obj["dTags"].is_null()
+        {
+            self.m_doc_tags = remove_quotes(&obj["dTags"]);
+        }
 
-        let doc_type: String = obj["dType"].to_string();
+
+        let doc_type: String = remove_quotes(&obj["dType"]);
         self.m_doc_type = doc_type.clone();
 
         if doc_type == constants::document_types::BASIC_TX
@@ -175,7 +198,7 @@ impl Document
             */
         } else if doc_type == constants::document_types::PROPOSAL
         {
-            self.m_if_proposal_doc.set_by_json_obj(obj);
+            self.m_if_proposal_doc.set_by_json_doc(obj);
         } else if doc_type == constants::document_types::PLEDGE
         {
             /*

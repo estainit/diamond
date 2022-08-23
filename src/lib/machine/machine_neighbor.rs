@@ -388,7 +388,7 @@ pub fn parse_handshake(
 
     let pgp_public_key: String;
     if !message["PGPPubKey"].is_null() {
-        pgp_public_key = remove_quotes(&message["PGPPubKey"].to_string());
+        pgp_public_key = remove_quotes(&message["PGPPubKey"]);
     } else {
         pgp_public_key = "".to_string();
     }
@@ -658,19 +658,19 @@ pub fn parse_nice_to_meet_you(
     let mut email: String = "".to_string();
     if !message["email"].is_null()
     {
-        email = remove_quotes(&message["email"].to_string());
+        email = remove_quotes(&message["email"]);
     }
 
     let mut sender_pgp_public_key: String = "".to_string();
     if !message["PGPPubKey"].is_null()
     {
-        sender_pgp_public_key = remove_quotes(&message["PGPPubKey"].to_string());
+        sender_pgp_public_key = remove_quotes(&message["PGPPubKey"]);
     }
 
     let mut sender_backer_address: String = "".to_string();
     if !message["backerAddress"].is_null()
     {
-        sender_backer_address = remove_quotes(&message["backerAddress"].to_string());
+        sender_backer_address = remove_quotes(&message["backerAddress"]);
     }
 
     // just to be sure handshake happends ONLY ONE TIME for each email at the start

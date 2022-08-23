@@ -46,9 +46,9 @@ impl ProposalDocument {
         }
     }
 
-    pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
+    pub fn set_by_json_doc(&mut self, obj: &JSonObject) -> bool
     {
-        panic!("gggggg");
+        panic!("gggggg {}" , obj);
         self.m_help_hours = obj["helpHours"].to_string().parse::<i32>().unwrap();
         self.m_help_level = obj["helpLevel"].to_string().parse::<i32>().unwrap();
         self.m_project_hash = obj["projectHash"].to_string();
@@ -72,7 +72,7 @@ impl ProposalDocument {
         document["helpHours"] = self.m_help_hours.clone().into();
         document["helpLevel"] = self.m_help_level.clone().into();
         document["contributor"] = self.m_contributor_account.clone().into();
-        document["pTimeframe"] = self.m_voting_timeframe.clone().into();
+        document["pTimeframe"] = cutils::convert_float_to_string(self.m_voting_timeframe, constants::FLOAT_LENGTH).into();
         document["pollingProfile"] = self.m_polling_profile.clone().into();
         document["pollingVersion"] = self.m_polling_version.clone().into();
 
@@ -473,7 +473,7 @@ impl ProposalDocument {
                      cutils::hash8c(&doc.m_doc_hash),
                      cutils::hash8c(&block.m_block_hash)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::Debug);
 
 
         // record in c_proposals (i_proposal)
@@ -493,6 +493,7 @@ impl ProposalDocument {
                 constants::SecLevel::Error);
         }
 
+        println!("kkkkkk doc.m_doc_class {}", doc.m_doc_class);
         let pr_help_level = doc.m_if_proposal_doc.m_help_level;
         let pr_help_hours=doc.m_if_proposal_doc.m_help_hours;
         let pr_voting_timeframe=doc.m_if_proposal_doc.m_voting_timeframe;
@@ -523,6 +524,7 @@ impl ProposalDocument {
             true);
 
 
+        println!("kkkkkk doc.m_if_proposal_doc.m_polling_profile {}", doc.m_if_proposal_doc.m_polling_profile);
         // create a new polling
         let mut params: JSonObject = json!({
             "dType": constants::document_types::POLLING,

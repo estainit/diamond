@@ -385,7 +385,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         // TODO: tune the gap time
         let now_ = application().get_now();
         let invoke_gap = application().time_diff(
-            remove_quotes(&last_block["last_block_receive_date"].to_string()),
+            remove_quotes(&last_block["last_block_receive_date"]),
             now_).as_seconds;
 
         let minimum_leave_invoke_gap= machine().get_invoke_leaves_gap();

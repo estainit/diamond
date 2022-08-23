@@ -38,7 +38,7 @@ DROP TABLE IF EXISTS c_logs_time_locked;
 DROP TABLE IF EXISTS c_trx_utxos;
 DROP TABLE IF EXISTS c_machine_block_buffer;
 DROP TABLE IF EXISTS c_machine_tmp_contents;
-DROP TABLE IF EXISTS c_dna_shares;
+DROP TABLE IF EXISTS c_shares;
 DROP TABLE IF EXISTS c_iname_records;
 DROP TABLE IF EXISTS c_machine_iname_records;
 DROP TABLE IF EXISTS c_iname_bindings;

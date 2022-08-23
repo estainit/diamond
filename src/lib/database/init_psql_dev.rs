@@ -96,14 +96,14 @@ DROP FUNCTION IF EXISTS name
 
 
 
-CREATE OR REPLACE FUNCTION func_c_dna_shares_calc_shares()
+CREATE OR REPLACE FUNCTION func_c_shares_calc_shares()
 RETURNS TRIGGER AS $example_table$
 BEGIN
-UPDATE c_dna_shares SET dn_shares = dn_help_hours * dn_help_level WHERE NEW.dn_id = dn_id;
+UPDATE c_shares SET dn_shares = dn_help_hours * dn_help_level WHERE NEW.dn_id = dn_id;
 RETURN NEW;
 END;
 $example_table$ LANGUAGE plpgsql;
-CREATE TRIGGER trigger_c_dna_shares_calc_shares AFTER INSERT ON c_dna_shares FOR EACH ROW EXECUTE PROCEDURE func_c_dna_shares_calc_shares();
+CREATE TRIGGER trigger_c_shares_calc_shares AFTER INSERT ON c_shares FOR EACH ROW EXECUTE PROCEDURE func_c_shares_calc_shares();
 
 
 

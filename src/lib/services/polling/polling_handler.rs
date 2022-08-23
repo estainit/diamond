@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog};
-use crate::cutils::remove_quotes;
+use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
@@ -65,16 +65,19 @@ pub mod vote_counting_methods {
 //old_name_was autoCreatePollingForProposal
 pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) -> bool
 {
-    if is_older_than(remove_quotes(&params["dVer"].to_string()), "0.0.8".to_string()) == 1 {
+    println!("kkkkkk params0 {}", params);
+
+    if is_older_than(remove_quotes(&params["dVer"]), "0.0.8".to_string()) == 1 {
         params["dVer"] = "0.0.0".into();
     }
 
     let custom_stringified = stringify_an_auto_generated_proposal_polling(params);
     let doc_ext_hash = ccrypto::keccak256(&custom_stringified);
     dlog(
-        &format!("custom Stringified Auto-generated polling (dExtHash: {}): {}", doc_ext_hash, custom_stringified),
+        &format!("custom Stringifyed Auto-generated polling (dExtHash: {}): {}",
+                 doc_ext_hash, custom_stringified),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::Debug);
     params["dExtHash"] = doc_ext_hash.clone().into();
 
     let doc_length = cutils::padding_length_value(
@@ -82,15 +85,19 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::LEN_PROP_LENGTH);
     params["dLen"] = doc_length.into();
 
+    println!("kkkkk paramaz 98 {}", params);
     let doc: Document = load_document(params, block, 0);
     let pll_hash = doc.m_if_polling_doc.calc_doc_hash(&doc); //old name was calcHashDPolling
 
-    let voting_timeframe: f64 = match remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>() {
+    let voting_timeframe: f64 = match remove_quotes(&params["pTimeframe"])
+        .parse::<f64>() {
         Ok(t) => t,
         Err(e) => {
-            println!("Failed in pooling Time frame(pTimeframe) value {} {}", &params["pTimeframe"].to_string(), e);
+            println!("Failed in pooling Time frame(pTimeframe) value {} {}",
+                     &params["pTimeframe"].to_string(), e);
             dlog(
-                &format!("Failed in pooling Time frame(pTimeframe) value {} {}", &params["pTimeframe"].to_string(), e),
+                &format!("Failed in pooling Time frame(pTimeframe) value {} {}",
+                         &params["pTimeframe"].to_string(), e),
                 constants::Modules::App,
                 constants::SecLevel::Fatal);
             0.0
@@ -99,26 +106,27 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
     // let voting_timeframe: f64 = remove_quotes(&params["pTimeframe"].to_string()).parse::<f64>().unwrap();
     let abs_no_timeframe_by_minutes: TimeByMinutesT = (voting_timeframe.clone() * 60.0 * 1.5) as u64; // 90 = 60 minute + 30 minute => 1.5 * yesTime
     dlog(
-        &format!("abs and no timeframe by minutes = {}", abs_no_timeframe_by_minutes),
+        &format!("Abs and No timeframe by minutes = {}", abs_no_timeframe_by_minutes),
         constants::Modules::App,
         constants::SecLevel::Trace);
 
     let pll_end_date: CDateT = application().minutes_after(
         abs_no_timeframe_by_minutes,
-        &remove_quotes(&params["startDate"].to_string()));
+        &remove_quotes(&params["startDate"]));
 
-    let pll_creator = params["dCreator"].to_string();
-    let pll_type = params["dType"].to_string();
-    let pll_class = params["dClass"].to_string();
-    let pll_ref = params["dRef"].to_string();
-    let pll_ref_type = params["dRefType"].to_string();
-    let pll_ref_class = params["dRefClass"].to_string();
-    let pll_start_date = params["startDate"].to_string();
+    println!("kkkkkk params1 {}", params);
+    let pll_creator = remove_quotes(&params["dCreator"]);
+    let pll_type = remove_quotes(&params["dType"]);
+    let pll_class = remove_quotes(&params["dClass"]);
+    let pll_ref = remove_quotes(&params["dRef"]);
+    let pll_ref_type = remove_quotes(&params["dRefType"]);
+    let pll_ref_class = remove_quotes(&params["dRefClass"]);
+    let pll_start_date = remove_quotes(&params["startDate"]);
     let pll_timeframe = voting_timeframe;
-    let pll_version = params["dVer"].to_string();
-    let pll_comment = params["dComment"].to_string();
+    let pll_version = remove_quotes(&params["dVer"]);
+    let pll_comment = remove_quotes(&params["dComment"]);
     let zero_i64: i64 = 0;
-    let pll_status = remove_quotes(&params["status"].to_string());
+    let pll_status = remove_quotes(&params["status"]);
     let pll_ct_done = constants::NO;
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("pll_creator", &pll_creator as &(dyn ToSql + Sync)),
@@ -177,6 +185,7 @@ pub fn stringify_an_auto_generated_proposal_polling(params: &JSonObject) -> Stri
         params["dCreator"],
         params["pTimeframe"]
     );
+    println!("kkkkk doc_hahsables {}", doc_hahsables);
     return doc_hahsables;
 }
 

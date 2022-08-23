@@ -10,7 +10,7 @@ DELETE FROM c_blocks;
 -- alter table c_machine_block_buffer alter column dp_cost type BIGINT;
 DELETE FROM c_block_extinfos;
 DELETE FROM c_collisions;
-DELETE FROM c_dna_shares;
+DELETE FROM c_shares;
 DELETE FROM c_docs_blocks_map;
 DELETE FROM c_pledged_accounts;
 DELETE FROM c_iname_bindings;

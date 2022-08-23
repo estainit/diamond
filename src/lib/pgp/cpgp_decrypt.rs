@@ -44,12 +44,12 @@ pub fn pgp_decrypt(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    final_decoded_msg.m_is_authenticated = remove_quotes(&decode_j_obj["isAuthenticated"].to_string()) == "true";
-    final_decoded_msg.m_is_signed = remove_quotes(&decode_j_obj["isSigned"].to_string()) == "true";
-    final_decoded_msg.m_signature_version = remove_quotes(&decode_j_obj["sigVersion"].to_string());
-    final_decoded_msg.m_pgp_versaion = remove_quotes(&decode_j_obj["iPGPVersion"].to_string());
-    final_decoded_msg.m_secret_key = remove_quotes(&decode_j_obj["secretKey"].to_string());
-    final_decoded_msg.m_initialization_vector = remove_quotes(&decode_j_obj["iv"].to_string());
+    final_decoded_msg.m_is_authenticated = remove_quotes(&decode_j_obj["isAuthenticated"]) == "true";
+    final_decoded_msg.m_is_signed = remove_quotes(&decode_j_obj["isSigned"]) == "true";
+    final_decoded_msg.m_signature_version = remove_quotes(&decode_j_obj["sigVersion"]);
+    final_decoded_msg.m_pgp_versaion = remove_quotes(&decode_j_obj["iPGPVersion"]);
+    final_decoded_msg.m_secret_key = remove_quotes(&decode_j_obj["secretKey"]);
+    final_decoded_msg.m_initialization_vector = remove_quotes(&decode_j_obj["iv"]);
 
      eprintln!("final_decoded_msg.m_secret_key: {}", final_decoded_msg.m_secret_key);
     if final_decoded_msg.m_secret_key == constants::message_tags::NO_ENCRYPTION
@@ -59,9 +59,9 @@ pub fn pgp_decrypt(
             constants::Modules::App,
             constants::SecLevel::Trace);
 
-        final_decoded_msg.m_message = remove_quotes(&decode_j_obj["message"].to_string());
+        final_decoded_msg.m_message = remove_quotes(&decode_j_obj["message"]);
     } else {
-        final_decoded_msg.m_aes_version = remove_quotes(&decode_j_obj["aesVersion"].to_string()); //, "Unknown AES Version!"
+        final_decoded_msg.m_aes_version = remove_quotes(&decode_j_obj["aesVersion"]); //, "Unknown AES Version!"
 
         // decrypt secret key
         let (status, decrypted_secret_key) = ccrypto::rsa_decrypt_with_prv_key(
@@ -82,7 +82,7 @@ pub fn pgp_decrypt(
 
         // decrypt message body
         let (status_aes_dec, aes_dec) = ccrypto::aes_decrypt(
-            remove_quotes(&decode_j_obj["message"].to_string()),
+            remove_quotes(&decode_j_obj["message"]),
             final_decoded_msg.m_decrypted_secret_key.clone(),
             final_decoded_msg.m_aes_version.clone());
         if !status_aes_dec
@@ -100,7 +100,7 @@ pub fn pgp_decrypt(
         final_decoded_msg.m_message = aes_dec;
     }
 
-    final_decoded_msg.m_is_compressed = remove_quotes(&decode_j_obj["isCompressed"].to_string()) == "true";
+    final_decoded_msg.m_is_compressed = remove_quotes(&decode_j_obj["isCompressed"]) == "true";
     // finalDec.m_zip_version = AESdecrypted.keys().contains("zipVersion") ? AESdecrypted["isCompressed"].to_string() : "Unknown zip version!";
     // finalDec.m_zip_algorithm = AESdecrypted.keys().contains("algorithm") ? AESdecrypted["algorithm"].to_string() : "Unknown zip algorithm!";
 
@@ -123,7 +123,7 @@ pub fn pgp_decrypt(
         final_decoded_msg.m_is_verified = ccrypto::rsa_verify_signature(
             sender_pub_key,
             &ccrypto::keccak256(&final_decoded_msg.m_message),
-            &remove_quotes(&decode_j_obj["signature"].to_string()));
+            &remove_quotes(&decode_j_obj["signature"]));
     }
 
     let (status, base64_decoded) = ccrypto::b64_decode(&final_decoded_msg.m_message);

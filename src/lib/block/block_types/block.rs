@@ -266,27 +266,27 @@ impl Block {
     pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
         if !obj["local_receive_date"].is_null() {
-            self.m_block_receive_date = remove_quotes(&obj["local_receive_date"].to_string());
+            self.m_block_receive_date = remove_quotes(&obj["local_receive_date"]);
         }
 
         if !obj["bNet"].is_null() {
-            self.m_block_net = remove_quotes(&obj["bNet"].to_string());
+            self.m_block_net = remove_quotes(&obj["bNet"]);
         }
         if !obj["bVer"].is_null() {
-            self.m_block_version = remove_quotes(&obj["bVer"].to_string());
+            self.m_block_version = remove_quotes(&obj["bVer"]);
         }
 
         if !obj["bType"].is_null() {
-            self.m_block_type = remove_quotes(&obj["bType"].to_string());
+            self.m_block_type = remove_quotes(&obj["bType"]);
         }
 
         if !obj["bDescriptions"].is_null() {
-            self.m_block_descriptions = remove_quotes(&obj["bDescriptions"].to_string());
+            self.m_block_descriptions = remove_quotes(&obj["bDescriptions"]);
         }
 
         // if obj["bConfidence"].to_string() != "" {
         //     println!("iiiiiiiiiiii {}", obj["bConfidence"]);
-        //     self.m_block_confidence = remove_quotes(&obj["bConfidence"].to_string().parse::<f64>().unwrap());
+        //     self.m_block_confidence = remove_quotes(&obj["bConfidence"].to_string().parse4>().unwrap());
         // }
 
         if !obj["bLen"].is_null() {
@@ -308,7 +308,7 @@ impl Block {
         }
 
         if !obj["bHash"].is_null() {
-            self.m_block_hash = remove_quotes(&obj["bHash"].to_string());
+            self.m_block_hash = remove_quotes(&obj["bHash"]);
         }
 
         // if !obj["bAncestors"].toAis_null( > 0 {
@@ -317,35 +317,30 @@ impl Block {
 
         // if !obj["signals"].toOis_null(len() > 0 {
         //     self.m_signals = remove_quotes(&obj["signals"].toObject());
-        // }
 
         if !obj["bCDate"].is_null() {
-            self.m_block_creation_date = remove_quotes(&obj["bCDate"].to_string());
+            self.m_block_creation_date = remove_quotes(&obj["bCDate"]);
         }
 
 
         if !obj["bDocsRootHash"].is_null() {
-            self.m_block_documents_root_hash = remove_quotes(&obj["bDocsRootHash"].to_string());
+            self.m_block_documents_root_hash = remove_quotes(&obj["bDocsRootHash"]);
         }
 
         if !obj["bExtHash"].is_null() {
-            self.m_block_ext_root_hash = remove_quotes(&obj["bExtHash"].to_string());
+            self.m_block_ext_root_hash = remove_quotes(&obj["bExtHash"]);
         }
 
         if !obj["bExtInfo"].is_null() {
-            // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);
-        }
-
-        if !obj["bDocs"].is_null() {
+            // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);if !obj["bDocs"].is_null() {
             // createDocuments(obj["bDocs"]);
         }
 
         // if !obj["bCycle"].to_is_null( {
         //     self.m_block_cycle = remove_quotes(&obj["bCycle"].to_string());
-        // }
 
         if !obj["bBacker"].is_null() {
-            self.m_block_backer = remove_quotes(&obj["bBacker"].to_string());
+            self.m_block_backer = remove_quotes(&obj["bBacker"]);
         }
 
         if !obj["bFVotes"].is_null() {
@@ -353,7 +348,7 @@ impl Block {
         }
 
 
-        let block_type = remove_quotes(&obj["bType"].to_string());
+        let block_type = remove_quotes(&obj["bType"]);
         if block_type == constants::block_types::NORMAL {
             return true;
         } else if block_type == constants::block_types::COINBASE {

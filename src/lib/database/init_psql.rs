@@ -42,7 +42,7 @@ std::vector<std::string> psql_init_query_delete = {
     "DROP TABLE IF EXISTS c_trx_utxos;",
     "DROP TABLE IF EXISTS c_machine_block_buffer;",
     "DROP TABLE IF EXISTS c_machine_tmp_contents;",
-    "DROP TABLE IF EXISTS c_dna_shares;",
+    "DROP TABLE IF EXISTS c_shares;",
     "DROP TABLE IF EXISTS c_iname_records;",
     "DROP TABLE IF EXISTS c_machine_iname_records;",
     "DROP TABLE IF EXISTS c_iname_bindings;",
@@ -78,7 +78,7 @@ pub fn psql_tables_list<'l>() -> Vec<&'l str> {
         "c_collisions",
         "c_agoras",
         "c_agoras_posts",
-        "c_dna_shares",
+        "c_shares",
         "c_docs_blocks_map",
         "c_pledged_accounts",
         "c_iname_bindings",
@@ -350,8 +350,8 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     pr_descriptions TEXT NULL,
     pr_tags TEXT NULL,
     pr_project_id varchar(256) NOT NULL,
-    pr_help_hours INT8 NOT NULL,
-    pr_help_level INT8 NOT NULL,
+    pr_help_hours INT4 NOT NULL,
+    pr_help_level INT4 NOT NULL,
     pr_voting_timeframe DOUBLE PRECISION NOT NULL,    --by hours
     pr_polling_profile varchar(32) NOT NULL,    -- vote counting method(Plurality, ...)
     pr_contributor_account varchar(128) NOT NULL,
@@ -749,7 +749,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE TABLE IF NOT EXISTS c_dna_shares
+    CREATE TABLE IF NOT EXISTS c_shares
     (
     dn_id bigserial primary key,
     dn_doc_hash varchar(256) NOT NULL UNIQUE,    -- document hash in blockchain
@@ -768,13 +768,13 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_shareholder ON c_dna_shares(dn_shareholder);
+    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_shareholder ON c_shares(dn_shareholder);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_creation_date ON c_dna_shares(dn_creation_date);
+    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_creation_date ON c_shares(dn_creation_date);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_project_hash ON c_dna_shares(dn_project_hash);
+    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_project_hash ON c_shares(dn_project_hash);
 ",
         "
     CREATE TABLE IF NOT EXISTS c_iname_records

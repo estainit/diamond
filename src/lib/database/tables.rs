@@ -36,9 +36,9 @@ pub const C_DOCS_BLOCKS_MAP: &str = "c_docs_blocks_map";
 pub const C_DOCS_BLOCKS_MAP_FIELDS: [&str; 4] = ["dbm_block_hash", "dbm_doc_index", "dbm_doc_hash", "dbm_last_control"];
 
 #[allow(dead_code, unused)]
-pub const C_DNA_SHARES: &str = "c_dna_shares";
+pub const C_SHARES: &str = "c_shares";
 #[allow(dead_code, unused)]
-pub const C_DNA_SHARES_FIELDS: [&str; 14] = ["dn_id", "dn_doc_hash", "dn_shareholder", "dn_project_hash", "dn_help_hours", "dn_help_level", "dn_shares", "dn_title", "dn_descriptions", "dn_tags", "dn_votes_y", "dn_votes_n", "dn_votes_a", "dn_creation_date"];
+pub const C_SHARES_FIELDS: [&str; 14] = ["dn_id", "dn_doc_hash", "dn_shareholder", "dn_project_hash", "dn_help_hours", "dn_help_level", "dn_shares", "dn_title", "dn_descriptions", "dn_tags", "dn_votes_y", "dn_votes_n", "dn_votes_a", "dn_creation_date"];
 
 #[allow(dead_code, unused)]
 pub const C_MACHINE_DRAFT_PROPOSALS: &str = "c_machine_draft_proposals";
