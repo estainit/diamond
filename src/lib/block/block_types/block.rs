@@ -743,11 +743,12 @@ impl Block {
         // save hard copy of blocks(timestamped by receive date) to have backup
         // in case of curruptions in DAG or bootstrp the DAG, machine doesn't need to download again entire DAG
         // you can simply copy files from ~/backup-dag to folder ~/temporary/inbox
+        let dag_backup = application().dag_backup();
         let file_name = application().get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt";
         let clone_id = application().id();
         if constants::DO_HARDCOPY_DAG_BACKUP {
             file_write(
-                machine.get_dag_backup(),
+                dag_backup,
                 file_name,
                 &self.safe_stringify_block(false),
                 clone_id);

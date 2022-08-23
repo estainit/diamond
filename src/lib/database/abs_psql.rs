@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::Row;
 use postgres::types::{ToSql, Type, FromSql};
-use crate::{cutils, dbhandler};
+use crate::{ dbhandler};
 use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};

@@ -399,7 +399,7 @@ pub fn handle_a_single_card(
             constants::Modules::App,
             constants::SecLevel::Info);
         return (parse_status, should_purge_file);
-    } else if (card_type == constants::card_types::NICE_TO_MEET_YOU)
+    } else if card_type == constants::card_types::NICE_TO_MEET_YOU
     {
         let (parse_status, should_purge_file) = parse_nice_to_meet_you(
             sender,

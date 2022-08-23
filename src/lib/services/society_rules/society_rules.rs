@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, ccrypto, CMachine, constants, cutils, machine};
+use crate::{application, ccrypto, CMachine, constants, cutils};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 

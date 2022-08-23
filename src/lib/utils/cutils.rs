@@ -1,13 +1,11 @@
 #[allow(unused_imports)]
 use std::fmt::format;
-use chrono::{FixedOffset, Utc};
-use chrono::{DateTime, TimeZone};
 use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::json;
-use crate::{constants, dlog, machine};
-use crate::lib::custom_types::{CCoinCodeT, CDateT, CDocHashT, COutputIndexT, JSonArray, JSonObject, TimeByMinutesT, TimeBySecT, VVString};
+use crate::{constants, dlog };
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonArray, JSonObject, VVString};
 
 pub fn remove_quotes(inp_str: &String) -> String {
     inp_str.substring(1, inp_str.len() - 1).to_string()

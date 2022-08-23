@@ -19,10 +19,10 @@ pub struct AppParams {
     m_app_launch_date: String,
     m_app_cycle_length: u32,
 
-    pub m_app_db_host: String,
-    pub m_app_db_name: String,
-    pub m_app_db_user: String,
-    pub m_app_db_pass: String,
+    m_app_db_host: String,
+    m_app_db_name: String,
+    m_app_db_user: String,
+    m_app_db_pass: String,
 
 }
 
@@ -66,6 +66,7 @@ impl AppParams {
 
         self.m_app_should_loop_threads = machine.m_should_loop_threads;
         self.m_app_email_is_active = machine.m_email_is_active;
+        self.m_app_hard_root_path = machine.m_hard_root_path.clone();
 
         true
     }
@@ -76,6 +77,30 @@ impl AppParams {
 
     pub fn cycle_length(&self) -> u32 {
         self.m_app_cycle_length
+    }
+
+    pub fn root_path(&self) -> String {
+        self.m_app_hard_root_path.clone()
+    }
+
+    pub fn db_host(&self) -> String
+    {
+        self.m_app_db_host.clone()
+    }
+
+    pub fn db_name(&self) -> String
+    {
+        self.m_app_db_name.clone()
+    }
+
+    pub fn db_user(&self) -> String
+    {
+        self.m_app_db_user.clone()
+    }
+
+    pub fn db_pass(&self) -> String
+    {
+        self.m_app_db_pass.clone()
     }
 
     pub fn email_is_active(&self) -> bool

@@ -191,7 +191,7 @@ pub fn write_email_as_file(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let outbox: String = machine().get_outbox_path();
+    let outbox: String = application().outbox_path();
     dlog(
         &format!("email body: {}", email_body),
         constants::Modules::App,

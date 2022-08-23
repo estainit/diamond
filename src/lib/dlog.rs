@@ -21,7 +21,7 @@ pub fn initialize_log() {
         Box::new(size_trigger),
         Box::new(fixed_window_roller));
 
-    let path_= machine().get_logs_path().clone();
+    let path_= application().logs_path().clone();
     let log_file_path = format!(
         "{}/{}_dlog.log",
         path_,

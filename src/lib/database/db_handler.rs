@@ -39,13 +39,6 @@ impl DBHandler {
 }
 
 pub fn maybe_switch_db(forced_clone_id: i8) {
-    /**
-    FIXME: there are 2 places in code in which the DB connect happend,
-    1. m_db: get_connection (0),
-    2. get23Con() = get_connection (self.get_app_clone_id());
-    the problem is not always they initialized by this order!
-    hopefully this method solve the issue, otherwise it will panic.
-     */
     if (forced_clone_id == 0) && (forced_clone_id != dbhandler().m_current_clone)
     {
         panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, forced_clone_id);
@@ -65,10 +58,10 @@ pub fn get_null_connection() -> Client {
 }
 
 pub fn get_connection() -> Client {
-    let db_host: String = application().m_app_db_host.clone();
-    let mut db_name: String = application().m_app_db_name.clone();
-    let db_user: String = application().m_app_db_user.clone();
-    let db_pass: String = application().m_app_db_pass.clone();
+    let db_host: String = application().db_host();
+    let mut db_name: String = application().db_name();
+    let db_user: String = application().db_user();
+    let db_pass: String = application().db_pass();
 
     if application().id() > 0 {
         db_name = format!("{}{}", db_name, &application().id());

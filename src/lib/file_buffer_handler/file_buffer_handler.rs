@@ -53,8 +53,9 @@ pub fn maybe_boot_dag_from_bundle() -> bool {
 //old_name_was readDAGBundleIfExist
 pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 {
+    let file_path = application().root_path();
     return file_read(
-        machine().get_root_path(),
+        file_path,
         format!("DAGBundle.txt"),
         clone_id);
 }
@@ -231,7 +232,7 @@ pub fn maybe_purge_message(full_path: &String, should_purge_message: bool) -> bo
 //old_name_was readEmailFile
 pub fn read_email_file() -> (bool, String, String, String, String)
 {
-    let inbox: String = machine().get_inbox_path();
+    let inbox: String = application().inbox_path();
 
     dlog(
         &format!("Reading inbox({})", inbox),

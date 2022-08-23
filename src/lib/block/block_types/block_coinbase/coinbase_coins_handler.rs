@@ -14,7 +14,7 @@ pub fn loop_import_coinbase_coins()
     println!("thread id: {:?}", thread_code);
     // dlog(
     //     &format!("Going to launch the import normal coins for {} seconds intervals. Thread({} {})",
-    //              machine().get_nb_coins_import_gap(),
+    //              application().nb_coins_import_gap(),
     //              &thread_prefix,
     //              &thread_code ),
     //     constants::Modules::App,
@@ -44,7 +44,7 @@ pub fn loop_import_coinbase_coins()
 
         */
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
-        // sleep(Duration::from_secs(machine().get_coinbase_import_gap()));
+        // sleep(Duration::from_secs(application().coinbase_import_gap()));
     }
 
     machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::STOPPED.to_string());

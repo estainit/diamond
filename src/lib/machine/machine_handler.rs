@@ -143,12 +143,6 @@ impl CMachine {
     {
         self.create_folders();
 
-        // if self.get_app_clone_id() > 0
-        // {
-        //     // change database
-        //     dbhandler().m_db = get_connection(self.get_app_clone_id());
-        // }
-
         self.m_last_sync_status_check = self.get_launch_date();
 
         // control DataBase
@@ -182,11 +176,6 @@ impl CMachine {
     {
         self.m_cycle_length
     }
-
-    pub fn get_root_path(&self) -> String {
-        self.m_hard_root_path.clone()
-    }
-
 
     //func name was shouldLoopThreads
     pub fn should_loop_threads(&self) -> bool {
@@ -665,76 +654,33 @@ impl CMachine {
     }
 
 */
-    //old_name_was getHDPath
-    pub fn get_clone_path(&self) -> String
-    {
-        if self.get_app_clone_id() == 0
-        {
-            return self.get_root_path();
-        }
-        return format!("{}/{}", self.get_root_path(), self.get_app_clone_id());
-    }
-
-
-    //old_name_was getReportsPath
-    pub fn get_reports_path(&self) -> String
-    {
-        return self.get_clone_path() + &"/reports";
-    }
-
-    //old_name_was getInboxPath
-    pub fn get_inbox_path(&self) -> String
-    {
-        return self.get_clone_path() + &"/inbox";
-    }
-
-    //old_name_was getOutboxPath
-    pub fn get_outbox_path(&self) -> String
-    {
-        return self.get_clone_path() + &"/outbox";
-    }
-
-    //old_name_was getReportsPath
-    pub fn get_logs_path(&self) -> String
-    {
-        return self.get_clone_path() + &"/logs";
-    }
-
-    //old_name_was getCachePath
-    pub fn get_cache_path(&self) -> String
-    {
-        return self.get_clone_path() + &"/cache_files";
-    }
-
-    //old_name_was getDAGBackup
-    pub fn get_dag_backup(&self) -> String { return self.get_clone_path() + &"/dag_backup"; }
 
     //old_name_was createFolders
     pub fn create_folders(&self) -> bool
     {
-        if self.get_root_path() != ""
+        if application().root_path() != ""
         {
-            if !path_exist(&self.get_root_path())
-            { mkdir(&self.get_root_path()); }
+            if !path_exist(&application().root_path())
+            { mkdir(&application().root_path()); }
         }
 
-        if !path_exist(&self.get_clone_path())
-        { mkdir(&self.get_clone_path()); }
+        if !path_exist(&application().clone_path())
+        { mkdir(&application().clone_path()); }
 
-        if !path_exist(&self.get_reports_path())
-        { mkdir(&self.get_reports_path()); }
+        if !path_exist(&application().reports_path())
+        { mkdir(&application().reports_path()); }
 
-        if !path_exist(&self.get_inbox_path())
-        { mkdir(&self.get_inbox_path()); }
+        if !path_exist(&application().inbox_path())
+        { mkdir(&application().inbox_path()); }
 
-        if !path_exist(&self.get_outbox_path())
-        { mkdir(&self.get_outbox_path()); }
+        if !path_exist(&application().outbox_path())
+        { mkdir(&application().outbox_path()); }
 
-        if !path_exist(&self.get_dag_backup())
-        { mkdir(&self.get_dag_backup()); }
+        if !path_exist(&application().dag_backup())
+        { mkdir(&application().dag_backup()); }
 
-        if !path_exist(&self.get_cache_path())
-        { mkdir(&self.get_cache_path()); }
+        if !path_exist(&application().cache_path())
+        { mkdir(&application().cache_path()); }
 
         return true;
     }

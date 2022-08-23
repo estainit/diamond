@@ -1,4 +1,6 @@
 pub mod app_params;
+pub mod app_params_path;
+
 pub mod machine_accounts_balance;
 pub mod machine_backup;
 pub mod machine_config;
