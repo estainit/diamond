@@ -40,19 +40,25 @@ pub mod poll_performance_types
 {
     pub const TRANSPARENT: &str = "Transparent";
     // Transparent
+    #[allow(dead_code, unused)]
     pub const ZKP: &str = "ZKP"; // Zero-Knowladge Proof
 }
 
 
 pub mod vote_counting_methods {
+    #[allow(dead_code, unused)]
     pub const PLURALITY: &str = "Plurality";
     // Plurality
+    #[allow(dead_code, unused)]
     pub const PLURALITY_LOG: &str = "PluralityLog";
     // Plurality logarythmic and (x )minutes for Y/N/A (x+1/2) Minutes for N/A
+    #[allow(dead_code, unused)]
     pub const TWO_ROUND_RUN_OFF: &str = "TwoRRo";
     //"Two-Round Runoff"
+    #[allow(dead_code, unused)]
     pub const INSTANT_RUN_OFF: &str = "InstantRo";
     //"Instant Runoff"
+    #[allow(dead_code, unused)]
     pub const BORDA_COUNT: &str = "BordaCount"; //"Borda Count"
 }
 

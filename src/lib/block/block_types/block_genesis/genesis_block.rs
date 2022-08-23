@@ -35,7 +35,7 @@ pub mod b_genesis {
         dna.m_help_hours = 1_000_000;
         dna.m_help_level = 1;
         dna.m_shares = 1_000_000;
-        dna.m_contributor_account = constants::HU_DNA_SHARE_ADDRESS.to_string();
+        dna.m_contributor_account = constants::HU_SHARE_ADDRESS.to_string();
         dna.m_approval_date = proposal_creation_date;
         dna.m_polling_profile = "Basic".to_string();
         dna.m_voting_timeframe = 24.0;
@@ -49,7 +49,8 @@ pub mod b_genesis {
         block.m_block_documents_root_hash = doc.get_doc_hash(); // since the genesis block has only 1 document // "fb20e4323d695db7728eabcf3a44a1c0516d23362622fa3093e7cf887ef88396";
         block.m_block_documents.push(doc);
         block.m_block_hash = block.calc_block_hash();//"7a2e58190452d3764afd690ffd13a1360193fdf30f932fc1b2572e834b72c291";
-        block.m_block_backer = constants::HU_DNA_SHARE_ADDRESS.to_string();
+        block.m_block_backer = constants::HU_SHARE_ADDRESS.to_string();
+        block.m_block_confidence = 99.99;
 
         let (status, msg) = block.add_block_to_dag(machine);
         if !status

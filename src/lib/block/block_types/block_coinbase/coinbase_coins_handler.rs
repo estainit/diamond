@@ -160,7 +160,7 @@ pub fn import_coinbased_coins(c_date: &CDateT)
 //  every coinbased incomes will be spendable after 2 cycle and right after starting 3rd cycle
 
 //old_name_was calcCoinbasedOutputMaturationDate
-#[allow(dead_code)]
+#[allow(dead_code, unused)]
 pub fn calc_coinbased_output_maturation_date(c_date: &CDateT) -> CDateT {
     let cycle_by_minutes = application().get_cycle_by_minutes() as u64;
     let mature_date: String = application().minutes_after(

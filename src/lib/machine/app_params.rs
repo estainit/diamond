@@ -14,6 +14,7 @@ pub struct AppParams {
 
     m_app_email_is_active: bool,
     m_app_use_hard_disk_as_a_buffer: bool,
+    #[allow(dead_code, unused)]
     m_app_config_source: String,
     m_app_hard_root_path: String,
     m_app_launch_date: String,
@@ -57,6 +58,8 @@ impl AppParams {
 
     pub fn setup_app(&mut self, machine: &CMachine) -> bool {
         self.m_app_clone_id = machine.get_app_clone_id();
+        self.m_app_is_develop_mod = machine.is_develop_mod();
+        self.m_app_launch_date = machine.get_launch_date();
         self.m_app_cycle_length = machine.get_cycle_length();
 
         self.m_app_db_host = machine.m_db_host.clone();
@@ -64,8 +67,10 @@ impl AppParams {
         self.m_app_db_user = machine.m_db_user.clone();
         self.m_app_db_pass = machine.m_db_pass.clone();
 
+        self.m_app_config_file = machine.m_config_file.clone();
         self.m_app_should_loop_threads = machine.m_should_loop_threads;
         self.m_app_email_is_active = machine.m_email_is_active;
+        self.m_app_use_hard_disk_as_a_buffer = machine.m_use_hard_disk_as_a_buffer.clone();
         self.m_app_hard_root_path = machine.m_hard_root_path.clone();
 
         true
@@ -108,11 +113,17 @@ impl AppParams {
         self.m_app_email_is_active
     }
 
+    pub fn is_develop_mod(&self) -> bool
+    {
+        self.m_app_is_develop_mod
+    }
+
     pub fn set_db_connected(&mut self, status: bool)
     {
         self.m_app_is_db_connected = status;
     }
 
+    #[allow(dead_code, unused)]
     pub fn is_db_connected(&self) -> bool
     {
         self.m_app_is_db_connected
@@ -131,6 +142,11 @@ impl AppParams {
     pub fn should_loop_threads(&self) -> bool
     {
         self.m_app_should_loop_threads
+    }
+
+    pub fn use_hard_disk_as_a_buffer(&self) -> bool
+    {
+        self.m_app_use_hard_disk_as_a_buffer
     }
 
 
@@ -251,7 +267,7 @@ impl AppParams {
 
 
     //old_name_was getCoinbaseCycleNumber
-    #[allow(dead_code)]
+    #[allow(dead_code, unused)]
     pub fn get_coinbase_cycle_number(&self, c_date: &CDateT) -> String {
         let minutes: u32;
         if *c_date == "".to_string() {
@@ -382,13 +398,14 @@ impl AppParams {
         return out;
     }
 
+    #[allow(dead_code, unused)]
     pub fn make_str_date_from_date_object(&self, dt: DateTime<FixedOffset>) -> String
     {
         dt.format("%Y-%m-%d %H:%M:%S").to_string()
     }
 
     //old name was isAmOrPm
-    #[allow(dead_code)]
+    #[allow(dead_code, unused)]
     pub fn is_am_or_pm(&self, minutes: u32) -> String
     {
         if minutes >= 720
@@ -424,6 +441,7 @@ impl AppParams {
     }
 
     //old_name_was getCycleElapsedByMinutes
+    #[allow(dead_code, unused)]
     pub fn get_cycle_elapsed_by_minutes(&self, c_date_: CDateT) -> u64
     {
         let mut c_date = c_date_;
@@ -463,14 +481,14 @@ impl AppParams {
     }
 
     //old_name_was getCbUTXOsDateRange
-    #[allow(dead_code)]
+    #[allow(dead_code, unused)]
     pub fn get_cb_coins_date_range(&self, c_date: &CDateT) -> TimeRange
     {
         return self.get_a_cycle_range(c_date, constants::COINBASE_MATURATION_CYCLES, 0);
     }
 
     //old_name_was getCoinbaseInfo
-    #[allow(dead_code)]
+    #[allow(dead_code, unused)]
     pub fn get_coinbase_info(&self, c_date: &CDateT, cycle: &str) ->
     (String, String, String, String, String)
     {
@@ -517,7 +535,7 @@ impl AppParams {
     }
 
     //old_name_was getCoinbaseRangeByCycleStamp
-    #[allow(dead_code)]
+    #[allow(dead_code, unused)]
     pub fn get_coinbase_range_by_cycle_stamp(&self, cycle: &str) -> TimeRange
     {
         let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };

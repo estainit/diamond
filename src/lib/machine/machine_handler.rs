@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::thread;
 use crate::{application, ccrypto, cutils, dbhandler};
 use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, TimeByMinutesT, VString};
-use crate::lib::database::db_handler::{maybe_switch_db, empty_db, maybe_initialize_db};
+use crate::lib::database::db_handler::{empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::lib::address::address_handler::create_a_new_address;
@@ -29,8 +29,8 @@ pub struct CMachine {
     pub m_is_in_sync_process: bool,
     pub(crate) m_last_sync_status_check: CDateT,
 
-    m_threads_status: QSDicT,
-    m_map_thread_code_to_prefix: QSDicT,
+    // m_threads_status: QSDicT,
+    // m_map_thread_code_to_prefix: QSDicT,
     pub(crate) m_config_file: String,
     pub(crate) m_is_develop_mod: bool,
 
@@ -94,9 +94,6 @@ impl CMachine {
             m_is_in_sync_process: true,
 
             m_is_develop_mod: false,
-
-            m_threads_status: HashMap::new(),
-            m_map_thread_code_to_prefix: HashMap::new(),
 
             m_selected_profile: "".to_string(),
             m_email_is_active: false,
@@ -178,6 +175,7 @@ impl CMachine {
     }
 
     //func name was shouldLoopThreads
+    #[allow(dead_code, unused)]
     pub fn should_loop_threads(&self) -> bool {
         self.m_should_loop_threads
     }
@@ -261,10 +259,11 @@ impl CMachine {
     }
 
     //old_name_was reportThreadStatus
+    #[allow(dead_code, unused)]
     pub fn report_thread_status(&mut self, thread_prefix: &String, thread_code: &String, thread_status: &String)
     {
-        self.m_threads_status.insert((thread_prefix.to_string() + &thread_code).clone(), thread_status.clone());
-        self.m_map_thread_code_to_prefix.insert(thread_code.clone(), thread_prefix.clone());
+        // self.m_threads_status.insert((thread_prefix.to_string() + &thread_code).clone(), thread_status.clone());
+        // self.m_map_thread_code_to_prefix.insert(thread_code.clone(), thread_prefix.clone());
     }
 
 
@@ -692,6 +691,7 @@ impl CMachine {
     }
 
     //old_name_was getBackerDetails
+    #[allow(dead_code, unused)]
     pub fn get_backer_details(&self) -> &UnlockDocument
     {
         return &self.m_profile.m_mp_settings.m_backer_detail;
@@ -705,6 +705,7 @@ impl CMachine {
     }
 
     //old_name_was loadSelectedProfile
+    #[allow(dead_code, unused)]
     pub fn load_selected_profile(&mut self) -> bool
     {
         let selected_prof = get_value("selected_profile");
@@ -731,6 +732,7 @@ impl CMachine {
         // }
     }
 
+    #[allow(dead_code, unused)]
     pub fn read_profile(&self, mp_code: String) -> MachineProfile
     {
         let (_status, records) = q_select(
@@ -840,6 +842,7 @@ impl CMachine {
     }
 */
     //old_name_was getLastSyncStatus
+    #[allow(dead_code, unused)]
     pub fn get_last_sync_status(&self) -> JSonObject
     {
         let mut last_sync_status: String = get_value("last_sync_status");

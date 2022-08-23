@@ -2,14 +2,14 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::document::Document;
-use crate::lib::custom_types::{CAddressT, CDateT, DNAShareCountT, DNASharePercentT};
+use crate::lib::custom_types::{CAddressT, CDateT, SharesCountT, SharesPercentT};
 use crate::lib::database::abs_psql::{q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_DNA_SHARES;
 
 
 pub struct Shareholder {
     account: CAddressT,
-    shares: DNAShareCountT,
+    shares: SharesCountT,
 }
 /*
 
@@ -165,7 +165,7 @@ pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 
 // TODO: since shares are counting for before 2 last cycles, so implementing a caching system will be much helpfull where we have millions of shareholders
 //old_name_was getSharesInfo
-pub fn get_shares_info(c_date: &CDateT) -> (DNAShareCountT, HashMap<String, DNAShareCountT>, Vec<Shareholder>)
+pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, SharesCountT>, Vec<Shareholder>)
 {
     // cDate = application().get_now();
 
@@ -205,9 +205,9 @@ pub fn get_shares_info(c_date: &CDateT) -> (DNAShareCountT, HashMap<String, DNAS
         &vec![],
         true);
 
-    let mut sum_shares: DNAShareCountT = 0.0;
+    let mut sum_shares: SharesCountT = 0.0;
     let mut holders_order_by_shares: Vec<Shareholder> = vec![];
-    let mut share_amount_per_holder: HashMap<String, DNAShareCountT> = HashMap::new();
+    let mut share_amount_per_holder: HashMap<String, SharesCountT> = HashMap::new();
     for a_share in records
     {
         let sum_: f64 = a_share["sum_"].parse::<f64>().unwrap();
@@ -246,15 +246,15 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
 
 */
 //old_name_was getMachineShares
-pub fn get_machine_shares(c_date: &CDateT) -> (String, DNAShareCountT, DNASharePercentT)
+pub fn get_machine_shares(c_date: &CDateT) -> (String, SharesCountT, SharesPercentT)
 {
     let (sum_shares, share_amount_per_holder, _tmp) = get_shares_info(c_date);
     let backer_address: CAddressT = machine().get_backer_address();
-    let mut shares: DNAShareCountT = 0.0;
+    let mut shares: SharesCountT = 0.0;
     if share_amount_per_holder.contains_key(&*backer_address) {
         shares = share_amount_per_holder[&backer_address];
     }
-    let percentage: DNASharePercentT = cutils::i_floor_float((shares * 100.0) / sum_shares);
+    let percentage: SharesPercentT = cutils::i_floor_float((shares * 100.0) / sum_shares);
     return (backer_address, shares, percentage);
 }
 /*

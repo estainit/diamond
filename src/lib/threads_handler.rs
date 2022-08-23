@@ -107,7 +107,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             }
 
             {
-                if machine().m_use_hard_disk_as_a_buffer
+                if application().use_hard_disk_as_a_buffer()
                 {
                     // read messages from hard drive
                     do_read_and_parse_hard_disk_inbox();

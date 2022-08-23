@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use substring::Substring;
 use crate::{application, CMachine};
 use crate::lib::custom_types::VString;
-use crate::lib::database::db_handler::maybe_switch_db;
 use crate::lib::k_v_handler::set_value;
 
 impl CMachine {

@@ -252,7 +252,7 @@ pub fn push_into_sending_q(
                 &values,
                 false);
 
-            if machine().is_develop_mod()
+            if application().is_develop_mod()
             {
                 let (_status, records) = q_select(
                     CDEV_SENDING_Q,

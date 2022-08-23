@@ -462,6 +462,7 @@ pub fn do_prerequisities_remover() -> bool
 }
 
 
+#[allow(dead_code, unused)]
 pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bool
 {
     let mut c_date = c_date_.to_string();

@@ -66,7 +66,6 @@ pub type QHash<String, JSonArray>  QJADicT; // custom dictionary
 pub type QHash<String, QVDicT>      QV2DicT;
 */
 pub type QVDRecordsT = Vec<HashMap<String, String>>;
-pub type QvdrecordsTAlter = Vec<JSonObject>;
 pub(crate) type JSonObject = Value;
 pub(crate) type JSonArray = Value;
 //Vec<QVDicT>;
@@ -105,9 +104,10 @@ pub type COutputIndexT = u16;
 typedef uint16_t DPIIndexT;
 pub type DPIIndexT = u16;
 */
-pub type DNASharePercentT = f64;
-pub type DNAShareCountT = f64;
+pub type SharesPercentT = f64;
+pub type SharesCountT = f64;
 
+#[allow(dead_code, unused)]
 pub type BlockAncestorsCountT = u16;
 // TODO: add max ancestor count control for received blocks
 pub type BlockLenT = usize;
@@ -148,5 +148,7 @@ typedef QVector<Coin> CoinsT;
 
  */
 
+#[allow(dead_code, unused)]
 pub(crate) type DocDicT = HashMap<String, Document>;
+#[allow(dead_code, unused)]
 pub(crate) type DocDicVecT = HashMap<String, Vec<Document>>;

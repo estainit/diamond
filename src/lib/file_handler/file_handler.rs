@@ -198,7 +198,7 @@ pub fn write_email_as_file(
         constants::SecLevel::Trace);
 
     let mut file_name: String = "".to_string();
-    if machine().is_develop_mod()
+    if application().is_develop_mod()
     {
         file_name = [receiver, sender, &application().get_now_sss(), title, ".txt"].join(",");
     } else {

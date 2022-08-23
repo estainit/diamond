@@ -56,11 +56,17 @@ pub fn convert_title_to_hash(title: &String) -> String {
 }
 
 
+#[allow(dead_code, unused)]
 pub const PUBLIC_BEGIN: &str = "-----BEGIN PUBLIC KEY-----";
+#[allow(dead_code, unused)]
 pub const PUBLIC_END: &str = "-----END PUBLIC KEY-----";
+#[allow(dead_code, unused)]
 pub const PRIVATE_BEGIN: &str = "-----BEGIN PRIVATE KEY-----";
+#[allow(dead_code, unused)]
 pub const PRIVATE_END: &str = "-----END PRIVATE KEY-----";
+#[allow(dead_code, unused)]
 pub const RSA_PRIVATE_BEGIN: &str = "-----BEGIN RSA PRIVATE KEY-----";
+#[allow(dead_code, unused)]
 pub const RSA_PRIVATE_END: &str = "-----END RSA PRIVATE KEY-----";
 
 pub fn do_sha256(_message: &String) -> String {

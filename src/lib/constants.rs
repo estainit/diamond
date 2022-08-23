@@ -1,6 +1,6 @@
 use crate::lib::custom_types::{BlockLenT, DocLenT};
 
-#[allow(dead_code)]
+#[allow(dead_code, unused)]
 pub enum Modules {
     App,
     CB,
@@ -9,7 +9,7 @@ pub enum Modules {
     Sec,
 }
 
-#[allow(dead_code)]
+#[allow(dead_code, unused)]
 pub enum SecLevel {
     Debug,
     Trace,
@@ -121,10 +121,15 @@ pub const MAX_TOLERATED_MISS_BLOCKS: u8 = 5;
 
   const bool DECODE_ALL_FREE_POST_FILES = true; // TODO: improve it to support different file types & security levels
 */
+#[allow(dead_code, unused)]
 pub(crate) const SIGN_MSG_LENGTH: u8 = 32;
+#[allow(dead_code, unused)]
 pub(crate) const FLOAT_LENGTH: u8 = 11;
+#[allow(dead_code, unused)]
 pub(crate) const LEN_PROP_LENGTH: u8 = 7;
+#[allow(dead_code, unused)]
 pub(crate) const LEN_PROP_PLACEHOLDER: &str = "0000000";
+#[allow(dead_code, unused)]
 pub(crate) const HASH_PROP_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 /*
 
@@ -151,10 +156,14 @@ pub mod stages
     pub const VALIDATING: &str = "Validating";
 }
 
+#[allow(dead_code, unused)]
 pub mod thread_state
 {
+    #[allow(dead_code, unused)]
     pub(crate) const RUNNING: &str = "RUNNING";
+    #[allow(dead_code, unused)]
     pub(crate) const SLEEPING: &str = "SLEEPING";
+    #[allow(dead_code, unused)]
     pub(crate) const STOPPED: &str = "STOPPED";
 }
 
@@ -281,42 +290,62 @@ pub mod block_types
 pub mod document_types
 {
     pub const COINBASE: &str = "Coinbase";
-    pub const REPAYMENT_DOCUMENT: &str = "RpDoc";
+
     // Repayment doc
-    pub const RELEASE_DOCUMENT: &str = "RlDoc";
-    // Release Reserved coins
-    pub const BASIC_TX: &str = "BasicTx";
+    pub const REPAYMENT_DOCUMENT: &str = "RpDoc";
+
     // simple "m of n" trx
+    pub const BASIC_TX: &str = "BasicTx";
+
     pub const DATA_AND_PROCESS_COST_PAYMENT: &str = "DPCostPay";
 
     // mimblewimble transactions
+    #[allow(dead_code, unused)]
     pub const MW_INGRESS: &str = "MWIngress";
+
     // move PAIs from basic transaction to a mimble transaction
+    #[allow(dead_code, unused)]
     pub const MW_TX: &str = "MWTx";
+
     // a mimble transaction
+    #[allow(dead_code, unused)]
     pub const MW_EGRESS: &str = "MWEgress";    // move back PAIs from a mimble transaction to a basic transaction
 
     // ZKP zk-snarks transactions
+    #[allow(dead_code, unused)]
     pub const ZK_INGRESS: &str = "ZKIngress";
+
     // move PAIs from basic transaction to a Zero Knowledge Proof transaction
+    #[allow(dead_code, unused)]
     pub const ZK_TX: &str = "ZKTx";
+
     // a Zero Knowledge Proof transaction
+    #[allow(dead_code, unused)]
     pub const ZK_EGRESS: &str = "ZKEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
     // confidential trx Monero-like
+    #[allow(dead_code, unused)]
     pub const MN_INGRESS: &str = "MNIngress";
+
     // move PAIs from basic transaction to a Zero Knowledge Proof transaction
+    #[allow(dead_code, unused)]
     pub const MN_TX: &str = "MNTx";
+
     // a Zero Knowledge Proof transaction
+    #[allow(dead_code, unused)]
     pub const MN_EGRESS: &str = "MNEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
     // RGB (colored coins) Transactions
-    pub const RGB_INGRESS: &str = "RGBIngress";
     // move PAIs from basic transaction to a Zero Knowledge Proof transaction
-    pub const RGB_TX: &str = "RGBTx";
-    // a Zero Knowledge Proof transaction
-    pub const RGB_EGRESS: &str = "RGBEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
+    #[allow(dead_code, unused)]
+    pub const RGB_INGRESS: &str = "RGBIngress";
 
+    #[allow(dead_code, unused)]
+    pub const RGB_TX: &str = "RGBTx";
+
+    // a Zero Knowledge Proof transaction
+    #[allow(dead_code, unused)]
+    pub const RGB_EGRESS: &str = "RGBEgress";    // move back PAIs from a Zero Knowledge Proof transaction to a basic transaction
 
     pub const PROPOSAL: &str = "Proposal";
 
@@ -331,10 +360,15 @@ pub mod document_types
 
     pub const FREE_POST: &str = "FPost"; // Custom Posts (files, Agora posts, wiki pages...)
 
-    pub const I_NAME_REGISTER: &str = "INameReg";
     // Flens: imagine flexible & largly extensible name service
-    pub const I_NAME_BIND: &str = "INameBind";
+    #[allow(dead_code, unused)]
+    pub const I_NAME_REGISTER: &str = "INameReg";
+
     // binds a iPGP(later GNU GPG) to an iName
+    #[allow(dead_code, unused)]
+    pub const I_NAME_BIND: &str = "INameBind";
+
+    #[allow(dead_code, unused)]
     pub const I_NAME_MESSAGE_TO: &str = "INameMsgTo"; // general message to a registered iName
 
     pub const CALL_OPTION: &str = "CallOption";
@@ -411,6 +445,7 @@ pub mod message_tags
     pub const HASH_START_TAG: &str = "---HASH_START_TAG---";
     pub const HASH_END_TAG: &str = "---HASH_END_TAG---";
 
+    #[allow(dead_code, unused)]
     pub const ENVELOPE_CUSTOM_TAG: &str = "CUSTOM ENVELOPE";
     pub const ENVELOPE_CUSTOM_START: &str = "-----ENVELOPE_CUSTOM_START-----";
     pub const ENVELOPE_CUSTOM_END: &str = "-----ENVELOPE_CUSTOM_END-----";
@@ -426,44 +461,47 @@ pub mod message_tags
 pub mod polling_ref_types
 {
     pub const PROPOSAL: &str = "Proposal";
-    pub const REQ_FOR_REL_RES: &str = "ReqForRelRes";
-    // Request For release Reserved
+    #[allow(dead_code, unused)]
     pub const ADMINISTRATIVE_POOLING: &str = "AdmPolling";
 }
 
 pub mod pledge_classes
 {
     // self authorized pledge
-// in this class the pledger signs a contract to cut regularely from mentioned address. (usually the shareholder address by which received incomes from share dvidend)
-// the diference is in this class all 3 parties(pledger, pledgee, arbiter) can close contract whenever they want.
-// this service is usefull for all type of subscription services e.g. monthly payments for T.V. streaming or even better DAILY payment for using services
-// by activating field "applyableAfter" the contract can be realy closed after certain minute of concluding it.
-// e.g. customer must use atleast 3 month of service(in order to get discount)
-// TODO: implement it since it cost couple of hours to implementing
+    // in this class the pledger signs a contract to cut regularely from mentioned address. (usually the shareholder address by which received incomes from share dvidend)
+    // the diference is in this class all 3 parties(pledger, pledgee, arbiter) can close contract whenever they want.
+    // this service is usefull for all type of subscription services e.g. monthly payments for T.V. streaming or even better DAILY payment for using services
+    // by activating field "applyableAfter" the contract can be realy closed after certain minute of concluding it.
+    // e.g. customer must use atleast 3 month of service(in order to get discount)
+    // TODO: implement it since it cost couple of hours to implementing
+    #[allow(dead_code, unused)]
     pub const PLEDGE_SA: &str = "PledgeSA";
 
     // pledge class P is designated to pledge an account in order to getting loan to apply proposal for voting.
-// in return if proposal accepted by community part of incomes will repayed to loaner untile get paid all loan+interest
-// so, this class of pledge needs 2 signature in certain order, to be valid
-// 1. pledger, signs pledge request and repayment conditions
-// 2. pledgee, sign and accepts pledging and publish all proposal, pledge-contract and payment-transaction at once in one block
-// 3. arbiter, in case of existance, the arbiters sign pledge-contract and they publish ALL 3(proposal, pledge-contract and payment-transaction),
-//    surely by arbiters signature(arbiterSignsPledge) the pledge hash will be changed.
+    // in return if proposal accepted by community part of incomes will repayed to loaner untile get paid all loan+interest
+    // so, this class of pledge needs 2 signature in certain order, to be valid
+    // 1. pledger, signs pledge request and repayment conditions
+    // 2. pledgee, sign and accepts pledging and publish all proposal, pledge-contract and payment-transaction at once in one block
+    // 3. arbiter, in case of existance, the arbiters sign pledge-contract and they publish ALL 3(proposal, pledge-contract and payment-transaction),
+    //    surely by arbiters signature(arbiterSignsPledge) the pledge hash will be changed.
     pub const PLEDGE_P: &str = "PledgeP";
 
     // Zero-Knowledge Proof implementation of PledgeP TODO: implement it
+    #[allow(dead_code, unused)]
     pub const PLEDGE_PZKP: &str = "PledgePZKP";
 
 
     // gneric pledge in which pledger can pledge an address(either has sufficent income from DNA or not) and get a loan
-// and by time payback the loan to same account
-// of course there is no garanty to payback PAIs excep reputation of pledger or her bussiness account which is pledged
-// TODO: implement it ASAP
+    // and by time payback the loan to same account
+    // of course there is no garanty to payback PAIs excep reputation of pledger or her bussiness account which is pledged
+    // TODO: implement it ASAP
+    #[allow(dead_code, unused)]
     pub const PLEDGE_G: &str = "PledgeG";
 
 
     // lending PAIs by pledging an account with sufficent income
-// TODO: implement it ASAP
+    // TODO: implement it ASAP
+    #[allow(dead_code, unused)]
     pub const PLEDGE_L: &str = "PledgeL";
 }
 
@@ -501,17 +539,26 @@ pub const IPGP = "IPGP";
 */
 pub mod signature_types
 {
-    pub const MIX23: &str = "Mix23";
     // Mixed of sha256 and keccak256 signature. TODO: implement Mix32 recording on blockgraph
-    pub const BASIC: &str = "Basic";
+    pub const MIX23: &str = "Mix23";
+
     // Basic signature
-    pub const BITCOIN: &str = "Bitcoin";
+    pub const BASIC: &str = "Basic";
+
     // Bitcoin like sha256 hash address
-    pub const IOT: &str = "IOT";
+    #[allow(dead_code, unused)]
+    pub const BITCOIN: &str = "Bitcoin";
+
     // simple light signature for Internet Of Things
-    pub const STRICT: &str = "Strict";
+    #[allow(dead_code, unused)]
+    pub const IOT: &str = "IOT";
+
     // Strict signature by which some signer are allowed to pledge/unpledge account or delegate it
-    pub const STRICTITL: &str = "STRICTITL"; // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
+    pub const STRICT: &str = "Strict";
+
+    // Strict Input-time-lock signature in which all inputs can not be spendable before passing a certain time.
+    #[allow(dead_code, unused)]
+    pub const STRICTITL: &str = "STRICTITL";
 }
 
 pub const DEFAULT_SIGNATURE_MOD: &str = "2/3"; // needs 2 signature of 3
@@ -560,6 +607,6 @@ pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 
 // hu part
 //im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c
-pub const HU_DNA_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
+pub const HU_SHARE_ADDRESS: &str = "im1xqexzdn9x5mrgcfcv5cnswrrxu6nzvpk8yuxzdpkvcunqwpnv3jq7rps4d";
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xq6rwefjxgcnxwfc8qcxxd35xd3rqvt9vy6r2wr9xa3nwvenv3ssnm4w8c";
 

@@ -524,7 +524,7 @@ pub fn validate_sig_struct(
         &hash_algorithm);
     merkle_root = ccrypto::keccak256_dbl(&merkle_root);  // because of securiy, MUST use double hash
 
-    if (vec![constants::HU_DNA_SHARE_ADDRESS, constants::HU_INAME_OWNER_ADDRESS].contains(&address)) &&
+    if (vec![constants::HU_SHARE_ADDRESS, constants::HU_INAME_OWNER_ADDRESS].contains(&address)) &&
         (unlock_set.m_signature_type == constants::signature_types::MIX23) {
         merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Mixed extra securiy level
     }

@@ -1,4 +1,4 @@
-use crate::{constants, dlog, machine};
+use crate::{application, constants, dlog, machine};
 use crate::lib::machine::machine_profile::EmailSettings;
 
 use lettre::message::Mailbox;
@@ -147,7 +147,8 @@ pub fn send_mail(
     port: u16) -> bool
 {
     let mut subject: String = subject.clone();
-    if machine().is_develop_mod() {
+    if application().is_develop_mod()
+    {
         subject = "test".to_string();     //remove beforerelease
     }
 
@@ -256,7 +257,7 @@ pub fn send_mail(
 pub fn received_email_checks() {
     //popPrivateEmail();
     let (status, email)=pop_public_email();
-    if machine().m_use_hard_disk_as_a_buffer
+    if application().use_hard_disk_as_a_buffer()
     {
 
     }

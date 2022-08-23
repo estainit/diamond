@@ -31,7 +31,7 @@ pub fn i_push(
     let mut email_hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender.to_owned() + receiver + &to_send_message)));
     email_body += &(constants::message_tags::HASH_START_TAG.to_owned() + &email_hash.clone() + constants::message_tags::HASH_END_TAG + constants::NL);
 
-    if machine().m_use_hard_disk_as_a_buffer
+    if application().use_hard_disk_as_a_buffer()
     {
         // create emails and write it on local hard drive
         // create an email copy in local hard drive

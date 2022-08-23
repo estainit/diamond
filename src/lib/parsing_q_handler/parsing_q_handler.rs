@@ -175,13 +175,6 @@ std::tuple<bool, bool> ParsingQHandler::handlePulledPacket(const QVDicT& packet)
 }
 
 
-
-
-
-
-/**
- * @return std::tuple<bool status, bool should_purge_record>
- */
 std::tuple<bool, bool> ParsingQHandler::parsePureBlock(
   const String& sender,
   const String& pq_type,
@@ -190,9 +183,6 @@ std::tuple<bool, bool> ParsingQHandler::parsePureBlock(
   const String& receive_date
   )
 {
-  Q_UNUSED(sender);
-  Q_UNUSED(connection_type);
-  Q_UNUSED(receive_date);
 
   // DAG existance ancestors controlls
   StringList needed_blocks = cutils::arrayDiff(block.m_ancestors, DAG::getCachedBlocksHashes());
@@ -417,7 +407,7 @@ pub fn push_to_parsing_q(
 
 //    listener.doCallSync('SPSH_after_insert_packet_in_q', args);
 
-    if machine().is_develop_mod()
+    if application().is_develop_mod()
     {
         q_insert(
             CDEV_PARSING_Q,
@@ -428,7 +418,7 @@ pub fn push_to_parsing_q(
 
     let back_in_time = application().get_cycle_by_minutes();
     let now_ = application().get_now();
-    rmove_from_parsing_q(vec![
+    remove_from_parsing_q(vec![
         ModelClause {
             m_field_name: "pq_parse_attempts",
             m_field_single_str_value: &constants::MAX_PARSE_ATTEMPTS_COUNT.to_string(),
@@ -445,7 +435,7 @@ pub fn push_to_parsing_q(
     return (true, true);
 }
 
-pub fn rmove_from_parsing_q(clauses: ClausesT) -> bool
+pub fn remove_from_parsing_q(clauses: ClausesT) -> bool
 {
     return q_delete(
         C_PARSING_Q,

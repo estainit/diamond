@@ -289,11 +289,12 @@ bool DAGMessageHandler::invokeBlock(const String &block_hash)
 pub fn get_last_received_block_timestamp() -> JSonObject
 {
     let res: String = get_value("last_received_block_timestamp");
+    let now_ = application().launch_date();
     if res == "" {
         return json!({
             "last_block_type": "Genesis",
             "last_block_hash": "-" ,
-            "last_block_receive_date": machine().get_launch_date()});
+            "last_block_receive_date": now_});
     }
     return cutils::parse_to_json_obj(&res);
 }
@@ -380,13 +381,20 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         // if we are receiving continiuosly new blocks, it doesn't sence to ask for leave information.
         // this case happends in runing a new machin in which the machine has to download entire DAG.
         let last_block: JSonObject = get_last_received_block_timestamp();
+
         // TODO: tune the gap time
         let now_ = application().get_now();
-        if application().time_diff(
+        let invoke_gap = application().time_diff(
             remove_quotes(&last_block["last_block_receive_date"].to_string()),
-            now_).as_seconds
-            <
-            machine().get_invoke_leaves_gap() {
+            now_).as_seconds;
+
+        let minimum_leave_invoke_gap= machine().get_invoke_leaves_gap();
+        if invoke_gap < minimum_leave_invoke_gap
+        {
+            dlog(
+                &format!("Can not invoke leaves because just passed ({}) less than required gap ({})", invoke_gap, minimum_leave_invoke_gap),
+                constants::Modules::App,
+                constants::SecLevel::Debug);
             return;
         }
 
@@ -401,10 +409,10 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
                 machine_request_status[0]["kv_last_modified"].to_string(),
                 now_).as_seconds;
             dlog(
-                &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, machine().get_invoke_leaves_gap()),
+                &format!("control if (invoke_age: {} < (invokeGap: {}) ", invoke_age, minimum_leave_invoke_gap),
                 constants::Modules::App,
                 constants::SecLevel::Info);
-            if invoke_age < machine().get_invoke_leaves_gap() {
+            if invoke_age < minimum_leave_invoke_gap {
                 return;
             }
         }

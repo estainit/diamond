@@ -38,25 +38,6 @@ impl DBHandler {
     }
 }
 
-pub fn maybe_switch_db(forced_clone_id: i8) {
-    if (forced_clone_id == 0) && (forced_clone_id != dbhandler().m_current_clone)
-    {
-        panic!("current id: {}, clone_id: {}", dbhandler().m_current_clone, forced_clone_id);
-    }
-    // if (forced_clone_id > 0) && (forced_clone_id != dbhandler().m_current_clone)
-    // {
-    // change database
-    dbhandler().m_current_clone = forced_clone_id;
-    dbhandler().m_db = get_connection();
-    // }
-}
-
-//old_name_was getConnection
-pub fn get_null_connection() -> Client {
-    println!("Establish NULL db connection");
-    return Client::connect(&"host=localhost dbname=diamond user=diamond password=diamondpass".to_string(), NoTls).unwrap();
-}
-
 pub fn get_connection() -> Client {
     let db_host: String = application().db_host();
     let mut db_name: String = application().db_name();

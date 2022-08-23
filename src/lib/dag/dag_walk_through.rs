@@ -295,6 +295,7 @@ pub fn update_cached_blocks(
     return true;
 }
 
+#[allow(dead_code, unused)]
 pub fn load_cached_blocks() -> QVDRecordsT
 {
     refresh_cached_blocks();

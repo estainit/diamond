@@ -1,5 +1,5 @@
 //old_name_was isOlderThan
-#[allow(dead_code)]
+#[allow(dead_code, unused)]
 pub fn is_older_than(v1: String, v_ref: String) -> i8 {
     let v1_value: i64 = convert_ver_to_val(v1);
     let v_ref_value: i64 = convert_ver_to_val(v_ref);
@@ -11,7 +11,7 @@ pub fn is_older_than(v1: String, v_ref: String) -> i8 {
 }
 
 //old_name_was convertVerToVal
-#[allow(dead_code)]
+#[allow(dead_code, unused)]
 pub fn convert_ver_to_val(version: String) -> i64 {
     let v_seg: Vec<&str> = version.split(".").collect();
     let mut version_segments: Vec<i64> = vec![];

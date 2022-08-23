@@ -12,9 +12,12 @@ pub struct PremInfo
 
 pub struct PermutationHandler {
     pub(crate) m_elements: VString,
+    #[allow(dead_code, unused)]
     pub(crate) m_should_be_unique: bool,
     pub(crate) m_permutations: VVString,
+    #[allow(dead_code, unused)]
     pub(crate) m_permutations_stringify: VString,
+    #[allow(dead_code, unused)]
     pub(crate) m_test_analyze: HashMap<String, PremInfo>,
 }
 
@@ -41,6 +44,7 @@ impl PermutationHandler {
         return o;
     }
 
+    #[allow(dead_code, unused)]
     pub(crate) fn test_analyze(&mut self, premutations_: &VVString) {
         let mut premutations: VVString = clone_vvec(premutations_);
         if premutations.len() == 0

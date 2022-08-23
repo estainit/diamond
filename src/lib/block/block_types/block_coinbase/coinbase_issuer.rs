@@ -8,7 +8,7 @@ use crate::lib::block::block_types::block_factory::load_block;
 use crate::lib::block::block_types::block_floating_signature::floating_signature_block::aggrigate_floating_signatures;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::constants;
-use crate::lib::custom_types::{CDateT, CMPAIValueT, DNAShareCountT, QVDRecordsT, TimeByMinutesT, QSDicT, TimeBySecT, BlockLenT};
+use crate::lib::custom_types::{CDateT, CMPAIValueT, SharesCountT, QVDRecordsT, TimeByMinutesT, QSDicT, TimeBySecT, BlockLenT};
 use crate::lib::dag::dag::{get_most_confidence_coinbase_block_from_dag, search_in_dag};
 use crate::lib::dag::leaves_handler::{get_leave_blocks, has_fresh_leaves, LeaveBlock};
 use crate::lib::dag::missed_blocks_handler::get_missed_blocks_to_invoke;
@@ -337,7 +337,7 @@ pub fn calc_potential_micro_pai_per_one_cycle(year_: &String) -> CMPAIValueT
 
 //old_name_was calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore
 pub fn calc_definite_releaseable_micro_pai_per_one_cycle_now_or_before(
-    c_date: &CDateT) -> (CMPAIValueT, DNAShareCountT, HashMap<String, DNAShareCountT>)
+    c_date: &CDateT) -> (CMPAIValueT, SharesCountT, HashMap<String, SharesCountT>)
 {
     let one_cycle_issued: CMPAIValueT = calc_potential_micro_pai_per_one_cycle(&c_date.split("-").collect::<Vec<&str>>()[0].to_string());
     let (total_shares, share_amount_per_holder, _holders_order_by_shares) = get_shares_info(c_date);
