@@ -411,7 +411,7 @@ impl Block {
             dlog(
                 &format!("DUMMY BREAKPOINT LOG :)"),
                 constants::Modules::App,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
         }
         let mut block_ext_info: Vec<Vec<JSonObject>> = vec![];
         for a_doc in &self.m_block_documents {
@@ -440,7 +440,7 @@ impl Block {
                 "Safe stringified block(Base class) Block({}) length({}) the block: {}",
                 cutils::hash8c(&self.m_block_hash), out.len(), out),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return out;
     }
@@ -791,7 +791,7 @@ impl Block {
         dlog(
             &format!("--- recording block in DAG Block({})", cutils::hash8c(&self.m_block_hash)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         q_insert(
             C_BLOCKS,     // table
@@ -1204,7 +1204,7 @@ impl Block {
         dlog(
             &format!("--- recording bExtInfo in DAG Block({})", cutils::hash8c(block_hash)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
 
         return q_insert(

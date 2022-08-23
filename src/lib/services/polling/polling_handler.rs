@@ -105,7 +105,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
     dlog(
         &format!("Abs and No timeframe by minutes = {}", abs_no_timeframe_by_minutes),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let pll_end_date: CDateT = application().minutes_after(
         abs_no_timeframe_by_minutes,
@@ -155,7 +155,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
     dlog(
         &format!("Insert an auto-generated polling for proposal values: {:?}", &values),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     return q_insert(
         C_POLLINGS,

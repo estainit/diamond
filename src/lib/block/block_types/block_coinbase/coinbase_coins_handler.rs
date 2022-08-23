@@ -57,11 +57,11 @@ pub fn loop_import_coinbase_coins()
 //old_name_was importCoinbasedUTXOs
 pub fn import_coinbased_coins(c_date: &CDateT)
 {
-    dlog(&format!("import Coinbased UTXOs {}", c_date.clone()), constants::Modules::App, constants::SecLevel::Trace);
+    dlog(&format!("import Coinbased UTXOs {}", c_date.clone()), constants::Modules::App, constants::SecLevel::TmpDebug);
 
     // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_utxos
     let max_creation_date = application().get_cb_coins_date_range(&c_date).to;
-    dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::Trace);
+    dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::TmpDebug);
     /*
       QVDRecordsT coinbases = DAG::searchInDAG(
           {{"b_type", constants::block_types::COINBASE},

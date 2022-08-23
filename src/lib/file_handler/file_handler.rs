@@ -195,14 +195,14 @@ pub fn write_email_as_file(
     dlog(
         &format!("email body: {}", email_body),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let mut file_name: String = "".to_string();
     if application().is_develop_mod()
     {
         file_name = [receiver, sender, &application().get_now_sss(), title, ".txt"].join(",");
     } else {
-        file_name = [receiver, sender, &application().get_now_sss(), &ccrypto::get_random_number(5), ".txt"].join(" ");
+        file_name = [receiver, sender, &application().get_now_sss(), &ccrypto::get_random_number(5), ".txt"].join(",");
     }
     dlog(
         &format!("file Name: {}", file_name),

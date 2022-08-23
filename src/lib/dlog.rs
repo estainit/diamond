@@ -71,6 +71,7 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
     let log_msg = format!("({}): {}", module_, msg);
 
     match level {
+        SecLevel::TmpDebug => { debug!("{}", log_msg); }
         SecLevel::Debug => { debug!("{}", log_msg); }
         SecLevel::Trace => { trace!("{:#?}", log_msg); }
         SecLevel::Info => { info!("{:?}", log_msg); }

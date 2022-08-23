@@ -203,14 +203,14 @@ pub fn push_into_sending_q(
     dlog(
         &format!("prepare PacketsForNeighbors res packets: {:?}", packets),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     for packet in packets
     {
         dlog(
             &format!("inserting in '_sending_q' {}-{} for {} {}", packet[2], packet[3], packet[5], packet[1]),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
 
         let (_status, records) = q_select(
@@ -229,7 +229,7 @@ pub fn push_into_sending_q(
         dlog(
             &format!("packet pushed to send({}) from {} to {} {} ({})", records.len(), packet[4], packet[5], packet[2], packet[3]),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         if records.len() == 0
         {
@@ -407,7 +407,7 @@ pub fn send_out_the_packet() -> bool
         dlog(
             &format!("No packet in sending q to Send"),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return true;
     }

@@ -173,7 +173,7 @@ impl CoinbaseBlock {
         dlog(
             &format!("The Coinbase! block hashable: {}", hashable_block),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return ccrypto::keccak256(&hashable_block);
     }

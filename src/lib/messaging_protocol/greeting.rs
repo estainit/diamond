@@ -86,7 +86,7 @@ pub fn create_handshake_request(
         application().get_now()
     );
     dlog(
-        &format!("prepared handshake packet, before insert into DB code({}) to ({}): {}",code, email, body),
+        &format!("prepared handshake packet, before insert into DB code({}) to ({}): {}",code, receiver_info["n_email"], body),
         constants::Modules::App,
         constants::SecLevel::Info);
 

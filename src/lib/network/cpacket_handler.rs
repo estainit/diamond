@@ -138,7 +138,7 @@ pub fn decrypt_and_parse_packet(
             decrypt_res.m_is_signed, decrypt_res.m_is_verified, decrypt_res.m_is_compressed
         ),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     if !decrypt_res.m_decryption_status
     {

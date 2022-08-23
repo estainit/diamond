@@ -112,7 +112,7 @@ pub fn send_email_wrapper(
     dlog(
         &format!("send EmailWrapper args: sender({sender_}) receiver({receiver}) title({title})"),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let machine_public_email: EmailSettings = machine().get_pub_email_info().clone();
     let machine_private_email: EmailSettings = machine().get_priv_email_info().clone();
@@ -198,7 +198,7 @@ pub fn send_mail(
             dlog(
                 &format!("Email was prepared: {:?}", m),
                 constants::Modules::App,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
             m
         }
         Err(e) => {
@@ -239,7 +239,7 @@ pub fn send_mail(
             dlog(
                 &format!("Email was sent: {:?}", r),
                 constants::Modules::App,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
             r
         }
         Err(e) => {
@@ -283,7 +283,7 @@ pub fn read_email(
     dlog(
         &format!("fetch Pub Email And Write On Hard Disk"),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     // // fetch private inbox
     // let params = {

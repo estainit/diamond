@@ -111,26 +111,42 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
     // the leaves younger than two cylce (24 hours) old
     let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
 
+    println!("mmmmmmm get_fresh_leaves {:?}", leaves);
+
     dlog(
         &format!("current leaves: {}", serde_json::to_string(&leaves).unwrap()),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     if leaves.keys().len() == 0 {
         return leaves;
     }
+    println!("mmmmmmm get_fresh_leaves oooooooooooo", );
 
     let mut refreshes: HashMap<String, LeaveBlock> = HashMap::new();
     let now_ = application().get_now();
     for (a_key, a_leave) in leaves {
-        let leave_age: TimeByMinutesT = application().time_diff(a_leave.m_creation_date.clone(), now_.clone()).as_minutes;
-        let mut msg: String = format!("leave({}) age ({}) minutes is ", cutils::hash8c(&a_key), leave_age);
+        let leave_age: TimeByMinutesT = application().time_diff(
+            a_leave.m_creation_date.clone(),
+            now_.clone()).as_minutes;
+
+        dlog(
+            &format!(
+                "The leave creation date: {}, now: {}",
+                a_leave.m_creation_date.clone(), now_.clone()),
+            constants::Modules::App,
+            constants::SecLevel::Debug);
+
+        let mut msg: String = format!(
+            "The leave(#{}) age ({}) minutes is ",
+            cutils::hash6c(&a_key), leave_age);
         if leave_age < application().get_cycle_by_minutes() * 2 {
             msg += " younger ";
         } else {
             msg += " older ";
         }
         msg += " than 2 cycles ";
+
         dlog(
             &msg,
             constants::Modules::App,
@@ -148,6 +164,8 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
 //old_name_was hasFreshLeaves
 pub fn has_fresh_leaves() -> bool
 {
-    get_fresh_leaves().keys().len() > 0
+    let keys = get_fresh_leaves().keys().cloned().collect::<Vec<String>>();
+    println!("mmmmmmm keys {}, {:?}", keys.len(), keys);
+    keys.len() > 0
 }
 

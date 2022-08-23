@@ -14,7 +14,7 @@ pub fn i_push(
     dlog(
         &format!("iPush args: title({}) sender({}) receiver({}) message({})", title, sender, receiver, message),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let is_custom = false;
     let mut to_send_message: String = message.clone();
@@ -46,7 +46,7 @@ pub fn i_push(
         dlog(
             &format!("write on HD res: {}", status),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
 
     if !application().email_is_active()
@@ -75,7 +75,7 @@ pub fn i_push(
         dlog(
             &format!("email already was sent TO: {} + ({}) hash({})", receiver, title, email_hash),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         return true;
     } else {
         sent_emails_obj.insert(email_hash, application().get_now());

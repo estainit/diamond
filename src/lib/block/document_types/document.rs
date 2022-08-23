@@ -255,7 +255,7 @@ impl Document
                 j_doc["dLen"],
                 serialized_j_doc),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return cutils::serialize_json(&j_doc);
     }

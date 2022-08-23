@@ -193,7 +193,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
     dlog(
         &format!("Insert new address to machine wallet {:?}", dump_hashmap_of_str_string(&values)),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
     // let mut values_: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::new();
     // for (k, v) in &values {
     //     values_.insert(*k, &v as &(dyn ToSql + Sync));

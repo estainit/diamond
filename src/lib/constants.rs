@@ -13,6 +13,7 @@ pub enum Modules {
 pub enum SecLevel {
     Debug,
     Trace,
+    TmpDebug,
     Info,
     Warning,
     Error,
@@ -413,11 +414,11 @@ pub const Bitcoin = "Bitcoin"; // Bitcoinish transaction to supporting swap tran
 
 namespace PLEDGE_CLOSE_CLASESS
 {
-pub const General = "General";    //General imagine DNA proposals
+pub const General = "General";    //General imagine proposals
 };
 namespace PROPOSAL_CLASESS
 {
-pub const General = "General";    //General imagine DNA proposals
+pub const General = "General";    //General imagine proposals
 };
 namespace BALLOT_CLASSES
 {
@@ -491,7 +492,7 @@ pub mod pledge_classes
     pub const PLEDGE_PZKP: &str = "PledgePZKP";
 
 
-    // gneric pledge in which pledger can pledge an address(either has sufficent income from DNA or not) and get a loan
+    // gneric pledge in which pledger can pledge an address(either has sufficent income from or not) and get a loan
     // and by time payback the loan to same account
     // of course there is no garanty to payback PAIs excep reputation of pledger or her bussiness account which is pledged
     // TODO: implement it ASAP

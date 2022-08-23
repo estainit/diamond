@@ -124,7 +124,7 @@ impl PollingDocument
         dlog(
             &format!("Hashable string for Polling doc{} doc({}/{}) hash({})", hashables, doc.m_doc_type, doc.m_doc_class, hashed),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         return hashed;
     }
     /*

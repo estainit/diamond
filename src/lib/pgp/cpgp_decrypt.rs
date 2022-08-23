@@ -49,7 +49,7 @@ pub fn pgp_decrypt(
     final_decoded_msg.m_signature_version = remove_quotes(&decode_j_obj["sigVersion"]);
     final_decoded_msg.m_pgp_versaion = remove_quotes(&decode_j_obj["iPGPVersion"]);
     final_decoded_msg.m_secret_key = remove_quotes(&decode_j_obj["secretKey"]);
-    final_decoded_msg.m_initialization_vector = remove_quotes(&decode_j_obj["iv"]);
+    // final_decoded_msg.m_initialization_vector = remove_quotes(&decode_j_obj["iv"]);
 
      eprintln!("final_decoded_msg.m_secret_key: {}", final_decoded_msg.m_secret_key);
     if final_decoded_msg.m_secret_key == constants::message_tags::NO_ENCRYPTION
@@ -57,7 +57,7 @@ pub fn pgp_decrypt(
         dlog(
             &format!("AES decrypted = {}", decode_j_obj["message"].to_string()),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         final_decoded_msg.m_message = remove_quotes(&decode_j_obj["message"]);
     } else {

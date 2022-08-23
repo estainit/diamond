@@ -65,7 +65,7 @@ impl BasicTxDocument {
                      cutils::sep_num_3(res.len() as i64),
                      res),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return res;
     }
@@ -256,7 +256,7 @@ impl BasicTxDocument {
             &format!("get Pure Hash res! hash({}) version({}) hashable string: ({}) trx({})",
                      cutils::hash8c(&the_hash), doc.m_doc_version, hashable_string, cutils::hash8c(&doc.get_doc_hash())),
             constants::Modules::Trx,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return the_hash;
     }
@@ -274,7 +274,7 @@ impl BasicTxDocument {
             &format!("\nHashable string for Basic Trx doc({} / {}) hash({}) version({}) hashables: {}",
                      doc.m_doc_type, doc.m_doc_class, cutils::hash8c(&the_hash), doc.m_doc_version, hashables),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return the_hash;
     }

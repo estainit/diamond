@@ -57,7 +57,7 @@ pub fn pgp_encrypt(
     dlog(
         &format!("compressed 1: {}", pgp_enc_jobj),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let mut secret_key: String = secret_key_.clone();
     if receiver_pub_key.to_string() == "".to_string()
@@ -103,7 +103,7 @@ pub fn pgp_encrypt(
     dlog(
         &format!("pgp_response: {}", pgp_enc_jobj),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     // base64 encoding the final message
     return (true, ccrypto::b64_encode(&pgp_response));

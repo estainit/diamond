@@ -80,7 +80,7 @@ impl ProposalDocument {
     }
 
     /*
-    //JSonObject DNAProposalDocument::ZexportJson() const
+    //JSonObject ProposalDocument::ZexportJson() const
     //{
     //  JSonObject params = JSonObject
     //  {
@@ -127,7 +127,7 @@ impl ProposalDocument {
                      cutils::serialize_json(&j_doc).len(),
                      cutils::serialize_json(&j_doc)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return cutils::serialize_json(&j_doc);
     }
@@ -135,7 +135,7 @@ impl ProposalDocument {
 
 
     // old name was calcProposalDocumetnCost
-    std::tuple<bool, CMPAIValueT> DNAProposalDocument::calcDocDataAndProcessCost(
+    std::tuple<bool, CMPAIValueT> ProposalDocument::calcDocDataAndProcessCost(
       const String& stage,
       String cDate,
       const uint32_t& extraLength) const
@@ -163,18 +163,18 @@ impl ProposalDocument {
     }
 
 
-    String DNAProposalDocument::calcDocExtInfoHash() const
+    String ProposalDocument::calcDocExtInfoHash() const
     {
       return constants::NO_EXT_HASH;
     }
 
-    bool DNAProposalDocument::hasSignable() const
+    bool ProposalDocument::hasSignable() const
     {
       return false;
     }
 
     //// old name was
-    //String DNAProposalDocument::getDocSignMsg() const
+    //String ProposalDocument::getDocSignMsg() const
     //{
     //  String signables = "{";
     ////  signables += "\"creation Date\":\"" + m_doc_creation_date + "\"," ;
@@ -191,7 +191,7 @@ impl ProposalDocument {
     ////  return sign_message;
     //}
 
-    //bool DNAProposalDocument::veridfyDocSignature() const
+    //bool ProposalDocument::veridfyDocSignature() const
     //{
     //  JSonObject dExtInfo = m_doc_ext_info;
     ////  auto unlockSet = dExtInfo.value("uSet").toObject();
@@ -262,9 +262,9 @@ impl ProposalDocument {
     pub fn calc_doc_hash(&self, doc: &Document) -> String
     {
         dlog(
-            &format!("calc DNA proposal Hash: {}", self.safe_stringify_doc(doc, true)),
+            &format!("calc proposal Hash: {}", self.safe_stringify_doc(doc, true)),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         let hashables: String = self.get_doc_hashable_string(doc);
 
@@ -273,33 +273,33 @@ impl ProposalDocument {
             &format!("Hashable string for dna proposal doc({} / {}) hash of ({})",
                      doc.m_doc_type, doc.m_doc_class, hashables),
             constants::Modules::App,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         return the_hash;
     }
     /*
 
-    std::tuple<bool, JSonArray> DNAProposalDocument::exportInputsToJson() const
+    std::tuple<bool, JSonArray> ProposalDocument::exportInputsToJson() const
     {
       return {false, JSonArray {}};
     }
 
-    std::tuple<bool, JSonArray> DNAProposalDocument::exportOutputsToJson() const
+    std::tuple<bool, JSonArray> ProposalDocument::exportOutputsToJson() const
     {
       return {false, JSonArray {}};
     }
 
-    std::vector<TInput*> DNAProposalDocument::get_inputs() const
+    std::vector<TInput*> ProposalDocument::get_inputs() const
     {
       return {};
     }
 
-    std::vector<TOutput*> DNAProposalDocument::get_outputs() const
+    std::vector<TOutput*> ProposalDocument::get_outputs() const
     {
       return {};
     }
 
-    void DNAProposalDocument::importCostsToTreasury(
+    void ProposalDocument::importCostsToTreasury(
       const Block* block,
       UTXOImportDataContainer* block_inspect_container)
     {

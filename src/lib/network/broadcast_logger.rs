@@ -62,7 +62,7 @@ pub fn add_sent_block(values: &mut HashMap<&str, &(dyn ToSql + Sync)>) -> bool
     dlog(
         &format!("add SentBlock: {:?}", &values),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     q_insert(
         C_LOGS_BROADCAST,

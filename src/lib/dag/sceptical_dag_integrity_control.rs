@@ -7,7 +7,7 @@ pub fn controls_of_new_block_insertion(block_hash:&String) ->(bool,String)
   dlog(
     &format!("ScepticalDAGIntegrityControl::controls_of_new_block_insertion({})", block_hash),
     constants::Modules::App,
-    constants::SecLevel::Trace);
+    constants::SecLevel::TmpDebug);
 
 
   // a series of checking to ensure if app succide to import all documents placed in block properly in database?

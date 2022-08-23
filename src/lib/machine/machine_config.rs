@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use substring::Substring;
-use crate::{application, CMachine};
+use crate::{application, CMachine, constants};
 use crate::lib::custom_types::VString;
 use crate::lib::k_v_handler::set_value;
 
@@ -25,9 +25,11 @@ impl CMachine {
             } else {
                 if a_param == "dev"
                 {
+                    args_dic.insert(a_param, constants::YES.to_string());
                     is_develop_mod = true;
                 } else if a_param == "verbose"
                 {
+                    args_dic.insert(a_param, constants::YES.to_string());
                     verbose = true;
                 }
             }

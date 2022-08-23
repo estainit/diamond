@@ -207,7 +207,7 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
         dlog(
             &format!("prvCoinbaseBlocks: {}", dump_hashmap_of_qvd_records(&prv_coinbase_blocks)),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         let mut prv_coinbase_blocks_: Vec<String> = vec![];
         for a_row in prv_coinbase_blocks
         {
@@ -218,7 +218,7 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
         dlog(
             &format!("retrieve floating signatures for cycle({}) from({}) ", cycle_stamp, from_t),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         let f_s_w_blocks: QVDRecordsT = search_in_dag(
             vec![

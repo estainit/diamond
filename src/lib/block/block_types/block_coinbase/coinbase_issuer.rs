@@ -140,7 +140,7 @@ pub fn create_coinbase_core(
 
     let cycle_coins: CMPAIValueT = doc.m_if_coinbase.m_treasury_incomes as CMPAIValueT + doc.m_if_coinbase.m_minted_coins as CMPAIValueT;
     dlog(
-        &format!("DNA cycle sum minted coins+treasury({} bicro PAIs)",
+        &format!("cycle sum minted coins+treasury({} bicro PAIs)",
                  cutils::sep_num_3(cycle_coins as i64)),
         constants::Modules::CB,
         constants::SecLevel::Info);
@@ -193,7 +193,7 @@ pub fn create_coinbase_core(
     dlog(
         &format!("Coinbase recalculated outputs on Cycle({}): details: {}", cycle, dump_vec_of_t_output(&doc.m_if_coinbase.m_outputs)),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     // let doc: Document = load_document(&doc, &Block::new(), 0);
     doc.m_doc_hash = doc.calc_doc_hash(); // trxHashHandler.doHashTransaction(trx)
@@ -509,7 +509,7 @@ pub fn does_dag_has_more_confidence_cb() -> bool
     dlog(
         &format!("Already recorded coinbase blocks: {}", dump_hashmap_of_qvd_records(&already_recorded_coinbase_blocks)),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     if already_recorded_coinbase_blocks.len() == 0 {
         return false;
@@ -575,7 +575,7 @@ pub fn make_email_hash_dictionary() -> (String, String, String, QSDicT)
     dlog(
         &format!("neightbors in makeEmail Hash Dict: {}", dump_hashmap_of_qvd_records(&neightbors)),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     for neighbor in neightbors
     {
@@ -601,13 +601,13 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
     dlog(
         &format!("Ordered emails_hash_dict {:?}", keys),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     for i in 0..keys.len() {
         dlog(
             &format!("{}. candidate email for issueing CB {} {} ", i + 1, emails_hash_dict[&keys[i]], cutils::hash8c(&keys[i])),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
     let machine_index: i32 = keys.iter().position(|r| r == &machine_key).unwrap() as i32; // keys.indexOf(machine_key)
     if machine_index == 0 {
@@ -643,13 +643,13 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
         dlog(
             &format!("It already passed {} of 10 dividend of a cycle and now it's my turn {} to issue coinbase!", cb_email_counter, machine_email),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         return true;
     }
     dlog(
         &format!("Machine has to wait To Create Coinbase Block! (if does not receive the fresh CBB) keys({}::{})", cycle, machine_email),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
     return false;
 }
 
@@ -731,7 +731,7 @@ pub fn control_coinbase_issuance_criteria() -> bool
         dlog(
             &format!("It is not machine turn To Create Coinbase Block!"),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         return false;
     }
     return true;
@@ -748,7 +748,7 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
     dlog(
         &format!("psudo-random CB creation machine_index: {}", machine_index),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let mut cycle_by_minutes: TimeByMinutesT = constants::STANDARD_CYCLE_BY_MINUTES as TimeByMinutesT;
     if application().cycle_length() != 1 {
@@ -761,7 +761,7 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
     dlog(
         &format!("passed CertainTimeOfCycleToRecordInDAG? {}", res),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     return res;
 }
@@ -790,7 +790,7 @@ pub fn try_create_coinbase_block() -> bool
     dlog(
         &format!("Try to Create Coinbase for Range ({}, {})", coinbase_from, coinbase_to),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
     let (status, mut block) = do_generate_coinbase_block(
         &application().get_coinbase_cycle_stamp(&now_),
         constants::stages::CREATING,
@@ -807,19 +807,19 @@ pub fn try_create_coinbase_block() -> bool
     dlog(
         &format!("Serialized locally created cb block. before objecting1 {}", serde_json::to_string(&block).unwrap()),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     block.m_block_length = serde_json::to_string(&block).unwrap().len() as BlockLenT;
     dlog(
         &format!("Serialized locally created cb block. before objecting2 {}", serde_json::to_string(&block).unwrap()),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     block.set_block_hash(&block.calc_block_hash());
     dlog(
         &format!("Serialized locally created cb block. after objecting {}", serde_json::to_string(&block).unwrap()),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let tmp_local_confidence: f64 = block.m_block_confidence as f64;
 
@@ -833,12 +833,12 @@ pub fn try_create_coinbase_block() -> bool
         dlog(
             &format!("DAG hasn't coinbase for cycle range ({}, {})", coinbase_from, coinbase_to),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     } else {
         dlog(
             &format!("The most_confidence_in_DAG for cycle range ({}, {}) is: {}", coinbase_from, coinbase_to, dump_it(&most_confidence_in_dag)),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         tmp_dag_confidence = most_confidence_in_dag["b_confidence"].parse::<f64>().unwrap();
         tmp_dag_ancestors = cutils::convert_comma_separated_to_array(&most_confidence_in_dag["b_ancestors"].to_string(), &",".to_string());
@@ -852,7 +852,7 @@ pub fn try_create_coinbase_block() -> bool
             &format!("More confidence: local coinbase({}) has more confidence({}) than DAG({}) in cycle range ({}, {})",
                      cutils::hash8c(&block.m_block_hash), tmp_local_confidence.to_string(), tmp_dag_confidence.to_string(), coinbase_from, coinbase_to),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
 
     let mut ancestors_diff: Vec<String> = cutils::array_diff(
@@ -897,14 +897,14 @@ pub fn try_create_coinbase_block() -> bool
             &format!("More ancestors: local coinbase({}) has more ancestors({:?} than DAG({}) in cycle range ({}, {})",
                      cutils::hash8c(&block.m_block_hash.to_string()), block.m_block_ancestors, dump_vec_of_str(&tmp_dag_ancestors), coinbase_from, coinbase_to),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
 
     dlog(
         &format!("Is about to issuing coinbase block in cycle range ({}, {}) the block: {}",
                  coinbase_from, coinbase_to, serde_json::to_string(&block).unwrap()),
         constants::Modules::CB,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let missed_blocks: Vec<String> = get_missed_blocks_to_invoke(0);
     if missed_blocks.len() > 0
@@ -943,13 +943,13 @@ pub fn try_create_coinbase_block() -> bool
             dlog(
                 &format!("coinbase push1 res({})", dump_it(push_res)),
                 constants::Modules::CB,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
 
             dlog(
                 &format!("Coinbase issued because of clause 1 CB({}) issued by({} for cycle range({}, {})",
                          cutils::hash8c(&block.m_block_hash.to_string()), machine().get_pub_email_info().m_address, coinbase_from, coinbase_to),
                 constants::Modules::CB,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
 
             return true;
         }
@@ -971,12 +971,12 @@ pub fn try_create_coinbase_block() -> bool
             dlog(
                 &format!("coinbase push2 res({})", dump_it(push_res)),
                 constants::Modules::CB,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
             dlog(
                 &format!("Coinbase issued because of clause 2 CB({}) issued by({} for cycle range({}, {})",
                          cutils::hash8c(&block.m_block_hash), &machine().get_pub_email_info().m_address, &coinbase_from, &coinbase_to),
                 constants::Modules::CB,
-                constants::SecLevel::Trace);
+                constants::SecLevel::TmpDebug);
             return true;
         }
     } else {
@@ -987,7 +987,7 @@ pub fn try_create_coinbase_block() -> bool
                      coinbase_from,
                      coinbase_to),
             constants::Modules::CB,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
         return true;
     }
     true

@@ -301,7 +301,7 @@ pub fn q_custom_query(
         dlog(
             &complete_query.to_string(),
             constants::Modules::Sql,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
 
     let mut out_rows: QVDRecordsT = vec![];
@@ -315,7 +315,7 @@ pub fn q_custom_query(
                 dlog(
                     &format!("Query executed successfully: "),
                     constants::Modules::Sql,
-                    constants::SecLevel::Trace);
+                    constants::SecLevel::TmpDebug);
             }
 
             if rows.len() == 0
@@ -488,14 +488,14 @@ pub fn exec_query(
         dlog(
             &query_elements.m_complete_query.to_string(),
             constants::Modules::Sql,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
 
     if do_log {
         dlog(
             &format!("Query Values: {:?} ", &query_elements.m_params),
             constants::Modules::Sql,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
     }
     let mut out_rows: QVDRecordsT = vec![];
     // let params: Vec<_> = query_elements.m_params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
@@ -507,7 +507,7 @@ pub fn exec_query(
                 dlog(
                     &format!("Query executed successfully: "),
                     constants::Modules::Sql,
-                    constants::SecLevel::Trace);
+                    constants::SecLevel::TmpDebug);
             }
 
             if rows.len() == 0

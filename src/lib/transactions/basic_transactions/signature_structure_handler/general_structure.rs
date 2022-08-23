@@ -267,7 +267,7 @@ pub fn calc_unlock_hash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
     dlog(
         &format!("Custom stringyfied unlock_struct: {}", to_be_hashed),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
     if hash_algorithm == "keccak256"
     {
         return ccrypto::keccak256(&to_be_hashed);

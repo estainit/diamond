@@ -14,15 +14,6 @@ pub struct Shareholder {
 
 /*
 
-
-class DNAHandler
-{
-public:
-  DNAHandler();
-
-  static const String stbl_dna_shares;
-  static const StringList stbl_dna_shares_fields;
-
   CDocHashT m_project_hash = "";
   CAddressT m_shareholder = "";
   uint64_t m_help_hours = 0;
@@ -83,7 +74,7 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
     dlog(
         &format!("Inserting a DNA share: {:?}", &values),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     q_insert(
         C_SHARES,    // table
@@ -180,7 +171,7 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
     dlog(
         &format!("get Share info: calc shares for date({})", c_date),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let (min_creation_date, max_creation_date) = get_dna_active_date_range(c_date);
 

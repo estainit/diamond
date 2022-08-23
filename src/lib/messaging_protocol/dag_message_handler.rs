@@ -359,7 +359,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
     dlog(
         &format!("set Maybe Ask For Latest Blocks Flag value: {}", value),
         constants::Modules::App,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     if value == constants::YES {
         // control last_received_leaves_info_timestamp flag

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, constants};
+use crate::{application, constants, dlog};
 use crate::cutils::{array_add, array_unique};
 use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
@@ -95,6 +95,7 @@ std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
   return {block_hashes, map_doc_to_block};
 }
 */
+
 //old_name_was searchInDAG
 pub fn search_in_dag(
     clauses: ClausesT,
@@ -103,13 +104,21 @@ pub fn search_in_dag(
     limit: u32,
     do_log: bool) -> QVDRecordsT
 {
-    let (_status, records) = q_select(
+    let (status, records) = q_select(
         C_BLOCKS,
         fields,
         clauses,
         order,
         limit,
         do_log);
+    if !status
+    {
+        dlog(
+            &format!("Failed in search in DAG! "),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+    }
+
     return records;
 }
 

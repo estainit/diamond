@@ -728,7 +728,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     bd_mp_code varchar(32) NOT NULL,
     bd_insert_date varchar(32) NOT NULL,
     bd_doc_hash varchar(256) NOT NULL UNIQUE,
-    bd_doc_type varchar(32) NOT NULL,    -- basicTx, dna, ...
+    bd_doc_type varchar(32) NOT NULL,    -- basicTx, Proposal, ...
     bd_doc_class varchar(32) NOT NULL,    -- mOfn, p4p, ...
     bd_payload TEXT NOT NULL,    -- stringifyed body of a single transaction
     bd_dp_cost BIGINT NOT NULL,    -- the backer's fee
@@ -768,13 +768,13 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_shareholder ON c_shares(dn_shareholder);
+    CREATE INDEX IF NOT EXISTS  index_shares_dn_shareholder ON c_shares(dn_shareholder);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_creation_date ON c_shares(dn_creation_date);
+    CREATE INDEX IF NOT EXISTS  index_shares_dn_creation_date ON c_shares(dn_creation_date);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_dna_shares_dn_project_hash ON c_shares(dn_project_hash);
+    CREATE INDEX IF NOT EXISTS  index_shares_dn_project_hash ON c_shares(dn_project_hash);
 ",
         "
     CREATE TABLE IF NOT EXISTS c_iname_records

@@ -65,7 +65,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
     dlog(
         &format!("importing matured UTXOs(Nornam Block) before({})", min_creation_date.clone()),
         constants::Modules::Trx,
-        constants::SecLevel::Trace);
+        constants::SecLevel::TmpDebug);
 
     let b_type = constants::block_types::NORMAL.to_string();
     let b_utxo_imported = constants::NO.to_string();
@@ -97,7 +97,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         dlog(
             &format!("last SyncStatus in import Normal Block UTXOs: {}", dump_it(&last_sync_status)),
             constants::Modules::Trx,
-            constants::SecLevel::Trace);
+            constants::SecLevel::TmpDebug);
 
         let back_in_time = application().get_cycle_by_minutes();
         let now_=application().get_now();
@@ -304,7 +304,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
     //      // block_inspect_container.reqRelResCostStatus = reqRelResCostsHandler.importReqRelResCost({ block, block_inspect_container });
 
           // import proposal costs payments to treasury
-          DNAProposalDocument::importCostsToTreasury(block, block_inspect_container);  //importProposalsCost
+          ProposalDocument::importCostsToTreasury(block, block_inspect_container);  //importProposalsCost
 
           // import FleNS costs(register, binding,...) payments to treasury
           INameRegDocument::importCostsToTreasury(block, block_inspect_container);  // importRegCost
