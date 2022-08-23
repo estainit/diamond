@@ -47,14 +47,14 @@ fn main() {
 
     application().dummy_init();
 
-    let force_clone_id: i8 = 1;
+    let force_clone_id: i8 = 0;
     machine().parse_args(env::args().collect(), force_clone_id);
     initialize_log();
     machine().initialize_machine();
     machine().boot_machine();
 
     let mut web_server_msg: &str = "";
-    let should_launch_web_server = false;
+    let should_launch_web_server = true;
     if should_launch_web_server
     {
         web_server_msg = match tokio::runtime::Builder::new_multi_thread()
