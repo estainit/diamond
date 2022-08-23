@@ -65,8 +65,6 @@ pub mod vote_counting_methods {
 //old_name_was autoCreatePollingForProposal
 pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) -> bool
 {
-    println!("kkkkkk params0 {}", params);
-
     if is_older_than(remove_quotes(&params["dVer"]), "0.0.8".to_string()) == 1 {
         params["dVer"] = "0.0.0".into();
     }
@@ -85,7 +83,6 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::LEN_PROP_LENGTH);
     params["dLen"] = doc_length.into();
 
-    println!("kkkkk paramaz 98 {}", params);
     let doc: Document = load_document(params, block, 0);
     let pll_hash = doc.m_if_polling_doc.calc_doc_hash(&doc); //old name was calcHashDPolling
 
@@ -114,7 +111,6 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         abs_no_timeframe_by_minutes,
         &remove_quotes(&params["startDate"]));
 
-    println!("kkkkkk params1 {}", params);
     let pll_creator = remove_quotes(&params["dCreator"]);
     let pll_type = remove_quotes(&params["dType"]);
     let pll_class = remove_quotes(&params["dClass"]);
@@ -185,7 +181,6 @@ pub fn stringify_an_auto_generated_proposal_polling(params: &JSonObject) -> Stri
         params["dCreator"],
         params["pTimeframe"]
     );
-    println!("kkkkk doc_hahsables {}", doc_hahsables);
     return doc_hahsables;
 }
 

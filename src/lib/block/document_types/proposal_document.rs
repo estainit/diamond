@@ -493,7 +493,6 @@ impl ProposalDocument {
                 constants::SecLevel::Error);
         }
 
-        println!("kkkkkk doc.m_doc_class {}", doc.m_doc_class);
         let pr_help_level = doc.m_if_proposal_doc.m_help_level;
         let pr_help_hours=doc.m_if_proposal_doc.m_help_hours;
         let pr_voting_timeframe=doc.m_if_proposal_doc.m_voting_timeframe;
@@ -524,7 +523,6 @@ impl ProposalDocument {
             true);
 
 
-        println!("kkkkkk doc.m_if_proposal_doc.m_polling_profile {}", doc.m_if_proposal_doc.m_polling_profile);
         // create a new polling
         let mut params: JSonObject = json!({
             "dType": constants::document_types::POLLING,
