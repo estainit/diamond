@@ -49,7 +49,7 @@ AKOxghv8sJ+5ZX/HSl8XLa8CEQC9bjhCGkhf9XZfUp3yicjlAhAls3hmNZLw0ncD
 MDwwDQYJKoZIhvcNAQEBBQADKwAwKAIhAJnowPSlJTH0MoigInTEK3dZMcoX+wvx
 cSQFy4OTH8W9AgMBAAE=
 -----END PUBLIC KEY-----".to_string();
-        let message_1: String = "Hi".to_string();
+        let _message_1: String = "Hi".to_string();
 
         assert!(ccrypto::rsa_is_valid_prv_key(&prv_key_1));
         assert!(ccrypto::rsa_is_valid_pub_key(&pub_key_1));
@@ -106,6 +106,7 @@ cSQFy4OTH8W9AgMBAAE=
             &pem_prv_key,
             &cipher,
         );
+        assert!(status);
         assert_eq!(recovered, message);
     }
 
@@ -113,12 +114,12 @@ cSQFy4OTH8W9AgMBAAE=
     #[ignore]
     pub fn test_autogen_rsa_key_pairs_default()
     {
-        let message: String = "Hi 1234567890123".to_string();
+        let _message: String = "Hi 1234567890123".to_string();
         let _signature: String = "".to_string();
         let _cipher: String = "".to_string();
         let _recovered: String = "".to_string();
         let _is_verified: bool = false;
-        let (status, pem_prv_key, pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
+        let (status, _pem_prv_key, _pem_pub_key) = ccrypto::rsa_generate_key_pair(0);
         assert!(status);
     }
 }

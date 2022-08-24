@@ -1,1 +1,1 @@
-pub mod normal_utxo_handler;
+pub mod normal_coins_handler;

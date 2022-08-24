@@ -131,7 +131,7 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
 
 const StringList to_string_fields = {
 "b_hash", "b_type", "b_cycle", "b_ext_root_hash", "b_docs_root_hash", "b_creation_date",
-"b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported",
+"b_receive_date", "b_confirm_date", "b_backer", "b_coins_imported",
 
 "dbm_block_hash", "dbm_doc_hash", "dbm_last_control",
 

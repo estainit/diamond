@@ -1,7 +1,5 @@
 #[cfg(test)]
 pub mod tests_crypto_cpgp {
-    use substring::Substring;
-    use crate::{constants};
     use crate::lib::ccrypto;
     use crate::lib::pgp::cpgp::{CPGPMessage};
     use crate::lib::pgp::cpgp_decrypt::pgp_decrypt;

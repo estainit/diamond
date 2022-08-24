@@ -42,7 +42,7 @@ pub fn psql_init_query_dev<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE TABLE IF NOT EXISTS cdev_logs_trx_utxos
+    CREATE TABLE IF NOT EXISTS cdev_logs_trx_coins
     (
     ul_id bigserial primary key,
     ul_action varchar(16) NOT NULL,    -- added/deleted to/from table
@@ -57,19 +57,19 @@ pub fn psql_init_query_dev<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_logs_trx_utxos_ul_action ON cdev_logs_trx_utxos(ul_action);
+    CREATE INDEX IF NOT EXISTS  index_logs_trx_coins_ul_action ON cdev_logs_trx_coins(ul_action);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_logs_trx_utxos_ul_creation_date ON cdev_logs_trx_utxos(ul_creation_date);
+    CREATE INDEX IF NOT EXISTS  index_logs_trx_coins_ul_creation_date ON cdev_logs_trx_coins(ul_creation_date);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_logs_trx_utxos_ul_ref_loc ON cdev_logs_trx_utxos(ul_ref_loc);
+    CREATE INDEX IF NOT EXISTS  index_logs_trx_coins_ul_ref_loc ON cdev_logs_trx_coins(ul_ref_loc);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_logs_trx_utxos_ul_visible_by ON cdev_logs_trx_utxos(ul_visible_by);
+    CREATE INDEX IF NOT EXISTS  index_logs_trx_coins_ul_visible_by ON cdev_logs_trx_coins(ul_visible_by);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_logs_trx_utxos_ul_o_address ON cdev_logs_trx_utxos(ul_o_address);
+    CREATE INDEX IF NOT EXISTS  index_logs_trx_coins_ul_o_address ON cdev_logs_trx_coins(ul_o_address);
 "];
 }
 
@@ -78,7 +78,7 @@ pub fn psql_init_query_dev<'l>() -> Vec<&'l str> {
 // *****************  TO be deleted ************
 
 -- alter table c_kvalue alter column kv_value type text;
---alter table cdev_logs_trx_utxos alter column ul_clone_code drop not null;
+--alter table cdev_logs_trx_coins alter column ul_clone_code drop not null;
 -- ALTER TABLE IF EXISTS c_machine_used_coins RENAME TO c_machine_used_coins;
 -- ALTER TABLE c_machine_draft_proposals RENAME COLUMN pd_comments TO pd_comment;
 -- ALTER TABLE c_iname_records ADD COLUMN in_is_settled varchar(1) DEFAULT 'N';
@@ -115,28 +115,28 @@ CREATE OR REPLACE FUNCTION added_utxo() RETURNS TRIGGER AS
 $BODY$
 BEGIN
 INSERT INTO
-cdev_logs_trx_utxos(ul_action, ul_creation_date, ul_ref_loc, ul_o_address, ul_o_value, ul_visible_by, ul_ref_creation_date)
+cdev_logs_trx_coins(ul_action, ul_creation_date, ul_ref_loc, ul_o_address, ul_o_value, ul_visible_by, ul_ref_creation_date)
 VALUES('add', new.ut_creation_date, new.ut_coin, new.ut_o_address, new.ut_o_value, new.ut_visible_by, new.ut_ref_creation_date);
 RETURN new;
 END;
 $BODY$
 language plpgsql;
-DROP TRIGGER IF EXISTS trigger_added_utxo ON c_trx_utxos;
-CREATE TRIGGER trigger_added_utxo  AFTER INSERT ON c_trx_utxos FOR EACH ROW EXECUTE PROCEDURE added_utxo();
+DROP TRIGGER IF EXISTS trigger_added_utxo ON c_trx_coins;
+CREATE TRIGGER trigger_added_utxo  AFTER INSERT ON c_trx_coins FOR EACH ROW EXECUTE PROCEDURE added_utxo();
 CREATE OR REPLACE FUNCTION deleted_utxo() RETURNS TRIGGER AS
 $BODY$
 BEGIN
 INSERT INTO
-cdev_logs_trx_utxos(ul_action, ul_creation_date, ul_ref_loc, ul_o_address, ul_o_value, ul_visible_by, ul_ref_creation_date)
+cdev_logs_trx_coins(ul_action, ul_creation_date, ul_ref_loc, ul_o_address, ul_o_value, ul_visible_by, ul_ref_creation_date)
 VALUES('del', old.ut_creation_date, old.ut_coin, old.ut_o_address, old.ut_o_value, old.ut_visible_by, old.ut_ref_creation_date);
 RETURN old;
 END;
 $BODY$
 language plpgsql;
-DROP TRIGGER IF EXISTS  trigger_deleted_utxo ON c_trx_utxos;
-CREATE TRIGGER trigger_deleted_utxo BEFORE DELETE ON c_trx_utxos FOR EACH ROW EXECUTE PROCEDURE deleted_utxo();
+DROP TRIGGER IF EXISTS  trigger_deleted_utxo ON c_trx_coins;
+CREATE TRIGGER trigger_deleted_utxo BEFORE DELETE ON c_trx_coins FOR EACH ROW EXECUTE PROCEDURE deleted_utxo();
 
--- insert into c_trx_utxos (ut_creation_date,ut_coin,ut_o_address,ut_o_value,ut_visible_by,ut_ref_creation_date)
+-- insert into c_trx_coins (ut_creation_date,ut_coin,ut_o_address,ut_o_value,ut_visible_by,ut_ref_creation_date)
 -- values ('2019-01-14 09:45:34', 'refLoc', 'oAdd', '1212', 'utVis32', 'utRef');
 
 INSERT INTO c_kvalue (kv_key, kv_value, kv_last_modified) VALUES ('k1', 'v1', 'm1');

@@ -2,7 +2,7 @@ DROP FUNCTION IF EXISTS drop_tables;
 CREATE OR REPLACE FUNCTION drop_tables() RETURNS void AS
 $$
 
-DROP TRIGGER IF EXISTS trigger_added_utxo ON c_trx_utxos;
+DROP TRIGGER IF EXISTS trigger_added_coin ON c_trx_coins;
 DROP TRIGGER IF EXISTS trigger_c_shares_calc_shares ON c_shares;
 
 DROP TABLE IF EXISTS c_administrative_pollings;
@@ -55,12 +55,14 @@ DROP TABLE IF EXISTS c_trx_rejected_transactions;
 DROP TABLE IF EXISTS c_trx_spend;
 DROP TABLE IF EXISTS c_trx_suspect_transactions;
 DROP TABLE IF EXISTS c_trx_output_time_locked;
-DROP TABLE IF EXISTS c_trx_utxos;
+DROP TABLE IF EXISTS c_trx_coins;
 DROP TABLE IF EXISTS c_wiki_contents;
 DROP TABLE IF EXISTS c_wiki_pages;
 DROP TABLE IF EXISTS cdev_inbox_logs;
-DROP TABLE IF EXISTS cdev_logs_trx_utxos;
+DROP TABLE IF EXISTS cdev_logs_trx_coins;
 DROP TABLE IF EXISTS cdev_parsing_q;
 DROP TABLE IF EXISTS cdev_sending_q;
 
 $$ LANGUAGE sql;
+
+select drop_tables();

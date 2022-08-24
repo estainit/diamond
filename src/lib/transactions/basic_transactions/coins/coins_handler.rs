@@ -6,8 +6,8 @@ use crate::{application, machine};
 
 /*
 
-pub static C_TRX_UTXOS: &str = "c_trx_utxos";
-pub static C_TRX_UTXOS_fields: Vec<&str> = vec!["ut_id", "ut_creation_date", "ut_coin", "ut_o_address", "ut_o_value", "ut_visible_by", "ut_ref_creation_date"];
+pub static C_TRX_COINS: &str = "c_trx_coins";
+pub static C_TRX_COINS_fields: Vec<&str> = vec!["ut_id", "ut_creation_date", "ut_coin", "ut_o_address", "ut_o_value", "ut_visible_by", "ut_ref_creation_date"];
  */
 
 //old_name_was loopCoinCleaner
@@ -86,7 +86,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
   if (c_date == "")
     c_date = application().get_now();
 
-  String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + C_TRX_UTXOS +
+  String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + C_TRX_COINS +
   " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";
   QueryRes distinct_blocks = DbModel::customQuery(
     "db_comen_spendable_coins",
@@ -114,7 +114,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
 
     // avoid duplicate constraint error
     QueryRes candid_res = DbModel::select(
-      C_TRX_UTXOS,
+      C_TRX_COINS,
       {"ut_coin"},
       {{"ut_visible_by", to_be_deleted_blcok}},
       {},
@@ -129,7 +129,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
     {
 
       QueryRes existed_res = DbModel::select(
-        C_TRX_UTXOS,
+        C_TRX_COINS,
         {"ut_coin"},
         {{"ut_visible_by", a_descendent_block.value("b_hash").to_string()}},
         {},
@@ -149,7 +149,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
         for (StringList a_chunk: updateable_chunks)
         {
           DbModel::update(
-            C_TRX_UTXOS,
+            C_TRX_COINS,
             {{"ut_visible_by", a_descendent_block.value("b_hash").to_string()}},
             {{"ut_visible_by", to_be_deleted_blcok},
             {"ut_coin", a_chunk, "IN"}},
@@ -162,7 +162,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
     if (descendent_blocks.len() > 0)
     {
       DbModel::dDelete(
-        C_TRX_UTXOS,
+        C_TRX_COINS,
         {{"ut_visible_by", to_be_deleted_blcok}},
         true,
         false);
@@ -222,7 +222,7 @@ QVDRecordsT UTXOHandler::searchInSpendableCoins(
       complete_fields.push(a_field);
   }
 
-  complete_query += " FROM  " + C_TRX_UTXOS + " ";
+  complete_query += " FROM  " + C_TRX_COINS + " ";
 
   QueryElements qElms = DbModel::pre_query_generator(clauses, order);
   complete_query += qElms.m_clauses;
@@ -256,7 +256,7 @@ void UTXOHandler::inheritAncestorsVisbility(
   // clog.trx.info(`inherit AncestorsVisbility: ${JSON.stringify(args)}`)
   // clog.trx.info(`ancestor_blocks==============================: ${ancestor_blocks}`)
   QueryRes currentVisibility = DbModel::select(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     {"ut_coin", "ut_o_address", "ut_o_value", "ut_ref_creation_date"},
     {{"ut_visible_by", ancestor_blocks, "IN"}},
     {},
@@ -277,7 +277,8 @@ void UTXOHandler::inheritAncestorsVisbility(
   }
 }
 
-bool UTXOHandler::addNewUTXO(
+// old name was addNewUTXO
+bool UTXOHandler::add_new_coin(
   const CDateT& creation_date,
   const CCoinCodeT& the_coin,
   const CBlockHashT visible_by,
@@ -313,7 +314,7 @@ bool UTXOHandler::addNewUTXO(
   }
 
   QueryRes dblChk = DbModel::select(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     {"ut_coin"},
     {{"ut_coin", the_coin},
     {"ut_visible_by", visible_by}},
@@ -338,7 +339,7 @@ bool UTXOHandler::addNewUTXO(
     {"ut_ref_creation_date", coin_creation_date}
   };
   bool res = DbModel::insert(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     values,
     true,
     false);
@@ -364,7 +365,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, c
     if (!do_control)
     {
       DbModel::dDelete(
-        C_TRX_UTXOS,
+        C_TRX_COINS,
         {{"ut_visible_by", a_block}},
         false,
         false);
@@ -373,7 +374,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, c
 
 
     QueryRes removing_candidates = DbModel::select(
-      C_TRX_UTXOS,
+      C_TRX_COINS,
       {"ut_coin", "ut_visible_by", "ut_creation_date"},
       {{"ut_visible_by", a_block}},
       {},
@@ -388,7 +389,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, c
     {
       // control if the utxo already is visible by some newer blocks?
       QueryRes younger_visibility_of_coins = DbModel::select(
-        C_TRX_UTXOS,
+        C_TRX_COINS,
         {"ut_coin", "ut_visible_by"},
         {{"ut_coin", a_coin.value("ut_coin")},
         {"ut_creation_date", a_coin.value("ut_creation_date"), ">"}},
@@ -440,7 +441,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, c
       if (!unremoveable_blocks.contains(a_block))
       {
         DbModel::dDelete(
-          C_TRX_UTXOS,
+          C_TRX_COINS,
           {{"ut_visible_by", a_block},
           {"ut_coin", a_coin.value("ut_coin").to_string()}},
           true,
@@ -478,7 +479,7 @@ bool UTXOHandler::removeCoin(const CCoinCodeT& the_coin)
 {
 //  CLog::log("remove an spent coin(" + cutils::shortCoinRef(the_coin) + ")", "trx", "trace");
   DbModel::dDelete(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     {{"ut_coin", the_coin}},
     true,
     false);
@@ -501,7 +502,7 @@ bool UTXOHandler::removeUsedCoinsByBlock(const Block* block)
 std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
 {
   QueryRes res = DbModel::select(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     {"ut_coin", "ut_o_value", "ut_ref_creation_date", "ut_visible_by"},
     {},
     {{"ut_ref_creation_date", "ASC"},
@@ -545,7 +546,7 @@ QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const StringList& addresses)
   auto[clauses_, values_] = DbModel::clauses_query_generator({{"ut_o_address", addresses, "IN"}});
 
   String complete_query = "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date ";
-  complete_query += "FROM " + C_TRX_UTXOS + " WHERE " + clauses_;
+  complete_query += "FROM " + C_TRX_COINS + " WHERE " + clauses_;
   complete_query += "GROUP BY ut_coin, ut_o_address, ut_o_value ORDER BY min(ut_ref_creation_date), ut_o_address, ut_o_value";
 
   QueryRes utxos = DbModel::customQuery(
@@ -570,7 +571,7 @@ QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const StringList& addresses)
 
 QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
 {
-  String complete_query = "SELECT DISTINCT ut_visible_by, ut_coin, ut_o_address, ut_o_value FROM " + C_TRX_UTXOS + " ORDER BY ut_visible_by, ut_coin, ut_o_address, ut_o_value";
+  String complete_query = "SELECT DISTINCT ut_visible_by, ut_coin, ut_o_address, ut_o_value FROM " + C_TRX_COINS + " ORDER BY ut_visible_by, ut_coin, ut_o_address, ut_o_value";
   QueryRes utxos = DbModel::customQuery(
     "db_comen_spendable_coins",
     complete_query,
@@ -671,7 +672,7 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
 void UTXOHandler::assignCacheCoinsVisibility()
 {
   QueryRes existed = DbModel::select(
-    C_TRX_UTXOS,
+    C_TRX_COINS,
     {"ut_coin", "ut_visible_by"});
   String tmp_vis_coin = "";
   for (QVDicT elm: existed.records)

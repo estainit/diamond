@@ -18,7 +18,6 @@ pub struct AppParams {
     m_app_config_source: String,
     m_app_hard_root_path: String,
     m_app_launch_date: String,
-    m_app_cycle_length: u32,
 
     m_app_db_host: String,
     m_app_db_name: String,
@@ -47,7 +46,6 @@ impl AppParams {
             m_app_config_source: "".to_string(),
             m_app_hard_root_path: "".to_string(),
             m_app_launch_date: "".to_string(),
-            m_app_cycle_length: 0,
 
             m_app_db_host: "".to_string(),
             m_app_db_name: "".to_string(),
@@ -60,7 +58,6 @@ impl AppParams {
         self.m_app_clone_id = machine.get_app_clone_id();
         self.m_app_is_develop_mod = machine.is_develop_mod();
         self.m_app_launch_date = machine.get_launch_date();
-        self.m_app_cycle_length = machine.get_cycle_length();
 
         self.m_app_db_host = machine.m_db_host.clone();
         self.m_app_db_name = machine.m_db_name.clone();
@@ -76,12 +73,13 @@ impl AppParams {
         true
     }
 
-    pub fn id(&self) -> i8 {
-        self.m_app_clone_id
+    pub fn cycle_length(&self) -> u32 {
+        1
+        // in test environment it would be 10, for 10 minutes
     }
 
-    pub fn cycle_length(&self) -> u32 {
-        self.m_app_cycle_length
+    pub fn id(&self) -> i8 {
+        self.m_app_clone_id
     }
 
     pub fn root_path(&self) -> String {

@@ -382,14 +382,15 @@ QVDRecordsT DAG::excludeFloatingBlocks(
   return block_records;
 }
 
-void DAG::updateUtxoImported(
+// old name was updateUtxoImported
+void DAG::set_coins_import_status(
   const String& block_hash,
   const String& status)
 {
   CLog::log("update Utxo is Imported Block(" + cutils::hash8c(block_hash) + ") to imported(" + status + ")", "trx", "info");
   DbModel::update(
     stbl_blocks,
-    {{"b_utxo_imported", status}},
+    {{"b_coins_imported", status}},
     {{"b_hash", block_hash}});
 
   // update also cached blocks
@@ -450,7 +451,7 @@ pub fn do_prerequisities_remover() -> bool
         StringList pre = cutils::unpackCommaSeperated(a_cpack["pq_prerequisites"].to_string());
         ClausesT clauses = {{"b_hash", pre, "IN"}};
         // if (machine.is_in_sync_process())
-        //     query.push(['b_utxo_imported', 'Y'])    // to avoid removing prerequisities, before importing UTXOs
+        //     query.push(['b_coins_imported', 'Y'])    // to avoid removing prerequisities, before importing UTXOs
         if (pre.len() > 0)
         {
           QVDRecordsT existedBlocksInDAG = DAG::searchInDAG(clauses, {"b_hash"});
@@ -556,7 +557,7 @@ std::vector<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoin
 std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlocks()
 {
   QVDRecordsT wBlocks = searchInDAG(
-    {{"b_utxo_imported", constants::NO},
+    {{"b_coins_imported", constants::NO},
     {"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}, "NOT IN"},
     {"b_type", StringList{constants::block_types::COINBASE}, "IN"}});
 
@@ -609,7 +610,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
 std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
 {
   QVDRecordsT wBlocks = searchInDAG(
-    {{"b_utxo_imported", constants::NO},
+    {{"b_coins_imported", constants::NO},
     {"b_type", StringList{constants::BLOCK_TYPES::Normal, "IN"}}});
   CMPAIValueT sum = 0;
   QHash<CDocHashT, int64_t> maybe_dbl_spends = {};
@@ -710,7 +711,7 @@ std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlo
 
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_type", constants::block_types::COINBASE}},
-    {"b_cycle", "b_body", "b_utxo_imported"},
+    {"b_cycle", "b_body", "b_coins_imported"},
     {{"b_creation_date", "ASC"}});
 
   for (QVDicT wBlock: wBlocks)
@@ -748,7 +749,7 @@ std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlo
     if (blockMissedPAIs > 0)
        burned_by_block[block_hash] = blockMissedPAIs;
 
-    if (wBlock["b_utxo_imported"].to_string() == constants::NO)
+    if (wBlock["b_coins_imported"].to_string() == constants::NO)
        waited_coinbases_to_be_spendable += block_outputs_sum;
   }
 

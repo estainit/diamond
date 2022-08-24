@@ -10,7 +10,7 @@ use crate::lib::dlog::dlog;
 pub fn loop_import_coinbase_coins()
 {
     println!("DDDDDDDD1: {}", application().should_loop_threads());
-    let thread_prefix = "import_coinbase_UTXOs_".to_string();
+    let thread_prefix = "import_coinbase_coins_".to_string();
     let thread_code = format!("{:?}", thread::current().id());
     println!("thread id: {:?}", thread_code);
     // dlog(
@@ -27,7 +27,7 @@ pub fn loop_import_coinbase_coins()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
         let now_ = application().get_now();
-        import_coinbased_coins(&now_);
+        import_minted_coins(&now_);
         /*
 
         // double checking repayblock importing
@@ -36,7 +36,7 @@ pub fn loop_import_coinbase_coins()
         if ( (constants::DATABASAE_AGENT == "sqlite") && (CMachine::shouldLoopThreads()) )
         {
         // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-        NormalUTXOHandler::doImportUTXOs(application().get_now());
+        do_import_coins(application().get_now());
 
         PollingHandler::doConcludeTreatment();
 
@@ -57,17 +57,17 @@ pub fn loop_import_coinbase_coins()
 }
 
 //old_name_was importCoinbasedUTXOs
-pub fn import_coinbased_coins(c_date: &CDateT)
+pub fn import_minted_coins(c_date: &CDateT)
 {
-    dlog(&format!("import Coinbased UTXOs {}", c_date.clone()), constants::Modules::App, constants::SecLevel::TmpDebug);
+    dlog(&format!("import Coinbased coins {}", c_date.clone()), constants::Modules::App, constants::SecLevel::TmpDebug);
 
-    // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_utxos
+    // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_coins
     let max_creation_date = application().get_cb_coins_date_range(&c_date).to;
-    dlog(&format!("Extract maturated coinbase UTXOs created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::TmpDebug);
+    dlog(&format!("Extract maturated coinbase coins created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::TmpDebug);
     /*
       QVDRecordsT coinbases = DAG::searchInDAG(
           {{"b_type", constants::block_types::COINBASE},
-           {"b_utxo_imported", constants::NO},
+           {"b_coins_imported", constants::NO},
            {"b_creation_date", maxCreationDate, "<="}},
           {"b_hash", "b_body"},
           {{"b_creation_date", "ASC"}});
@@ -93,7 +93,7 @@ pub fn import_coinbased_coins(c_date: &CDateT)
           cutils::exiter("maleformed recorded Coinbase block(" + a_coinbase_record.value("b_hash").to_string() + ")!", 76);
         }
 
-        // since we examinate Coinbases from 2 cycle past, then we must be sure the entire precedents has visibility of these UTXOs
+        // since we examinate Coinbases from 2 cycle past, then we must be sure the entire precedents has visibility of these coins
         auto [status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(block.value("bHash").to_string());
         Q_UNUSED(status);
         Q_UNUSED(validity_percentage);
@@ -129,7 +129,7 @@ pub fn import_coinbased_coins(c_date: &CDateT)
             for (QVDicT a_block_record : descendent_blocks)
             {
               CLog::log("Importing Coinbase block Coins Block(" + cutils::hash8c(block.value("bHash").to_string()) + ")", "trx", "info");
-              UTXOHandler::addNewUTXO(
+              UTXOHandler::add_new_coin(
                   a_block_record.value("b_creation_date").to_string(),
                   the_coin,
                   a_block_record.value("b_hash").to_string(),
@@ -149,8 +149,8 @@ pub fn import_coinbased_coins(c_date: &CDateT)
               descendent_blocks);
         }
 
-        // update utxo_imported
-        DAG::updateUtxoImported(block.value("bHash").to_string(), constants::YES);
+        // update coins are imported
+        DAG::set_coins_import_status(block.value("bHash").to_string(), constants::YES);
 
         // end of transactional block of coinbase UTXO importing: FIXME: implement it ASAP
       }

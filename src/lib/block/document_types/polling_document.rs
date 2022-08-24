@@ -227,7 +227,7 @@ impl PollingDocument
     // old name was importPollingsCost
     void PollingDocument::importCostsToTreasury(
       const Block* block,
-      UTXOImportDataContainer* block_inspect_container)
+      CoinImportDataContainer* block_inspect_container)
     {
       QHash<CDocHashT, CostPaymentStatus> cost_payment_status {};
 
@@ -285,7 +285,7 @@ impl PollingDocument
 
             } else {
               CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_POLLING)", "sec", "error");
-              CLog::log("cost_payment_status not payed: " + UTXOImportDataContainer::dumpMe(cost_payment_status[polling_hash]), "sec", "error");
+              CLog::log("cost_payment_status not payed: " + CoinImportDataContainer::dumpMe(cost_payment_status[polling_hash]), "sec", "error");
 
               PollingHandler::removePollingG(polling_hash);
 

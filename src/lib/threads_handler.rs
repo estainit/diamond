@@ -1,14 +1,14 @@
 use std::thread::sleep;
 use std::time::Duration;
 use crate::{application, machine};
-use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::import_coinbased_coins;
+use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::import_minted_coins;
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
 use crate::lib::block::block_types::block_coinbase::coinbase_issuer::maybe_create_coinbase_block;
 use crate::lib::block::block_types::block_repayback::repayback_block::import_double_check;
 use crate::lib::dag::dag::do_prerequisities_remover;
 use crate::lib::dag::missed_blocks_handler::refresh_missed_block;
-use crate::lib::dag::normal_block::normal_utxo_handler::do_import_coins;
+use crate::lib::dag::normal_block::normal_coins_handler::do_import_coins;
 use crate::lib::file_buffer_handler::file_buffer_handler::{do_read_and_parse_hard_disk_inbox, maybe_boot_dag_from_bundle};
 use crate::lib::messaging_protocol::dag_message_handler::do_missed_blocks_invoker;
 use crate::lib::network::email::{received_email_checks, send_private_email, send_public_email};
@@ -44,14 +44,14 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
         {
             // import new minted coins
             let now_ = application().get_now();
-            import_coinbased_coins(&now_);
+            import_minted_coins(&now_);
 
             // double checking repayblock importing
             import_double_check();
             if constants::DATABASAE_AGENT == "sqlite"
             {
                 // // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-                // NormalUTXOHandler::doImportUTXOs(application().get_now());
+                // do_import_coins(application().get_now());
                 // PollingHandler::doConcludeTreatment();
                 // ParsingQHandler::smartPullQ();
             }

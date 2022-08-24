@@ -11,8 +11,8 @@ pub mod merkel_tests_3 {
                 root,
                 proofs,
                 _version,
-                levels,
-                leaves) =
+                _levels,
+                _leaves) =
                 cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                     &"hashed".to_string(),
                                     &"noHash".to_string(),
@@ -67,10 +67,10 @@ pub mod merkel_tests_3 {
         {
             let (
                 root,
-                proofs,
+                _proofs,
                 _version,
-                levels,
-                leaves) =
+                _levels,
+                _leaves) =
                 cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                     &"hashed".to_string(),
                                     &"aliasHash".to_string(),
@@ -82,10 +82,10 @@ pub mod merkel_tests_3 {
         {
             let (
                 root,
-                proofs,
+                _proofs,
                 _version,
-                levels,
-                leaves) =
+                _levels,
+                _leaves) =
                 cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                     &"string".to_string(),
                                     &"aliasHash".to_string(),
@@ -99,8 +99,8 @@ pub mod merkel_tests_3 {
                 root,
                 proofs,
                 _version,
-                levels,
-                leaves) =
+                _levels,
+                _leaves) =
                 cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                     &"string".to_string(),
                                     &"".to_string(),
@@ -155,10 +155,10 @@ pub mod merkel_tests_3 {
     pub fn test_3_leaves_b() {
         let (
             root,
-            proofs,
+            _proofs,
             _version,
-            levels,
-            leaves) =
+            _levels,
+            _leaves) =
             cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                 &"".to_string(),
                                 &"".to_string(),
@@ -172,8 +172,8 @@ pub mod merkel_tests_3 {
             root,
             proofs,
             _version,
-            levels,
-            leaves) =
+            _levels,
+            _leaves) =
             cmerkle::generate_m(vec!["1".to_string(), "2".to_string(), "3".to_string()],
                                 &"hashed".to_string(),
                                 &"noHash".to_string(),
@@ -214,10 +214,10 @@ pub mod merkel_tests_3 {
     pub fn test_3_leaves_d() {
         let (
             root,
-            proofs,
+            _proofs,
             _version,
-            levels,
-            leaves) =
+            _levels,
+            _leaves) =
             cmerkle::generate_m(vec![
                 "98325468840887230d248330de2c99f76750d131aa6076dbd9e9a0ab20f09fd0".to_string(),
                 "ff1da71d8a78d13fd280d29c3f124e6e97b78a5c8317a2a9ff3d6c5f7294143f".to_string(),

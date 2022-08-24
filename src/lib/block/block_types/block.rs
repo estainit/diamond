@@ -57,7 +57,7 @@ use crate::lib::file_handler::file_handler::file_write;
 //     // the block confirmation date in local node
 //     m_block_backer: String,
 //     // the BECH32 address of who got paid because of creating this block
-//     m_utxo_imported: String, // does UTXO imported to i_trx_utxo table?
+//     m_coin_imported: String, // does UTXO imported to i_trx_utxo table?
 //
 //     /*
 //
@@ -245,8 +245,8 @@ impl Block {
         m_confirm_date = values.value("b_confirm_date", "").to_string();
       if (values.value("b_backer", "").to_string() != "")
         m_block_backer = values.value("b_backer", "").to_string();
-      if (values.value("b_utxo_imported", "").to_string() != "")
-        m_utxo_imported = values.value("b_utxo_imported", "").to_string();
+      if (values.value("b_coins_imported", "").to_string() != "")
+        m_coin_imported = values.value("b_coins_imported", "").to_string();
       return true;
     }
 
@@ -768,7 +768,7 @@ impl Block {
         let b_trxs_count = 0;
         let b_receive_date = application().get_now();
         let b_confirm_date = application().get_now();
-        let b_utxo_imported = constants::NO.to_string();
+        let b_coins_imported = constants::NO.to_string();
 
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("b_hash", &self.m_block_hash as &(dyn ToSql + Sync)),
@@ -790,7 +790,7 @@ impl Block {
             ("b_backer", &self.m_block_backer as &(dyn ToSql + Sync)),
             ("b_receive_date", &b_receive_date as &(dyn ToSql + Sync)),
             ("b_confirm_date", &b_confirm_date as &(dyn ToSql + Sync)),
-            ("b_utxo_imported", &b_utxo_imported as &(dyn ToSql + Sync))]);
+            ("b_coins_imported", &b_coins_imported as &(dyn ToSql + Sync))]);
 
         dlog(
             &format!("--- recording block in DAG Block({})", cutils::hash8c(&self.m_block_hash)),

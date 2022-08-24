@@ -6,7 +6,7 @@ pub mod merkel_tests_2 {
 
     #[test]
     pub fn test_premutations_1() {
-        let mut hp = PermutationHandler::new(
+        let hp = PermutationHandler::new(
             &vec!["a".to_string()],
             1,
             true,
@@ -17,7 +17,7 @@ pub mod merkel_tests_2 {
 
     #[test]
     pub fn test_premutations_2() {
-        let mut hp = PermutationHandler::new(
+        let hp = PermutationHandler::new(
             &vec!["a".to_string(), "b".to_string()],
             1,
             true,
@@ -29,7 +29,7 @@ pub mod merkel_tests_2 {
     #[test]
     pub fn test_premutations_3() {
         {
-            let mut hp = PermutationHandler::new(
+            let hp = PermutationHandler::new(
                 &vec!["a".to_string(), "b".to_string(), "c".to_string()],
                 2,
                 true,

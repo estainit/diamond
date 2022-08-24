@@ -301,14 +301,14 @@ impl ProposalDocument {
 
     void ProposalDocument::importCostsToTreasury(
       const Block* block,
-      UTXOImportDataContainer* block_inspect_container)
+      CoinImportDataContainer* block_inspect_container)
     {
 
       QHash<CDocHashT, CostPaymentStatus> cost_payment_status {};
 
       if (block_inspect_container.m_block_alter_treasury_incomes.contains("TP_PROPOSAL"))
       {
-        CLog::log("Try to import TP_PROPOSAL for block(" + cutils::hash8c(block->getBlockHash()) + "): " + UTXOImportDataContainer::dumpMe(block_inspect_container.m_block_alter_treasury_incomes["TP_PROPOSAL"]), "trx", "trace");
+        CLog::log("Try to import TP_PROPOSAL for block(" + cutils::hash8c(block->getBlockHash()) + "): " + CoinImportDataContainer::dumpMe(block_inspect_container.m_block_alter_treasury_incomes["TP_PROPOSAL"]), "trx", "trace");
 
         QSDicT mapPledgeHashToPayerTrxHash {};
         QSDicT mapProposalToPledgedContract {};
@@ -422,7 +422,7 @@ impl ProposalDocument {
 
           } else {
               CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "sec", "error");
-              CLog::log("Failed cost_payment_status: Proposal(" + cutils::hash8c(proposal_hash) + ")" + UTXOImportDataContainer::dumpMe(cost_payment_status[proposal_hash]), "sec", "error");
+              CLog::log("Failed cost_payment_status: Proposal(" + cutils::hash8c(proposal_hash) + ")" + CoinImportDataContainer::dumpMe(cost_payment_status[proposal_hash]), "sec", "error");
 
               // since by adding block to DAG, the proposals(and related pollings) also were added to DAG, and after 12 hours we found the payment
               // for that particulare proposal is failed, so we must remove both (proposal & polling) from data base

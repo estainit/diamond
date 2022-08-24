@@ -29,7 +29,7 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
 
   QVDRecordsT existed_record_blocks = DAG::searchInDAG(
     {{"b_hash", block->m_ancestors, "IN"}},
-    {"b_hash", "b_creation_date", "b_type", "b_utxo_imported"});
+    {"b_hash", "b_creation_date", "b_type", "b_coins_imported"});
   StringList existed_hashes;
   for (QVDicT a_block_record: existed_record_blocks)
     existed_hashes.append(a_block_record.value("b_hash").to_string());
@@ -117,8 +117,8 @@ std::tuple<bool, bool> ParsingQHandler::ancestorsConroll(const String& pq_type, 
       "app", "trace");
 
 //    // manually calling import threads to import ancestors coins (if they are eligible)
-//    NormalUTXOHandler::doImportUTXOs(block->m_block_creation_date);
-//    CoinbaseUTXOHandler::importCoinbasedUTXOs(oldestAncestorCreationDate);
+//    do_import_coins(block->m_block_creation_date);
+//    import_minted_coins(oldestAncestorCreationDate);
 
     return {true, false};
 

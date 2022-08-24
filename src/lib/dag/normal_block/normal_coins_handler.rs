@@ -12,7 +12,7 @@ use crate::lib::utils::dumper::dump_it;
 #[allow(unused, dead_code)]
 pub fn loop_import_normal_coins()
 {
-    let thread_prefix = "import_normal_UTXOs_".to_string();
+    let thread_prefix = "import_normal_coins_".to_string();
     let thread_code = format!("{:?}", thread::current().id());
 
     // dlog(
@@ -59,19 +59,19 @@ pub fn do_import_coins(c_date_: &CDateT)
 #[allow(unused, dead_code)]
 pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
 {
-    //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos
+    //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_coins
     let back_in_time = application().get_cycle_by_minutes() as u64;
     let min_creation_date = application().minutes_before(
         back_in_time,
         c_date);
 
     dlog(
-        &format!("importing matured UTXOs(Nornam Block) before({})", min_creation_date.clone()),
+        &format!("importing matured Coins(Normal Block) before({})", min_creation_date.clone()),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
 
     let b_type = constants::block_types::NORMAL.to_string();
-    let b_utxo_imported = constants::NO.to_string();
+    let b_coins_imported = constants::NO.to_string();
     let mut clauses: ClausesT = vec![
         // ModelClause {
         //     m_field_name: "b_type",
@@ -80,7 +80,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         //     m_field_multi_values: vec![&constants::block_types::Normal.to_string() as &(dyn ToSql + Sync)],
         // },
         simple_eq_clause("b_type", &b_type),
-        simple_eq_clause("b_utxo_imported", &b_utxo_imported),
+        simple_eq_clause("b_coins_imported", &b_coins_imported),
         ModelClause {
             m_field_name: "b_creation_date",
             m_field_single_str_value: &min_creation_date as &(dyn ToSql + Sync),
@@ -99,7 +99,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         //  * so we control if machine was in sync mode in last 12 hours? if no we add the b_receive_date condition
         let last_sync_status: JSonObject = machine().get_last_sync_status();
         dlog(
-            &format!("last SyncStatus in import Normal Block UTXOs: {}", dump_it(&last_sync_status)),
+            &format!("last SyncStatus in import Normal Block coins: {}", dump_it(&last_sync_status)),
             constants::Modules::Trx,
             constants::SecLevel::TmpDebug);
 
@@ -143,7 +143,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
         return;
       }
 
-      UTXOImportDataContainer* block_inspect_container = new UTXOImportDataContainer;
+      CoinImportDataContainer* block_inspect_container = new CoinImportDataContainer;
       Block* block = {};
 
       for (QVDicT wBlock: wBlocks)
@@ -153,9 +153,9 @@ pub fn import_normal_block_coins(c_date: &CDateT)
 
         JSonObject blockJ = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock.value("b_body").to_string()).content);
         block = BlockFactory::create(blockJ);
-        CLog::log("Extract matured UTXOs(NormalBlock) on c_date(" + c_date + ") from block(" + cutils::hash8c(wBlock.value("b_hash").to_string()) + ") created on(" + block.m_block_creation_date + ")", "trx", "info");
+        CLog::log("Extract matured coins(NormalBlock) on c_date(" + c_date + ") from block(" + cutils::hash8c(wBlock.value("b_hash").to_string()) + ") created on(" + block.m_block_creation_date + ")", "trx", "info");
 
-        UTXOAnalyzer::analyzeBlockUsedCoins(block_inspect_container, block);
+        analyzeBlockUsedCoins(block_inspect_container, block);
 
         block_inspect_container.m_DPCost_coin_codes = {};
         for (CDocHashT a_key: block_inspect_container.m_a_single_trx_DPCost.keys())
@@ -261,7 +261,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
           // import backer's income
           CLog::log("Importing Normal block Coins(Backer) Block(" + cutils::hash8c(block->getBlockHash()) + ") ", "trx", "info");
           for (auto aWBlock: wBlocksDescendents)
-            UTXOHandler::addNewUTXO(
+            UTXOHandler::add_new_coin(
               aWBlock.value("b_creation_date").to_string(),
               block_inspect_container.m_block_DPCost_backer.m_coin,
               aWBlock.value("b_hash").to_string(),
@@ -336,10 +336,10 @@ pub fn import_normal_block_coins(c_date: &CDateT)
               continue;
 
             // looping on all descendents of current block, to be sure all desacendent can see thei utxo in their history
-            CLog::log("Final Importing Normal block Coins" + UTXOImportDataContainer::dumpCoinDetails(aUTXO) + " Block(" + cutils::hash8c(block->getBlockHash()) + ") ", "trx", "trace");
+            CLog::log("Final Importing Normal block Coins" + CoinImportDataContainer::dumpCoinDetails(aUTXO) + " Block(" + cutils::hash8c(block->getBlockHash()) + ") ", "trx", "trace");
             for (QVDicT aWBlock: wBlocksDescendents)
             {
-              UTXOHandler::addNewUTXO(
+              UTXOHandler::add_new_coin(
                 aWBlock.value("b_creation_date").to_string(),
                 aUTXO.m_coin,
                 aWBlock.value("b_hash").to_string(),
@@ -355,12 +355,12 @@ pub fn import_normal_block_coins(c_date: &CDateT)
         // restoring UTXOs of rejected transactions
         for (CCoin aUTXO: block_inspect_container.m_to_be_restored_coins)
         {
-          CLog::log("a to Be Restored coin: " + UTXOImportDataContainer::dumpCoinDetails(aUTXO), "trx", "warning");
+          CLog::log("a to Be Restored coin: " + CoinImportDataContainer::dumpCoinDetails(aUTXO), "trx", "warning");
           // looping on all descendents of current block, to be sure all desacendent can see thei utxo in their history
           CLog::log("Importing Normal block Coins(restored) Block(" + cutils::hash8c(block->getBlockHash()) + ")", "trx", "info");
           for (QVDicT aWBlock: wBlocksDescendents)
           {
-            UTXOHandler::addNewUTXO(
+            UTXOHandler::add_new_coin(
               aWBlock.value("b_creation_date").to_string(),
               aUTXO.m_coin,
               aWBlock.value("b_hash").to_string(),
@@ -379,7 +379,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
 
 
         // update utxo_imported
-        DAG::updateUtxoImported(block->getBlockHash(), constants::YES);
+        DAG::set_coins_import_status(block->getBlockHash(), constants::YES);
 
         if (!CMachine::is_in_sync_process())
           CGUI::signalUpdateBlocks();

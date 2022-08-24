@@ -28,8 +28,8 @@ bool RepaybackBlock::set_by_json_obj(const JSonObject& obj)
 std::tuple<bool, bool> RepaybackBlock::handleReceivedBlock() const
 {
   // Since machine must create the repayments by itself we drop this block immidiately,
-  // in addition machine calls importCoinbasedUTXOs method to import potentially minted coins and cut the potentially repay backs in on shot
-//  CoinbaseUTXOHandler::importCoinbasedUTXOs(m_block_creation_date);
+  // in addition machine calls importCoinbased coins method to import potentially minted coins and cut the potentially repay backs in on shot
+//  import_minted_coins(m_block_creation_date);
 
   return {false, true};
 
@@ -173,7 +173,7 @@ String RepaybackBlock::safe_stringify_block(const bool ext_info_in_document) con
 }
 
 
-// this method be called regularly by importCoinbasedUTXOs in order to cut repaybacke immideately after importing minted coins
+// this method be called regularly by import Coinbased  coins in order to cut repaybacke immideately after importing minted coins
 
 void RepaybackBlock::createRepaymentBlock(
   const JSonObject& related_coinbase_block,
@@ -234,7 +234,7 @@ void RepaybackBlock::createRepaymentBlock(
   tmp_repay_block->addBlockToDAG();
 
   // immediately update imported of related coinbase block
-  DAG::updateUtxoImported(related_coinbase_block.value("bHash").to_string(), constants::YES);
+  DAG::set_coins_import_status(related_coinbase_block.value("bHash").to_string(), constants::YES);
   tmp_repay_block->postAddBlockToDAG();
 
 
@@ -251,11 +251,11 @@ void RepaybackBlock::createRepaymentBlock(
     {
       auto an_output = a_doc.m_outputs[out_inx];
       String coin = cutils::packCoinCode(a_doc.m_doc_hash, out_inx);
-      // immediately import newly created UTXOs and make it visible for all decendent blocks
+      // immediately import newly created  coins and make it visible for all decendent blocks
       for (QVDicT a_block_record: descendent_blocks)
       {
-        CLog::log("insert new utxo(because of Repayment) the coin(" + coin + ")", "trx", "info");
-        UTXOHandler::addNewUTXO(
+        CLog::log("insert new coin(because of Repayment) the coin(" + coin + ")", "trx", "info");
+        UTXOHandler::add_new_coin(
           a_block_record.value("b_creation_date").to_string(),
           coin,
           a_block_record.value("b_hash").to_string(),  //visibleBy
@@ -266,7 +266,7 @@ void RepaybackBlock::createRepaymentBlock(
       }
     }
   }
-  DAG::updateUtxoImported(tmp_repay_block.m_block_hash, constants::YES);
+  DAG::set_coins_import_status(tmp_repay_block.m_block_hash, constants::YES);
 
   delete tmp_repay_block;
 }
@@ -279,7 +279,7 @@ pub fn import_double_check()
 {
     /*
       QVDRecordsT not_imported = DAG::searchInDAG(
-        {{"b_type", constants::BLOCK_TYPES::RpBlock}, {"b_utxo_imported", constants::NO}},
+        {{"b_type", constants::BLOCK_TYPES::RpBlock}, {"b_coins_imported", constants::NO}},
         {"b_hash", "b_body"});
       if (not_imported.len() > 0)
       {
@@ -305,11 +305,11 @@ pub fn import_double_check()
             {
               JSonArray an_output = outputs[out_inx].toArray();
               String coin = cutils::packCoinCode(a_doc.value("dHash").to_string(), out_inx);
-              // immediately import newly created UTXOs and make it visible for all decendent blocks
+              // immediately import newly created  coins and make it visible for all decendent blocks
               for (QVDicT a_block_record: descendent_blocks)
               {
-                CLog::log("insert new utxo(because of 'MISSED!' Repayment) the coin(" + coin + ")", "trx", "info");
-                UTXOHandler::addNewUTXO(
+                CLog::log("insert new coin(because of 'MISSED!' Repayment) the coin(" + coin + ")", "trx", "info");
+                UTXOHandler::add_new_coin(
                   a_block_record.value("b_creation_date").to_string(),
                   coin,
                   a_block_record.value("b_hash").to_string(),  //visibleBy
@@ -320,7 +320,7 @@ pub fn import_double_check()
               }
             }
           }
-          DAG::updateUtxoImported(a_repay_block.value("b_hash").to_string(), constants::YES);
+          DAG::set_coins_import_status(a_repay_block.value("b_hash").to_string(), constants::YES);
         }
       }
     */

@@ -9,5 +9,4 @@ email_is_active = false
 use_hard_disk_as_a_buffer = true
 
 launch_date = 2023-08-21 21:30:00
-cycle_length = 10; in live environment cycle_length must be 1, in develop mode it represents one cycle duration by minutes e.g. 5
 

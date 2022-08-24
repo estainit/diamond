@@ -233,7 +233,7 @@ pub fn refresh_cached_blocks() -> bool
         /*
         let blocks: QVDRecordsT = searchInDAG(
             &vec![],
-            &vec!["b_type", "b_hash", "b_creation_date", "b_utxo_imported"],
+            &vec!["b_type", "b_hash", "b_creation_date", "b_coins_imported"],
             &vec![
                 &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
                 &OrderModifier { m_field: "b_type", m_order: "DESC" },
@@ -263,7 +263,7 @@ pub fn refresh_cached_blocks() -> bool
 //    QVDRecordsT new_blocks = DAG::searchInDAG(
 //      {{"b_creation_date", ten_latest_block_dates[0], ">="},
 //      {"b_hash", ten_latest_block_hashes, "NOT IN"}},
-//      {"b_type", "b_hash", "b_creation_date", "b_utxo_imported"},
+//      {"b_type", "b_hash", "b_creation_date", "b_coins_imported"},
 //      {{"b_creation_date", "ASC"},
 //      {"b_type", "DESC"}});
 //    for (QVDicT a_block: new_blocks)
@@ -281,13 +281,13 @@ pub fn update_cached_blocks(
     b_type: &String,
     b_hash: &CBlockHashT,
     b_creation_date: &CDateT,
-    b_utxo_imported: &String) -> bool
+    b_coins_imported: &String) -> bool
 {
     let blocks: QVDRecordsT = vec![HashMap::from([
         ("b_type".to_string(), b_type.to_string()),
         ("b_hash".to_string(), b_hash.to_string()),
         ("b_creation_date".to_string(), b_creation_date.to_string()),
-        ("b_utxo_imported".to_string(), b_utxo_imported.to_string())])];
+        ("b_coins_imported".to_string(), b_coins_imported.to_string())])];
     machine.cached_blocks("append", blocks, &"".to_string());
 
     machine.cached_block_hashes("append", &vec![b_hash.to_string()]);

@@ -39,7 +39,7 @@ std::vector<std::string> psql_init_query_delete = {
     "DROP TABLE IF EXISTS c_trx_rejected_transactions;",
     "DROP TABLE IF EXISTS c_trx_output_time_locked;",
     "DROP TABLE IF EXISTS c_logs_time_locked;",
-    "DROP TABLE IF EXISTS c_trx_utxos;",
+    "DROP TABLE IF EXISTS c_trx_coins;",
     "DROP TABLE IF EXISTS c_machine_block_buffer;",
     "DROP TABLE IF EXISTS c_machine_tmp_contents;",
     "DROP TABLE IF EXISTS c_shares;",
@@ -62,7 +62,7 @@ std::vector<std::string> psql_init_query_delete = {
     "DROP TABLE IF EXISTS cdev_inbox_logs;",
     "DROP TABLE IF EXISTS cdev_parsing_q;",
     "DROP TABLE IF EXISTS cdev_sending_q;",
-    "DROP TABLE IF EXISTS cdev_logs_trx_utxos;"};
+    "DROP TABLE IF EXISTS cdev_logs_trx_coins;"};
 
 // *****************  Init query ************
 
@@ -120,11 +120,11 @@ pub fn psql_tables_list<'l>() -> Vec<&'l str> {
         "c_trx_spend",
         "c_trx_suspect_transactions",
         "c_trx_output_time_locked",
-        "c_trx_utxos",
+        "c_trx_coins",
         "c_wiki_contents",
         "c_wiki_pages",
         "cdev_inbox_logs",
-        "cdev_logs_trx_utxos",
+        "cdev_logs_trx_coins",
         "cdev_parsing_q",
         "cdev_sending_q"
     ];
@@ -267,7 +267,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     -- TODO: change code if this field exist, insert and if not ignored
     b_confirm_date varchar(32) NOT NULL,    -- the block confirmation date in local node
     b_backer varchar(128) NULL,    -- the BECH32 address of who got paid because of creating this block
-    b_utxo_imported varchar(1) NOT NULL DEFAULT 'N'    -- does UTXO imported to c_trx_utxo table?
+    b_coins_imported varchar(1) NOT NULL DEFAULT 'N'    -- does the coins imported to c_trx_coins table?
     );
 ",
         "
@@ -283,7 +283,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     CREATE INDEX IF NOT EXISTS  index_blocks_backer ON c_blocks(b_backer);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_blocks_utxo_imported ON c_blocks(b_utxo_imported);
+    CREATE INDEX IF NOT EXISTS  index_blocks_coins_imported ON c_blocks(b_coins_imported);
 ",
         "
     CREATE TABLE IF NOT EXISTS c_logs_block_import_report
@@ -679,7 +679,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     ot_doc_max_redeem BIGINT NOT NULL,    -- max redeem of doc inputs (by minutes)
     ot_cycle varchar(32) NOT NULL,
     ot_ref_creation_date varchar(32) NOT NULL,
-    ot_utxo_imported varchar(1) NOT NULL DEFAULT 'N'    -- does UTXO imported to c_trx_utxo table?
+    ot_coin_imported varchar(1) NOT NULL DEFAULT 'N'    -- does coins imported to c_trx_coins table?
     );
 ",
         "
@@ -694,7 +694,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE TABLE IF NOT EXISTS c_trx_utxos
+    CREATE TABLE IF NOT EXISTS c_trx_coins
     (
     ut_id bigserial primary key,
     ut_creation_date varchar(32) NOT NULL,    -- creation date of the block which mentioned in visible_by field
@@ -707,19 +707,19 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     );
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_trx_utxos_ut_creation_date ON c_trx_utxos(ut_creation_date);
+    CREATE INDEX IF NOT EXISTS  index_trx_coins_ut_creation_date ON c_trx_coins(ut_creation_date);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_trx_utxos_ut_ref_loc ON c_trx_utxos(ut_coin);
+    CREATE INDEX IF NOT EXISTS  index_trx_coins_ut_ref_loc ON c_trx_coins(ut_coin);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_trx_utxos_ut_visible_by ON c_trx_utxos(ut_visible_by);
+    CREATE INDEX IF NOT EXISTS  index_trx_coins_ut_visible_by ON c_trx_coins(ut_visible_by);
 ",
         "
-    CREATE INDEX IF NOT EXISTS  index_trx_utxos_ut_o_address ON c_trx_utxos(ut_o_address);
+    CREATE INDEX IF NOT EXISTS  index_trx_coins_ut_o_address ON c_trx_coins(ut_o_address);
 ",
         "
-    ALTER TABLE c_trx_utxos ADD CONSTRAINT c_trx_utxos_refLocVis UNIQUE (ut_coin, ut_visible_by);
+    ALTER TABLE c_trx_coins ADD CONSTRAINT c_trx_coins_refLocVis UNIQUE (ut_coin, ut_visible_by);
 ",
         "
     CREATE TABLE IF NOT EXISTS c_machine_block_buffer

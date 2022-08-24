@@ -10,8 +10,8 @@ pub mod merkel_tests_3 {
                 root,
                 proofs,
                 _version,
-                levels,
-                leaves) =
+                _levels,
+                _leaves) =
                 cmerkle::generate_m(vec![
                     "a".to_string(),
                     "b".to_string(),

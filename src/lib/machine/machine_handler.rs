@@ -64,7 +64,6 @@ pub struct CMachine {
     pub m_config_source: String,
     pub m_hard_root_path: String,
     pub m_launch_date: String,
-    pub m_cycle_length: u32,
 
     pub m_db_host: String,
     pub m_db_name: String,
@@ -125,7 +124,6 @@ impl CMachine {
             m_config_source: "".to_string(),
             m_last_sync_status_check: "2024-00-00 00:00:00".to_string(),
             m_launch_date: "2024-00-00 00:00:00".to_string(),
-            m_cycle_length: 1,
 
             m_db_host: "".to_string(),
             m_db_name: "".to_string(),
@@ -167,10 +165,6 @@ impl CMachine {
     pub fn get_app_clone_id(&self) -> i8
     {
         return self.m_clone_id;
-    }
-    pub fn get_cycle_length(&self) -> u32
-    {
-        self.m_cycle_length
     }
 
     //func name was shouldLoopThreads
@@ -616,7 +610,7 @@ impl CMachine {
                 if (coins.len() < 500)
                 {
                   QueryRes exist_coins = DbModel::select(
-                    "c_trx_utxos",
+                    "c_trx_coins",
                     {"ut_coin", "ut_creation_date", "ut_ref_creation_date", "ut_visible_by", "ut_o_address", "ut_o_value"});
                   cachedSpendableCoins("assign", exist_coins.records);
                 }
@@ -991,7 +985,7 @@ impl CMachine {
                 for a_block in blocks {
                     for i in 0..self.m_dag_cached_blocks.len() {
                         if self.m_dag_cached_blocks[i]["b_hash"].to_string() == a_block["b_hash"].to_string() {
-                            // self.m_dag_cached_blocks[i]["b_utxo_imported"] = status.to_string();
+                            // self.m_dag_cached_blocks[i]["b_coins_imported"] = status.to_string();
                         }
                     }
                 }

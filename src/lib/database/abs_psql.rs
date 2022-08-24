@@ -110,7 +110,7 @@ const QSDicT DbModel::s_map_table_to_db = {
   {"c_blocks", "db_comen_blocks"},
   {"c_docs_blocks_map", "db_comen_blocks"},
   {"c_block_extinfos", "db_comen_block_ext_info"},
-  {"c_trx_utxos", "db_comen_spendable_coins"},
+  {"c_trx_coins", "db_comen_spendable_coins"},
   {"c_trx_spend", "db_comen_spent_coins"},
   {"c_machine_wallet_addresses", "db_comen_wallets"},
   {"c_machine_wallet_funds", "db_comen_wallets"},

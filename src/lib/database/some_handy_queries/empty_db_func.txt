@@ -51,11 +51,13 @@ DELETE FROM c_trx_rejected_transactions;
 DELETE FROM c_trx_spend;
 DELETE FROM c_trx_suspect_transactions;
 DELETE FROM c_trx_output_time_locked;
-DELETE FROM c_trx_utxos;
+DELETE FROM c_trx_coins;
 DELETE FROM c_wiki_contents;
 DELETE FROM c_wiki_pages;
 DELETE FROM cdev_inbox_logs;
-DELETE FROM cdev_logs_trx_utxos;
+DELETE FROM cdev_logs_trx_coins;
 DELETE FROM cdev_parsing_q;
 DELETE FROM cdev_sending_q;
 $$ LANGUAGE sql;
+
+select drop_tables();

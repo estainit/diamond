@@ -717,7 +717,7 @@ impl Document
 
     void Document::importCostsToTreasury(
     const Block* block,
-    UTXOImportDataContainer* block_inspect_container)
+    CoinImportDataContainer* block_inspect_container)
     {
     cutils::exiter("Import Costs To Treasury not implemented for base class block Type(" + block.m_block_type + ")", 97);
     }

@@ -221,7 +221,7 @@ String INameRegDocument::calcDocExtInfoHash() const
 
 void INameRegDocument::importCostsToTreasury(
   const Block* block,
-  UTXOImportDataContainer* block_inspect_container)
+  CoinImportDataContainer* block_inspect_container)
 {
 
   QHash<CDocHashT, CostPaymentStatus> cost_payment_status {};
@@ -230,7 +230,7 @@ void INameRegDocument::importCostsToTreasury(
 
   if (block_inspect_container.m_block_alter_treasury_incomes.contains("TP_INAME_REG"))
   {
-    CLog::log("importing FleNS payments " + UTXOImportDataContainer::dumpMe(block_inspect_container.m_block_alter_treasury_incomes["TP_INAME_REG"]), "trx", "trace");
+    CLog::log("importing FleNS payments " + CoinImportDataContainer::dumpMe(block_inspect_container.m_block_alter_treasury_incomes["TP_INAME_REG"]), "trx", "trace");
 
     for (BlockAlterTreasuryIncome a_treasury_entry: block_inspect_container.m_block_alter_treasury_incomes["TP_INAME_REG"])
     {
@@ -269,7 +269,7 @@ void INameRegDocument::importCostsToTreasury(
 
       } else {
         CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_INAME_REG)", "sec", "error");
-        CLog::log("cost_payment_status not payed: " + UTXOImportDataContainer::dumpMe(cost_payment_status[iName_hash]), "sec", "error");
+        CLog::log("cost_payment_status not payed: " + CoinImportDataContainer::dumpMe(cost_payment_status[iName_hash]), "sec", "error");
 
         INameHandler::removeINameByHash(iName_hash);  // iNameInRelatedBlock.removeINameBecauseOfPaymentsFail(iName_hash);
 

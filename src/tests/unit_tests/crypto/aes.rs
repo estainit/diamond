@@ -1,8 +1,6 @@
 #[cfg(test)]
 pub mod tests_crypto_aes {
-    use substring::Substring;
     use crate::ccrypto::{aes_decrypt, aes_encrypt};
-    use crate::lib::ccrypto;
 
     #[test]
     pub fn test_autogen_aes_1() {

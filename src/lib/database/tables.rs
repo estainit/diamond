@@ -23,7 +23,7 @@ pub const C_MACHINE_WALLET_FUNDS_FIELDS: [&str; 11] = ["wf_id", "wf_mp_code", "w
 #[allow(dead_code, unused)]
 pub const C_BLOCKS: &str = "c_blocks";
 #[allow(dead_code, unused)]
-pub const C_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendants", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_utxo_imported"];
+pub const C_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendants", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_coins_imported"];
 
 #[allow(dead_code, unused)]
 pub const C_BLOCK_EXTINFOS: &str = "c_block_extinfos";

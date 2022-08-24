@@ -101,7 +101,6 @@ impl CMachine {
         self.m_hard_root_path = self.m_config_file.substring(0, self.m_config_file.len() - 11).to_string();
 
         self.m_launch_date = config.get("default", "launch_date").unwrap();
-        self.m_cycle_length = config.getuint("default", "cycle_length").unwrap().unwrap() as u32;
         self.m_last_sync_status_check = self.m_launch_date.clone();
         self.m_email_is_active = config.getbool("default", "email_is_active").unwrap().unwrap();
         self.m_use_hard_disk_as_a_buffer = Ini::getbool(&config, "default", "use_hard_disk_as_a_buffer").unwrap().unwrap();
