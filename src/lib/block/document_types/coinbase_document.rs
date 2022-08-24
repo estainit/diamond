@@ -2,7 +2,7 @@ use crate::lib::custom_types::CMPAIValueT;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct CoinbaseDocument {
     pub m_doc_cycle: String,
     pub m_treasury_from: String,

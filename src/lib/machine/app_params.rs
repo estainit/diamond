@@ -156,11 +156,13 @@ impl AppParams {
     pub fn get_coinbase_cycle_stamp(&self, c_date: &CDateT) -> String {
         if self.cycle_length() == 1
         {
-            return self.get_a_cycle_range(c_date, 0, 0).from;
+            let range = self.get_a_cycle_range(c_date, 0, 0).from;
+            return range;
         }
 
         let day: Vec<&str> = c_date.split(" ").collect();
-        return day[0].to_string() + " " + &right_padding(self.get_coinbase_cycle_number(c_date), 3);
+        let cycle_number = self.get_coinbase_cycle_number(c_date);
+        return day[0].to_string() + " " + &left_padding(cycle_number, 3);
     }
 
     //old_name_was getACycleRange
@@ -192,6 +194,9 @@ impl AppParams {
             let date_dtl: Vec<&str> = c_date.split(" ").collect();
             c_date = date_dtl[0].to_string() + " " + &h;
         }
+        // else {
+        //     c_date
+        // }
 
         let min_creation_date: String;
         if forward_by_cycle == 0 {
@@ -215,9 +220,13 @@ impl AppParams {
         let minutes: TimeByMinutesT = minutes_h + minutes_m;
         let start_minute: TimeByMinutesT = (minutes / self.get_cycle_by_minutes()) as TimeByMinutesT * self.get_cycle_by_minutes();
         let end_minute: TimeByMinutesT = start_minute + self.get_cycle_by_minutes() - 1;
+        let from_ = day.clone() + " " + &self.convert_minutes_to_hhmm(start_minute) + ":00";
+        let to_ = day.clone() + " " + &self.convert_minutes_to_hhmm(end_minute) + ":59";
+        println!("mmmmmm 88 from {} to_ {}", from_, to_);
+
         return TimeRange {
-            from: day.clone() + " " + &self.convert_minutes_to_hhmm(start_minute) + ":00",
-            to: day.clone() + " " + &self.convert_minutes_to_hhmm(end_minute) + ":59",
+            from: from_,
+            to: to_,
         };
     }
 
@@ -270,13 +279,16 @@ impl AppParams {
     #[allow(dead_code, unused)]
     pub fn get_coinbase_cycle_number(&self, c_date: &CDateT) -> String {
         let minutes: u32;
-        if *c_date == "".to_string() {
+        if c_date == ""
+        {
             minutes = self.get_now_by_minutes();
+            println!("wwwwwww minutes1: {}", minutes);
         } else {
             let minutes_dtl1: Vec<&str> = c_date.split(" ").collect();
             let minutes_dtl2: String = minutes_dtl1[1].to_string().clone();
             let minutes_dtl3: Vec<&str> = minutes_dtl2.split(":").collect();
             minutes = (minutes_dtl3[0].to_string().parse::<u32>().unwrap() * 60) + minutes_dtl3[1].to_string().parse::<u32>().unwrap();
+            println!("wwwwwww minutes2: {}", minutes);
         }
 
         let cycle_number: String;
@@ -285,6 +297,7 @@ impl AppParams {
         } else {
             cycle_number = (minutes / self.get_cycle_by_minutes() as u32).to_string();
         }
+        println!("wwwwwww cycle_number: {}", cycle_number);
         return cycle_number;
     }
 
@@ -319,14 +332,17 @@ impl AppParams {
         c_date: &CDateT)
         -> (String, String, String, String, String)
     {
+        println!("cccccc ----- 1");
         let cycle_range = self.get_a_cycle_range(
             c_date,
             1,
             0);
 
-        return self.get_coinbase_info(
+        let info = self.get_coinbase_info(
             &cycle_range.from,
             "");
+        println!("cccccc ----- 2");
+        info
     }
 
     //old_name_was timeDiff
@@ -488,34 +504,94 @@ impl AppParams {
     }
 
     //old_name_was getCoinbaseInfo
-    #[allow(dead_code, unused)]
-    pub fn get_coinbase_info(&self, c_date: &CDateT, cycle: &str) ->
+    pub fn get_coinbase_info(&self, c_date: &CDateT, cycle_stamp_inp: &str) ->
     (String, String, String, String, String)
     {
-        if c_date != "" {
+        println!("mmmmm get_coinbase_info: c_date: {}, cycle: {}", c_date, cycle_stamp_inp);
+        if c_date != ""
+        {
             let the_range = self.get_coinbase_range(c_date);
-            let from_hour: Vec<&str> = the_range.from.split(' ').collect();
+            let from_hour: Vec<&str> = the_range.from.split(" ").collect::<Vec<&str>>();
             let from_hour: String = from_hour[1].to_string();
-            let to_hour: Vec<&str> = the_range.to.split(' ').collect();
+            let to_hour: Vec<&str> = the_range.to.split(" ").collect::<Vec<&str>>();
             let to_hour: String = to_hour[1].to_string();
+            let cycle_stamp = self.get_coinbase_cycle_stamp(c_date);
             return (
-                self.get_coinbase_cycle_stamp(c_date),
-                the_range.from, the_range.to,
-                from_hour, to_hour
+                cycle_stamp.clone(),
+                the_range.from.clone(),
+                the_range.to.clone(),
+                from_hour.clone(),
+                to_hour.clone()
             );
-        } else if cycle != "" {
-            let the_range = self.get_coinbase_range_by_cycle_stamp(cycle);
-            let from_hour: Vec<&str> = the_range.from.split(' ').collect();
+        }
+        else if cycle_stamp_inp != ""
+        {
+            let the_range = self.get_coinbase_range_by_cycle_stamp(cycle_stamp_inp);
+            let from_hour: Vec<&str> = the_range.from.split(" ").collect();
             let from_hour: String = from_hour[1].to_string();
-            let to_hour: Vec<&str> = the_range.to.split(' ').collect();
+            let to_hour: Vec<&str> = the_range.to.split(" ").collect();
             let to_hour: String = to_hour[1].to_string();
+            let cycle_stamp = cycle_stamp_inp.to_string().clone();
+            println!("mmmmkm 9");
+            let from_ = the_range.from.clone();
+            let to_ = the_range.to.clone();
+            println!("mmmmkm 9");
             return (
-                cycle.to_string().clone(),
-                the_range.from, the_range.to,
-                from_hour, to_hour
+                cycle_stamp,
+                from_,
+                to_,
+                from_hour,
+                to_hour
             );
         }
         panic!("invalid input for get Coinbase Info");
+    }
+
+    //old_name_was getCoinbaseInfo
+    #[allow(dead_code, unused)]
+    pub fn get_coinbase_info_by_date(&self, c_date: &CDateT) ->
+    (String, String, String, String, String)
+    {
+        println!("mmmmmy get_coinbase_info: c_date: {}, ", c_date);
+
+        let the_range = self.get_coinbase_range(c_date);
+        let from_hour: Vec<&str> = the_range.from.split(" ").collect::<Vec<&str>>();
+        let from_hour: String = from_hour[1].to_string();
+        let to_hour: Vec<&str> = the_range.to.split(" ").collect::<Vec<&str>>();
+        let to_hour: String = to_hour[1].to_string();
+        let cycle_stamp = self.get_coinbase_cycle_stamp(c_date);
+        return (
+            cycle_stamp.clone(),
+            the_range.from.clone(),
+            the_range.to.clone(),
+            from_hour.clone(),
+            to_hour.clone()
+        );
+    }
+
+    //old_name_was getCoinbaseInfo
+    #[allow(dead_code, unused)]
+    pub fn get_coinbase_info_by_cycle_stamp(&self, cycle_stamp_inp: &str) ->
+    (String, String, String, String, String)
+    {
+        println!("mmmmmZ get_coinbase_info: cycle_stamp_inp: {}", cycle_stamp_inp);
+        let the_range = self.get_coinbase_range_by_cycle_stamp(cycle_stamp_inp);
+        let from_hour: Vec<&str> = the_range.from.split(" ").collect();
+        let from_hour: String = from_hour[1].to_string();
+        let to_hour: Vec<&str> = the_range.to.split(" ").collect();
+        let to_hour: String = to_hour[1].to_string();
+        let cycle_stamp = cycle_stamp_inp.to_string().clone();
+        println!("mmmmkmz 9");
+        let from_ = the_range.from.clone();
+        let to_ = the_range.to.clone();
+        println!("mmmmkmz 9");
+        return (
+            cycle_stamp,
+            from_,
+            to_,
+            from_hour,
+            to_hour
+        );
     }
 
     //old_name_was yearsBefore
@@ -536,10 +612,10 @@ impl AppParams {
 
     //old_name_was getCoinbaseRangeByCycleStamp
     #[allow(dead_code, unused)]
-    pub fn get_coinbase_range_by_cycle_stamp(&self, cycle: &str) -> TimeRange
+    pub fn get_coinbase_range_by_cycle_stamp(&self, cycle_stamp: &str) -> TimeRange
     {
         let mut res: TimeRange = TimeRange { from: "".to_string(), to: "".to_string() };
-        let cycle_dtl = cycle
+        let cycle_dtl = cycle_stamp
             .to_string()
             .clone()
             .split(" ")
@@ -547,12 +623,18 @@ impl AppParams {
             .iter()
             .map(|x| x.to_string())
             .collect::<Vec<String>>();
-        if cycle_dtl[1] == "00:00:00".to_string() {
+
+        if cycle_dtl[1] == "00:00:00".to_string()
+        {
             res.from = cycle_dtl[0].to_owned() + &" 00:00:00".to_string();
             res.to = cycle_dtl[0].to_owned() + &" 11:59:59".to_string();
             return res;
-        } else if cycle_dtl[1] == "12:00:00" {
-            return TimeRange { from: cycle_dtl[0].to_owned() + " 12:00:00", to: cycle_dtl[0].to_owned() + " 23:59:59" };
+        } else if cycle_dtl[1] == "12:00:00"
+        {
+            return TimeRange {
+                from: cycle_dtl[0].to_owned() + " 12:00:00",
+                to: cycle_dtl[0].to_owned() + " 23:59:59",
+            };
         } else {
             // develop mod
             let cycle_by_minutes = self.get_cycle_by_minutes();
@@ -606,6 +688,7 @@ impl TimeDiff {
     }
 }
 
+#[derive(Debug)]
 pub struct TimeRange
 {
     pub from: CDateT,

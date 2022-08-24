@@ -4,8 +4,16 @@ use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject};
 use crate::lib::machine::machine_neighbor::{parse_handshake, parse_nice_to_meet_you};
 use crate::lib::messaging_protocol::dag_message_handler::{extract_leaves_and_push_in_sending_q, handle_received_leave_info};
+use crate::lib::messaging_protocol::dispatcher_switch::dispatch_a_card;
 use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
+
+pub struct PacketParsingResult
+{
+    pub m_status: bool,
+    pub m_should_purge_file: bool,
+    pub m_message: String,
+}
 
 /*
 
@@ -22,7 +30,7 @@ void invokeDescendents_()
 pub fn parse_a_packet(
     sender: &String,
     packet: &JSonObject,
-    connection_type: &String) -> (bool, bool)
+    connection_type: &String) -> PacketParsingResult
 {
 
     // * pType (Packet type) is more recent than old one bType(Block type) which was created to support block exchanging,
@@ -32,24 +40,34 @@ pub fn parse_a_packet(
     // * it is a-kind-of graphGL implementation.
     // * each packet contains one or more cards, and each card represents a single query or single query result
     let mut packet_type: String = "".to_string();
-    if !packet["pType"].is_null()
+    if packet["pType"].is_null()
     {
-        packet_type = remove_quotes(&packet["pType"]);
-
-        if packet_type != constants::DEFAULT_PACKET_TYPE.to_string()
-        {
-            dlog(
-                &format!("Undefined packet in packet parsing: {}!={}", packet_type, constants::DEFAULT_PACKET_TYPE.to_string()),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            return (false, true);
-        }
-    } else {
         dlog(
-            &format!("Unknown packet in packet parsing"),
+            &format!("Unknown packet in packet parsing: missed pType: {}", packet),
             constants::Modules::App,
             constants::SecLevel::Error);
-        return (false, true);
+
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
+    }
+
+
+    packet_type = remove_quotes(&packet["pType"]);
+    if packet_type != constants::DEFAULT_PACKET_TYPE.to_string()
+    {
+        dlog(
+            &format!("Undefined packet in packet parsing: {}!={}", packet_type, constants::DEFAULT_PACKET_TYPE.to_string()),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
 
     let mut packet_version: String = "".to_string();
@@ -70,7 +88,11 @@ pub fn parse_a_packet(
             constants::Modules::App,
             constants::SecLevel::Error);
 
-        return (false, true);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
 
     let mut c_date: String = "".to_string();
@@ -92,13 +114,28 @@ pub fn parse_a_packet(
         }
     };
     if !status
-    { return (false, false); }
+    {
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: false,
+            m_message: "".to_string(),
+        };
+    }
 
     let mut status: bool = true;
     let mut should_purge_file: bool = false;
     for a_card in cards
     {
-        let (status_, should_purge_file_) = dispatch_a_card(
+        if !is_valid_version_number(remove_quotes(&a_card["cdVer"]).as_str()) {
+            dlog(
+                &format!("Invalid card version ({}) for card type ({})",
+                         a_card["cdVer"], remove_quotes(&a_card["cdType"])),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            continue;
+        }
+
+        let pa_pa_res = dispatch_a_card(
             sender,
             connection_type,
             &c_date,
@@ -108,12 +145,12 @@ pub fn parse_a_packet(
             &packet_version.clone(),
         );
 
-        status &= status_;
-        should_purge_file |= should_purge_file_;
+        status &= pa_pa_res.m_status;
+        should_purge_file |= pa_pa_res.m_should_purge_file;
 
         dlog(
             &format!("Dispatch a card response card type ({}) status({}) should purge file({})",
-                     remove_quotes(&a_card["cdType"]), status_, should_purge_file_),
+                     remove_quotes(&a_card["cdType"]), pa_pa_res.m_status, pa_pa_res.m_should_purge_file),
             constants::Modules::App,
             constants::SecLevel::Debug);
     }
@@ -123,7 +160,11 @@ pub fn parse_a_packet(
         constants::Modules::App,
         constants::SecLevel::Debug);
 
-    return (status, should_purge_file);
+    return PacketParsingResult {
+        m_status: status,
+        m_should_purge_file: should_purge_file,
+        m_message: "".to_string(),
+    };
 
     // }
     // else
@@ -163,272 +204,6 @@ pub fn parse_a_packet(
     // }
 }
 
-//old_name_was innerDispatchMessage
-pub fn dispatch_a_card(
-    sender: &String,
-    connection_type: &String,
-    c_date: &String,
-    card_body: &JSonObject,
-    card_type: &String,
-    card_ver: &String,
-    packet_ver: &str) -> (bool, bool)
-{
-    dlog(
-        &format!("--- dispatching card({}) from({}) ", card_type, sender),
-        constants::Modules::App,
-        constants::SecLevel::Info);
-
-    // FIXME: security issue. what happend if adversary creates million of blocks in minute and send the final descendente?
-    // in this case all nodes have to download entire blocks all the way back to find ancestor
-    // and start to validate from the oldest one and add it to DAG(if is VALID)
-    // in this process nodes can not control if the blocks in between are valid or not?
-    // so the bandwidth&  machine harddisk will be vasted
-    // and network will be blocked!
-    // here we need implement a system to control creation date of eache received block(profiled for each neighbor or backer address)
-    // and limit creating block(e.g 10 bloocks per minute) in proportion to neighbor's reputation.
-
-    let block_types: Vec<String> = vec![
-        constants::block_types::NORMAL.to_string(),
-        constants::block_types::COINBASE.to_string(),
-        constants::block_types::FLOATING_SIGNATURE.to_string(),
-        constants::block_types::FLOATING_VOTE.to_string(),
-        constants::block_types::POW.to_string(),
-        constants::block_types::REPAYMENT_BLOCK.to_string()];
-
-    let card_types: Vec<String> = vec![
-        constants::card_types::DAG_INVOKE_BLOCK.to_string(),
-        constants::card_types::DAG_INVOKE_DESCENDENTS.to_string(),
-        constants::card_types::DAG_INVOKE_LEAVES.to_string(),
-        constants::card_types::DAG_LEAVES_INFO.to_string(),
-        constants::card_types::HANDSHAKE.to_string(),
-        constants::card_types::NICE_TO_MEET_YOU.to_string(),
-        constants::card_types::HERE_IS_NEW_NEIGHBOR.to_string(),
-        constants::card_types::PROPOSAL_LOAN_REQUEST.to_string(),
-        constants::card_types::FULL_DAG_DOWNLOAD_REQUEST.to_string(),
-        constants::card_types::PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS.to_string(),
-        constants::card_types::FULL_DAG_DOWNLOAD_RESPONSE.to_string(),
-        constants::card_types::BALLOTS_RECEIVE_DATES.to_string(),
-        constants::card_types::NODE_STATUS_SNAPSHOT.to_string(),
-        constants::card_types::NODE_STATUS_SCREENSHOT.to_string(),
-        constants::card_types::DIRECT_MESSAGE_TO_NEIGHBOR.to_string(),
-    ];
-
-
-    let _gql_types: Vec<&str> = vec![];
-
-
-    if block_types.contains(&card_type)
-    {
-        /*
-    // the essage is a whole block, so push it to table c_parsing_q
-    String code = CUtils::hash16c(message["bHash"].to_string());
-    if (!CUtils::isValidVersionNumber(message["bVer"].to_string()))
-    {
-      CLog::log("invalid bVer(" + message["bVer"].to_string() + ") for block(" + code + ") in dispatcher! type(" + type + ")", "sec", "error");
-      return {false, true};
-    }
-    CLog::log("--- pushing block(" + code + ") type(" + type + ") from(" + sender + ") to 'c_parsing_q'");
-
-    QVDRecordsT alreadyRecordedInDAG = DAG::searchInDAG(
-      {{"b_hash", message["bHash"]}},
-      {"b_hash"});
-
-    if (alreadyRecordedInDAG.size() > 0)
-    {
-      CLog::log("Duplicated packet received block(" + code + ") type(" + type + ") from(" + sender + ") ", "app", "trace");
-      return { true, true};
-
-    } else {
-
-      auto[push_status, should_purge_file] = ParsingQHandler::push_to_parsing_q(
-        message,
-        message["bCDate"].to_string(),
-        type,
-        message["bHash"].to_string(),
-        sender,
-        connection_type);
-        Q_UNUSED(should_purge_file);
-
-      // if it is a valid block, update last received block info
-      if (push_status)
-        DAGMessageHandler::setLastReceivedBlockTimestamp(type, message["bHash"].to_string());
-    }
-
-    // remove from missed blocks (if exist)
-    MissedBlocksHandler::removeFromMissedBlocks(message["bHash"].to_string());
-*/
-        return (true, true);
-    } else if card_types.contains(card_type)
-    {
-        let (status, should_purge_file) = handle_a_single_card(
-            sender,
-            connection_type,
-            c_date,
-            card_body,
-            card_type,
-            card_ver,
-            packet_ver);
-
-        dlog(
-            &format!("Handle a single card response status({}) should purge file({})", status, should_purge_file),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-
-        return (status, should_purge_file);
-    }
-
-    /*
-    else if (gql_types.contains(type))
-    {
-    return handleGQLMessages(
-      sender,
-      connection_type,
-      creation_date,
-      message,
-      type,
-      ver);
-
-    }
-    else if (type == constants::block_types::Genesis)
-    {
-    return {true, true};
-    }
-    else
-    {
-    String card_code = message.keys().contains("bHash") ? message["bHash"].to_string() : "";
-    CLog::log("Unknown Message type(" + type + ") was received from (" + sender + ") HD in inbox (" + card_code + ")", "sec", "error");
-    return {true, true};
-    }
-    */
-    (false, false)
-}
-
-//old_name_was handleSingleMessages
-pub fn handle_a_single_card(
-    sender: &String,
-    connection_type: &String,
-    creation_date: &String,
-    card_body: &JSonObject,
-    card_type: &str,
-    card_ver: &str,
-    packet_ver: &str) -> (bool, bool)
-{
-    let mut card_code: String = format!("{}-{}-{}", packet_ver, card_type, card_ver);
-
-    if !card_body["bHash"].is_null()
-    {
-        card_code = remove_quotes(&card_body["bHash"]).to_string();
-    }
-
-    if !is_valid_version_number(card_ver)
-    {
-        dlog(
-            &format!("invalid card version for in dispatcher! card type({}) card version({})", card_type, card_ver),
-            constants::Modules::Sec,
-            constants::SecLevel::Error);
-
-        return (false, true);
-    }
-
-    // DAG comunications
-    if card_type == constants::card_types::DAG_INVOKE_BLOCK
-    {
-        dlog(
-            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_BLOCK @@@@@@@@@@@@@@@@@@@@@@@@@@@@@"),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-
-        return push_to_parsing_q(
-            card_body,
-            creation_date,
-            &card_type.to_string(),
-            &card_code,
-            sender,
-            connection_type,
-            vec![]);
-
-// }else if (card_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
-// {
-//
-// CLog::log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_DESCENDENTS @@@@@@@@@@@@@@@@@@@@@@@@@@@@", "app", "trace");
-// auto[push_status, should_purge_file] = ParsingQHandler::push_to_parsing_q(
-//   message,
-//   creation_date,
-//   type,
-//   card_code,
-//   sender,
-//   connection_type);
-// return {push_status, should_purge_file};
-//
-    } else if card_type == constants::card_types::DAG_INVOKE_LEAVES
-    {
-        dlog(
-            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_LEAVES sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-        return extract_leaves_and_push_in_sending_q(sender);
-    } else if card_type == constants::card_types::DAG_LEAVES_INFO
-    {
-        dlog(
-            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_LEAVES_INFO sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-
-        return (true, true);//FIXME: implement it ASAP
-
-    let(parse_status, should_purge_file) = handle_received_leave_info(
-        sender,
-        card_body,
-        connection_type);
-//    dspchRes = { err: false, shouldPurgeMessage: true }
-    } else if card_type == constants::card_types::HANDSHAKE
-    {
-        // handshake
-        // TODO: implement a switch to set off/on for no more new neighbor
-        dlog(
-            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::HANDSHAKE sender: {sender} @@@@@@@@@@@@@@@@@@@@@@@@@@@"),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-
-        let (parse_status, should_purge_file) = parse_handshake(
-            sender,
-            card_body,
-            connection_type);
-        dlog(
-            &format!("greeting Parsers parse Handshake res: parse_status ({}) should_purge_file({})", parse_status, should_purge_file),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-        return (parse_status, should_purge_file);
-    } else if card_type == constants::card_types::NICE_TO_MEET_YOU
-    {
-        let (parse_status, should_purge_file) = parse_nice_to_meet_you(
-            sender,
-            card_body,
-            connection_type);
-        // invokeDescendents_(); // FIXME: do it in Async mode
-        dlog(
-            &format!("greeting Parsers parse nice to meet you res: parse_status ({}) should_purge_file({})", parse_status, should_purge_file),
-            constants::Modules::App,
-            constants::SecLevel::Info);
-        return (parse_status, should_purge_file);
-    } else if card_type == constants::card_types::HERE_IS_NEW_NEIGHBOR
-    {
-        // TODO: activate it after add some security and privacy care issues
-        // parseHereIsNewNeighbor(
-        //     sender,
-        //     message,
-        //     connection_type
-        // );
-    } else {
-        dlog(
-            &format!("Undefined card type in single card dispatching: {}", card_type),
-            constants::Modules::App,
-            constants::SecLevel::Error);
-        return (false, true);
-    }
-
-    return (false, false);
-}
 
 /*
 
@@ -496,7 +271,7 @@ if (alreadyRecordedInDAG.size()> 0)
   // if it was a valid message
   if (status)
   {
-    DAGMessageHandler::setLastReceivedBlockTimestamp(block["bType"].to_string(), block_hash);
+    set_last_received_block_timestamp(block["bType"].to_string(), block_hash);
     if (!CMachine::isInSyncProcess())
       CGUI::signalUpdateParsingQ();
   }

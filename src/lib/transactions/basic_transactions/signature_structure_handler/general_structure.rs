@@ -9,7 +9,7 @@ use crate::{application, ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{generate_m, get_root_by_a_prove};
 use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TInput
 {
     pub(crate) m_transaction_hash: CDocHashT,
@@ -25,11 +25,13 @@ pub struct TInput
 
 impl TInput {
     //old_name_was getCoinCode
+    #[allow(unused, dead_code)]
     pub fn get_coin_code(&self) -> CCoinCodeT
     {
         return cutils::pack_coin_code(&self.m_transaction_hash, self.m_output_index);
     }
 
+    #[allow(unused, dead_code)]
     pub fn dump(&self) -> String
     {
         let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
@@ -41,7 +43,7 @@ impl TInput {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TOutput
 {
     pub(crate) m_address: CAddressT,
@@ -51,6 +53,7 @@ pub struct TOutput
 }
 
 impl TOutput {
+    #[allow(unused, dead_code)]
     pub fn new() -> TOutput {
         TOutput {
             m_address: "".to_string(),
@@ -60,6 +63,7 @@ impl TOutput {
         }
     }
 
+    #[allow(unused, dead_code)]
     pub fn dump(&self) -> String {
         let mut out: String = "\nTrx output: m_address".to_owned() + &self.m_address;
         out += &*("\nm_amount: ".to_owned() + &self.m_amount.to_string());

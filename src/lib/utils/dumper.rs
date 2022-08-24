@@ -74,14 +74,4 @@ pub fn dump_hashmap_of_str_string(s: &HashMap<&str, String>) -> String {
     return out;
 }
 
-pub fn dump_hashmap_of_string_f64(s: &HashMap<String, f64>) -> String {
-    let prefix_tabs = constants::TAB;
-
-    let mut out: String = "".to_string();
-    for (k, v) in s {
-        out += &(constants::NL.to_owned() + &prefix_tabs + &k + ": " + &*format!("{}", v));
-    }
-    return out;
-}
-
 

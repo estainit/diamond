@@ -21,7 +21,7 @@ pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
     if constants::DATABASAE_AGENT == "psql"
     {
         complete_query = "SELECT CAST(SUM(tr_value) AS varchar) AS incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
-        // complete_query = "SELECT tr_value AS incomes_amount FROM ".to_owned() + STBL_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
+        // complete_query = "SELECT tr_value AS incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
         complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
@@ -63,7 +63,7 @@ void TreasuryHandler::insertIncome(
   CCoinCodeT coin)
 {
   QueryRes dbl = DbModel::select(
-    STBL_TREASURY,
+    C_TREASURY,
     {"tr_coin"},
     {{"tr_coin", coin}},
     {{"tr_id", "ASC"}});
@@ -72,7 +72,7 @@ void TreasuryHandler::insertIncome(
     CLog::log("duplicated treasury insertion: block(" + cutils::hash8c(block_hash)+ ") title(" + title + ")", "trx", "warning");
     // update the descriptions
     DbModel::update(
-      STBL_TREASURY,
+      C_TREASURY,
       {{"tr_descriptions", dbl.records[0].value("tr_descriptions").to_string() + " " + descriptions}},
       {{"tr_coin", coin}});
     return;
@@ -90,7 +90,7 @@ void TreasuryHandler::insertIncome(
   CLog::log("Treasury income(" + cutils::microPAIToPAI6(value) + " PAIs) because of block(" + cutils::hash8c(block_hash)+ ") title(" + title + ") values :" + cutils::dumpIt(values ), "trx", "info");
 
   DbModel::insert(
-    STBL_TREASURY,
+    C_TREASURY,
     values);
 
   return;
@@ -142,7 +142,7 @@ CMPAIValueT TreasuryHandler::getWaitedIncomes(CDateT cDate)
   cDate = getTreasureIncomesDateRange(cDate).to;
 
   QueryRes res = DbModel::select(
-    STBL_TREASURY,
+    C_TREASURY,
     {"tr_value"},
     {{"tr_creation_date", cDate, ">"}});
 
@@ -160,7 +160,7 @@ QVDRecordsT TreasuryHandler::searchInTreasury(
   const uint64_t limit)
 {
   QueryRes res = DbModel::select(
-    STBL_TREASURY,
+    C_TREASURY,
     fields,
     clauses,
     order,

@@ -28,7 +28,7 @@ pub fn get_value(kv_key: &str) -> String
 bool KVHandler::deleteKey(const String &kvKey)
 {
   QueryRes res = DbModel::dDelete(
-    STBL_KVALUE,
+    C_KVALUE,
     {{"kv_key", kvKey}}
   );
   return res.status == true;
@@ -63,7 +63,7 @@ pub fn search_in_kv(
 bool KVHandler::updateKValue(const String &key, const String &value)
 {
   return DbModel::update(
-    STBL_KVALUE,
+    C_KVALUE,
     {{"kv_value", value}, {"kv_last_modified", application().get_now()}},
     {{"kv_key", key}});
 }

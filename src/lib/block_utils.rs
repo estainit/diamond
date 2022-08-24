@@ -103,10 +103,12 @@ std::tuple<bool, uint64_t, uint64_t> BlockUtils::retrieveDPCostInfo(
 */
 use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::custom_types::JSonObject;
 
 //old_name_was wrapSafeContentForDB
-pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str) -> (bool, String, String)
+pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str)
+                                -> (bool, String, String)
 {
     // to make a safe string to insert in db, jus convert it to base64
     if safe_ver == "0.0.0"
@@ -135,30 +137,49 @@ pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str) -> (bool, Stri
     }
 }
 
+//old_name_was unwrapSafeContentForDB
+pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
+{
+    let deserialization_status = false;
+    let (status, json_object) = cutils::controlled_str_to_json(wrapped);
+    if !status
+    {
+        dlog(
+            &"Invalid wrapped content! ".to_string(),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        dlog(
+            &wrapped,
+            constants::Modules::App,
+            constants::SecLevel::Error);
+
+        return (
+            false,
+            constants::DEFAULT_SAFE_VERSION.to_string(),
+            "Invalid wrapped content! ".to_string());
+    }
+
+    let safe_version = remove_quotes(&json_object["sfVer"]);
+    let mut content = remove_quotes(&json_object["content"]);
+    let (status, content) = ccrypto::b64_decode(&content);
+    if !status
+    {
+        dlog(
+            &"Failed in b64 dec a safe content ".to_string(),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+
+        return (
+            false,
+            safe_version,
+            "Invalid b64 wrapped content! ".to_string());
+    }
+
+    return (true, safe_version, content);
+
+}
+
 /*
-
-Unwrapped BlockUtils::unwrapSafeContentForDB(const String& wrapped)
-{
-try {
-JSonObject JsonObj = cutils::parseToJsonObj(wrapped);
-String content = JsonObj.value("content").to_string();
-String sfVer = JsonObj.value("sfVer").to_string();
-if (sfVer == "0.0.0")
-  content = ccrypto::base64Decode(content);
-return Unwrapped {true, sfVer, content};
-
-} catch (std::exception) {
-return Unwrapped {false, "", ""};
-
-}
-}
-
-
-Unwrapped BlockUtils::unwrapSafeContentForDB(const QVariant& wrapped)
-{
-return unwrapSafeContentForDB(wrapped.to_string());
-}
-
 
 const StringList to_string_fields = {
 "b_hash", "b_type", "b_cycle", "b_ext_root_hash", "b_docs_root_hash", "b_creation_date",
@@ -300,19 +321,19 @@ QVDicT out {};
 StringList keys = record.keys();
 
 for (String a_key: cutils::arrayIntersection(keys, to_string_fields))
-out[a_key] = record.value(a_key).to_string();
+out[a_key] = record[a_key).t]_string();
 
 for (String a_key: cutils::arrayIntersection(keys, to_double_fields))
-out[a_key] = record.value(a_key).toDouble();
+out[a_key] = record[a_key).t]Double();
 
 for (String a_key: cutils::arrayIntersection(keys, to_int_fields))
-out[a_key] = record.value(a_key).toInt();
+out[a_key] = record[a_key).t]Int();
 
 for (String a_key: cutils::arrayIntersection(keys, to_wrap_unwrap_fields))
 {
 String content = "";
 try {
-  auto wrapped = BlockUtils::wrapSafeContentForDB(record.value(a_key).to_string());
+  auto wrapped = BlockUtils::wrapSafeContentForDB(record[a_key).t]_string());
   content = wrapped.content;
   if (wrapped.status)
   {
@@ -329,15 +350,15 @@ try {
 }
 
 for (String a_key: cutils::arrayIntersection(keys, to_comma_splited_string_fields))
-if (record.value(a_key).toArray().len() > 0)
+if (record[a_key).t]Array().len() > 0)
 {
-  out[a_key] = cutils::convertJSonArrayToStringVector(record.value(a_key).toArray()).join(",");
+  out[a_key] = cutils::convertJSonArrayToStringVector(record[a_key).t]Array()).join(",");
 }else{
-  out[a_key] = record.value(a_key).to_string();
+  out[a_key] = record[a_key).t]_string();
 }
 
 for (String a_key: cutils::arrayIntersection(keys, to_string_to_double_fields))
-out[a_key] = record.value(a_key).to_string().toDouble();
+out[a_key] = record[a_key).t]_string().toDouble();
 
 
 
@@ -350,20 +371,20 @@ JSonObject out {};
 StringList keys = record.keys();
 
 for (String a_key: cutils::arrayIntersection(keys, to_string_fields))
-out[a_key] = record.value(a_key).to_string();
+out[a_key] = record[a_key).t]_string();
 
 for (String a_key: cutils::arrayIntersection(keys, to_double_fields))
-out[a_key] = record.value(a_key).toDouble();
+out[a_key] = record[a_key).t]Double();
 
 for (String a_key: cutils::arrayIntersection(keys, to_int_fields))
-out[a_key] = record.value(a_key).toInt();
+out[a_key] = record[a_key).t]Int();
 
 for (String a_key: cutils::arrayIntersection(keys, to_wrap_unwrap_fields))
 {
 String content = "";
 try {
-  auto unwrapped = BlockUtils::unwrapSafeContentForDB(record.value(a_key));
-  content = unwrapped.content;
+  auto unwrapped = BlockUtils::unwrapSafeContentForDB(record[a_key));
+] content = unwrapped.content;
   if (unwrapped.status)
   {
     out[a_key] = content;    // do not need safe open check
@@ -400,7 +421,7 @@ try {
 }
 
 for (String a_key: cutils::arrayIntersection(keys, to_comma_splited_string_fields))
-out[a_key] = cutils::convertStringListToJSonArray(record.value(a_key, "").to_string().split(","));    // do not need safe open check
+out[a_key] = cutils::convertStringListToJSonArray(record[a_key, ]").to_string().split(","));    // do not need safe open check
 
 return out;
 }
@@ -434,7 +455,7 @@ const CDocHashT& docHash)
 {
 StringList docHashes {};
 for(auto a_doc: block["docs"].toArray())
-docHashes.push(a_doc.toObject().value("dHash").to_string());
+docHashes.push(a_doc.toObject()["dHash"].to_string());
 auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate(docHashes);
 Q_UNUSED(root);
 Q_UNUSED(merkle_version);

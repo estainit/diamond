@@ -162,7 +162,7 @@ bool ParsingQHandler::appendPrerequisites(
   CLog::log("block(" + cutils::hash6c(block_hash) + ") final1 prerequisities(" + cutils::dumpIt(current_prereq) + ")", "app", "trace");
   CLog::log("block(" + cutils::hash6c(block_hash) + ") final2 prerequisities: " + cutils::dumpIt(current_prereq), "app", "trace");
   return DbModel::update(
-    stbl_parsing_q,
+    C_PARSING_Q,
     {
       {"pq_prerequisites", "," + current_prereq.join(",")},
       {"pq_last_modified", cutils::getNow()}
@@ -191,7 +191,7 @@ pub fn search_parsing_q(
     // let fields_str: String = fields_array.join(", ");
     // let qElms: QueryElements = pre_query_generator(0, clauses, order, limit);
     // let (_status, records) = q_customQuery(
-    //     &("SELECT ".to_owned() + &fields_str + " FROM " + STBL_PARSING_Q + &qElms.m_clauses + &qElms.m_order + &qElms.m_limit),
+    //     &("SELECT ".to_owned() + &fields_str + " FROM " + C_PARSING_Q + &qElms.m_clauses + &qElms.m_order + &qElms.m_limit),
     //     &qElms.m_params,
     //     true);
     return records;
@@ -208,7 +208,7 @@ void ParsingQHandler::removePrerequisites(const String& block_hash)
 {
   QueryRes res = DbModel::customQuery(
     "",
-    "SELECT pq_type, pq_code, pq_prerequisites FROM " + stbl_parsing_q + " WHERE pq_prerequisites LIKE :pq_prerequisites",
+    "SELECT pq_type, pq_code, pq_prerequisites FROM " + C_PARSING_Q + " WHERE pq_prerequisites LIKE :pq_prerequisites",
     {"pq_type", "pq_code", "pq_prerequisites"},
     0,
     {{"pq_prerequisites", "%" + block_hash + "%"}},
@@ -224,7 +224,7 @@ void ParsingQHandler::removePrerequisites(const String& block_hash)
     String prerequisites = aBlock.value("pq_prerequisites").to_string().replace(block_hash, "");
     prerequisites = cutils::normalizeCommaSeperatedStr(prerequisites);
     DbModel::update(
-      stbl_parsing_q,
+      C_PARSING_Q,
       {{"pq_prerequisites", prerequisites}},
       {{"pq_type", aBlock.value("pq_type")},
       {"pq_code", aBlock.value("pq_code")}},

@@ -28,7 +28,7 @@ pub mod b_genesis {
         doc.m_doc_class = "Classic".to_string();
         doc.m_doc_title = "fair effort, fair gain, win win win".to_string();
         doc.m_doc_creation_date = proposal_creation_date.clone();
-        doc.m_doc_tags = "initialize, contribute, shares".to_string();
+        doc.m_doc_tags = "initialize, contributions, shares".to_string();
         doc.m_doc_comment = "Imagine all the people living life in peace".to_string();
 
         let mut proposal = ProposalDocument::new();

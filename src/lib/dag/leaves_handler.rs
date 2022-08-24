@@ -165,7 +165,7 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
 pub fn has_fresh_leaves() -> bool
 {
     let keys = get_fresh_leaves().keys().cloned().collect::<Vec<String>>();
-    println!("mmmmmmm keys {}, {:?}", keys.len(), keys);
+    println!("mmmmmmm fresh leaves keys {}, {:?}", keys.len(), keys);
     keys.len() > 0
 }
 

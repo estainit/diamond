@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 use crate::{ccrypto, constants, dlog};
 use crate::lib::block::block_types::block::Block;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct CoinbaseBlock
 {
     pub m_cycle: String,

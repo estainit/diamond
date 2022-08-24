@@ -7,7 +7,7 @@ use log4rs::Config;
 use log4rs::config::{Appender, Root};
 use log4rs::encode::pattern::PatternEncoder;
 use log4rs::filter::threshold::ThresholdFilter;
-use crate::{application, machine};
+use crate::{application};
 use crate::constants::{Modules, SecLevel};
 
 pub fn initialize_log() {

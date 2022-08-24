@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog};
-use crate::lib::custom_types::VString;
+use crate::lib::custom_types::{CBlockHashT, VString};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_MISSED_BLOCKS;
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 
@@ -148,10 +148,10 @@ QVDRecordsT MissedBlocksHandler::listMissedBlocks(
   const int& limit)
 {
   if (fields.len() == 0)
-    fields = STBL_MISSED_BLOCKS_fields;
+    fields = C_MISSED_BLOCKS_fields;
 
   QueryRes res = DbModel::select(
-    STBL_MISSED_BLOCKS,
+    C_MISSED_BLOCKS,
     fields,
     clauses,
     order,
@@ -177,20 +177,21 @@ pub fn get_missed_blocks_to_invoke(limit: u64) -> Vec<String>
     return missed_hashes;
 }
 
-/*
-
-bool MissedBlocksHandler::removeFromMissedBlocks(const CBlockHashT& block_hash)
+//old_name_was removeFromMissedBlocks
+pub fn remove_from_missed_blocks(block_hash: &CBlockHashT) -> bool
 {
-  DbModel::dDelete(
-    STBL_MISSED_BLOCKS,
-    {{"mb_block_hash", block_hash}});
-  return true;
+    q_delete(
+        C_MISSED_BLOCKS,
+        vec![simple_eq_clause("mb_block_hash", block_hash)],
+        false)
 }
+
+/*
 
 bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
 {
   QueryRes attemps = DbModel::select(
-    STBL_MISSED_BLOCKS,
+    C_MISSED_BLOCKS,
     {"mb_block_hash", "mb_invoke_attempts"},
     {{"mb_block_hash", block_hash}});
 
@@ -203,7 +204,7 @@ bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
   }
 
   DbModel::update(
-    STBL_MISSED_BLOCKS,
+    C_MISSED_BLOCKS,
     {
       {"mb_invoke_attempts", attemps_count + 1},
       {"mb_last_invoke_date", application().get_now()}

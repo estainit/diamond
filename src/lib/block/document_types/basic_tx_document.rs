@@ -6,7 +6,7 @@ use crate::lib::custom_types::{COutputIndexT, JSonArray, JSonObject};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{compact_unlockers_array, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BasicTxDocument
 {
     pub m_inputs: Vec<TInput>,

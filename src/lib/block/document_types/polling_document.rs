@@ -3,7 +3,7 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::TimeByHoursT;
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PollingDocument
 {
     pub m_voting_timeframe: TimeByHoursT,

@@ -19,6 +19,7 @@ pub struct IndividualSignature
 }
 
 impl IndividualSignature {
+    #[allow(unused, dead_code)]
     pub fn new() -> IndividualSignature {
         return IndividualSignature {
             m_signer_id: "".to_string(),
@@ -30,6 +31,7 @@ impl IndividualSignature {
         };
     }
 
+    #[allow(unused, dead_code)]
     pub fn dump(&self) -> String {
         let prefix_tabs = "\t ";
         let mut out_str = constants::NL.to_owned() + &prefix_tabs + "signature_key: " + &self.m_signature_key;

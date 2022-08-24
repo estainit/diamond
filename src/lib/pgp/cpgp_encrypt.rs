@@ -68,7 +68,7 @@ pub fn pgp_encrypt(
         pgp_enc_jobj["isAuthenticated"] = "false".into();
     } else {
         if secret_key == "" {
-            secret_key = ccrypto::get_random_number(16);
+            secret_key = ccrypto::get_random_number_as_string(16);
         }
         // conventional symmetric encryption
         let (aes_status, aes_encoded) = ccrypto::aes_encrypt(

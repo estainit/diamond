@@ -10,7 +10,7 @@ use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_cla
 use crate::lib::database::tables::C_PROPOSALS;
 use crate::lib::services::polling::polling_handler::auto_create_polling_for_proposal;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize,Debug)]
 pub struct ProposalDocument
 {
     pub m_project_hash: CDocHashT,

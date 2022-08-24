@@ -6,7 +6,7 @@ use crate::lib::custom_types::{CAddressT, CDateT, SharesCountT, SharesPercentT};
 use crate::lib::database::abs_psql::{q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_SHARES;
 
-
+#[derive(Debug)]
 pub struct Shareholder {
     account: CAddressT,
     shares: SharesCountT,
@@ -138,21 +138,27 @@ GenRes DNAHandler::insertAShare(JSonObject& params)
 //old_name_was getDNAActiveDateRange
 pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 {
-    // cDate = application().get_now();
-
     let mut the_range = application().get_a_cycle_range(
         c_date,
         constants::SHARE_MATURITY_CYCLE,
         0);
 
+    // panic!("mmmmmm the r4 ange: {:?}", the_range);
+
     if application().cycle_length() == 1
     {
-        the_range.from = application().years_before(constants::CONTRIBUTION_APPRECIATING_PERIOD as u64, &the_range.from);
+        the_range.from = application().years_before(
+            constants::CONTRIBUTION_APPRECIATING_PERIOD as u64,
+            &the_range.from);
     } else {
         let back_in_time = 100 * application().get_cycle_by_minutes();
-        the_range.from = application().minutes_before(back_in_time, &the_range.from);
+        the_range.from = application().minutes_before(
+            back_in_time,
+            &the_range.from);
     }
-    return (the_range.from, the_range.to);
+    return (
+        the_range.from.clone(),
+        the_range.to.clone());
 }
 
 // TODO: since shares are counting for before 2 last cycles, so implementing a caching system will be much helpfull where we have millions of shareholders
@@ -174,13 +180,16 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
         constants::SecLevel::TmpDebug);
 
     let (min_creation_date, max_creation_date) = get_dna_active_date_range(c_date);
-
+    dlog(
+        &format!("get Share info res: calc shares for min_creation_date({}) max_creation_date({})", min_creation_date, max_creation_date),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
     let mut query = "".to_string();
     if constants::DATABASAE_AGENT == "psql"
     {
-        query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_SHARES;
-        query += &*(" WHERE dn_creation_date between '".to_owned() + &min_creation_date + &"' AND '".to_owned() + &max_creation_date + "' GROUP BY dn_shareholder ORDER BY sum_ DESC");
+        query = "SELECT dn_shareholder, CAST(SUM(dn_shares) AS varchar) AS shares_amount FROM ".to_owned() + C_SHARES;
+        query += &*(" WHERE dn_creation_date between '".to_owned() + &min_creation_date + &"' AND '".to_owned() + &max_creation_date + "' GROUP BY dn_shareholder ORDER BY shares_amount DESC");
     } else if constants::DATABASAE_AGENT == "sqlite"
     {
         query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_SHARES;
@@ -197,12 +206,14 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
         &vec![],
         true);
 
+    println!("ssssssss 77 records: {:?}", records);
+
     let mut sum_shares: SharesCountT = 0.0;
     let mut holders_order_by_shares: Vec<Shareholder> = vec![];
     let mut share_amount_per_holder: HashMap<String, SharesCountT> = HashMap::new();
     for a_share in records
     {
-        let sum_: f64 = a_share["sum_"].parse::<f64>().unwrap();
+        let sum_: f64 = a_share["shares_amount"].parse::<f64>().unwrap();
         sum_shares += sum_;
         let owner: CAddressT = a_share["dn_shareholder"].to_string();
         share_amount_per_holder.insert(owner.clone(), sum_);
@@ -212,6 +223,19 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
                 shares: share_amount_per_holder[&owner],
             });
     }
+    dlog(
+        &format!("1. sum_shares: {:?}", &sum_shares),
+        constants::Modules::App,
+        constants::SecLevel::Debug);
+    dlog(
+        &format!("2. share_amount_per_holder: {:?}", &share_amount_per_holder),
+        constants::Modules::App,
+        constants::SecLevel::Debug);
+    dlog(
+        &format!("3. holders_order_by_shares: {:?}", &holders_order_by_shares),
+        constants::Modules::App,
+        constants::SecLevel::Debug);
+
     return (sum_shares, share_amount_per_holder, holders_order_by_shares);
 }
 
@@ -241,6 +265,7 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
 pub fn get_machine_shares(c_date: &CDateT) -> (String, SharesCountT, SharesPercentT)
 {
     let (sum_shares, share_amount_per_holder, _tmp) = get_shares_info(c_date);
+    println!("kkkkkkkk machine_shares 1 ");
     let backer_address: CAddressT = machine().get_backer_address();
     let mut shares: SharesCountT = 0.0;
     if share_amount_per_holder.contains_key(&*backer_address) {

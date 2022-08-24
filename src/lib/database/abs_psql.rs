@@ -294,7 +294,7 @@ pub fn pre_query_generator<'e>(
 //old_name_was q_customQuery
 pub fn q_custom_query(
     complete_query: &String,
-    params: &Vec<&str>,
+    params: &Vec<&(dyn ToSql + Sync)>,
     do_log: bool) -> (bool, QVDRecordsT)
 {
     if do_log {
@@ -305,11 +305,11 @@ pub fn q_custom_query(
     }
 
     let mut out_rows: QVDRecordsT = vec![];
-    let params_: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
+    // let params_: Vec<_> = params.iter().map(|x| x as &(dyn ToSql + Sync)).collect();
 
     return match dbhandler().m_db.query(
         complete_query,
-        &params_[..]) {
+        &params[..]) {
         Ok(rows) => {
             if do_log {
                 dlog(

@@ -89,8 +89,8 @@ pub fn b64_decode(message: &String) -> (bool, String)
         Ok(r) => (true, r),
         Err(e) => {
             dlog(&format!("Failed in b64 decoding: {} {}", message, e),
-            constants::Modules::Sec,
-            constants::SecLevel::Error);
+                 constants::Modules::Sec,
+                 constants::SecLevel::Error);
             panic!("ttttttttt");
             (false, vec![])
         }
@@ -111,7 +111,7 @@ pub fn b64_decode(message: &String) -> (bool, String)
 }
 
 //old_name_was getRandomNumber
-pub fn get_random_number(length: u8) -> String
+pub fn get_random_number_as_string(length: u8) -> String
 {
     // FIXME: maybe use more random source
     let mut rng = rand::thread_rng();
@@ -122,6 +122,11 @@ pub fn get_random_number(length: u8) -> String
     }
 
     rnd_str.substring(0, length as usize).to_string()
+}
+
+pub fn get_random_number(max: u32) -> u32
+{
+    rand::thread_rng().gen_range(0..max)
 }
 
 pub fn aes_encrypt(msg: String, key: String) -> (bool, String)

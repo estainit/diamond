@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block_utils::wrap_safe_content_for_db;
-use crate::lib::custom_types::{ClausesT, JSonObject, VString};
+use crate::lib::custom_types::{ClausesT, JSonObject};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::dag_walk_through::get_cached_blocks_hashes;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{CDEV_PARSING_Q, C_PARSING_Q};
+use crate::lib::messaging_protocol::dispatcher::PacketParsingResult;
 
 /*
 
@@ -245,7 +246,7 @@ pub fn push_to_parsing_q(
     card_code: &String,
     sender: &String,
     connection_type: &String,
-    prerequisites: Vec<String>) -> (bool, bool)
+    prerequisites: Vec<String>) -> PacketParsingResult
 {
     let mut prerequisites = prerequisites;
     // check for duplicate entries
@@ -261,51 +262,54 @@ pub fn push_to_parsing_q(
         false,
     );
     if records.len() > 0
-    { return (true, true); }
+    {
+        return PacketParsingResult {
+            m_status: true,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        }; }
 
-    // control if needs some initiative prerequisites
-    let mut card_ancestors: VString = vec![];
+    // control if this card needs some sepcial initiative prerequisites
     if !card_j_obj["ancestors"].is_null()
     {
         if !card_j_obj["ancestors"][0].is_null()
         {
             let mut i = 0;
             while !card_j_obj["ancestors"][i].is_null() {
-                card_ancestors.push(card_j_obj["ancestors"][i].to_string());
+                prerequisites.push(remove_quotes(&card_j_obj["ancestors"][i]));
                 i += 1;
             }
         }
 
-//      // check if ancestores exist in parsing q
-//      QueryRes queuedAncs = DbModel::select(
-//        stbl_parsing_q,
-//        {"pq_code"},
-//        {{"pq_code", message_ancestors, "IN"}});
-
-//      StringList missedAnc = {};
-//      if (queuedAncs.records.len() == 0)
-//      {
-//        missedAnc = message_ancestors;
-//        CLog::log("block(" + code + ") totaly missed ancestors (" + cutils::dumpIt(missedAnc) + ")", "app", "trace");
-//      }
-//      else if (queuedAncs.records.len() < message_ancestors.len())
-//      {
-//        StringList pq_codes = {};
-//        for(QVDicT a_row: queuedAncs.records)
-//          pq_codes.push(a_row["pq_code"].to_string());
-//        missedAnc = cutils::arrayDiff(message_ancestors, pq_codes);
-//        CLog::log("block(" + code + ") partially missed ancestors (" + cutils::dumpIt(missedAnc) + ") ", "app", "trace");
-//      }
+        // check if ancestors exist in parsing q
+        let empty_string = "".to_string();
+        let mut c1 = ModelClause {
+            m_field_name: "pq_code",
+            m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+            m_clause_operand: "IN",
+            m_field_multi_values: vec![],
+        };
+        for a_hash in &prerequisites {
+            c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+        }
+        let (status, queued_ancestors) = q_select(
+            C_PARSING_Q,
+            vec!["pq_code"],
+            vec![c1],
+            vec![],
+            0,
+            false);
 
         dlog(
-            &format!("block({}) before + missed ancs ({:?}) ({:?})", card_code, prerequisites, card_ancestors),
+            &format!("block({}) before + missed ancs ({:?})", card_code, prerequisites),
             constants::Modules::App,
             constants::SecLevel::Info);
 
         // remove if missed anc already exist in cache?
-        card_ancestors = cutils::array_diff(&card_ancestors, &get_cached_blocks_hashes());
+        let cached_blocks_hashes = &get_cached_blocks_hashes();
+        prerequisites = cutils::array_diff(&prerequisites, &cached_blocks_hashes);
 
-        if card_ancestors.len() > 0
+        if prerequisites.len() > 0
         {
             // remove if missed anc already exist in DAG?
             let empty_string = "".to_string();
@@ -315,7 +319,7 @@ pub fn push_to_parsing_q(
                 m_clause_operand: "IN",
                 m_field_multi_values: vec![],
             };
-            for an_anc in &card_ancestors {
+            for an_anc in &prerequisites {
                 c1.m_field_multi_values.push(an_anc as &(dyn ToSql + Sync));
             }
             let daged_blocks = search_in_dag(
@@ -327,16 +331,14 @@ pub fn push_to_parsing_q(
             );
             if daged_blocks.len() > 0
             {
-                card_ancestors = cutils::array_diff(&card_ancestors, &daged_blocks.iter().map(|r, | r["b_hash"].to_string()).collect::<Vec<String>>());
+                prerequisites = cutils::array_diff(&prerequisites, &daged_blocks.iter().map(|r, | r["b_hash"].to_string()).collect::<Vec<String>>());
             }
         }
 
         dlog(
-            &format!("Some likely missed blocks({})", card_ancestors.join(",")),
+            &format!("Some likely missed blocks({})", prerequisites.join(",")),
             constants::Modules::App,
             constants::SecLevel::Info);
-
-        prerequisites = cutils::array_add(&prerequisites, &card_ancestors);
     }
 
     // * if blcok is FVote, maybe we need customized treatment, since generally in DAG later blocks are depend on
@@ -379,8 +381,20 @@ pub fn push_to_parsing_q(
     // TODO: security issue to control block (specially payload), before insert to db
     // potentially attacks: sql injection, corrupted JSON object ...
 
-    let (_status, _safe_version, pq_payload) = wrap_safe_content_for_db(
+    let (status, _safe_version, pq_payload) = wrap_safe_content_for_db(
         &cutils::serialize_json(&card_j_obj), constants::DEFAULT_SAFE_VERSION);
+    if !status
+    {
+        dlog(
+            &format!("Failed inside push-to-parsing-q in wrap safe the card tpey({}) code ({})", card_type, card_code),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return PacketParsingResult{
+        m_status: false,
+        m_should_purge_file: true,
+        m_message: "".to_string()
+    };
+    }
     let now_ = application().get_now();
     let pq_prerequisites = prerequisites.join(",");
     let zero: i32 = 0;
@@ -432,7 +446,12 @@ pub fn push_to_parsing_q(
             m_field_multi_values: vec![],
         }]);
 
-    return (true, true);
+
+        return PacketParsingResult {
+            m_status: true,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
 }
 
 pub fn remove_from_parsing_q(clauses: ClausesT) -> bool

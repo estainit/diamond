@@ -1,7 +1,7 @@
 use std::thread;
 use postgres::types::ToSql;
 use crate::lib::constants;
-use crate::{application, cutils, machine};
+use crate::{application, machine};
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::dag::dag::{dag_has_blocks_which_are_created_in_current_cycle, search_in_dag};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
@@ -25,7 +25,8 @@ pub fn loop_import_normal_coins()
     while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        do_import_coins(&application().get_now());
+        let now_ = application().get_now();
+        do_import_coins(&now_);
 
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
         // sleep(Duration::from_secs(machine().get_nb_coins_import_gap()));
@@ -86,7 +87,8 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         },
     ];  // (12 hours * 60 minutes) from now
 
-    if dag_has_blocks_which_are_created_in_current_cycle(&application().get_now())
+    let now_ = application().get_now();
+    if dag_has_blocks_which_are_created_in_current_cycle(&now_)
     {
         //  * by (DAG-Has-Blocks-Which-Are-Created-In-Currrent-Cycle) clause we are almost sure the machine is synched
         //  * so must avoiding immidiately importing blocks with fake-old-creation Date

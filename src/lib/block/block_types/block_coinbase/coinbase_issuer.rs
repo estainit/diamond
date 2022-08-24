@@ -16,6 +16,7 @@ use crate::lib::database::abs_psql::{ModelClause, simple_eq_clause};
 use crate::lib::dlog::dlog;
 use crate::lib::machine::machine_neighbor::get_neighbors;
 use crate::lib::messaging_protocol::dag_message_handler::set_maybe_ask_for_latest_blocks_flag;
+use crate::lib::messaging_protocol::dispatcher::make_a_packet;
 use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 use crate::lib::services::dna::dna_handler::{get_machine_shares, get_shares_info};
 use crate::lib::services::treasury::treasury_handler::calc_treasury_incomes;
@@ -67,6 +68,7 @@ pub fn create_coinbase_core(
     mode: &str,
     version: &str) -> (bool, Block)
 {
+
     dlog(
         &format!("create CBCore cycle({cycle_}) mode({mode})"),
         constants::Modules::CB,
@@ -127,12 +129,15 @@ pub fn create_coinbase_core(
     // share2:       985,017.380061
     // share3:       422,068.382528
     // share4:            38.230606
-    let (one_cycle_issued, total_shares, share_amount_per_holder) =
-        calc_definite_releaseable_micro_pai_per_one_cycle_now_or_before(
+    let (
+        one_cycle_issued,
+        total_shares,
+        share_amount_per_holder) =
+        calc_definite_releasable_micro_pai_per_one_cycle_now_or_before(
             &block_creation_date);
 
     dlog(
-        &format!("share_amount_per_holder: {}", dump_hashmap_of_string_f64(&share_amount_per_holder)),
+        &format!("share amount per holder: {:?}", &share_amount_per_holder),
         constants::Modules::CB,
         constants::SecLevel::Info);
 
@@ -248,8 +253,19 @@ pub fn do_generate_coinbase_block(
         constants::SecLevel::Info);
 
     let now_ = application().get_now();
-    let (_cycle_stamp, from, to, _from_hour, _to_hour) =
-        application().get_coinbase_info(&now_, cycle);
+    let (
+        _cycle_stamp,
+        from,
+        to,
+        _from_hour,
+        _to_hour) = application().get_coinbase_info(&now_, cycle);
+
+    println!("mmmmmmmm ressss: {}, {}, {}, {}, {}",
+             _cycle_stamp,
+             from,
+             to,
+             _from_hour,
+             _to_hour);
 
     let (status, mut block) = create_coinbase_core(cycle, mode, version);
     if !status {
@@ -269,12 +285,16 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
     dlog(
-        &format!("do GenerateCoinbaseBlock retrieved leaves from kv: cycle({}) leaves_hashes({}) leaves({})",
-                 cycle, leaves_hashes.join(", "), serde_json::to_string(&leaves).unwrap()),
+        &format!(
+            "do GenerateCoinbaseBlock retrieved leaves from kv: cycle({}) leaves_hashes({}) leaves({})",
+            cycle, leaves_hashes.join(", "), serde_json::to_string(&leaves).unwrap()),
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-    let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&application().get_now());
+    println!("GBC ----- 1");
+    let now_ = application().get_now();
+    let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&now_);
+    println!("GBC ----- 2");
     leaves_hashes = cutils::array_add(&leaves_hashes, &block_hashes);
     leaves_hashes.sort();
     leaves_hashes.dedup();
@@ -336,11 +356,14 @@ pub fn calc_potential_micro_pai_per_one_cycle(year_: &String) -> CMPAIValueT
 }
 
 //old_name_was calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore
-pub fn calc_definite_releaseable_micro_pai_per_one_cycle_now_or_before(
+pub fn calc_definite_releasable_micro_pai_per_one_cycle_now_or_before(
     c_date: &CDateT) -> (CMPAIValueT, SharesCountT, HashMap<String, SharesCountT>)
 {
     let one_cycle_issued: CMPAIValueT = calc_potential_micro_pai_per_one_cycle(&c_date.split("-").collect::<Vec<&str>>()[0].to_string());
-    let (total_shares, share_amount_per_holder, _holders_order_by_shares) = get_shares_info(c_date);
+    let (
+        total_shares,
+        share_amount_per_holder,
+        _holders_order_by_shares) = get_shares_info(c_date);
 
     return (one_cycle_issued, total_shares, share_amount_per_holder);
 }
@@ -518,7 +541,7 @@ pub fn does_dag_has_more_confidence_cb() -> bool
     let mut already_recorded_confidents: Vec<f64> = vec![];
     let mut already_recorded_ancestors: Vec<String> = vec![];
     for block_record in already_recorded_coinbase_blocks {
-        already_recorded_confidents.push(cutils::custom_floor_float(block_record["b_confidence"].parse().unwrap(), 11));
+        already_recorded_confidents.push(cutils::i_floor_float(block_record["b_confidence"].parse().unwrap()));
         already_recorded_ancestors = cutils::array_add(
             &already_recorded_ancestors,
             &cutils::convert_json_array_to_string_vector(
@@ -547,7 +570,8 @@ pub fn does_dag_has_more_confidence_cb() -> bool
 
     let max_recorded_confident: f64 = already_recorded_confidents[0];
 
-    let (the_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&application().get_now());
+    let now_ = application().get_now();
+    let (the_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&now_);
     let not_recorded_blocks: Vec<String> = cutils::array_diff(&block_hashes, &already_recorded_ancestors);
     if (the_confidence > max_recorded_confident) || (not_recorded_blocks.len() > 0) {
         return true;
@@ -621,11 +645,13 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
 
     // if the machine email hash is not the smalest,
     // control it if based on time passed from coinbase-cycle can create the coinbase?
+    let now_ = application().get_now();
     let (
         _backer_address,
         _shares,
-        mut percentage) = get_machine_shares(&application().get_now());
+        mut percentage) = get_machine_shares(&now_);
 
+    println!("kkkkkkkk 2");
     percentage = (percentage / 5.0) + 1.0;
     let mut sub_cycle = 12.0 + percentage;
     if application().cycle_length() != 1 {
@@ -633,11 +659,14 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
     }
 
     let now_ = application().get_now();
-    let cb_email_counter = application().get_coinbase_age_by_seconds(&now_) / (application().get_cycle_by_seconds() / sub_cycle as TimeBySecT);
+    let mut cb_email_counter = application().get_coinbase_age_by_seconds(&now_);
+    cb_email_counter = cb_email_counter / (application().get_cycle_by_seconds() / sub_cycle as TimeBySecT);
+    println!("kkkkkkkk 2a {}", cb_email_counter);
     dlog(
-        &format!("cb_email_counter cycle {} {} > {}", cb_email_counter, cb_email_counter, machine_index),
+        &format!("coinbase email counter cycle {} {} > {}", cb_email_counter, cb_email_counter, machine_index),
         constants::Modules::CB,
         constants::SecLevel::Info);
+    println!("kkkkkkkk 3");
     if cb_email_counter > machine_index as TimeBySecT {
         // it is already passed time and if still no one create the block it is my turn to create it
         dlog(
@@ -646,6 +675,7 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
             constants::SecLevel::TmpDebug);
         return true;
     }
+    println!("kkkkkkkk 4");
     dlog(
         &format!("Machine has to wait To Create Coinbase Block! (if does not receive the fresh CBB) keys({}::{})", cycle, machine_email),
         constants::Modules::CB,
@@ -700,6 +730,8 @@ pub fn control_coinbase_issuance_criteria() -> bool
 
     // postpond coinbase-generating if machine missed some blocks
     let missed_blocks: Vec<String> = get_missed_blocks_to_invoke(0);
+    println!("mmmmmmm missed_blocks {:?}", missed_blocks);
+
     if missed_blocks.len() > 0 {
 
         // // FIXME: if an adversory sends a bunch of blocks which have ancestors, in machine will finished with a long list of
@@ -726,6 +758,7 @@ pub fn control_coinbase_issuance_criteria() -> bool
     }
 
     // a psudo random mechanisem
+    println!("mmmmmmm 65 76 ");
     let am_i_qualified_to_issue_coinbase: bool = if_i_have_first_hashed_email("asc");
     if !am_i_qualified_to_issue_coinbase {
         dlog(
@@ -770,6 +803,7 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
 pub fn maybe_create_coinbase_block() -> bool
 {
     let can_issue_new_cb = control_coinbase_issuance_criteria();
+    println!("kkkkkkkk 66");
     if !can_issue_new_cb {
         return true;
     }
@@ -791,10 +825,13 @@ pub fn try_create_coinbase_block() -> bool
         &format!("Try to Create Coinbase for Range ({}, {})", coinbase_from, coinbase_to),
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
+
+    let cycle_stamp = application().get_coinbase_cycle_stamp(&now_);
     let (status, mut block) = do_generate_coinbase_block(
-        &application().get_coinbase_cycle_stamp(&now_),
+        &cycle_stamp,
         constants::stages::CREATING,
         "0.0.1");
+
     if !status {
         dlog(
             &format!("Due to an error, can not create a coinbase block for range ({}, {})", coinbase_from, coinbase_to),
@@ -824,7 +861,8 @@ pub fn try_create_coinbase_block() -> bool
     let tmp_local_confidence: f64 = block.m_block_confidence as f64;
 
 // if local machine can create a coinbase block with more confidence or ancestors, broadcast it
-    let (atleast_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&application().get_now());
+    let now_ = application().get_now();
+    let (atleast_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&now_);
 
     let mut tmp_dag_confidence: f64 = 0.0;
     let mut tmp_dag_ancestors: Vec<String> = vec![];
@@ -919,29 +957,69 @@ pub fn try_create_coinbase_block() -> bool
 // could it be a security issue? when an adversory in last minutes(before midnight or mid-day) starts to spam network by blocks
 // and most of nodes can not be synched, so too many coinbase blocks creating
 //
-    if (locally_created_coinbase_block_has_more_confidence_than_dag || locally_created_coinbase_block_has_more_ancestors_than_dag)
+    if (locally_created_coinbase_block_has_more_confidence_than_dag
+        || locally_created_coinbase_block_has_more_ancestors_than_dag)
         && (get_missed_blocks_to_invoke(0).len() < 1)
     {
 
         // broadcast coin base
+        let now_ = application().get_now();
         if application().is_in_current_cycle(&block.m_block_creation_date.to_string())
         {
-            let push_res: bool = push_into_sending_q(
-                constants::block_types::COINBASE,
-                &*block.m_block_hash,
-                &*serde_json::to_string(&block).unwrap(),
-                &format!("Broadcasting coinbase block CB({}) issued by({} for cycle range({}, {})",
-                         &cutils::hash8c(&block.m_block_hash),
-                         machine().get_pub_email_info().m_address,
-                         coinbase_from,
-                         coinbase_to),
+            dlog(
+                &format!("pushing coinbase block to network: {}", block.m_block_hash),
+                constants::Modules::CB,
+                constants::SecLevel::TmpDebug);
+
+            let mut block_body = serde_json::to_string(&block).unwrap();
+            block_body = ccrypto::b64_encode(&block_body);
+            let ancestors: Vec<String> = block.m_block_ancestors.clone();
+
+            let (_code, body) = make_a_packet(
+                vec![
+                    json!({
+                "cdType": constants::card_types::COINBASE_BLOCK,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "bHash": block.m_block_hash.clone(),
+                // "ancestors": ancestors,
+                "block": block_body,
+            }),
+                ],
+                constants::DEFAULT_PACKET_TYPE,
+                constants::DEFAULT_PACKET_VERSION,
+                application().get_now(),
+            );
+            dlog(
+                &format!("prepared coinbase packet, before insert into DB code({}) {}", block.m_block_hash, body),
+                constants::Modules::App,
+                constants::SecLevel::Info);
+
+            let status = push_into_sending_q(
+                constants::card_types::COINBASE_BLOCK,
+                block.m_block_hash.as_str(),
+                &body,
+                &format!("Coinbase block ({}) issued by me", cutils::hash6c(&block.m_block_hash)),
                 &vec![],
                 &vec![],
                 false,
             );
 
+            // let push_res: bool = push_into_sending_q(
+            //     constants::block_types::COINBASE,
+            //     &*block.m_block_hash,
+            //     &*serde_json::to_string(&block).unwrap(),
+            //     &format!("Broadcasting coinbase block CB({}) issued by({} for cycle range({}, {})",
+            //              &cutils::hash8c(&block.m_block_hash),
+            //              machine().get_pub_email_info().m_address,
+            //              coinbase_from,
+            //              coinbase_to),
+            //     &vec![],
+            //     &vec![],
+            //     false,
+            // );
+
             dlog(
-                &format!("coinbase push1 res({})", dump_it(push_res)),
+                &format!("coinbase push1 res({})", status),
                 constants::Modules::CB,
                 constants::SecLevel::TmpDebug);
 
@@ -951,9 +1029,10 @@ pub fn try_create_coinbase_block() -> bool
                 constants::Modules::CB,
                 constants::SecLevel::TmpDebug);
 
-            return true;
+            return status;
         }
-    } else if if_passed_certain_time_of_cycle_to_record_in_dag(&application().get_now()) && !atleast_one_coinbase_block_exist
+    } else if
+    if_passed_certain_time_of_cycle_to_record_in_dag(&now_) && !atleast_one_coinbase_block_exist
     {
         // another psudo random emulatore
         // if already passed more than 1/4 of cycle and still no coinbase block recorded in DAG,

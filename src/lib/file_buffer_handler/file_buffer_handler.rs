@@ -164,13 +164,13 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
     println!(">>>>>>> cpacket: {}", cpacket);
 
 
-    let (status, should_purge_file) = parse_a_packet(
+    let pa_pa_res = parse_a_packet(
         &sender,
         &cpacket,
         &connection_type);
 
     dlog(
-        &format!("Parse packet response: status({}) should purge file({}) ", status, should_purge_file),
+        &format!("Parse packet response: status({}) should purge file({}) ", pa_pa_res.m_status, pa_pa_res.m_should_purge_file),
         constants::Modules::App,
         constants::SecLevel::Info);
 
@@ -178,17 +178,17 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
     //should purge file?
     if file_name != ""
     {
-        if should_purge_file == false
+        if pa_pa_res.m_should_purge_file == false
         {
             dlog(
                 &format!("Why should not purge the file {}? {}", file_name, cutils::serialize_json(&cpacket)),
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
         }
-        maybe_purge_message(&file_name, should_purge_file);
+        maybe_purge_message(&file_name, pa_pa_res.m_should_purge_file);
     }
 
-    return status;
+    return pa_pa_res.m_status;
 }
 
 //old_name_was maybePurgeMessage

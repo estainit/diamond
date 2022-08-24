@@ -135,7 +135,7 @@ impl BlockApprovedDocument {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Block
 {
     pub m_block_net: String,
@@ -884,7 +884,7 @@ impl Block {
       * sometimes (e.g. repayback blocks which can be created by delay and causing to add block to missed blocks)
       * we need to doublecheck if the block still is in missed blocks list and remove it
       */
-      MissedBlocksHandler::removeFromMissedBlocks(getBlockHash());
+      removeFromMissedBlocks(getBlockHash());
 
       /**
       * inherit UTXO visibilities of ancestors of newly DAG-added block
@@ -929,7 +929,7 @@ impl Block {
     {
       JSonArray block_ext_info;
       QueryRes res = DbModel::select(
-        stbl_block_extinfos,
+        C_BLOCK_EXT_INFO,
         {"x_block_hash", "x_detail"},
         {{"x_block_hash", block_hash}});
       if (res.records.len() != 1)
@@ -1160,7 +1160,7 @@ impl Block {
         //{
         //  QueryRes bExtInfo = DbModel::select(
         //    "db_comen_blocks",
-        //    stbl_block_extinfos,
+        //    C_BLOCK_EXT_INFO,
         //    StringList {"x_block_hash", "x_detail"},     // fields
         //    {ModelClause("x_block_hash", block_hash)},
         //    {},

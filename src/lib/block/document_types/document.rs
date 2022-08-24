@@ -13,7 +13,7 @@ use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, DocLenT, JSon
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Document
 {
     pub m_doc_hash: String,

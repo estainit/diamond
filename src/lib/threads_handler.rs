@@ -45,6 +45,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             // import new minted coins
             let now_ = application().get_now();
             import_coinbased_coins(&now_);
+
             // double checking repayblock importing
             import_double_check();
             if constants::DATABASAE_AGENT == "sqlite"
@@ -70,6 +71,11 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
                     constants::Modules::App,
                     constants::SecLevel::Info);
             }
+        }
+
+        {
+            // pull from parsing_q
+            smart_pull_q();
         }
 
         {

@@ -577,6 +577,8 @@ pub mod card_types
     pub const NICE_TO_MEET_YOU: &str = "niceToMeetYou";
     pub const HERE_IS_NEW_NEIGHBOR: &str = "hereIsNewNeighbor";
 
+    pub const COINBASE_BLOCK: &str = "coinbase";
+
     // TODO: move these commands to GQL format
     pub const DAG_INVOKE_LEAVES: &str = "dagInvokeLeaves";
     pub const DAG_LEAVES_INFO: &str = "dagLeavesInfo";

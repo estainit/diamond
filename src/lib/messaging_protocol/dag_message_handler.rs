@@ -1,37 +1,45 @@
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use serde_json::json;
+use crate::{application, constants, cutils, dlog, get_value, machine};
+use crate::cutils::remove_quotes;
+use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::dag::dag::search_in_dag;
+use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
+use crate::lib::dag::missed_blocks_handler::add_missed_blocks_to_invoke;
+use crate::lib::database::abs_psql::{q_upsert, simple_eq_clause};
+use crate::lib::database::tables::C_KVALUE;
+use crate::lib::k_v_handler::{search_in_kv, set_value};
+use crate::lib::messaging_protocol::dispatcher::{make_a_packet, PacketParsingResult};
+use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
+
+//old_name_was setLastReceivedBlockTimestamp
+pub fn set_last_received_block_timestamp(
+    block_type: &String,
+    block_hash: &String,
+    receive_date: &String) -> bool
+{
+    let kv_value = cutils::serialize_json(&json!({
+        "last_block_type": block_type,
+        "last_block_hash": block_hash,
+        "last_block_receive_date": receive_date
+    }));
+    let now_ = application().get_now();
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("kv_value", &kv_value as &(dyn ToSql + Sync)),
+        ("kv_last_modified", &now_ as &(dyn ToSql + Sync)),
+    ]);
+
+    q_upsert(
+        C_KVALUE,
+        "kv_key",
+        "last_received_block_timestamp",
+        &values,
+        false);
+    return true;
+}
+
 /*
-#include "stable.h"
-#include "lib/sending_q_handler/sending_q_handler.h"
-#include "lib/parsing_q_handler/parsing_q_handler.h"
-#include "lib/dag/full_dag_handler.h"
-#include "dag_message_handler.h"
-
-const String DAGMessageHandler::STBL_KVALUE = "c_kvalue";
-
-DAGMessageHandler::DAGMessageHandler()
-{
-
-}
-
-bool DAGMessageHandler::setLastReceivedBlockTimestamp(
-  const String &bType,
-  const String &block_hash,
-  const String &receive_date)
-{
-  DbModel::upsert(
-    STBL_KVALUE,
-    "kv_key",
-    "last_received_block_timestamp",
-    {
-      {"kv_value", cutils::serializeJson({
-        {"last_block_type", bType},
-        {"last_block_hash", block_hash},
-        {"last_block_receive_date", receive_date}
-      })},
-      {"kv_last_modified", application().get_now()}
-    });
-  return true;
-}
-
 bool DAGMessageHandler::invokeDescendents(
   const bool &denay_double_send_check)
 {
@@ -221,20 +229,6 @@ void DAGMessageHandler::loopMissedBlocksInvoker()
   CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loop Missed Blocks Invoker");
 }
 */
-use std::collections::HashMap;
-use postgres::types::ToSql;
-use serde_json::json;
-use crate::{application, constants, cutils, dlog, get_value, machine};
-use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
-use crate::lib::dag::dag::search_in_dag;
-use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
-use crate::lib::dag::missed_blocks_handler::add_missed_blocks_to_invoke;
-use crate::lib::database::abs_psql::{q_upsert, simple_eq_clause};
-use crate::lib::database::tables::C_KVALUE;
-use crate::lib::k_v_handler::{search_in_kv, set_value};
-use crate::lib::messaging_protocol::dispatcher::make_a_packet;
-use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
@@ -388,7 +382,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
             remove_quotes(&last_block["last_block_receive_date"]),
             now_).as_seconds;
 
-        let minimum_leave_invoke_gap= machine().get_invoke_leaves_gap();
+        let minimum_leave_invoke_gap = machine().get_invoke_leaves_gap();
         if invoke_gap < minimum_leave_invoke_gap
         {
             dlog(
@@ -425,7 +419,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
 }
 
 //old_name_was extractLeavesAndPushInSendingQ
-pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
+pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> PacketParsingResult
 {
     let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
     let mut new_leaves: Vec<JSonObject> = vec![];
@@ -468,7 +462,12 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> (bool, bool)
         &vec![],
         false,
     );
-    return (true, status);
+
+    return PacketParsingResult{
+        m_status: true,
+        m_should_purge_file: status,
+        m_message: "".to_string()
+    };
 }
 
 /*
@@ -516,7 +515,7 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
 pub fn handle_received_leave_info(
     sender_email: &String,
     message: &JSonObject,
-    connection_type: &String) -> (bool, bool)
+    connection_type: &String) -> PacketParsingResult
 {
     dlog(
         &format!("FIX ME: What part of message must be recorded in db? {:?}", message),
@@ -549,7 +548,12 @@ pub fn handle_received_leave_info(
     //maybe launch missed block invoker
     //launchMissedBlocksInvoker()   // FIXME: do it in Async mode or thread
 
-    return (true, true);
+
+        return PacketParsingResult {
+            m_status: true,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
 }
 
 //old_name_was setLastReceivedLeaveInfoTimestamp

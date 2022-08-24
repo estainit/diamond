@@ -25,7 +25,8 @@ pub fn loop_import_coinbase_coins()
     while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        import_coinbased_coins(&application().get_now());
+        let now_ = application().get_now();
+        import_coinbased_coins(&now_);
         /*
 
         // double checking repayblock importing

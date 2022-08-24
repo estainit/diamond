@@ -320,41 +320,49 @@ pub fn strip_parentheses_as_break_line(mut content: String) -> String
 }
 
 //old_name_was paddingLengthValue
+#[allow(unused, dead_code)]
 pub fn padding_length_value(value: String, needed_len: u8) -> String
 {
     return left_padding(value.to_string(), needed_len);
 }
 
+#[allow(unused, dead_code)]
 pub fn hash4c(s: &String) -> String
 {
     s.substring(0, 4).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn hash6c(s: &String) -> String
 {
     s.substring(0, 6).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn hash8c(s: &String) -> String
 {
     s.substring(0, 8).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn hash16c(s: &String) -> String
 {
     s.substring(0, 16).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn hash32c(s: &String) -> String
 {
     s.substring(0, 32).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn hash64c(s: &String) -> String
 {
     s.substring(0, 64).to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn short_bech16(s: &String) -> String
 {
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
@@ -430,7 +438,7 @@ pub fn custom_floor_float(number: f64, percision: u8) -> f64
 //old_name_was iFloorFloat
 pub fn i_floor_float(number: f64) -> f64
 {
-    return custom_floor_float(number, 11); // in order to keep maximum 11 digit after point
+    return custom_floor_float(number, constants::FLOAT_LENGTH); // in order to keep maximum 11 digit after point
 }
 
 //old_name_was convertJSonArrayToStringVector
@@ -487,12 +495,14 @@ pub fn array_unique(inp_arr: &Vec<String>) -> Vec<String>
 }
 
 //old_name_was packCoinCode
+#[allow(unused, dead_code)]
 pub fn pack_coin_code(ref_trx_hash: &CDocHashT, output_index: COutputIndexT) -> CCoinCodeT
 {
     return vec![ref_trx_hash.to_string(), output_index.to_string()].join(":");
 }
 
 //old_name_was unpackCoinCode
+#[allow(unused, dead_code)]
 pub fn unpack_coin_code(coin: &CCoinCodeT) -> (String, COutputIndexT)
 {
     let segments: Vec<&str> = coin.split(":").collect();
