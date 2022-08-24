@@ -326,6 +326,13 @@ pub mod block_types
     pub const REPAYMENT_BLOCK: &str = "RpBlock";
 }
 
+pub const THE_BLOCK_TYPES: [&str; 6] = [
+    block_types::NORMAL,
+    block_types::COINBASE,
+    block_types::FLOATING_SIGNATURE,
+    block_types::FLOATING_VOTE,
+    block_types::POW,
+    block_types::REPAYMENT_BLOCK];
 
 pub mod document_types
 {
@@ -622,7 +629,6 @@ pub mod card_types
     pub const NICE_TO_MEET_YOU: &str = "niceToMeetYou";
     pub const HERE_IS_NEW_NEIGHBOR: &str = "hereIsNewNeighbor";
 
-    pub const COINBASE_BLOCK: &str = "coinbase";
 
     // TODO: move these commands to GQL format
     pub const DAG_INVOKE_LEAVES: &str = "dagInvokeLeaves";
@@ -642,6 +648,24 @@ pub mod card_types
     pub const PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS: &str = "pleaseRemoveMeFromYourNeighbors";
     pub const DIRECT_MESSAGE_TO_NEIGHBOR: &str = "directMsgToNeighbor";
 }
+
+pub const THE_CARD_TYPES: [&str; 15] = [
+    card_types::DAG_INVOKE_BLOCK,
+    card_types::DAG_INVOKE_DESCENDENTS,
+    card_types::DAG_INVOKE_LEAVES,
+    card_types::DAG_LEAVES_INFO,
+    card_types::HANDSHAKE,
+    card_types::NICE_TO_MEET_YOU,
+    card_types::HERE_IS_NEW_NEIGHBOR,
+    card_types::PROPOSAL_LOAN_REQUEST,
+    card_types::FULL_DAG_DOWNLOAD_REQUEST,
+    card_types::PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS,
+    card_types::FULL_DAG_DOWNLOAD_RESPONSE,
+    card_types::BALLOTS_RECEIVE_DATES,
+    card_types::NODE_STATUS_SNAPSHOT,
+    card_types::NODE_STATUS_SCREENSHOT,
+    card_types::DIRECT_MESSAGE_TO_NEIGHBOR];
+
 
 #[allow(unused, dead_code)]
 pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";

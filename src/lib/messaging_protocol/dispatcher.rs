@@ -26,7 +26,7 @@ void invokeDescendents_()
 //old_name_was dispatchMessage
 pub fn parse_a_packet(
     sender: &String,
-    packet: &JSonObject,
+    packet: &mut JSonObject,
     connection_type: &String) -> PacketParsingResult
 {
 
@@ -37,17 +37,19 @@ pub fn parse_a_packet(
     // * it is a-kind-of graphGL implementation.
     // * each packet contains one or more cards, and each card represents a single query or single query result
     let packet_type: String;
+    let mut error_message: String = "".to_string();
     if packet["pType"].is_null()
     {
+        error_message = format!("Unknown packet in packet parsing: missed pType: {}", packet);
         dlog(
-            &format!("Unknown packet in packet parsing: missed pType: {}", packet),
+            &error_message,
             constants::Modules::App,
             constants::SecLevel::Error);
 
         return PacketParsingResult {
             m_status: false,
             m_should_purge_file: true,
-            m_message: "".to_string(),
+            m_message: error_message,
         };
     }
 
@@ -55,15 +57,16 @@ pub fn parse_a_packet(
     packet_type = remove_quotes(&packet["pType"]);
     if packet_type != constants::DEFAULT_PACKET_TYPE.to_string()
     {
+        error_message = format!("Undefined packet in packet parsing: {}!={}", packet_type, constants::DEFAULT_PACKET_TYPE.to_string());
         dlog(
-            &format!("Undefined packet in packet parsing: {}!={}", packet_type, constants::DEFAULT_PACKET_TYPE.to_string()),
+            &error_message,
             constants::Modules::App,
             constants::SecLevel::Error);
 
         return PacketParsingResult {
             m_status: false,
             m_should_purge_file: true,
-            m_message: "".to_string(),
+            m_message: error_message,
         };
     }
 
@@ -80,15 +83,16 @@ pub fn parse_a_packet(
 
     if (sender == "") || (connection_type == "")
     {
+        error_message = format!("No sender or connection_type to dispatch sender({})", sender);
         dlog(
-            &format!("No sender or connection_type to dispatch sender({})", sender),
+            &error_message,
             constants::Modules::App,
             constants::SecLevel::Error);
 
         return PacketParsingResult {
             m_status: false,
             m_should_purge_file: true,
-            m_message: "".to_string(),
+            m_message: error_message,
         };
     }
 
@@ -102,8 +106,9 @@ pub fn parse_a_packet(
     let (status, cards) = match packet["cards"].as_array() {
         Some(r) => (true, r.clone()),
         _ => {
+            error_message = format!("Failed in de-serialising cards array: {}", packet["cards"]);
             dlog(
-                &format!("Failed in serialising cards: {}", packet["cards"]),
+                &error_message,
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
 
@@ -115,39 +120,43 @@ pub fn parse_a_packet(
         return PacketParsingResult {
             m_status: false,
             m_should_purge_file: false,
-            m_message: "".to_string(),
+            m_message: error_message,
         };
     }
 
     let mut status: bool = true;
     let mut should_purge_file: bool = false;
-    for a_card in cards
+    let mut error_messages = "".to_string();
+    for mut a_card in cards
     {
-        if !is_valid_version_number(remove_quotes(&a_card["cdVer"]).as_str()) {
+        if !is_valid_version_number(remove_quotes(&mut a_card["cdVer"]).as_str()) {
             dlog(
                 &format!("Invalid card version ({}) for card type ({})",
-                         a_card["cdVer"], remove_quotes(&a_card["cdType"])),
+                         &a_card["cdVer"], remove_quotes(&a_card["cdType"])),
                 constants::Modules::App,
                 constants::SecLevel::Error);
             continue;
         }
 
+        let card_type_ = remove_quotes(&a_card["cdType"].clone());
+        let card_ver_ = remove_quotes(&a_card["cdVer"].clone());
         let pa_pa_res = dispatch_a_card(
             sender,
             connection_type,
             &c_date,
-            &a_card,
-            &remove_quotes(&a_card["cdType"]),
-            &remove_quotes(&a_card["cdVer"]),
+            &mut a_card,
+            &card_type_,
+            &card_ver_,
             &packet_version.clone(),
         );
 
         status &= pa_pa_res.m_status;
         should_purge_file |= pa_pa_res.m_should_purge_file;
+        error_messages += &*pa_pa_res.m_message;
 
         dlog(
-            &format!("Dispatch a card response card type ({}) status({}) should purge file({})",
-                     remove_quotes(&a_card["cdType"]), pa_pa_res.m_status, pa_pa_res.m_should_purge_file),
+            &format!("Dispatch a card response card type ({}) status({}) should purge file({}), {}",
+                     remove_quotes(&a_card["cdType"]), pa_pa_res.m_status, pa_pa_res.m_should_purge_file, pa_pa_res.m_message),
             constants::Modules::App,
             constants::SecLevel::Debug);
     }
@@ -160,7 +169,7 @@ pub fn parse_a_packet(
     return PacketParsingResult {
         m_status: status,
         m_should_purge_file: should_purge_file,
-        m_message: "".to_string(),
+        m_message: error_messages,
     };
 
     // }

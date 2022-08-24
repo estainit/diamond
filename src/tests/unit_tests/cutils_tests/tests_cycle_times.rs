@@ -81,8 +81,11 @@ pub mod tests_cycle_times {
             assert_eq!(application().get_coinbase_cycle_stamp(&"2012-11-05 12:00:00".to_string()), "2012-11-05 12:00:00".to_string());
             assert_eq!(application().get_coinbase_cycle_stamp(&"2012-11-05 12:00:01".to_string()), "2012-11-05 12:00:00".to_string());
             assert_eq!(application().get_coinbase_cycle_stamp(&"2012-11-05 23:59:59".to_string()), "2012-11-05 12:00:00".to_string());
-        }else {
-            assert!(false);
+        }
+        else if application().cycle_length() == 10
+        {
+            assert_eq!(application().get_coinbase_cycle_stamp(&"2012-11-05 00:00:00".to_string()), "2012-11-05 000".to_string());
+
         }
     }
 

@@ -240,7 +240,7 @@ std::tuple<bool, bool> ParsingQHandler::parsePureBlock(
 
 //old_name_was pushToParsingQ
 pub fn push_to_parsing_q(
-    card_j_obj: &JSonObject,
+    card_j_obj: &mut JSonObject,
     creation_date: &String,
     card_type: &String,
     card_code: &String,
@@ -333,7 +333,11 @@ pub fn push_to_parsing_q(
             );
             if daged_blocks.len() > 0
             {
-                prerequisites = cutils::array_diff(&prerequisites, &daged_blocks.iter().map(|r, | r["b_hash"].to_string()).collect::<Vec<String>>());
+                prerequisites = cutils::array_diff(
+                    &prerequisites,
+                    &daged_blocks.iter()
+                        .map(|r, | r["b_hash"].to_string())
+                        .collect::<Vec<String>>());
             }
         }
 
@@ -348,7 +352,8 @@ pub fn push_to_parsing_q(
     // * but in case of vote blocks, they have effect on previous blocks (e.g accepting or rejecting a transaction of previously block)
     // * so depends on voting type(bCat) for, we need proper treatment
 
-    if remove_quotes(&card_j_obj["bType"]) == constants::block_types::FLOATING_VOTE
+    if !card_j_obj["block_type"].is_null()
+        && remove_quotes(&card_j_obj["block_type"]) == constants::block_types::FLOATING_VOTE
     {
         /*
         if (message["bCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)

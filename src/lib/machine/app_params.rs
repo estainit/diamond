@@ -74,7 +74,7 @@ impl AppParams {
     }
 
     pub fn cycle_length(&self) -> u32 {
-        1
+        10
         // in test environment it would be 10, for 10 minutes
     }
 

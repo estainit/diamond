@@ -147,7 +147,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
     let (
         dec_status,
         connection_type,
-        cpacket) =
+        mut cpacket) =
         decrypt_and_parse_packet(
             &sender,
             &receiver,
@@ -166,7 +166,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 
     let pa_pa_res = parse_a_packet(
         &sender,
-        &cpacket,
+        &mut cpacket,
         &connection_type);
 
     dlog(
@@ -181,7 +181,8 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         if pa_pa_res.m_should_purge_file == false
         {
             dlog(
-                &format!("Why should not purge the file {}? {}", file_name, cutils::serialize_json(&cpacket)),
+                &format!("Why should not purge the file {}? {} {}",
+                 file_name, pa_pa_res.m_message, cutils::serialize_json(&cpacket)),
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
         }

@@ -599,7 +599,7 @@ pub fn make_email_hash_dictionary() -> (String, String, String, QSDicT)
     dlog(
         &format!("neightbors in makeEmail Hash Dict: {}", dump_hashmap_of_qvd_records(&neightbors)),
         constants::Modules::CB,
-        constants::SecLevel::TmpDebug);
+        constants::SecLevel::Trace);
 
     for neighbor in neightbors
     {
@@ -660,7 +660,10 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
 
     let now_ = application().get_now();
     let mut cb_email_counter = application().get_coinbase_age_by_seconds(&now_);
-    cb_email_counter = cb_email_counter / (application().get_cycle_by_seconds() / sub_cycle as TimeBySecT);
+    println!("jjjjj sub_cycle: {}", sub_cycle);
+    let sub2 =  application().get_cycle_by_seconds() / sub_cycle as TimeBySecT;
+    println!("jjjjj kk: {}", sub2);
+    cb_email_counter = cb_email_counter / sub2;
     println!("kkkkkkkk 2a {}", cb_email_counter);
     dlog(
         &format!("coinbase email counter cycle {} {} > {}", cb_email_counter, cb_email_counter, machine_index),
@@ -803,7 +806,7 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
 pub fn maybe_create_coinbase_block() -> bool
 {
     let can_issue_new_cb = control_coinbase_issuance_criteria();
-    println!("kkkkkkkk 66");
+    println!("kkkkkkkk 66 can_issue_new_cb? {}", can_issue_new_cb);
     if !can_issue_new_cb {
         return true;
     }
@@ -977,7 +980,7 @@ pub fn try_create_coinbase_block() -> bool
             let (_code, body) = make_a_packet(
                 vec![
                     json!({
-                "cdType": constants::card_types::COINBASE_BLOCK,
+                "cdType": constants::block_types::COINBASE,
                 "cdVer": constants::DEFAULT_CARD_VERSION,
                 "bHash": block.m_block_hash.clone(),
                 // "ancestors": ancestors,
@@ -994,7 +997,7 @@ pub fn try_create_coinbase_block() -> bool
                 constants::SecLevel::Info);
 
             let status = push_into_sending_q(
-                constants::card_types::COINBASE_BLOCK,
+                constants::block_types::COINBASE,
                 block.m_block_hash.as_str(),
                 &body,
                 &format!("Coinbase block ({}) issued by me", cutils::hash6c(&block.m_block_hash)),
