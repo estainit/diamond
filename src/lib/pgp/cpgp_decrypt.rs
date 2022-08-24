@@ -10,7 +10,7 @@ pub fn pgp_decrypt(
     sender_pub_key: &String) -> CPGPMessage
 {
     let mut final_decoded_msg: CPGPMessage = CPGPMessage::new();
-    let mut message: String = strip_pgp_envelope(message);
+    let message: String = strip_pgp_envelope(message);
     // decode base64
     let (status, base64_decoded) = ccrypto::b64_decode(&message);
     if !status
@@ -51,7 +51,7 @@ pub fn pgp_decrypt(
     final_decoded_msg.m_secret_key = remove_quotes(&decode_j_obj["secretKey"]);
     // final_decoded_msg.m_initialization_vector = remove_quotes(&decode_j_obj["iv"]);
 
-     eprintln!("final_decoded_msg.m_secret_key: {}", final_decoded_msg.m_secret_key);
+    eprintln!("final_decoded_msg.m_secret_key: {}", final_decoded_msg.m_secret_key);
     if final_decoded_msg.m_secret_key == constants::message_tags::NO_ENCRYPTION
     {
         dlog(
@@ -119,7 +119,7 @@ pub fn pgp_decrypt(
             final_decoded_msg.m_message = "missed sender_pub_key".to_string();
             return final_decoded_msg.clone();
         }
-        let hash: String = ccrypto::keccak256(&final_decoded_msg.m_message);
+        // let hash: String = ccrypto::keccak256(&final_decoded_msg.m_message);
         final_decoded_msg.m_is_verified = ccrypto::rsa_verify_signature(
             sender_pub_key,
             &ccrypto::keccak256(&final_decoded_msg.m_message),

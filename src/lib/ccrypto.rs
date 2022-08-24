@@ -69,6 +69,7 @@ pub const RSA_PRIVATE_BEGIN: &str = "-----BEGIN RSA PRIVATE KEY-----";
 #[allow(dead_code, unused)]
 pub const RSA_PRIVATE_END: &str = "-----END RSA PRIVATE KEY-----";
 
+#[allow(unused, dead_code)]
 pub fn do_sha256(_message: &String) -> String {
     "".to_string()
 }
@@ -154,7 +155,7 @@ pub fn aes_encrypt_16(msg: String, key: &String) -> String
     let key = <[u8; 16]>::try_from(key.as_bytes()).unwrap();
     let key = GenericArray::from(key);//[42u8; 16]
 
-    let mut block: [u8; 16] = <[u8; 16]>::try_from(msg.as_bytes()).unwrap();
+    let block: [u8; 16] = <[u8; 16]>::try_from(msg.as_bytes()).unwrap();
     let mut block = GenericArray::from(block);//[42u8; 16]
 
     // Initialize cipher
@@ -191,8 +192,8 @@ pub fn aes_decrypt_24(msg: String, key: &String) -> String
     let key = <[u8; 16]>::try_from(key.as_bytes()).unwrap();
     let key = GenericArray::from(key);//[42u8; 16]
 
-    let mut block = decode(msg).unwrap();
-    let mut block: [u8; 16] = <[u8; 16]>::try_from(block).unwrap();
+    let block = decode(msg).unwrap();
+    let block: [u8; 16] = <[u8; 16]>::try_from(block).unwrap();
     let mut block = GenericArray::from(block);//[42u8; 16]
 
     let cipher = Aes128::new(&key);
@@ -443,17 +444,20 @@ pub fn ecdsa_import_hex_public_key(compact_point: &String) -> (bool, PublicKey)
 }
 
 //old_name_was ECDSAValidatePrivateKey
+#[allow(unused, dead_code)]
 pub fn ecdsa_validate_private_key(hex_private_key: &String) -> bool {
     let (status, _) = ecdsa_import_hex_private_key(hex_private_key);
     status
 }
 
 //old_name_was ECDSAValidatePublicKey
+#[allow(unused, dead_code)]
 pub fn ecdsa_validate_public_key(hex_public_key: &String) -> bool {
     let (status, _) = ecdsa_import_hex_public_key(hex_public_key);
     status
 }
 
+#[allow(unused, dead_code)]
 pub fn ecdsa_generate_pub_by_priv(hex_private_key: &String) -> String {
     let secp = Secp256k1::new();
     let (_, secret_key) = ecdsa_import_hex_private_key(hex_private_key);
@@ -592,6 +596,7 @@ pub fn rsa_read_pem_prv_key(pem_prv_key: &String) -> RsaPrivateKey
 }
 
 //old_name_was isValidRSAPrivateKey
+#[allow(unused, dead_code)]
 pub fn rsa_is_valid_prv_key(pem_prv_key: &String) -> bool
 {
     return match RsaPrivateKey::from_pkcs8_pem(pem_prv_key) {
@@ -682,7 +687,7 @@ pub fn rsa_verify_signature(pem_pub_key: &String, message: &String, signature: &
     let msg = message[0..16].as_bytes();
     let padding = PaddingScheme::new_pkcs1v15_sign(None);
     match pub_key.verify(padding, msg, sig) {
-        Ok(r) => {
+        Ok(_r) => {
             return true;
         }
         Err(e) => {

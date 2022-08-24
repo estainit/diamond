@@ -6,7 +6,7 @@ use crate::lib::block::block_types::block::Block;
 
 pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, Block)
 {
-    let b_body= record_row["b_body"].to_string();
+    let _b_body= record_row["b_body"].to_string();
 
     let obj: JSonObject = json!({
         "local_receive_date": record_row["b_receive_date"],

@@ -32,7 +32,7 @@ pub fn maybe_init_dag(machine: &mut CMachine) -> bool
     init_genesis_block(machine);
 
     // init Administrative Configurations History
-    init_administrative_configurations_history(machine);
+    init_administrative_configurations_history();
 
     // init Polling Profiles
     init_polling_profiles();

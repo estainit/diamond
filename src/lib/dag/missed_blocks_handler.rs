@@ -109,7 +109,7 @@ pub fn add_missed_blocks_to_invoke(mut hashes: VString) -> bool
         if hash == ""
         { continue; }
 
-        let (status, records) = q_select(
+        let (_status, records) = q_select(
             C_MISSED_BLOCKS,
             vec!["mb_block_hash"],
             vec![simple_eq_clause("mb_block_hash", hash)],

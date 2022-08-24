@@ -11,6 +11,7 @@ pub fn remove_quotes(input_value: &JSonObject) -> String {
     input_value.as_str().unwrap().to_string()
 }
 
+#[allow(unused, dead_code)]
 pub fn right_padding(inp_str: String, length: u8) -> String {
     return right_padding_custom(inp_str, length, "0".to_string());
 }
@@ -104,7 +105,6 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
 
     if (segments.len() == 2) && (segments[1].chars().last().unwrap() == '0') {
         // try to remove 0 from right side of floating part (if exist) e.g. 99.96353346750 => 99.9635334675
-        let tt = segments[1].chars().last();
         let mut should_loop = true;
         while should_loop {
             should_loop = match segments[1].chars().last() {
@@ -182,7 +182,7 @@ pub fn chunk_to_vvstring(values: Vec<String>, chunk_size: u64) -> VVString {
     }
 
     for i in 0..chunks_count {
-        let mut end_index: u64 = 0;
+        let end_index: u64;
         if (i + 1) * chunk_size < values.len() as u64 {
             end_index = (i + 1) * chunk_size;
         } else {
@@ -243,7 +243,7 @@ pub fn convert_comma_separated_to_array(inp: &String, separator: &String) -> Vec
     }
 
     let mut out: Vec<String> = vec![];
-    let mut elements: Vec<String> = inp
+    let elements: Vec<String> = inp
         .split(separator)
         .collect::<Vec<&str>>()
         .iter().map(|x| x.to_string())
@@ -387,7 +387,7 @@ pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
         Ok(r) => { (true, r) }
         Err(e) => {
             dlog(
-                &format!("Failed in deserializing json object: {}", serialized),
+                &format!("Failed in deserializing json object: {} {}", serialized, e),
                 constants::Modules::App,
                 constants::SecLevel::Error);
             (false, json!({}))

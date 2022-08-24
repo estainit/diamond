@@ -2,10 +2,7 @@ use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject};
-use crate::lib::machine::machine_neighbor::{parse_handshake, parse_nice_to_meet_you};
-use crate::lib::messaging_protocol::dag_message_handler::{extract_leaves_and_push_in_sending_q, handle_received_leave_info};
 use crate::lib::messaging_protocol::dispatcher_switch::dispatch_a_card;
-use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
 
 pub struct PacketParsingResult
@@ -39,7 +36,7 @@ pub fn parse_a_packet(
     // * each package can contain one or more blocks and misc requests
     // * it is a-kind-of graphGL implementation.
     // * each packet contains one or more cards, and each card represents a single query or single query result
-    let mut packet_type: String = "".to_string();
+    let packet_type: String;
     if packet["pType"].is_null()
     {
         dlog(

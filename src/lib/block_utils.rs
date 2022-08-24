@@ -1,57 +1,5 @@
 /*
 
-#ifndef BLOCKUTILS_H
-#define BLOCKUTILS_H
-
-*/
-
-pub struct WrappedBundle
-{
-    pub(crate) status: bool,
-    pub(crate) version: String,
-    pub(crate) content: String,
-}
-
-/*
-class BlockUtils
-{
-public:
-  BlockUtils();
-
-  static bool ifAncestorsAreValid(const StringList& ancestors);
-
-  static std::tuple<bool, uint64_t, uint64_t> retrieveDPCostInfo(
-    const Document* doc,
-    const String& backer);
-
-  static QVDicT convertToQVDicT(const JSonObject& record);
-  static JSonObject convertToJSonObject(const QVDicT& record);
-  static JSonArray convertToJSonArray(const QVDRecordsT& records);
-
-  static StringList normalizeAncestors(StringList ancestors);
-
-  static MerkleNodeData getDocumentMerkleProof(
-    const JSonObject& block,
-    const CDocHashT& docHash);
-
-};
-
-#endif // BLOCKUTILS_H
-
-#include "stable.h"
-#include "lib/ccrypto.h"
-#include "block_utils.h"
-#include "lib/utils/cmerkle.h"
-#include "lib/block/document_types/document.h"
-
-class Document;
-
-BlockUtils::BlockUtils()
-{
-
-}
-
-
 bool BlockUtils::ifAncestorsAreValid(const StringList& ancestors)
 {
   // TODO: since the address is in hex base, add hex char controll
@@ -140,7 +88,7 @@ pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str)
 //old_name_was unwrapSafeContentForDB
 pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
 {
-    let deserialization_status = false;
+    let _deserialization_status = false;
     let (status, json_object) = cutils::controlled_str_to_json(wrapped);
     if !status
     {
@@ -160,7 +108,7 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
     }
 
     let safe_version = remove_quotes(&json_object["sfVer"]);
-    let mut content = remove_quotes(&json_object["content"]);
+    let content = remove_quotes(&json_object["content"]);
     let (status, content) = ccrypto::b64_decode(&content);
     if !status
     {

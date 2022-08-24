@@ -267,7 +267,8 @@ pub fn push_to_parsing_q(
             m_status: true,
             m_should_purge_file: true,
             m_message: "".to_string(),
-        }; }
+        };
+    }
 
     // control if this card needs some sepcial initiative prerequisites
     if !card_j_obj["ancestors"].is_null()
@@ -292,7 +293,7 @@ pub fn push_to_parsing_q(
         for a_hash in &prerequisites {
             c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
         }
-        let (status, queued_ancestors) = q_select(
+        let (_status, queued_ancestors) = q_select(
             C_PARSING_Q,
             vec!["pq_code"],
             vec![c1],
@@ -301,7 +302,8 @@ pub fn push_to_parsing_q(
             false);
 
         dlog(
-            &format!("block({}) before + missed ancs ({:?})", card_code, prerequisites),
+            &format!("block({}) missed ancs ({:?}) VS qeued ancs {:?}",
+                     card_code, prerequisites, queued_ancestors),
             constants::Modules::App,
             constants::SecLevel::Info);
 
@@ -389,11 +391,11 @@ pub fn push_to_parsing_q(
             &format!("Failed inside push-to-parsing-q in wrap safe the card tpey({}) code ({})", card_type, card_code),
             constants::Modules::App,
             constants::SecLevel::Error);
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
     let now_ = application().get_now();
     let pq_prerequisites = prerequisites.join(",");
@@ -447,11 +449,11 @@ pub fn push_to_parsing_q(
         }]);
 
 
-        return PacketParsingResult {
-            m_status: true,
-            m_should_purge_file: true,
-            m_message: "".to_string(),
-        };
+    return PacketParsingResult {
+        m_status: true,
+        m_should_purge_file: true,
+        m_message: "".to_string(),
+    };
 }
 
 pub fn remove_from_parsing_q(clauses: ClausesT) -> bool

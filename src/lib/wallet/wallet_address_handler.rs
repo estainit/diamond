@@ -60,7 +60,7 @@ pub fn search_wallet_addresses(
     }
     clauses.push(c1);
 
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_MACHINE_WALLET_ADDRESSES,
         fields,
         clauses,
@@ -189,7 +189,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
         return (false, "Adress already existed".to_string());
     }
 
-    let (status, values) = convert_to_values(w_address);
+    let (_status, values) = convert_to_values(w_address);
     dlog(
         &format!("Insert new address to machine wallet {:?}", dump_hashmap_of_str_string(&values)),
         constants::Modules::App,
@@ -212,7 +212,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
     if !status {
         return (false, "Failed in serialization m_unlock_doc".to_string());
     }
-    let mut values_: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+    let values_: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("wa_mp_code", &w_address.m_mp_code as &(dyn ToSql + Sync)),
         ("wa_address", &w_address.m_address as &(dyn ToSql + Sync)),
         ("wa_title", &w_address.m_title as &(dyn ToSql + Sync)),

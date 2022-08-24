@@ -3,8 +3,9 @@ use postgres::types::ToSql;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use crate::{application, ccrypto, CMachine, constants, cutils, dlog, machine};
+use crate::ccrypto::rsa_is_valid_pub_key;
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDicT, QVDRecordsT};
+use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_NEIGHBORS, C_MACHINE_NEIGHBORS_FIELDS};
 use crate::lib::messaging_protocol::dispatcher::PacketParsingResult;
@@ -395,11 +396,13 @@ pub fn parse_handshake(
     }
 
     if connection_type == ""
-    { return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    }; }
+    {
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
+    }
 
     // just to be sure handshake happends ONLY ONE TIME for each email at the start
     // if user needs to change publickkey or ... she can send alternate messages like changeMyPublicKey(which MUST be signed with current key)
@@ -430,11 +433,11 @@ pub fn parse_handshake(
             constants::Modules::Sec,
             constants::SecLevel::Error);
 
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
 
     if pgp_public_key == ""
@@ -444,14 +447,27 @@ pub fn parse_handshake(
             constants::Modules::Sec,
             constants::SecLevel::Error);
 
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
 
     let (_status, pgp_public_key) = ccrypto::b64_decode(&pgp_public_key);
+
+    let status = rsa_is_valid_pub_key(&pgp_public_key);
+    if !status {
+        dlog(
+            &format!("Invalid pgp public key in received handshake message! sender({})", sender_email),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
+    }
 
     if !email_already_exist
     {
@@ -505,11 +521,13 @@ pub fn parse_handshake(
         constants::SecLevel::Info);
 
     if !status
-    { return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    }; }
+    {
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
+    }
 
     let _sent: bool = i_push(
         &title,
@@ -525,11 +543,11 @@ pub fn parse_handshake(
     }
 
 
-        return PacketParsingResult {
-            m_status: true,
-            m_should_purge_file: true,
-            m_message: "".to_string(),
-        };
+    return PacketParsingResult {
+        m_status: true,
+        m_should_purge_file: true,
+        m_message: "".to_string(),
+    };
 }
 
 //old_name_was floodEmailToNeighbors
@@ -677,11 +695,11 @@ pub fn parse_nice_to_meet_you(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    let mut email: String = "".to_string();
-    if !message["email"].is_null()
-    {
-        email = remove_quotes(&message["email"]);
-    }
+    // let email: String;
+    // if !message["email"].is_null()
+    // {
+    //     email = remove_quotes(&message["email"]);
+    // }
 
     let mut sender_pgp_public_key: String = "".to_string();
     if !message["PGPPubKey"].is_null()
@@ -713,11 +731,11 @@ pub fn parse_nice_to_meet_you(
             &format!("!!! Machine has not this sender_email({}) as a neighbor", sender_email),
             constants::Modules::Sec,
             constants::SecLevel::Warning);
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
 
     if (sender_email == "") || (sender_pgp_public_key == "")
@@ -726,11 +744,11 @@ pub fn parse_nice_to_meet_you(
             &format!("!!! invalid sender_email or PGPPubKey received from neighbor sender_email({}) sender_pgp_public_key({}) as a neighbor", sender_email, sender_pgp_public_key),
             constants::Modules::Sec,
             constants::SecLevel::Warning);
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
     let (status, b64_dec_pgp_public_key) = ccrypto::b64_decode(&sender_pgp_public_key);
     if !status
@@ -739,13 +757,25 @@ pub fn parse_nice_to_meet_you(
             &format!("Failed in pgp b64 decryption! sender({})", sender_email),
             constants::Modules::Sec,
             constants::SecLevel::Error);
-        return PacketParsingResult{
-        m_status: false,
-        m_should_purge_file: true,
-        m_message: "".to_string()
-    };
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
     }
     sender_pgp_public_key = b64_dec_pgp_public_key;
+    let status = rsa_is_valid_pub_key(&sender_pgp_public_key);
+    if !status {
+        dlog(
+            &format!("Invalid pgp public key in received nice to meet you response! sender({})", sender_email),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: "".to_string(),
+        };
+    }
 
     let mut n_info = cutils::serialize_json(&json!({}));
     if sender_backer_address != ""
@@ -754,7 +784,7 @@ pub fn parse_nice_to_meet_you(
     }
 
     let last_modified = application().get_now();
-    let mut updates: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+    let updates: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("n_info", &n_info as &(dyn ToSql + Sync)),
         ("n_pgp_public_key", &sender_pgp_public_key as &(dyn ToSql + Sync)),
         ("n_last_modified", &last_modified as &(dyn ToSql + Sync))
@@ -773,9 +803,9 @@ pub fn parse_nice_to_meet_you(
     // TODO: publish this email to my neighbors
 
 
-        return PacketParsingResult {
-            m_status: true,
-            m_should_purge_file: true,
-            m_message: "".to_string(),
-        };
+    return PacketParsingResult {
+        m_status: true,
+        m_should_purge_file: true,
+        m_message: "".to_string(),
+    };
 }

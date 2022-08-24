@@ -1,12 +1,9 @@
 extern crate postgres;
 
-use std::borrow::Borrow;
-use std::collections::HashMap;
-use std::thread;
 use postgres::{Client, NoTls};
 use crate::lib::{constants};
 use crate::lib::dlog::dlog;
-use crate::{application, CMachine, dbhandler, machine};
+use crate::{application, dbhandler};
 use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
@@ -20,7 +17,7 @@ pub struct DBHandler {
 }
 
 impl DBHandler {
-    pub(crate) fn new() -> DBHandler {
+    pub fn new() -> DBHandler {
         eprintln!("New DBHandler is going to be created.");
 
         let db = DBHandler {
@@ -67,11 +64,11 @@ pub fn maybe_initialize_db() -> (bool, String)
     if constants::DATABASAE_AGENT == "psql"
     {
         let is_created: bool = match dbhandler().m_db.query("SELECT * FROM c_blocks limit 1;", &[]) {
-            Ok(rows) => {
+            Ok(_rows) => {
                 true
             }
             Err(e) => {
-                println!("No table existed, so create it");
+                println!("No table existed, so create it, {}",e);
                 false
             }
         };
@@ -162,7 +159,7 @@ std::tuple<bool, String, QSqlDatabase> DbHandler::IconnectToSQLITE(String databa
 */
 
 //old_name_was emptyDB
-pub fn empty_db(machine: &mut CMachine) -> bool
+pub fn empty_db() -> bool
 {
     for a_table in psql_tables_list()
     {
@@ -184,7 +181,7 @@ pub fn create_tables_in_psql() -> bool
     println!("Create tables in PSQL");
     for a_query in psql_init_query()
     {
-        let mut qstr = a_query.clone();
+        let qstr = a_query.clone();
         dlog(
             &format!("Creating table: {}", qstr),
             constants::Modules::Sql,
@@ -197,7 +194,7 @@ pub fn create_tables_in_psql() -> bool
     // create developers tables
     for a_query in psql_init_query_dev()
     {
-        let mut qstr = a_query.clone();
+        let qstr = a_query.clone();
         dlog(
             &format!("Creating table: {}", qstr),
             constants::Modules::Sql,

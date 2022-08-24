@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use actix_web::cookie::time::format_description::parse;
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::{application, constants, cutils, dlog, machine};
@@ -19,7 +18,7 @@ pub fn decrypt_and_parse_packet(
 ) -> (bool, String, JSonObject)
 {
     let mut connection_type: String = "".to_string();
-    let mut message_obj: JSonObject = json!({});
+    let message_obj: JSonObject = json!({});
 
     if message == ""
     {
@@ -197,7 +196,7 @@ pub fn t_log(file_name: &String) -> bool
 //old_name_was iRead
 pub fn i_read(file_name: &String) -> QVDRecordsT
 {
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_CPACKET_TICKETING,
         C_CPACKET_TICKETING_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
         vec![simple_eq_clause("msg_file_id", file_name)],

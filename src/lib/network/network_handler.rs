@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::{application, ccrypto, constants, cutils, dlog, get_value, machine};
+use crate::{application, ccrypto, constants, cutils, dlog, get_value};
 use crate::lib::file_handler::file_handler::write_email_as_file;
 use crate::lib::k_v_handler::upsert_kvalue;
 use crate::lib::network::email::send_email_wrapper;
@@ -28,7 +28,7 @@ pub fn i_push(
     email_body += &(constants::message_tags::SENDER_START_TAG.to_owned() + sender + constants::message_tags::SENDER_END_TAG + constants::NL);
     email_body += &(constants::message_tags::RECEIVE_START_TAG.to_owned() + receiver + constants::message_tags::RECEIVE_END_TAG + constants::NL);
     email_body += &(to_send_message.clone() + &constants::NL);
-    let mut email_hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender.to_owned() + receiver + &to_send_message)));
+    let email_hash: String = cutils::hash16c(&ccrypto::keccak256(&(sender.to_owned() + receiver + &to_send_message)));
     email_body += &(constants::message_tags::HASH_START_TAG.to_owned() + &email_hash.clone() + constants::message_tags::HASH_END_TAG + constants::NL);
 
     if application().use_hard_disk_as_a_buffer()
@@ -64,7 +64,7 @@ pub fn i_push(
         sent_emails_obj = serde_json::from_str(&sent_emails).unwrap();
     }
 
-    let mut is_sent: bool = sent_emails_obj
+    let is_sent: bool = sent_emails_obj
         .keys()
         .cloned()
         .collect::<Vec<String>>()

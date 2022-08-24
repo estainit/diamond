@@ -99,7 +99,7 @@ pub fn pgp_encrypt(
         pgp_enc_jobj["isAuthenticated"] = "true".into();
     }
 
-    let mut pgp_response: String = cutils::serialize_json(&pgp_enc_jobj);
+    let pgp_response: String = cutils::serialize_json(&pgp_enc_jobj);
     dlog(
         &format!("pgp_response: {}", pgp_enc_jobj),
         constants::Modules::App,

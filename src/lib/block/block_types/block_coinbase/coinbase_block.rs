@@ -148,7 +148,7 @@ impl CoinbaseBlock {
     pub fn get_block_hashable_string(&self, block: &Block) -> String
     {
         // in order to have almost same hash! we sort the attribiutes alphabeticaly
-        let mut block_hashables: String = format!(
+        let block_hashables: String = format!(
             "bAncestors:{},bCDate:{},bDocsRootHash:{},bLen:{},bType:{},bVer:{},cycle:{},net:{}",
             serde_json::to_string(&block.m_block_ancestors).unwrap(),
             block.m_block_creation_date,

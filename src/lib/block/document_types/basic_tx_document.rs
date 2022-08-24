@@ -48,6 +48,7 @@ impl BasicTxDocument {
     }
 
     //old_name_was safeStringifyDoc
+    #[allow(unused, dead_code)]
     pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
     {
         let document: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);

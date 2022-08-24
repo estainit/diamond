@@ -6,16 +6,16 @@ use crate::lib::custom_types::TimeByHoursT;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct IndividualSignature
 {
-    pub(crate) m_signer_id: String,
+    pub m_signer_id: String,
     // a dummy handler id
-    pub(crate) m_signature_key: String,
+    pub m_signature_key: String,
     // sKey
-    pub(crate) m_permitted_to_pledge: String,
+    pub m_permitted_to_pledge: String,
     // pPledge
-    pub(crate) m_permitted_to_delegate: String,
+    pub m_permitted_to_delegate: String,
     // pDelegate
-    pub(crate) m_input_time_lock: TimeByHoursT,
-    pub(crate) m_output_time_lock: TimeByHoursT,
+    pub m_input_time_lock: TimeByHoursT,
+    pub m_output_time_lock: TimeByHoursT,
 }
 
 impl IndividualSignature {

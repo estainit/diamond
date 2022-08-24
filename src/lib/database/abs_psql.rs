@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::Row;
-use postgres::types::{ToSql, Type, FromSql};
+use postgres::types::{ToSql};
 use crate::{ dbhandler};
 use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
@@ -186,7 +186,7 @@ pub fn prepare_to_delete<'e>(
 {
     let ord_ = vec![];
     let mut query_elements: QueryElements = pre_query_generator(0, clauses, ord_, 0);
-    let mut complete_query: String = "DELETE FROM ".to_owned() + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
+    let complete_query: String = "DELETE FROM ".to_owned() + table + &query_elements.m_clauses + &query_elements.m_order + &query_elements.m_limit;
     // complete_query = complete_query.trim().parse().unwrap();
     // complete_query = cutils::removeDblSpaces(complete_query);
     query_elements.m_complete_query = complete_query.clone();
@@ -535,7 +535,7 @@ pub fn exec_query(
                             let col_value: i32 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }
-                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8" => {
+                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int8" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }

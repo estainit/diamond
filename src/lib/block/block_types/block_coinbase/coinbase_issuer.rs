@@ -21,7 +21,7 @@ use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 use crate::lib::services::dna::dna_handler::{get_machine_shares, get_shares_info};
 use crate::lib::services::treasury::treasury_handler::calc_treasury_incomes;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
-use crate::lib::utils::dumper::{dump_hashmap_of_qvd_records, dump_hashmap_of_string_f64, dump_it, dump_vec_of_str, dump_vec_of_t_output};
+use crate::lib::utils::dumper::{dump_hashmap_of_qvd_records, dump_it, dump_vec_of_str, dump_vec_of_t_output};
 
 #[derive(Clone)]
 struct TmpHolder {
@@ -882,7 +882,7 @@ pub fn try_create_coinbase_block() -> bool
         tmp_dag_ancestors = cutils::convert_comma_separated_to_array(&most_confidence_in_dag["b_ancestors"].to_string(), &",".to_string());
     }
 
-    let mut locally_created_coinbase_block_has_more_confidence_than_dag: bool = tmp_dag_confidence < tmp_local_confidence;
+    let locally_created_coinbase_block_has_more_confidence_than_dag: bool = tmp_dag_confidence < tmp_local_confidence;
     // locally_created_coinbase_block_has_more_confidence_than_dag = false;// FIXME implement remote block confidence calcuilation
     if locally_created_coinbase_block_has_more_confidence_than_dag
     {
@@ -963,7 +963,6 @@ pub fn try_create_coinbase_block() -> bool
     {
 
         // broadcast coin base
-        let now_ = application().get_now();
         if application().is_in_current_cycle(&block.m_block_creation_date.to_string())
         {
             dlog(
@@ -973,7 +972,7 @@ pub fn try_create_coinbase_block() -> bool
 
             let mut block_body = serde_json::to_string(&block).unwrap();
             block_body = ccrypto::b64_encode(&block_body);
-            let ancestors: Vec<String> = block.m_block_ancestors.clone();
+            let _ancestors: Vec<String> = block.m_block_ancestors.clone();
 
             let (_code, body) = make_a_packet(
                 vec![

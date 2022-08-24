@@ -10,7 +10,7 @@ pub struct CoinbaseDocument {
     pub m_minted_coins: CMPAIValueT,
     pub m_treasury_incomes: CMPAIValueT,
 
-    pub(crate) m_outputs: Vec<TOutput>,
+    pub m_outputs: Vec<TOutput>,
 }
 
 impl CoinbaseDocument {

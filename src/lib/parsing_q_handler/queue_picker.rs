@@ -9,11 +9,11 @@ use crate::lib::database::tables::{C_PARSING_Q, C_PARSING_Q_FIELDS};
 //old_name_was smartPullQ
 pub fn smart_pull_q() -> bool
 {
-    let (complete_query, values) = prepare_smart_query(1);
+    let (complete_query, _values) = prepare_smart_query(1);
 
     let no_prerequisites = ",".to_string();
     let params = vec![&no_prerequisites as &(dyn ToSql + Sync)];
-    let (status, records) = q_custom_query(
+    let (_status, records) = q_custom_query(
         &complete_query,
         &params,
         false);
@@ -29,16 +29,16 @@ pub fn smart_pull_q() -> bool
     }
 
     let packet = &records[0];
-    let (status, sf_version, unwrap_res) = unwrap_safed_content_for_db(&packet["pq_payload"].to_string());
+    let (status, _sf_version, unwrap_res) = unwrap_safed_content_for_db(&packet["pq_payload"].to_string());
     if !status
     {
         // purge record
         // reputation report
         return false;
     }
+    let (_status, _json_payload) = cutils::controlled_str_to_json(&unwrap_res);
     /*
-    let (status, Jpayload) = cutils::controlled_str_to_json(&unwrap_res);
-    packet["pq_payload"] = Jpayload;
+    packet["pq_payload"] = json_payload;
 
     increase_to_parse_attempts_count(packet);
 
@@ -116,6 +116,7 @@ pub fn prepare_smart_query(limit: u16) -> (String, QVDicT)
 }
 
 //old_name_was increaseToparseAttempsCountSync
+#[allow(unused, dead_code)]
 pub fn increase_to_parse_attempts_count(packet: &QVDicT) -> bool
 {
     let mut parse_attempts = packet["pq_parse_attempts"].parse::<i64>().unwrap_or(0);

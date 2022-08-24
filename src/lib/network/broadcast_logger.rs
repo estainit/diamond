@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::{ToSql};
-use crate::{application, constants, cutils, dlog, machine};
+use crate::{application, constants, dlog, machine};
 use crate::lib::custom_types::{CDateT, QVDRecordsT};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_LOGS_BROADCAST;

@@ -7,12 +7,12 @@ use crate::lib::utils::dumper::dump_vec_of_str;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct UnlockSet
 {
-    pub(crate) m_signature_type: String,
-    pub(crate) m_signature_ver: String ,
-    pub(crate) m_signature_sets: Vec<IndividualSignature>,
-    pub(crate) m_merkle_proof: Vec<String>,
-    pub(crate) m_left_hash: String,
-    pub(crate) m_salt: String,
+    pub m_signature_type: String,
+    pub m_signature_ver: String ,
+    pub m_signature_sets: Vec<IndividualSignature>,
+    pub m_merkle_proof: Vec<String>,
+    pub m_left_hash: String,
+    pub m_salt: String,
 }
 
 impl UnlockSet {

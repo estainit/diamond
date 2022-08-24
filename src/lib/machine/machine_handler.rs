@@ -1,7 +1,6 @@
 use std::collections::HashMap;
-use std::thread;
-use crate::{application, ccrypto, cutils, dbhandler};
-use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QSDicT, QVDRecordsT, TimeByMinutesT, VString};
+use crate::{application, ccrypto, cutils};
+use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QVDRecordsT};
 use crate::lib::database::db_handler::{empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
@@ -13,8 +12,7 @@ use crate::lib::database::tables::{C_KVALUE, C_MACHINE_PROFILES};
 use crate::lib::dlog::dlog;
 use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
-use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
-use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, NeighborInfo};
+// use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
 use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile};
 use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
@@ -23,16 +21,16 @@ use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 //  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
 // #[derive(Default)]
 pub struct CMachine {
-    pub(crate) m_clone_id: i8,
-    pub(crate) m_should_loop_threads: bool,
+    pub m_clone_id: i8,
+    pub m_should_loop_threads: bool,
 
     pub m_is_in_sync_process: bool,
-    pub(crate) m_last_sync_status_check: CDateT,
+    pub m_last_sync_status_check: CDateT,
 
     // m_threads_status: QSDicT,
     // m_map_thread_code_to_prefix: QSDicT,
-    pub(crate) m_config_file: String,
-    pub(crate) m_is_develop_mod: bool,
+    pub m_config_file: String,
+    pub m_is_develop_mod: bool,
 
     /*
 
@@ -48,7 +46,8 @@ pub struct CMachine {
 
   Config* m_global_configs {};
   */
-    pub(crate) m_recorded_blocks_in_db: u32,
+    #[allow(unused, dead_code)]
+    pub m_recorded_blocks_in_db: u32,
     // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
     /*
       StringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
@@ -58,7 +57,7 @@ pub struct CMachine {
     // TODO: optimize it ASAP
     pub m_dag_cached_block_hashes: Vec<String>,
     // TODO: optimize it ASAP
-    pub(crate) m_profile: MachineProfile,
+    pub m_profile: MachineProfile,
 
     pub m_email_is_active: bool,
     pub m_use_hard_disk_as_a_buffer: bool,
@@ -83,7 +82,7 @@ pub trait CMachineThreadGaps {
 
 
 impl CMachine {
-    pub(crate) fn new() -> CMachine {
+    pub fn new() -> CMachine {
         // let (_status, profile) = MachineProfile::get_profile_from_db(constants::DEFAULT);
         eprintln!("New CMachine was create.");
 
@@ -588,7 +587,7 @@ impl CMachine {
         let is_inited = get_value("machine_and_dag_are_safely_initialized");
         if is_inited != constants::YES
         {
-            empty_db(self);  // machine didn't initialized successfully, so empty all tables and try from zero
+            empty_db();  // machine didn't initialized successfully, so empty all tables and try from zero
             set_value("machine_and_dag_are_safely_initialized", constants::NO, true);
         }
 
@@ -1148,6 +1147,4 @@ impl CMachine {
        }
 
         */
-
-
 }

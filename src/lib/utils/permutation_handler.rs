@@ -11,18 +11,18 @@ pub struct PremInfo
 
 
 pub struct PermutationHandler {
-    pub(crate) m_elements: VString,
+    pub m_elements: VString,
     #[allow(dead_code, unused)]
-    pub(crate) m_should_be_unique: bool,
-    pub(crate) m_permutations: VVString,
+    pub m_should_be_unique: bool,
+    pub m_permutations: VVString,
     #[allow(dead_code, unused)]
-    pub(crate) m_permutations_stringify: VString,
+    pub m_permutations_stringify: VString,
     #[allow(dead_code, unused)]
-    pub(crate) m_test_analyze: HashMap<String, PremInfo>,
+    pub m_test_analyze: HashMap<String, PremInfo>,
 }
 
 impl PermutationHandler {
-    pub(crate) fn new(
+    pub fn new(
         elements: &VString,
         subset_count: u16,
         should_be_unique: bool,
@@ -45,7 +45,7 @@ impl PermutationHandler {
     }
 
     #[allow(dead_code, unused)]
-    pub(crate) fn test_analyze(&mut self, premutations_: &VVString) {
+    pub fn test_analyze(&mut self, premutations_: &VVString) {
         let mut premutations: VVString = clone_vvec(premutations_);
         if premutations.len() == 0
         {
@@ -73,10 +73,10 @@ impl PermutationHandler {
         }
     }
 
-    pub(crate) fn recursive_heap_p(&mut self,
+    pub fn recursive_heap_p(&mut self,
                                    values: &VString,
                                    subset_count: u16,
-                                   inner_size: i32)
+                                   _inner_size: i32)
     {
 
         // FIXME: implement automatic calculation START

@@ -9,6 +9,7 @@ use crate::lib::dlog::dlog;
 use crate::lib::utils::dumper::dump_it;
 
 //old_name_was loopImportNormalUTXOs
+#[allow(unused, dead_code)]
 pub fn loop_import_normal_coins()
 {
     let thread_prefix = "import_normal_UTXOs_".to_string();
@@ -55,6 +56,7 @@ pub fn do_import_coins(c_date_: &CDateT)
 }
 
 //old_name_was retrieveProperBlocks
+#[allow(unused, dead_code)]
 pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
 {
     //find normal block with 12 hours age old, and insert the outputs as a matured & spendable outputs to table trx_utxos

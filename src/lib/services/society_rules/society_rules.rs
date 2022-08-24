@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, ccrypto, CMachine, constants, cutils};
+use crate::{application, ccrypto, constants, cutils};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
@@ -64,7 +64,7 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
 }
 
 //old_name_was initAdministrativeConfigurationsHistory
-pub fn init_administrative_configurations_history(machine: &CMachine)
+pub fn init_administrative_configurations_history()
 {
     let admin_cost_params: HashMap<String, f64> = get_administrative_default_values();
     let launch_date = application().launch_date();

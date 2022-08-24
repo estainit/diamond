@@ -8,12 +8,14 @@ pub type VString = Vec<String>;
 pub type VVString = Vec<Vec<String>>;
 
 
+#[allow(unused, dead_code)]
 pub type CCoinCodeT = String;
 pub type CMPAIValueT = u64;
 
 /*
 */
 // (+) micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
+#[allow(unused, dead_code)]
 pub type CMPAISValueT = i64;
 // (+-)micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
 pub type CBlockHashT = String;
@@ -66,8 +68,8 @@ pub type QHash<String, JSonArray>  QJADicT; // custom dictionary
 pub type QHash<String, QVDicT>      QV2DicT;
 */
 pub type QVDRecordsT = Vec<HashMap<String, String>>;
-pub(crate) type JSonObject = Value;
-pub(crate) type JSonArray = Value;
+pub type JSonObject = Value;
+pub type JSonArray = Value;
 //Vec<QVDicT>;
 /*
 pub type QVector<QSDicT>        QSDRecordsT;
@@ -149,6 +151,6 @@ typedef QVector<Coin> CoinsT;
  */
 
 #[allow(dead_code, unused)]
-pub(crate) type DocDicT = HashMap<String, Document>;
+pub type DocDicT = HashMap<String, Document>;
 #[allow(dead_code, unused)]
-pub(crate) type DocDicVecT = HashMap<String, Vec<Document>>;
+pub type DocDicVecT = HashMap<String, Vec<Document>>;

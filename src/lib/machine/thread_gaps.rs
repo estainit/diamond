@@ -143,7 +143,7 @@ impl CMachine{
     pub fn get_invoke_leaves_gap(&mut self) -> TimeBySecT
     {
         //      return 500;
-        let mut gap_by_seconds: TimeBySecT;
+        let gap_by_seconds: TimeBySecT;
         if application().cycle_length() == 1 {
             if self.is_in_sync_process(false) {
                 gap_by_seconds = 60 * 17;  // every 17 minutesd

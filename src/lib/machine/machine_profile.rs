@@ -31,12 +31,12 @@ use crate::lib::database::tables::C_MACHINE_PROFILES;
 
  */
 #[derive(Clone, Serialize, Deserialize)]
-pub(crate) struct MachineProfile
+pub struct MachineProfile
 {
-    pub(crate) m_mp_code: String,
-    pub(crate) m_mp_name: String,
-    pub(crate) m_mp_last_modified: String,
-    pub(crate) m_mp_settings: MPSetting,
+    pub m_mp_code: String,
+    pub m_mp_name: String,
+    pub m_mp_last_modified: String,
+    pub m_mp_settings: MPSetting,
 }
 
 impl MachineProfile {
@@ -91,14 +91,14 @@ impl MachineProfile {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct MPSetting
 {
-    pub(crate) m_public_email: EmailSettings,
-    pub(crate) m_private_email: EmailSettings,
+    pub m_public_email: EmailSettings,
+    pub m_private_email: EmailSettings,
 
-    pub(crate) m_machine_alias: String,
-    pub(crate) m_backer_detail: UnlockDocument,
-    pub(crate) m_language: String,
-    pub(crate) m_term_of_services: String,
-    pub(crate) m_already_presented_neighbors: Vec<NeighborPresentation>,
+    pub m_machine_alias: String,
+    pub m_backer_detail: UnlockDocument,
+    pub m_language: String,
+    pub m_term_of_services: String,
+    pub m_already_presented_neighbors: Vec<NeighborPresentation>,
 
 }
 
@@ -118,17 +118,17 @@ impl MPSetting {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct EmailSettings {
-    pub(crate) m_address: String,
-    pub(crate) m_password: String,
-    pub(crate) m_income_imap: String,
-    pub(crate) m_income_pop3: String,
-    pub(crate) m_incoming_mail_server: String,
-    pub(crate) m_outgoing_mail_server: String,
-    pub(crate) m_outgoing_smtp: String,
+    pub m_address: String,
+    pub m_password: String,
+    pub m_income_imap: String,
+    pub m_income_pop3: String,
+    pub m_incoming_mail_server: String,
+    pub m_outgoing_mail_server: String,
+    pub m_outgoing_smtp: String,
     // it depends on smtp server, but less than 5 minute is useless
-    pub(crate) m_fetching_interval_by_minute: String,
-    pub(crate) m_pgp_private_key: String,
-    pub(crate) m_pgp_public_key: String,
+    pub m_fetching_interval_by_minute: String,
+    pub m_pgp_private_key: String,
+    pub m_pgp_public_key: String,
 }
 
 impl EmailSettings {

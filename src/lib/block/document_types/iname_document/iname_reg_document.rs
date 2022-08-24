@@ -1,4 +1,5 @@
 
+#[allow(unused, dead_code)]
 struct INameRegDocument
 {
    m_iname_string:String,

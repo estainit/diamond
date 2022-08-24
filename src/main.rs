@@ -3,12 +3,9 @@ extern crate core;
 mod lib;
 mod tests;
 
-use std::{env, time};
-use std::thread;
-use std::time::Duration;
+use std::{env};
 use once_cell::sync::Lazy;
-use std::sync::{LockResult, Mutex, MutexGuard};
-use std::thread::sleep as std_sleep;
+use std::sync::{Mutex, MutexGuard};
 
 use lib::machine::machine_handler as machine_handler;
 use lib::utils::cutils as cutils;
@@ -21,20 +18,21 @@ use crate::lib::utils::cmerkle as cmerkle;
 use crate::lib::utils::permutation_handler::PermutationHandler;
 use crate::machine_handler::CMachine;
 use lib::rest::apis;
-use crate::apis::{do_handshake, do_handshake_by_email};
-use crate::cutils::strip_parentheses_as_break_line;
+use crate::apis::{do_handshake_by_email};
 use crate::lib::machine::app_params::AppParams;
-use crate::lib::machine::machine_neighbor::get_neighbors;
 
 static APPGLOBAL: Lazy<Mutex<AppParams>> = Lazy::new(|| Mutex::new(AppParams::new()));
+
 fn application() -> MutexGuard<'static, AppParams> { APPGLOBAL.lock().unwrap() }
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
+
 fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
+
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 fn main() {
@@ -48,7 +46,7 @@ fn main() {
     application().dummy_init();
 
     let force_clone_id: i8 = 0;
-    let force_boot_in_dev_mod: bool = false;
+    let _force_boot_in_dev_mod: bool = false;
     machine().parse_args(env::args().collect(), force_clone_id);
     initialize_log();
     machine().initialize_machine();
@@ -63,10 +61,10 @@ fn main() {
             .build()
             .unwrap()
             .block_on(lib::rest::apis::run_web_server()) {
-            Ok(r) => {
+            Ok(_r) => {
                 ". Webserver Ready on http://localhost:8080"
             }
-            Err(e) => {
+            Err(_e) => {
                 ". Webserver Failed!"
             }
         };
@@ -96,6 +94,7 @@ fn main() {
     launch_giga_loop(false);//    launch_threads();
 }
 
+#[allow(unused, dead_code)]
 async fn run_loops() {
     launch_giga_loop(false);
 }

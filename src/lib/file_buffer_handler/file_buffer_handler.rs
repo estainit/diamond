@@ -1,4 +1,4 @@
-use crate::{application, constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::file_handler::file_handler::{delete_exact_file, file_read, list_exact_files, read_exact_file};
 use crate::lib::messaging_protocol::dispatcher::parse_a_packet;
 use crate::lib::network::cpacket_handler::decrypt_and_parse_packet;
@@ -195,8 +195,8 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
 pub fn maybe_purge_message(full_path: &String, should_purge_message: bool) -> bool
 {
     //should purge packet?
-    let mut is_expired: bool = false;
-    let mut reached_tl: bool = false; // this.richedTryLimitation(packet);
+    let is_expired: bool = false;
+    let reached_tl: bool = false; // this.richedTryLimitation(packet);
     if should_purge_message || is_expired || reached_tl
     {
         dlog(

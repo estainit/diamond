@@ -12,15 +12,15 @@ use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, CO
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TInput
 {
-    pub(crate) m_transaction_hash: CDocHashT,
+    pub m_transaction_hash: CDocHashT,
     // the reffered transaction hash
-    pub(crate) m_output_index: COutputIndexT,
+    pub m_output_index: COutputIndexT,
 
-    pub(crate) m_owner: CAddressT,
-    pub(crate) m_amount: CMPAIValueT,
-    pub(crate) m_private_keys: Vec<String>,
+    pub m_owner: CAddressT,
+    pub m_amount: CMPAIValueT,
+    pub m_private_keys: Vec<String>,
     // they are need to sign the coin in order to spend it
-    pub(crate) m_unlock_set: JSonObject,
+    pub m_unlock_set: JSonObject,
 }
 
 impl TInput {
@@ -46,10 +46,10 @@ impl TInput {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TOutput
 {
-    pub(crate) m_address: CAddressT,
-    pub(crate) m_amount: CMPAIValueT,
-    pub(crate) m_output_charachter: String,
-    pub(crate) m_output_index: COutputIndexT,// = - 1;
+    pub m_address: CAddressT,
+    pub m_amount: CMPAIValueT,
+    pub m_output_charachter: String,
+    pub m_output_index: COutputIndexT,// = - 1;
 }
 
 impl TOutput {
@@ -605,10 +605,10 @@ pub fn custom_stringify_signature_sets(signature_sets: &Vec<IndividualSignature>
 //old_name_was validateStructureStrictions
 pub fn validate_structure_restrictions(
     unlock_set: &UnlockSet,
-    options: &HashMap<&str, &str>) -> bool
+    _options: &HashMap<&str, &str>) -> bool
 {
     // console.log(validate StructureStrictions.args: ${utils.stringify(args)});
-    let hash_algorithm = my_get(&options, "hash_algorithm", "keccak256").to_string();
+    // let hash_algorithm = my_get(&options, "hash_algorithm", "keccak256").to_string();
 
     if unlock_set.m_signature_type == constants::signature_types::STRICT
     {

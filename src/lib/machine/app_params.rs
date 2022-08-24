@@ -1,6 +1,6 @@
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
-use crate::{CMachine, constants, cutils};
-use crate::cutils::{left_padding, right_padding};
+use crate::{CMachine, constants};
+use crate::cutils::{left_padding};
 use crate::lib::custom_types::{CDateT, TimeByMinutesT, TimeBySecT};
 
 pub struct AppParams {
@@ -265,7 +265,7 @@ impl AppParams {
         if c_date == "" {
             since_epoch = Utc::now().timestamp();
         } else {
-            let t_ = self.add_fff_zzzz_to_yyyymmdd(c_date.clone());
+            let _t_ = self.add_fff_zzzz_to_yyyymmdd(c_date.clone());
             let dt = self.make_date_from_str(&c_date);
             since_epoch = dt.timestamp();
         }

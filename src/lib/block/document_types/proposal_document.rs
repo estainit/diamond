@@ -48,7 +48,7 @@ impl ProposalDocument {
 
     pub fn set_by_json_doc(&mut self, obj: &JSonObject) -> bool
     {
-        panic!("gggggg {}" , obj);
+        // panic!("gggggg {}" , obj);
         self.m_help_hours = obj["helpHours"].to_string().parse::<i32>().unwrap();
         self.m_help_level = obj["helpLevel"].to_string().parse::<i32>().unwrap();
         self.m_project_hash = obj["projectHash"].to_string();

@@ -66,7 +66,7 @@ pub mod b_genesis {
         }
 
         // set initial shares
-        return init_shares(machine, &block);
+        return init_shares(&block);
     }
 
     /*
@@ -77,7 +77,7 @@ pub mod b_genesis {
     }
 
 */
-    pub fn genesis_set_by_json_obj(block: &mut Block, obj: &JSonObject) -> bool
+    pub fn genesis_set_by_json_obj(block: &mut Block, _obj: &JSonObject) -> bool
     {
         // custom settings for Genesis block
         block.m_block_type = constants::block_types::GENESIS.to_string();
@@ -85,7 +85,7 @@ pub mod b_genesis {
     }
 
     //old_name_was initShares
-    pub fn init_shares(machine: &CMachine, block: &Block) -> (bool, String)
+    pub fn init_shares(block: &Block) -> (bool, String)
     {
         let back_in_time = (5 * application().get_cycle_by_minutes()) as u64;
         let conclude_date = application().launch_date();

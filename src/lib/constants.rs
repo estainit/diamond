@@ -20,11 +20,11 @@ pub enum SecLevel {
     Fatal,
 }
 
-pub(crate) const SOCIETY_NAME: &str = "im";
+pub const SOCIETY_NAME: &str = "im";
 
 //bech32 part
-pub(crate) const BECH32_ADDRESS_VER: &str = "0";
-pub(crate) const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
+pub const BECH32_ADDRESS_VER: &str = "0";
+pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
 
 /*
@@ -33,7 +33,7 @@ const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with J
 
 */
 
-pub(crate) const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
+pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
 
 /*
@@ -50,13 +50,16 @@ pub const COIN_ISSUING_INIT_EXPONENT: u8 = 11;
 // the power of 2 for minting new coins
 pub const COINBASE_MATURATION_CYCLES: u8 = 2;
 
+#[allow(unused, dead_code)]
 pub const ONE_MILLION: u64 = 1_000_000;
+#[allow(unused, dead_code)]
 pub const ONE_BILLION: u64 = 1_000_000_000;
 
 pub const CLIENT_VERSION: &str = "0.2.0";
 // can be sqlite or psql
-pub(crate) const DATABASAE_AGENT: &str = "psql";
+pub const DATABASAE_AGENT: &str = "psql";
 
+#[allow(unused, dead_code)]
 pub const DEFAULT_CONTRIBUTE_LEVEL: u8 = 6;
 
 // at least 4 cycle must be a gap between pay to treasury and dividing to shareholders
@@ -78,10 +81,14 @@ pub const DO_HARDCOPY_DAG_BACKUP: bool = true;
   // best value is 3/4 of one coinbase cycle
   */
 
+#[allow(unused, dead_code)]
 pub const COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG: f64 = 3.0 / 5.0;
+#[allow(unused, dead_code)]
 pub const MINIMUM_SHARES_IF_IS_NOT_SHAREHOLDER: f64 = 0.0000000001;
+#[allow(unused, dead_code)]
 pub const SHARE_MATURITY_CYCLE: u8 = 2;
 
+#[allow(unused, dead_code)]
 pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 100;
 
 // 2 cycle after inserting a share in DB, coinbase will include the newly recorded share in it's dividend
@@ -123,15 +130,15 @@ pub const MAX_TOLERATED_MISS_BLOCKS: u8 = 5;
   const bool DECODE_ALL_FREE_POST_FILES = true; // TODO: improve it to support different file types & security levels
 */
 #[allow(dead_code, unused)]
-pub(crate) const SIGN_MSG_LENGTH: u8 = 32;
+pub const SIGN_MSG_LENGTH: u8 = 32;
 #[allow(dead_code, unused)]
-pub(crate) const FLOAT_LENGTH: u8 = 11;
+pub const FLOAT_LENGTH: u8 = 11;
 #[allow(dead_code, unused)]
-pub(crate) const LEN_PROP_LENGTH: u8 = 7;
+pub const LEN_PROP_LENGTH: u8 = 7;
 #[allow(dead_code, unused)]
-pub(crate) const LEN_PROP_PLACEHOLDER: &str = "0000000";
+pub const LEN_PROP_PLACEHOLDER: &str = "0000000";
 #[allow(dead_code, unused)]
-pub(crate) const HASH_PROP_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+pub const HASH_PROP_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 /*
 
   const uint16_t TRANSACTION_PADDING_LENGTH = 100;
@@ -146,14 +153,19 @@ pub const MAX_BLOCK_LENGTH_BY_CHAR: BlockLenT = 10000000 * 10;
 
 
 // 10 Mega Byte is actually block size
+#[allow(unused, dead_code)]
 pub const MAX_DOC_LENGTH_BY_CHAR: DocLenT = 10 * 1024 * 1024 * 9;
+#[allow(unused, dead_code)]
 pub const MAX_DP_COST_PAY_DOCUMENT_SIZE: DocLenT = 600;
+#[allow(unused, dead_code)]
 pub const MAX_FULL_DAG_DOWNLOAD_RESPONSE_LENGTH_BY_CHAR: u64 = 1500000;
 
 pub mod stages
 {
     pub const CREATING: &str = "Creating";
+    #[allow(unused, dead_code)]
     pub const REGENERATING: &str = "Regenerating";
+    #[allow(unused, dead_code)]
     pub const VALIDATING: &str = "Validating";
 }
 
@@ -161,11 +173,11 @@ pub mod stages
 pub mod thread_state
 {
     #[allow(dead_code, unused)]
-    pub(crate) const RUNNING: &str = "RUNNING";
+    pub const RUNNING: &str = "RUNNING";
     #[allow(dead_code, unused)]
-    pub(crate) const SLEEPING: &str = "SLEEPING";
+    pub const SLEEPING: &str = "SLEEPING";
     #[allow(dead_code, unused)]
-    pub(crate) const STOPPED: &str = "STOPPED";
+    pub const STOPPED: &str = "STOPPED";
 }
 
 /*
@@ -179,20 +191,30 @@ pub mod thread_state
 
 */
 
+#[allow(unused, dead_code)]
 pub const DEFAULT_LANG: &str = "eng";
+#[allow(unused, dead_code)]
 pub const DEFAULT_VERSION: &str = "0.0.0";
 pub const WRAP_SAFE_CONTENT_VERSION: &str = "0.0.0";
 
 pub const NL: &str = "\n";
 pub const TAB: &str = "\t";
 
+#[allow(unused, dead_code)]
 pub const ALL: &str = "All";
+#[allow(unused, dead_code)]
 pub const DEFAULT: &str = "Default";
+#[allow(unused, dead_code)]
 pub const DEFAULT_BLOCK_VERSION: &str = "0.0.0";
+#[allow(unused, dead_code)]
 pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
+#[allow(unused, dead_code)]
 pub const DEFAULT_RSA_KEY_LENGTH: usize = 2048;
+#[allow(unused, dead_code)]
 pub const PUBLIC: &str = "Public";
+#[allow(unused, dead_code)]
 pub const PRIVATE: &str = "Private";
+#[allow(unused, dead_code)]
 pub const GENERAL: &str = "General";
 /*
 
@@ -200,21 +222,37 @@ pub const GENERAL: &str = "General";
   pub const SHORT =  "Short";
 
 */
+#[allow(unused, dead_code)]
 pub const YES: &str = "Y";
+#[allow(unused, dead_code)]
 pub const NO: &str = "N";
+#[allow(unused, dead_code)]
 pub const ABSTAIN: &str = "A";
+#[allow(unused, dead_code)]
 pub const OPEN: &str = "O";
+#[allow(unused, dead_code)]
 pub const CLOSE: &str = "C";
+#[allow(unused, dead_code)]
 pub const VALID: &str = "V";
+#[allow(unused, dead_code)]
 pub const REVOKED: &str = "R";
+#[allow(unused, dead_code)]
 pub const UNREAD: &str = "UN";
+#[allow(unused, dead_code)]
 pub const READ: &str = "RD";
+#[allow(unused, dead_code)]
 pub const FROM: &str = "FM";
+#[allow(unused, dead_code)]
 pub const TO: &str = "TO";
+#[allow(unused, dead_code)]
 pub const SENT: &str = "ST";
+#[allow(unused, dead_code)]
 pub const RECEIVED: &str = "RC";
+#[allow(unused, dead_code)]
 pub const GQL: &str = "GQL";
+#[allow(unused, dead_code)]
 pub const TO_BUFFER: &str = "ToBuffer";
+#[allow(unused, dead_code)]
 pub const TO_NETWORK: &str = "ToNetwork";
 /*
 
@@ -281,6 +319,7 @@ pub mod block_types
     pub const NORMAL: &str = "Normal";
     pub const POW: &str = "POW";
     // suspicious/suspended block
+    #[allow(unused, dead_code)]
     pub const SUS_BLOCK: &str = "SusBlock";
     pub const FLOATING_VOTE: &str = "FVote";
     // repayment blocks which are used to record repayments in DAG immediately after Coinbase block isuance
@@ -359,6 +398,7 @@ pub mod document_types
     pub const POLLING: &str = "Polling";
     pub const BALLOT: &str = "Ballot";
 
+    #[allow(unused, dead_code)]
     pub const FREE_POST: &str = "FPost"; // Custom Posts (files, Agora posts, wiki pages...)
 
     // Flens: imagine flexible & largly extensible name service
@@ -372,9 +412,12 @@ pub mod document_types
     #[allow(dead_code, unused)]
     pub const I_NAME_MESSAGE_TO: &str = "INameMsgTo"; // general message to a registered iName
 
+    #[allow(unused, dead_code)]
     pub const CALL_OPTION: &str = "CallOption";
+    #[allow(unused, dead_code)]
     pub const PUT_OPTION: &str = "PutOptions";
 
+    #[allow(unused, dead_code)]
     pub const CUSTOM_DOCUMENT: &str = "customDoc"; // custom usages
 }
 
@@ -507,6 +550,7 @@ pub mod pledge_classes
 }
 
 
+#[allow(unused, dead_code)]
 pub const PLEDGE_ACTIVATE_OR_DEACTIVATE_MATURATION_CYCLE_COUNT: u8 = 2;
 
 /*
@@ -562,6 +606,7 @@ pub mod signature_types
     pub const STRICTITL: &str = "STRICTITL";
 }
 
+#[allow(unused, dead_code)]
 pub const DEFAULT_SIGNATURE_MOD: &str = "2/3"; // needs 2 signature of 3
 
 
@@ -593,19 +638,24 @@ pub mod card_types
     pub const NODE_STATUS_SCREENSHOT: &str = "NodeStatusScreenshot";
     pub const NODE_STATUS_SNAPSHOT: &str = "NodeStatusSnapshot";
 
+    #[allow(unused, dead_code)]
     pub const PLEASE_REMOVE_ME_FROM_YOUR_NEIGHBORS: &str = "pleaseRemoveMeFromYourNeighbors";
     pub const DIRECT_MESSAGE_TO_NEIGHBOR: &str = "directMsgToNeighbor";
 }
 
+#[allow(unused, dead_code)]
 pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";
 pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
+#[allow(unused, dead_code)]
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";
+#[allow(unused, dead_code)]
 pub const OUTPUT_CHANGEBACK: &str = "OUTPUT_CHANGEBACK";
 
 pub const CURRENT_AES_VERSION: &str = "0.0.0";
 pub const CURRENT_PGP_VERSION: &str = "0.0.0";
 
 // GUI settings
+#[allow(unused, dead_code)]
 pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 
 // hu part

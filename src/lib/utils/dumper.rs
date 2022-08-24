@@ -3,7 +3,7 @@ use crate::constants;
 use crate::lib::custom_types::{ClausesT, QVDRecordsT};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
 
-pub fn dump_it<T>(x: T) -> String {
+pub fn dump_it<T>(_x: T) -> String {
     println!("here in dumper");
     return "".to_string();
 }

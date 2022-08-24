@@ -168,7 +168,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
 pub fn stringify_an_auto_generated_proposal_polling(params: &JSonObject) -> String
 {
     // stringifies auto-created polling for proposal
-    let mut doc_hahsables: String = format!(
+    let doc_hahsables: String = format!(
         "dCDate:{},dClass:{},dComment:{},dRef:{},dRefClass:{},dRefType:{},dType:{},dVer:{},dCreator:{},pTimeframe:{}",
         params["startDate"],
         params["dClass"],

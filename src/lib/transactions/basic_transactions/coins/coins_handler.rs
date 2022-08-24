@@ -11,6 +11,7 @@ pub static C_TRX_UTXOS_fields: Vec<&str> = vec!["ut_id", "ut_creation_date", "ut
  */
 
 //old_name_was loopCoinCleaner
+#[allow(unused, dead_code)]
 pub fn loop_coin_cleaner(c_date: &CDateT)
 {
     let thread_prefix = "coin_cleaner_".to_string();
@@ -39,13 +40,13 @@ pub fn loop_coin_cleaner(c_date: &CDateT)
 
 
 //old_name_was doCoinClean
-pub fn do_coin_clean( c_date:&CDateT)
+pub fn do_coin_clean( _c_date:&CDateT)
 {
   // * remove from i_trx_utxo the the entries which are visible by blocks that are not "leave" any more and
   // * they are placed 4 level backward(or older) in history
   // * since it is a optional process to lightening DB loadness, it could be done for 8 level previous too
 
-  let minimum_date:CDateT = application().get_now();
+  let _minimum_date:CDateT = application().get_now();
   // JSonObject leaves = LeavesHandler::getLeaveBlocks();
     /*
   StringList leaves_hashes = leaves.keys();

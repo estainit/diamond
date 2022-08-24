@@ -93,7 +93,7 @@ pub fn dispatch_a_card(
             };
         }
 
-        let mut block_body = remove_quotes(&card_body["block"]);
+        let block_body = remove_quotes(&card_body["block"]);
         let (status, block_body) = ccrypto::b64_decode(&block_body);
         if !status
         {
@@ -118,7 +118,7 @@ pub fn dispatch_a_card(
             Err(e) =>
                 {
                     dlog(
-                        &format!("Failed in deserialized block ({}) type({}) from({})", block_hash, card_type, sender),
+                        &format!("Failed in deserialized block ({}) type({}) from({}) {}", block_hash, card_type, sender, e),
                         constants::Modules::Sec,
                         constants::SecLevel::Error);
                     Block::new()

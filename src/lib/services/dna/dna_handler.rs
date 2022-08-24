@@ -8,7 +8,9 @@ use crate::lib::database::tables::C_SHARES;
 
 #[derive(Debug)]
 pub struct Shareholder {
+    #[allow(unused, dead_code)]
     account: CAddressT,
+    #[allow(unused, dead_code)]
     shares: SharesCountT,
 }
 

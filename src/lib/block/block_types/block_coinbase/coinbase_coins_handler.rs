@@ -6,6 +6,7 @@ use crate::lib::custom_types::{CDateT};
 use crate::lib::dlog::dlog;
 
 //func old name was loopImportCoinbaseUTXOs
+#[allow(unused, dead_code)]
 pub fn loop_import_coinbase_coins()
 {
     println!("DDDDDDDD1: {}", application().should_loop_threads());

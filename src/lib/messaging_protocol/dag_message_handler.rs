@@ -513,9 +513,9 @@ std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
 
 //old_name_was handleReceivedLeaveInfo
 pub fn handle_received_leave_info(
-    sender_email: &String,
+    _sender_email: &String,
     message: &JSonObject,
-    connection_type: &String) -> PacketParsingResult
+    _connection_type: &String) -> PacketParsingResult
 {
     dlog(
         &format!("FIX ME: What part of message must be recorded in db? {:?}", message),

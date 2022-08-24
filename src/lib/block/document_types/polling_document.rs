@@ -102,7 +102,7 @@ impl PollingDocument
     //old_name_was getDocHashableString
     pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
-        let mut hahsables: String = format!(
+        let hahsables: String = format!(
             "dExtHash:{},dLen:{},",
             doc.m_doc_ext_hash,
             doc.m_doc_length

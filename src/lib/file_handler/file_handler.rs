@@ -5,7 +5,7 @@ use crate::lib::dlog::dlog;
 use std::path::Path;
 use std::fs;
 use substring::Substring;
-use crate::{application, ccrypto, constants, machine};
+use crate::{application, ccrypto, constants};
 
 pub fn file_read(
     mut file_path: String,
@@ -197,7 +197,7 @@ pub fn write_email_as_file(
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
-    let mut file_name: String = "".to_string();
+    let file_name: String;
     if application().is_develop_mod()
     {
         file_name = [receiver, sender, &application().get_now_sss(), title, ".txt"].join(",");

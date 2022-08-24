@@ -21,7 +21,7 @@ pub fn initialize_log() {
         Box::new(size_trigger),
         Box::new(fixed_window_roller));
 
-    let path_= application().logs_path().clone();
+    let path_ = application().logs_path().clone();
     let log_file_path = format!(
         "{}/{}_dlog.log",
         path_,
@@ -55,7 +55,6 @@ pub fn dlog(msg: &String, module: Modules, level: SecLevel) {
         Modules::Sec => "Sec",
         Modules::Sql => "Sql",
         Modules::Trx => "Trx",
-        _ => "Gen"
     };
 
     // let level_ = match level {

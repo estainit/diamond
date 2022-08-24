@@ -12,9 +12,9 @@ impl CMachine {
         // println!("Env args: {:?}", args);
 
         let mut clone_id: i8 = 0;
-        let mut config_file: String = "".to_string();
+        let mut config_file: String;
         let mut is_develop_mod: bool = false;
-        let mut verbose: bool = false;
+        let mut _verbose: bool = false;
 
         let mut args_dic: HashMap<String, String> = HashMap::new();
         for a_param in args {
@@ -30,7 +30,7 @@ impl CMachine {
                 } else if a_param == "verbose"
                 {
                     args_dic.insert(a_param, constants::YES.to_string());
-                    verbose = true;
+                    _verbose = true;
                 }
             }
         }
@@ -83,7 +83,7 @@ impl CMachine {
         use configparser::ini::Ini;
 
         let mut config = Ini::new();
-        let (status, configs_map) = match config.load(&self.m_config_file) {
+        let (status, _configs_map) = match config.load(&self.m_config_file) {
             Ok(r) => (true, r),
             Err(e) => {
                 eprintln!("{}", e);

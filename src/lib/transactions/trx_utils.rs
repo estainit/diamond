@@ -29,7 +29,7 @@ pub fn normalize_inputs(inputs: &Vec<TInput>) -> Vec<TInput>
         }
         return normalized_inputs;
     } else {
-        let mut normalized_inputs: Vec<TInput> = vec![inputs[0].clone()];
+        let normalized_inputs: Vec<TInput> = vec![inputs[0].clone()];
         return normalized_inputs;
     }
 }

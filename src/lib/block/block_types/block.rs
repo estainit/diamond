@@ -72,6 +72,7 @@ use crate::lib::file_handler::file_handler::file_write;
 // }
 
 
+#[allow(unused, dead_code)]
 pub struct TransientBlockInfo
 {
     m_status: bool,
@@ -95,6 +96,7 @@ pub struct TransientBlockInfo
 }
 
 impl TransientBlockInfo {
+    #[allow(unused, dead_code)]
     pub fn new() -> TransientBlockInfo {
         TransientBlockInfo {
             m_status: false,
@@ -116,6 +118,7 @@ impl TransientBlockInfo {
     }
 }
 
+#[allow(unused, dead_code)]
 pub struct BlockApprovedDocument
 {
     m_approved_doc: Document,
@@ -125,6 +128,7 @@ pub struct BlockApprovedDocument
 }
 
 impl BlockApprovedDocument {
+    #[allow(unused, dead_code)]
     pub fn new() -> BlockApprovedDocument {
         BlockApprovedDocument {
             m_approved_doc: Document::new(),
@@ -290,7 +294,7 @@ impl Block {
         // }
 
         if !obj["bLen"].is_null() {
-            let b_len = obj["bLen"].to_string().parse::<BlockLenT>();
+            // let b_len = obj["bLen"].to_string().parse::<BlockLenT>();
             let (status, b_len) = match obj["bLen"].to_string().parse::<BlockLenT>() {
                 Ok(l) => { (true, l) }
                 Err(e) => {
@@ -971,6 +975,7 @@ impl Block {
     }
 
     //old_name_was searchInBlockExtInfo
+    #[allow(unused, dead_code)]
     pub fn search_in_block_ext_info(
         clauses: ClausesT,
         fields: Vec<&str>,

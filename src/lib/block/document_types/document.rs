@@ -64,6 +64,7 @@ impl Document
     }
 
     //old_name_was getDocExtInfo
+    #[allow(unused, dead_code)]
     pub fn get_doc_ext_info(&self) -> &Vec<JSonObject>
     {
         return &self.m_doc_ext_info;
@@ -235,6 +236,7 @@ impl Document
     }
 
 
+    #[allow(unused, dead_code)]
     pub fn safe_stringify_doc(&self, ext_info_in_document: bool) -> String
     {
         let mut j_doc: JSonObject = self.export_doc_to_json(ext_info_in_document);
@@ -459,6 +461,7 @@ impl Document
     }
 
     //old_name_was calcDocLength
+    #[allow(unused, dead_code)]
     pub fn calc_doc_length(&self) -> DocLenT {
         let doc_length: DocLenT = self.safe_stringify_doc(true).len();
         return doc_length;

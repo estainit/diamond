@@ -144,7 +144,7 @@ pub fn send_mail(
     subject: &String,
     message: String,
     recipient: &String,
-    port: u16) -> bool
+    _port: u16) -> bool
 {
     let mut subject: String = subject.clone();
     if application().is_develop_mod()
@@ -256,10 +256,10 @@ pub fn send_mail(
 
 pub fn received_email_checks() {
     //popPrivateEmail();
-    let (status, email)=pop_public_email();
+    let (_status, email) = pop_public_email();
     if application().use_hard_disk_as_a_buffer()
     {
-
+        println!("email: {}", email);
     }
 }
 

@@ -148,7 +148,7 @@ pub fn generate_m(
         if !final_verifies.contains_key(&the_key) {
             final_verifies.insert(the_key.clone(), a_proof);
         }
-        let mut the_element = final_verifies.get(&the_key).unwrap().clone_me();
+        // let the_element = final_verifies.get(&the_key).unwrap().clone_me();
         // the_element.m_merkle_proof = cutils::clone_vec(&verifies.get(&key.clone()).unwrap().m_proof_keys);
         // the_element.m_left_hash = verifies.get(&key.clone()).unwrap().m_left_hash.clone();
     }
@@ -194,10 +194,10 @@ pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: 
     let leaves: usize = elms.len();
     let mut level: usize = 0;
     let mut parent: String;
-    let l_key: String;
-    let r_key: String;
-    let l_child: String;
-    let r_child: String;
+    // let l_key: String;
+    // let r_key: String;
+    // let l_child: String;
+    // let r_child: String;
     while level < 100_000 {
         level += 1;
 
@@ -222,7 +222,7 @@ pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: 
             // elms.push(the_hash);
         }
 
-        let mut chunks: VVString = cutils::chunk_to_vvstring(elms, 2);
+        let chunks: VVString = cutils::chunk_to_vvstring(elms, 2);
         elms = vec![]; // emptying elements
 
         for chunk in chunks {
@@ -304,7 +304,7 @@ pub fn get_root_by_a_prove(
         leave = do_hash_a_node(&leave, &hash_algorithm);
     }
 
-    let mut proof: String = "".to_string();
+    let mut proof: String;
     if l_hash != "" {
         proof = do_hash_a_node(&(l_hash.to_string() + &leave), &hash_algorithm);
     } else {

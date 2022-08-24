@@ -1,4 +1,4 @@
-use actix_web::{get, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, web, App, HttpServer};
 use crate::dlog;
 use crate::lib::constants;
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
