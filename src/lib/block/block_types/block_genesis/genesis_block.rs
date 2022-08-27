@@ -1,7 +1,7 @@
 pub mod b_genesis {
     use std::collections::HashMap;
     use postgres::types::ToSql;
-    use crate::{application, ccrypto, CMachine, constants, dlog};
+    use crate::{application, ccrypto, constants, dlog};
     use crate::lib::block::block_types::block::Block;
     use crate::lib::block::document_types::proposal_document::{ProposalDocument};
     use crate::lib::block::document_types::document::Document;
@@ -11,7 +11,7 @@ pub mod b_genesis {
     use crate::lib::services::polling::polling_handler::update_polling;
 
     //old_name_was initGenesisBlock
-    pub fn init_genesis_block(machine: &mut CMachine) -> (bool, String)
+    pub fn init_genesis_block() -> (bool, String)
     {
         let mut block: Block = Block::new();
         block.m_block_ancestors = vec![",".to_string()];
@@ -53,7 +53,7 @@ pub mod b_genesis {
         block.m_block_backer = constants::HU_SHARE_ADDRESS.to_string();
         block.m_block_confidence = 99.99;
 
-        let (status, msg) = block.add_block_to_dag(machine);
+        let (status, msg) = block.add_block_to_dag();
         if !status
         {
             let msg = format!("Failed in add genesis block to DAG. {}", msg);
@@ -90,8 +90,8 @@ pub mod b_genesis {
         let back_in_time = (5 * application().get_cycle_by_minutes()) as u64;
         let conclude_date = application().launch_date();
         let start_voting_date: String = application().minutes_before(
-        back_in_time,
-        &conclude_date);
+            back_in_time,
+            &conclude_date);
 
         let initial_proposal: &Document = &block.m_block_documents[0];
         let proposal_hash: String = initial_proposal.get_doc_hash();

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{application, CMachine, constants, cutils, dlog};
+use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_set_by_json_obj};
@@ -10,67 +10,19 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::node_signals_handler::log_signals;
 use crate::lib::block_utils::wrap_safe_content_for_db;
-use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT};
+use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString};
 use crate::lib::dag::dag::append_descendants;
-use crate::lib::dag::dag_walk_through::update_cached_blocks;
+use crate::lib::dag::dag_walk_through::{get_ancestors};
 use crate::lib::dag::leaves_handler::{add_to_leave_blocks, remove_from_leave_blocks};
+use crate::lib::dag::missed_blocks_handler::remove_from_missed_blocks;
 use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
 use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCK_EXTINFOS, C_BLOCKS};
 use crate::lib::file_handler::file_handler::file_write;
-
-
-// struct BlockRecord
-// {
-//     m_id: u64,
-//     m_hash: String,
-//     // block root hash
-//     m_type: String,
-//     // block type (genesis/coinbase/normal)
-//     m_cycle: String,
-//     // the coin base cycle
-//     m_confidence: f64,
-//     // if the block is coinbase it denots to percentage of share of signers
-//     m_ext_root_hash: String,
-//     // it was ext_infos_root_hash segwits/zippedInfo... root hashes
-//     m_documents_root_hash: String,
-//     // it was docs_root_hash documents root hash
-//     m_signals: String,
-//     // block signals
-//     m_trxs_count: u64,
-//     // transaction counts
-//     m_docs_count: u64,
-//     // documents counts
-//     m_ancestors_count: u64,
-//     // ancestors counts
-//     m_ancestors: Vec<String>,
-//     // comma seperated block ancestors
-//     m_descendents: Vec<String>,
-//     // comma seperated block descendents
-//     m_body: String,
-//     // stringified json block full body(except block ext info)
-//     m_creation_date: String,
-//     // the block creation date which stated by block creator
-//     m_receive_date: String,
-//     // the block receive date in local, only for statistics
-//     m_confirm_date: String,
-//     // the block confirmation date in local node
-//     m_block_backer: String,
-//     // the BECH32 address of who got paid because of creating this block
-//     m_coin_imported: String, // does UTXO imported to i_trx_utxo table?
-//
-//     /*
-//
-//       BlockRecord(const QVDicT& values = {})
-//       {
-//         if (values.keys().len() > 0)
-//           setByRecordDict(values);
-//       };
-//       bool setByRecordDict(const QVDicT& values = {});
-//
-//     */
-// }
-
+use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
+use crate::lib::parsing_q_handler::queue_utils::remove_prerequisites;
+use crate::lib::services::society_rules::society_rules::get_max_block_size;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::inherit_ancestors_visbility;
 
 #[allow(unused, dead_code)]
 pub struct TransientBlockInfo
@@ -322,12 +274,14 @@ impl Block {
         // if !obj["signals"].toOis_null(len() > 0 {
         //     self.m_signals = remove_quotes(&obj["signals"].toObject());
 
-        if !obj["bCDate"].is_null() {
+        if !obj["bCDate"].is_null()
+        {
             self.m_block_creation_date = remove_quotes(&obj["bCDate"]);
         }
 
 
-        if !obj["bDocsRootHash"].is_null() {
+        if !obj["bDocsRootHash"].is_null()
+        {
             self.m_block_documents_root_hash = remove_quotes(&obj["bDocsRootHash"]);
         }
 
@@ -352,65 +306,62 @@ impl Block {
         }
 
 
-        let block_type = remove_quotes(&obj["bType"]);
-        if block_type == constants::block_types::NORMAL {
+        if self.m_block_type == constants::block_types::NORMAL {
             return true;
-        } else if block_type == constants::block_types::COINBASE {
+        } else if self.m_block_type == constants::block_types::COINBASE {
             return self.m_if_coinbase_block.set_by_json_obj(obj);
-        } else if block_type == constants::block_types::REPAYMENT_BLOCK
-        {} else if block_type == constants::block_types::FLOATING_SIGNATURE
-        {} else if block_type == constants::block_types::FLOATING_VOTE
-        {} else if block_type == constants::block_types::POW
-        {} else if block_type == constants::block_types::GENESIS
+        } else if self.m_block_type == constants::block_types::REPAYMENT_BLOCK
+        {} else if self.m_block_type == constants::block_types::FLOATING_SIGNATURE
+        {} else if self.m_block_type == constants::block_types::FLOATING_VOTE
+        {} else if self.m_block_type == constants::block_types::POW
+        {} else if self.m_block_type == constants::block_types::GENESIS
         {
             return genesis_set_by_json_obj(self, obj);
         }
 
-        println!("Invalid block type1 {:?} in received JSon Obj {:?}", block_type, serde_json::to_string(&obj).unwrap());
-        println!("Invalid block type2 {} in received JSon Obj {}", block_type, serde_json::to_string(&obj).unwrap());
+        println!("Invalid block type1 {:?} in received JSon Obj {:?}", self.m_block_type, serde_json::to_string(&obj).unwrap());
+        println!("Invalid block type2 {} in received JSon Obj {}", self.m_block_type, serde_json::to_string(&obj).unwrap());
         dlog(
-            &format!("Invalid block type {} in received JSon Obj {}", block_type, serde_json::to_string(&obj).unwrap()),
+            &format!("Invalid block type {} in received JSon Obj {}", self.m_block_type, serde_json::to_string(&obj).unwrap()),
             constants::Modules::App,
             constants::SecLevel::Error);
         return false;
     }
 
-    /*
-
-    /**
-     * @brief Block::objectAssignmentsControlls
-     * @return
-     *
-     * the tests to avoid injection/maleformed data in received Jsons
-     * FIXME: add more tests
-     */
-    bool Block::objectAssignmentsControlls()
+    // * the tests to avoid injection/maleformed data in received Jsons
+    // * FIXME: add more tests
+    // old name was objectAssignmentsControlls
+    pub fn object_assignments_controls(&self) -> bool
     {
-      if (!cutils::isValidHash(m_block_hash))
-      {
-        CLog::log("Invalid blockHash after js assignment", "sec", "error");
-        return false;
-      }
+        if !cutils::is_valid_hash(&self.m_block_hash)
+        {
+            dlog(
+                &format!("Invalid blockHash after js assignment: {}", self.m_block_hash),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return false;
+        }
 
-      if ((m_block_type != constants::block_types::COINBASE) && !ccrypto::isValidBech32(m_block_backer))
-      {
-        CLog::log("Invalid block backer after js assignment", "sec", "error");
-        return false;
-      }
+        if (self.m_block_type != constants::block_types::COINBASE)
+            && !ccrypto::is_valid_bech32(&self.m_block_backer)
+        {
+            dlog(
+                &format!("Invalid block backer after js assignment: {}", self.m_block_backer),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return false;
+        }
 
 
-
-      return true;
-
+        return true;
     }
 
-*/
     //old_name_was stringifyBExtInfo
     pub fn stringify_block_ext_info(&self) -> String
     {
         if !vec![constants::block_types::COINBASE,
                  constants::block_types::NORMAL,
-                 constants::block_types::POW].contains(&&*self.m_block_type)
+                 constants::block_types::POW].contains(&self.m_block_type.as_str())
         {
             dlog(
                 &format!("DUMMY BREAKPOINT LOG :)"),
@@ -483,10 +434,6 @@ impl Block {
       return {true, root};
     }
 
-    std::tuple<bool, CDocHashT> Block::calcBlockExtRootHash() const
-    {
-      return {true, ""};
-    }
 
     bool Block::fillInBlockExtInfo()
     {
@@ -530,7 +477,25 @@ impl Block {
             out["bBacker"] = self.m_block_backer.clone().into();
         }
 
+        if self.m_block_type == constants::block_types::COINBASE
+        {
+            out = self.m_if_coinbase_block.export_block_to_json(
+                self,
+                &mut out,
+                ext_info_in_document);
+        }
         return out;
+    }
+
+    // old name was calcBlockExtRootHash
+    pub fn calc_block_ext_root_hash(&self) -> (bool, CDocHashT)
+    {
+        if self.m_block_type == constants::block_types::COINBASE
+        {
+            return self.m_if_coinbase_block.calc_block_ext_root_hash(self);
+        }
+
+        panic!("Missed 'calc Block Ext Root Hash method in {}", self.get_block_identifier());
     }
 
     /*
@@ -541,149 +506,83 @@ impl Block {
       m_block_length = static_cast<BlockLenT>(stringyfied_block.len());
     }
 
-    BlockLenT Block::calcBlockLength(const JSonObject& block_obj) const
+*/
+    // old_name_was calcBlockLength
+    pub fn calc_block_length(&self) -> BlockLenT
     {
-      return cutils::serializeJson(block_obj).len();
+        let serialized_block = self.safe_stringify_block(true);
+        let (_status, deser_block) = cutils::controlled_str_to_json(&serialized_block);
+        let block_length = deser_block["bLen"].to_string().parse::<BlockLenT>().unwrap();
+        block_length
     }
 
-    std::tuple<bool, bool> Block::handleReceivedBlock() const
+    pub fn get_block_identifier(&self) -> String
     {
-      return {false, false};
+        let block_identifier = format!(
+            " block({}/#{}) ",
+            self.m_block_type,
+            cutils::hash8c(&self.m_block_hash));
+        return block_identifier;
     }
 
-    BlockLenT Block::getMaxBlockSize() const
+    pub fn handle_received_block(&self) -> EntryParsingResult
     {
-      return SocietyRules::getMaxBlockSize(m_block_type);
-    }
-
-    bool Block::controlBlockLength() const
-    {
-      String stringyfied_block = safe_stringify_block(false);
-      if (static_cast<BlockLenT>(stringyfied_block.len()) != m_block_length)
-      {
-        CLog::log("Mismatch (Base class)block length Block(" + cutils::hash8c(m_block_hash) + ") local length(" + String::number(stringyfied_block.len()) + ") remote length(" + String::number(m_block_length) + ") stringyfied_block:" + stringyfied_block, "sec", "error");
-        return false;
-      }
-      return true;
-    }
-
-
-    std::tuple<bool, bool> Block::blockGeneralControls() const
-    {
-      if (m_net != constants::SOCIETY_NAME)
-      {
-        CLog::log("Invalid society communication! Block(" + cutils::hash8c(m_block_hash) + ") Society(" + m_net + ")", "sec", "error");
-        return {false, true};
-      }
-
-      // block create date control
-      if (cutils::isGreaterThanNow(m_block_creation_date))
-      {
-        CLog::log("Invalid block creation date! Block(" + cutils::hash8c(m_block_hash) + ") creation date(" + m_block_creation_date + ")", "sec", "error");
-        return {false, true};
-      }
-
-      if (m_block_length > getMaxBlockSize())
-      {
-        CLog::log("Invalid block length block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(m_block_length) + " > MAX: " + String::number(getMaxBlockSize()) + ")", "sec", "error");
-        return {false, true};
-      }
-
-      // Block length control
-      if (!controlBlockLength())
-        return {false, true};
-
-
-      if ((m_block_version == "") || !cutils::isValidVersionNumber(m_block_version))
-      {
-        CLog::log("Invalid bVer block(" + cutils::hash8c(m_block_hash) + ") block(" + m_block_version + ")", "sec", "error");
-        return {false, true};
-      }
-
-      if (!cutils::isValidDateForamt(m_block_creation_date))
-      {
-        CLog::log("Invalid creation date block(" + cutils::hash8c(m_block_hash) + ") creation date(" + m_block_creation_date + ")", "sec", "error");
-        return {false, true};
-      }
-
-      if (cutils::isGreaterThanNow(m_block_creation_date))
-      {
-        CLog::log("Block whith future creation date is not acceptable(" + m_block_creation_date + ") not Block(" + m_block_hash + ")!", "sec", "error");
-        return {false, true};
-      }
-
-      // ancestors control
-      if (m_ancestors.len() < 1)
-      {
-        CLog::log("Invalid ancestors for block(" + cutils::hash8c(m_block_hash) + ")", "sec", "error");
-        return {false, true};
-      }
-
-      if (!cutils::isValidHash(m_block_hash))
-      {
-        CLog::log("Invalid block Hash(" + cutils::hash8c(m_block_hash) +")", "sec", "error");
-        return {false, true};
-      }
-
-      // docRootHash control
-      if (m_documents.len() > 0)
-      {
-        StringList doc_hashes {};
-        for (Document* a_doc: m_documents)
-          doc_hashes.push(a_doc->get_doc_hash());
-        auto[root, verifies, version, levels, leaves] = CMerkle::generate(doc_hashes);
-        Q_UNUSED(verifies);
-        Q_UNUSED(version);
-        Q_UNUSED(levels);
-        Q_UNUSED(leaves);
-        if (m_documents_root_hash != root)
+        if self.m_block_type == constants::block_types::COINBASE
         {
-          CLog::log("Mismatch block DocRootHash for type(" + m_block_type + ") block(" + cutils::hash8c(m_block_hash) + ") creation date(" + m_block_creation_date + ")", "sec", "error");
-          return {false, true};
+            return self.m_if_coinbase_block.handle_received_block(&self);
         }
 
-        // ext root hash control
-        if (m_block_ext_root_hash != "")
-        {
-          auto[status, block_ext_root_hash] = calcBlockExtRootHash();
-          if (!status || (block_ext_root_hash != m_block_ext_root_hash))
-          {
-            CLog::log("Mismatch block Ext DocRootHash for type(" + m_block_type + ") block(" + cutils::hash8c(m_block_hash) + ") creation date(" + m_block_creation_date + ")", "sec", "error");
-            return {false, true};
-          }
-        }
-
-        // re-calculate block hash
-        String re_calc_block_hash = calcBlockHash();
-        if (re_calc_block_hash != m_block_hash)
-        {
-          CLog::log("Mismatch block kHash. localy calculated(" + cutils::hash8c(re_calc_block_hash) +") remote(" + m_block_type + " / " + cutils::hash8c(m_block_hash) + ") " + safe_stringify_block(true), "sec", "error");
-          return {false, true};
-        }
-
-    //    Block* tmp_block = new Block(JSonObject {
-    //      {"bCDate", this.m_block_creation_date},
-    //      {"bType", this.m_block_type},
-    //      {"bHash", this.m_block_hash}});
-        for (Document* a_doc: m_documents)
-          if (!a_doc->fullValidate(this).status)
-          {
-    //        delete tmp_block;
-            return {false, true};
-          }
-
-    //    delete tmp_block;
-      }
-
-      return {true, true};
+        return self.handle_received_block_super();
     }
 
-    String Block::getBlockHash() const
+    pub fn handle_received_block_super(&self) -> EntryParsingResult
     {
-      return m_block_hash;
+        return EntryParsingResult {
+            m_status: false,
+            m_should_purge_record: false,
+            m_message: format!("This method not implemented for Base Class {}", self.get_block_identifier()),
+        };
     }
 
-    */
+    #[allow(unused,dead_code)]
+    pub fn get_max_block_size(&self) -> BlockLenT
+    {
+        return get_max_block_size(&self.m_block_type);
+    }
+
+    pub fn control_block_length(&self) -> bool
+    {
+        if self.m_block_type == constants::block_types::COINBASE
+        {
+            return self.m_if_coinbase_block.control_block_length(self);
+        }
+
+        return self.control_block_length_parent();
+    }
+
+    pub fn control_block_length_parent(&self) -> bool
+    {
+        let stringifyed_block: String = self.safe_stringify_block(false);
+        if stringifyed_block.len() != self.m_block_length
+
+        {
+            dlog(
+                &format!("Mismatch (Base class)block length Block({}) local length({}) remote length({}) stringyfied block: {}",
+                         cutils::hash8c(&self.m_block_hash), stringifyed_block.len(), self.m_block_length, stringifyed_block),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+
+            return false;
+        }
+        return true;
+    }
+
+
+    pub fn get_block_hash(&self) -> String
+    {
+        return self.m_block_hash.clone();
+    }
+
 
     pub fn calc_block_hash(&self) -> CBlockHashT {
         if self.m_block_type == constants::block_types::GENESIS {
@@ -692,12 +591,13 @@ impl Block {
             return self.m_if_coinbase_block.calc_block_hash(self);
         }
 
-        panic!("Undefined block type: {}", self.m_block_type);
+        panic!("Undefined block type in (calc block hash): {}", self.m_block_type);
     }
 
+    //old name was setBlockHash
     pub fn set_block_hash(&mut self, hash: &CBlockHashT)
     {
-        self.m_block_hash = hash.parse().unwrap();
+        self.m_block_hash = hash.clone();
     }
 
     /*
@@ -720,7 +620,7 @@ impl Block {
     */
 
     //old_name_was addBlockToDAG
-    pub fn add_block_to_dag(&self, machine: &mut CMachine) -> (bool, String)
+    pub fn add_block_to_dag(&self) -> (bool, String)
     {
         // duplicate check
         let (_status, records) = q_select(
@@ -802,13 +702,13 @@ impl Block {
             &values, // values to insert
             true);
 
-        // add newly recorded block to cache in order to reduce DB load. TODO: improve it
-        update_cached_blocks(
-            machine,
-            &self.m_block_type,
-            &self.m_block_hash,
-            &self.m_block_creation_date,
-            &constants::NO.to_string());
+        // // add newly recorded block to cache in order to reduce DB load. TODO: improve it
+        // update_cached_blocks(
+        //     machine,
+        //     &self.m_block_type,
+        //     &self.m_block_hash,
+        //     &self.m_block_creation_date,
+        //     &constants::NO.to_string());
 
         // recording block ext Info (if exist)
         let block_ext_info: String = self.stringify_block_ext_info();
@@ -876,98 +776,93 @@ impl Block {
         return (true, "block was added to DAG".to_string());
     }
 
+
+    //old name was postAddBlockToDAG
+    pub fn post_add_block_to_dag(&self) -> bool
+    {
+        // remove prerequisite, if any block in parsing Q was needed to this block
+        remove_prerequisites(&self.m_block_hash);
+
+        // * sometimes (e.g. repayback blocks which can be created by delay and causing to add block to missed blocks)
+        // * we need to doublecheck if the block still is in missed blocks list and remove it
+        remove_from_missed_blocks(&self.get_block_hash());
+
+        // * inherit coin visibilities of ancestors of newly DAG-added block
+        // * current block inherits the visibility of it's ancestors
+        // * possibly first level ancestors can be floating signatures(which haven't entry in table trx_utxos),
+        // * so add ancestors of ancestors too, in order to being sure we keep good and reliable history in utxos
+        if ![constants::block_types::FLOATING_SIGNATURE, constants::block_types::FLOATING_VOTE].contains(&self.m_block_type.as_str())
+        {
+            let mut ancestors: VString = self.m_block_ancestors.clone();
+            ancestors = cutils::array_add(&ancestors, &get_ancestors(&ancestors, 1));
+            ancestors = cutils::array_add(&ancestors, &get_ancestors(&ancestors, 1));
+            ancestors = cutils::array_unique(&ancestors);
+            inherit_ancestors_visbility(
+                &ancestors,
+                &self.m_block_creation_date,
+                &self.get_block_hash());
+        }
+
+        return true;
+    }
+
     /*
 
-    bool Block::postAddBlockToDAG() const
-    {
-      // remove perequisity, if any block in parsing Q was needed to this block
+       bool Block::createDocuments(const QJsonValue& documents)
+       {
+         JSonArray docs = documents.toArray();
+         for(CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
+         {
+           Document* d = DocumentFactory::create(docs[doc_inx].toObject(), this, doc_inx);
+           m_documents.push(d);
+         }
+         return true;
+       }
 
-      ParsingQHandler::removePrerequisites(m_block_hash);
+       /**
+        * @brief Block::getBlockExtInfo
+        * @param blockHash
+        * @return <status, extInfoExist?, extinfoJsonObj>
+        */
+       std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo(const String& block_hash)
+       {
+         JSonArray block_ext_info;
+         QueryRes res = DbModel::select(
+           C_BLOCK_EXT_INFO,
+           {"x_block_hash", "x_detail"},
+           {{"x_block_hash", block_hash}});
+         if (res.records.len() != 1)
+         {
+           CLog::log("get Block Ext Infos: the block(" + cutils::hash8c(block_hash) + ") has not ext Info", "app", "trace");
+           return {true, false, {}};
+         }
 
-      /**
-      * sometimes (e.g. repayback blocks which can be created by delay and causing to add block to missed blocks)
-      * we need to doublecheck if the block still is in missed blocks list and remove it
-      */
-      removeFromMissedBlocks(getBlockHash());
+         String serialized_block = BlockUtils::unwrapSafeContentForDB(res.records[0].value("x_detail").to_string()).content;
+         block_ext_info = cutils::parseToJsonArr(serialized_block);
+         return {true, true, block_ext_info};
+       }
 
-      /**
-      * inherit UTXO visibilities of ancestors of newly DAG-added block
-      * current block inherits the visibility of it's ancestors
-      * possibly first level ancestors can be floating signatures(which haven't entry in table trx_utxos),
-      * so add ancestors of ancestors too, in order to being sure we keep good and reliable history in utxos
-      */
-      if (!StringList {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}.contains(m_block_type))
-      {
-        StringList ancestors = m_ancestors;
-        ancestors = cutils::arrayAdd(ancestors, DAG::getAncestors(ancestors));
-        ancestors = cutils::arrayAdd(ancestors, DAG::getAncestors(ancestors));
-        ancestors = cutils::arrayUnique(ancestors);
-        UTXOHandler::inheritAncestorsVisbility(
-          ancestors,
-          m_block_creation_date,
-          getBlockHash());
-      }
+       std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo() const
+       {
+         if (m_block_ext_info.len() > 0)
+           return {true, true, m_block_ext_info[0].toArray()};
 
-      return true;
-    }
+         return Block::getBlockExtInfo(m_block_hash);
+       }
 
+       bool Block::appendToDocuments(Document* doc)
+       {
+         m_documents.push(doc);
+         return true;
+       }
 
+       bool Block::appendToExtInfo(const JSonArray& an_ext_info)
+       {
+         m_block_ext_info.push(an_ext_info);
+         return true;
+       }
 
-    bool Block::createDocuments(const QJsonValue& documents)
-    {
-      JSonArray docs = documents.toArray();
-      for(CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
-      {
-        Document* d = DocumentFactory::create(docs[doc_inx].toObject(), this, doc_inx);
-        m_documents.push(d);
-      }
-      return true;
-    }
-
-    /**
-     * @brief Block::getBlockExtInfo
-     * @param blockHash
-     * @return <status, extInfoExist?, extinfoJsonObj>
-     */
-    std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo(const String& block_hash)
-    {
-      JSonArray block_ext_info;
-      QueryRes res = DbModel::select(
-        C_BLOCK_EXT_INFO,
-        {"x_block_hash", "x_detail"},
-        {{"x_block_hash", block_hash}});
-      if (res.records.len() != 1)
-      {
-        CLog::log("get Block Ext Infos: the block(" + cutils::hash8c(block_hash) + ") has not ext Info", "app", "trace");
-        return {true, false, {}};
-      }
-
-      String serialized_block = BlockUtils::unwrapSafeContentForDB(res.records[0].value("x_detail").to_string()).content;
-      block_ext_info = cutils::parseToJsonArr(serialized_block);
-      return {true, true, block_ext_info};
-    }
-
-    std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo() const
-    {
-      if (m_block_ext_info.len() > 0)
-        return {true, true, m_block_ext_info[0].toArray()};
-
-      return Block::getBlockExtInfo(m_block_hash);
-    }
-
-    bool Block::appendToDocuments(Document* doc)
-    {
-      m_documents.push(doc);
-      return true;
-    }
-
-    bool Block::appendToExtInfo(const JSonArray& an_ext_info)
-    {
-      m_block_ext_info.push(an_ext_info);
-      return true;
-    }
-
-*/
+    */
     //old_name_was getBlockExtInfoByDocIndex
     pub fn get_block_ext_info_by_doc_index(&self, document_index: usize) -> &Vec<JSonObject>
     {

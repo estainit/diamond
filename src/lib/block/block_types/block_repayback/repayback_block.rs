@@ -25,7 +25,7 @@ bool RepaybackBlock::set_by_json_obj(const JSonObject& obj)
 
 
 
-std::tuple<bool, bool> RepaybackBlock::handleReceivedBlock() const
+std::tuple<bool, bool> RepaybackBlock::handle_received_block() const
 {
   // Since machine must create the repayments by itself we drop this block immidiately,
   // in addition machine calls importCoinbased coins method to import potentially minted coins and cut the potentially repay backs in on shot

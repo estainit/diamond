@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::Row;
 use postgres::types::{ToSql};
-use crate::{ dbhandler};
+use crate::{dbhandler};
 use crate::cutils::{convert_float_to_string, remove_dbl_spaces};
 use crate::lib::constants;
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
@@ -340,7 +340,11 @@ pub fn q_custom_query(
                             let col_value: f64 = Row::get(a_row, col_inx);
                             convert_float_to_string(col_value, 11)
                         }
-                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int4" | "int8" => {
+                        "int4" => {
+                            let col_value: i32 = Row::get(a_row, col_inx);
+                            col_value.to_string()
+                        }
+                        "smallint" | "smallserial" | "int" | "serial" | "oid" | "bigint" | "bigserial" | "int8" => {
                             let col_value: i64 = Row::get(a_row, col_inx);
                             col_value.to_string()
                         }

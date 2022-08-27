@@ -461,7 +461,7 @@ pub fn do_prerequisities_remover() -> bool
             {
               CLog::log("Prerequisities Remover, removed dependencies to block(" + cutils::hash8c(aBlock["b_hash"].to_string()) + ")", "app", "trace");
               // remove dependency to this block
-              ParsingQHandler::removePrerequisites(aBlock["b_hash"].to_string());
+              remove_prerequisites(aBlock["b_hash"].to_string());
             }
           }
         }

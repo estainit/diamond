@@ -1,10 +1,11 @@
 use std::collections::HashMap;
-use crate::{CMachine, constants, dlog, machine};
+use postgres::types::ToSql;
+use crate::{CMachine, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_factory::{load_block_by_db_record};
-use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT};
+use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT, VString};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::database::abs_psql::OrderModifier;
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier};
 use crate::lib::database::tables::C_BLOCKS_FIELDS;
 
 
@@ -56,37 +57,60 @@ std::tuple<bool, CBlockHashT, CDateT> DAG::getLatestBlock()
   };
 }
 
-/**
- *
- * @param {*} block_hashes
- * @param {*} level
- * this is not aggregative and returns ONLY given level's ancestors and not the blocks in backing track way
- */
-StringList DAG::getAncestors(
-  StringList block_hashes,
-  uint level)
+*/
+
+// * this is not aggregative and returns ONLY given level's ancestors and not the blocks in backing track way
+//old_name_was getAncestors
+pub fn get_ancestors(
+    block_hashes: &VString,
+    level: u16) -> VString
 {
-  if (block_hashes.len() == 0)
-    return {};
+    if block_hashes.len() == 0
+    { return vec![]; }
 
-  QVDRecordsT res = searchInDAG(
-    {{"b_hash", block_hashes, "IN"}},
-    {"b_ancestors"});
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in block_hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+    let res = search_in_dag(
+        vec![c1],
+        vec!["b_ancestors"],
+        vec![],
+        0,
+        false,
+    );
 
-  if (res.len()== 0)
-    return {};
+    if res.len() == 0
+    { return vec![]; }
 
-  StringList out {};
-  for (QVDicT aRes: res)
-    out = cutils::arrayAdd(out, aRes["b_ancestors"].to_string().split(","));
+    let mut out: VString = vec![];
+    for a_res in res
+    {
+        let tmp = a_res["b_ancestors"]
+            .to_string()
+            .split(",")
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<Vec<String>>();
+        out = cutils::array_add(&out, &tmp);
+    }
 
-  out = cutils::arrayUnique(out);
+    out = cutils::array_unique(&out);
 
-  if (level == 1)
-    return out;
+    if level == 1
+    { return out; }
 
-  return getAncestors(out, level - 1);
+    return get_ancestors(&out, level - 1);
 }
+
+/*
 
 /**
  *
@@ -276,6 +300,7 @@ pub fn refresh_cached_blocks() -> bool
     return true;
 }
 
+#[allow(unused,dead_code)]
 pub fn update_cached_blocks(
     machine: &mut CMachine,
     b_type: &String,

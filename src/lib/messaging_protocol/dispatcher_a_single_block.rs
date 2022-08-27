@@ -7,7 +7,7 @@ use crate::lib::dag::missed_blocks_handler::remove_from_missed_blocks;
 use crate::lib::database::abs_psql::simple_eq_clause;
 use crate::lib::messaging_protocol::dag_message_handler::{set_last_received_block_timestamp};
 use crate::lib::messaging_protocol::dispatcher::PacketParsingResult;
-use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
+use crate::lib::parsing_q_handler::queue_push::push_to_parsing_q;
 
 //old_name_was innerDispatchMessage
 pub fn handle_a_single_block(

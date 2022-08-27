@@ -1,4 +1,4 @@
-use crate::lib::custom_types::{BlockLenT, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CMPAISValueT, DocLenT};
 
 #[allow(dead_code, unused)]
 pub enum Modules {
@@ -26,12 +26,7 @@ pub const SOCIETY_NAME: &str = "im";
 pub const BECH32_ADDRESS_VER: &str = "0";
 pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
-
-/*
-
-const CMPAISValueT MAX_COIN_VALUE = 9007199254740991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
-
-*/
+pub const  MAX_COIN_VALUE:CMPAISValueT = 9_007_199_254_740_991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
 
 pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
@@ -138,7 +133,7 @@ pub const LEN_PROP_LENGTH: u8 = 7;
 #[allow(dead_code, unused)]
 pub const LEN_PROP_PLACEHOLDER: &str = "0000000";
 #[allow(dead_code, unused)]
-pub const HASH_PROP_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
+pub const HASH_ZEROS_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 /*
 
   const uint16_t TRANSACTION_PADDING_LENGTH = 100;

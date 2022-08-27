@@ -4,8 +4,8 @@ use substring::Substring;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::json;
-use crate::{constants, dlog };
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonArray, JSonObject, VVString};
+use crate::{application, constants, dlog};
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonArray, JSonObject, VString, VVString};
 
 pub fn remove_quotes(input_value: &JSonObject) -> String {
     input_value.as_str().unwrap().to_string()
@@ -220,6 +220,30 @@ pub fn chunk_to_vvstring(values: Vec<String>, chunk_size: u64) -> VVString {
 //     }
 //     return out;
 // }
+
+// TODO: unittests for packCommaSeperated, unpackCommaSeperated, normalizeCommaSeperatedStr, removeNullMembersFromCommaSeperated
+//old_name_was normalizeCommaSeperatedStr
+pub fn normalize_comma_seperated_string(str: &String) -> String
+{
+    if str == ""
+    { return "".to_string(); }
+
+    let elms = str.split(",")
+        .collect::<Vec<&str>>()
+        .iter()
+        .map(|&x| x.to_string())
+        .collect::<Vec<String>>();
+
+    let mut new_elms: VString = vec![];
+    for elm in elms
+    {
+        if elm != ""
+        {
+            new_elms.push(elm);
+        }
+    }
+    return format!(",{}", new_elms.join(","));
+}
 
 pub fn clone_vec<T: Clone>(vec: &Vec<T>) -> Vec<T> {
     let vec = vec[..].to_vec();
@@ -441,6 +465,7 @@ pub fn i_floor_float(number: f64) -> f64
     return custom_floor_float(number, constants::FLOAT_LENGTH); // in order to keep maximum 11 digit after point
 }
 
+//old_name_was convertJSonArrayToStringList
 //old_name_was convertJSonArrayToStringVector
 pub fn convert_json_array_to_string_vector(inp: &JSonArray) -> Vec<String> {
     if !inp.is_array() {
@@ -453,6 +478,18 @@ pub fn convert_json_array_to_string_vector(inp: &JSonArray) -> Vec<String> {
         inx += 1;
     }
     return out;
+}
+
+pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
+{
+    let vec_val = s
+        .split(",")
+        .collect::<Vec<&str>>()
+        .iter()
+        .filter(|&x| *x != "")
+        .map(|x| x.to_string())
+        .collect::<VString>();
+    return vec_val;
 }
 
 //old_name_was parseToJsonArr
@@ -507,4 +544,41 @@ pub fn unpack_coin_code(coin: &CCoinCodeT) -> (String, COutputIndexT)
 {
     let segments: Vec<&str> = coin.split(":").collect();
     return (segments[0].to_string(), segments[1].parse::<COutputIndexT>().unwrap());
+}
+
+//old_name_was isGreaterThanNow
+pub fn is_greater_than_now(c_date: &String) -> bool
+{
+    *c_date > application().get_now()
+}
+
+//old_name_was stripNonHex
+pub fn strip_non_hex_chars(s: &String) -> String
+{
+    let re = Regex::new(r"[^0-9a-fA-F]").unwrap();
+    return re.replace(&s.as_str(), "").to_string();
+}
+
+//old_name_was isValidDateForamt
+pub fn is_a_valid_date_format(_c_date: &String) -> bool
+{
+    return true; // TOD: implement a control on format "yyyy-MM-dd HH:mm:ss"
+}
+
+//old_name_was isValidHash
+pub fn is_valid_hash(s: &String) -> bool
+{
+    if &strip_non_hex_chars(s) != s
+    { return false; }
+
+    if s.len() != 64
+    { return false; }
+
+    // TODO add some more control such as length control,...
+    return true;
+}
+
+pub fn has_only_hex_chars(s: &String) -> bool
+{
+    strip_non_hex_chars(s).len() == s.len()
 }

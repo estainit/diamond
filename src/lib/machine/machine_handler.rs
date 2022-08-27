@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{application, ccrypto, cutils};
-use crate::lib::custom_types::{CAddressT, CDateT, JSonObject, QVDRecordsT};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, JSonObject, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
@@ -18,7 +18,14 @@ use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
-//  '  '  '  '  '  '  '  '  '  '  '  '  '  '  '  machine_handler.cpp file
+#[allow(unused, dead_code)]
+pub struct CoinsVisibilityRes {
+    status: bool,
+    records: VString,
+    is_visible: bool,
+}
+
+
 // #[derive(Default)]
 pub struct CMachine {
     pub m_clone_id: i8,
@@ -47,16 +54,21 @@ pub struct CMachine {
   Config* m_global_configs {};
   */
     #[allow(unused, dead_code)]
-    pub m_recorded_blocks_in_db: u32,
     // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
-    /*
-      StringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
-    QVDRecordsT m_cache_spendable_coins = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
-*/
+    pub m_recorded_blocks_in_db: u32,
+
+    // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
+    pub m_cache_coins_visibility: VString,
+
+    // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
+    pub m_cache_spendable_coins: QVDRecordsT,
+
+    // TODO: optimize it ASAP
     pub m_dag_cached_blocks: QVDRecordsT,
+
     // TODO: optimize it ASAP
     pub m_dag_cached_block_hashes: Vec<String>,
-    // TODO: optimize it ASAP
+
     pub m_profile: MachineProfile,
 
     pub m_email_is_active: bool,
@@ -116,6 +128,8 @@ impl CMachine {
             MachineProfile m_profile;
 
               */
+            m_cache_coins_visibility: vec![],
+            m_cache_spendable_coins: vec![],
             m_dag_cached_blocks: vec![],
             m_dag_cached_block_hashes: vec![],
             m_profile: MachineProfile::new(),
@@ -153,7 +167,7 @@ impl CMachine {
 
         self.maybe_add_seed_neighbors();
 
-        maybe_init_dag(self);
+        maybe_init_dag();
 
         //launchThreads();
 
@@ -290,14 +304,9 @@ impl CMachine {
     };
 
 
+*/
 
-
-    struct CoinsVisibilityRes {
-      bool status = false;
-      StringList records = {};
-      bool is_visible = false;
-    };
-
+    /*
 
       static double getMachineServiceInterests(
         const String& dType,
@@ -381,17 +390,6 @@ impl CMachine {
             true);
     }
     /*
-
-
-      std::tuple<bool, QVDRecordsT> IcachedSpendableCoins(
-        const String& action,
-        const QVDRecordsT& coins = {},
-        const CBlockHashT& visible_by = "",
-        const CCoinCodeT& the_coin = "");
-
-      CoinsVisibilityRes IcachedCoinsVisibility(
-        const String& action,
-        const StringList& entries);
 
       //  -  -  -  -  -  neighbors handler
 
@@ -601,7 +599,7 @@ impl CMachine {
 
               {
                 // remove this block after improving db and fixing database block problem
-                auto[status, coins] = cachedSpendableCoins("read");
+                auto[status, coins] = cached_spendable_coins("read");
                 if (!status)
                 {
                   CLog::log("couldn't read from cached Spendable Coins!", "app", "fatal");
@@ -612,7 +610,7 @@ impl CMachine {
                   QueryRes exist_coins = DbModel::select(
                     "c_trx_coins",
                     {"ut_coin", "ut_creation_date", "ut_ref_creation_date", "ut_visible_by", "ut_o_address", "ut_o_value"});
-                  cachedSpendableCoins("assign", exist_coins.records);
+                  cached_spendable_coins("assign", exist_coins.records);
                 }
               }
             */
@@ -968,6 +966,7 @@ impl CMachine {
 
 */
     //old_name_was cachedBlocks
+    #[allow(unused,dead_code)]
     pub fn cached_blocks(
         &mut self,
         action: &str,
@@ -1002,6 +1001,7 @@ impl CMachine {
     }
 
     //old_name_was cachedBlockHashes
+    #[allow(unused,dead_code)]
     pub fn cached_block_hashes(
         &mut self,
         action: &str,
@@ -1031,109 +1031,114 @@ impl CMachine {
         //        }
     }
 
+    // old name was cachedSpendableCoins
+    #[allow(unused,dead_code)]
+    pub fn cached_spendable_coins(
+        &mut self,
+        action: &str,
+        coins: &QVDRecordsT,
+        visible_by: &CBlockHashT,
+        the_coin: &CCoinCodeT) -> (bool, &QVDRecordsT)
+    {
+        if action == "assign"
+        {
+            self.m_cache_spendable_coins = coins.clone();
+        }
+
+        if action == "append"
+        {
+            for coin in coins
+            {
+                self.m_cache_spendable_coins.push(coin.clone());
+            }
+        }
+
+        if action == "remove"
+        {
+            let mut remained_coins = vec![];
+            if (visible_by != "") || (the_coin != "")
+            {
+                for a_coin in &self.m_cache_spendable_coins
+                {
+                    if (visible_by != "") && (the_coin != "")
+                    {
+                        if (&a_coin["ut_visible_by"].to_string() != visible_by) || (&a_coin["ut_coin"].to_string() != the_coin)
+                        {
+                            remained_coins.push(a_coin.clone());
+                        }
+                    } else if visible_by != ""
+                    {
+                        if &a_coin["ut_visible_by"].to_string() != visible_by
+                        {
+                            remained_coins.push(a_coin.clone());
+                        }
+                    } else if the_coin != ""
+                    {
+                        if &a_coin["ut_coin"].to_string() != the_coin
+                        {
+                            remained_coins.push(a_coin.clone());
+                        }
+                    }
+                }
+
+                self.m_cache_spendable_coins = remained_coins;
+            }
+        }
+
+        return (true, &self.m_cache_spendable_coins);
+
+        // } catch (std::logic_error&)
+        // {
+        //   String thread_code = String::number((quint64)QThread::currentThread(), 16);
+        //   CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+        //   std::cout << "[exception caught]\n";
+        //   return {false, m_cache_spendable_coins};
+        // }
+    }
+
+    // old name was cachedCoinsVisibility
+    pub fn cached_coins_visibility(
+        &mut self,
+        action: &str,
+        entries: &VString) -> CoinsVisibilityRes
+    {
+        let mut contains: bool = true;
+
+        if action == "assign"
+        {
+            self.m_cache_coins_visibility = entries.clone();
+        }
+
+        if action == "append"
+        {
+            for a_visiblity in entries
+            {
+                self.m_cache_coins_visibility.push(a_visiblity.clone());
+            }
+        }
+
+        if action == "contains"
+        {
+            contains = self.m_cache_coins_visibility.contains(&entries[0]);
+        }
+
+        return CoinsVisibilityRes {
+            status: true,
+            records: self.m_cache_coins_visibility.clone(),
+            is_visible: contains,
+        };
+
+        // }
+        // catch (std::logic_error&)
+        // {
+        //   String thread_code = String::number((quint64)QThread::currentThread(), 16);
+        //   CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
+        //   std::cout << "[exception caught]\n";
+        //   return CoinsVisibilityRes {false, m_cache_coins_visibility, false};
+        // }
+    }
+
     /*
-
-
-       std::tuple<bool, QVDRecordsT> CMachine::IcachedSpendableCoins(
-         const String& action,
-         const QVDRecordsT& coins,
-         const CBlockHashT& visible_by,
-         const CCoinCodeT& the_coin)
-       {
-         try {
-           // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-           std::lock_guard<std::mutex> lck (mutex_cached_spendable_coins);
-
-           if (action == "assign")
-           {
-             m_cache_spendable_coins = coins;
-           }
-
-           if (action == "append")
-           {
-             for (QVDicT coin: coins)
-               m_cache_spendable_coins.push(coin);
-           }
-
-           if (action == "remove")
-           {
-             QVDRecordsT remined_coins = {};
-             if ((visible_by != "") || (the_coin != ""))
-             {
-               for (QVDicT a_coin: m_cache_spendable_coins)
-               {
-                 if ((visible_by != "") && (the_coin != ""))
-                 {
-                   if ((a_coin["ut_visible_by"].to_string() != visible_by) || (a_coin["ut_coin"].to_string() != the_coin))
-                     remined_coins.push(a_coin);
-
-                 }
-                 else if (visible_by != "")
-                 {
-                   if (a_coin["ut_visible_by"].to_string() != visible_by)
-                     remined_coins.push(a_coin);
-                 }
-                 else if (the_coin != "")
-                 {
-                   if (a_coin["ut_coin"].to_string() != the_coin)
-                     remined_coins.push(a_coin);
-                 }
-               }
-
-               m_cache_spendable_coins = remined_coins;
-             }
-           }
-
-           return {true, m_cache_spendable_coins};
-
-         }
-         catch (std::logic_error&)
-         {
-           String thread_code = String::number((quint64)QThread::currentThread(), 16);
-           CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-           std::cout << "[exception caught]\n";
-           return {false, m_cache_spendable_coins};
-         }
-       }
-
-       CoinsVisibilityRes CMachine::IcachedCoinsVisibility(
-         const String& action,
-         const StringList& entries)
-       {
-         try {
-           // using a local lock_guard to lock mtx guarantees unlocking on destruction / exception:
-           std::lock_guard<std::mutex> lck (mutex_cached_coins_visibility);
-
-           bool contains = true;
-
-           if (action == "assign")
-           {
-             m_cache_coins_visibility = entries;
-           }
-
-           if (action == "append")
-           {
-             for (String a_visiblity: entries)
-               m_cache_coins_visibility.push(a_visiblity);
-           }
-
-           if (action == "contains")
-           {
-             contains = m_cache_coins_visibility.contains(entries[0]);
-           }
-
-           return CoinsVisibilityRes {true, m_cache_coins_visibility, contains};
-
-         }
-         catch (std::logic_error&)
-         {
-           String thread_code = String::number((quint64)QThread::currentThread(), 16);
-           CLog::log("Failed in cached spendable coins action(" + action + ") Thread(" + thread_code + " / " + mapThreadCodeToPrefix(thread_code)+ ")");
-           std::cout << "[exception caught]\n";
-           return CoinsVisibilityRes {false, m_cache_coins_visibility, false};
-         }
-       }
-
 
        double CMachine::getMinPollingTimeframeByHour()
        {

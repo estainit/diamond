@@ -119,6 +119,11 @@ pub const C_CPACKET_TICKETING: &str = "c_cpacket_ticketing";
 #[allow(dead_code, unused)]
 pub const C_CPACKET_TICKETING_FIELDS: [&str; 5] = ["msg_id", "msg_file_id", "msg_try_count", "msg_creation_date", "msg_last_modified"];
 
+#[allow(dead_code, unused)]
+pub const C_TRX_COINS: &str = "c_trx_coins";
+#[allow(dead_code, unused)]
+pub const C_TRX_COINS_FIELDS: [&str; 7] = ["ut_id", "ut_creation_date", "ut_coin", "ut_o_address", "ut_o_value", "ut_visible_by", "ut_ref_creation_date"];
+
 
 
 

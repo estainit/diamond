@@ -1,7 +1,11 @@
-use crate::lib::custom_types::JSonObject;
+use crate::lib::custom_types::{CDocHashT, JSonObject};
 use serde::{Serialize, Deserialize};
-use crate::{ccrypto, constants, dlog};
+use serde_json::json;
+use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
+use crate::lib::messaging_protocol::dispatcher::make_a_packet;
+use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
+use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct CoinbaseBlock
@@ -22,128 +26,93 @@ impl CoinbaseBlock {
         return true;
     }
 
-    /*
-
-
-    /**
-    * @brief CoinbaseBlock::handleReceivedBlock(
-    * @return <status, should_purge_record>
-    */
-    std::tuple<bool, bool> CoinbaseBlock::handleReceivedBlock() const
+    // old name was handleReceivedBlock
+    pub fn handle_received_block(&self, block_super: &Block) -> EntryParsingResult
     {
-      auto[status, should_purge_record] = validateCoinbaseBlock();
-      CLog::log("Received validate CoinbaseBlock result: status(" + cutils::dumpIt(status) + ") should_purge_record(" + cutils::dumpIt(should_purge_record) + ")", "cb", "trace");
-      if (!status) {
-        // do something (e.g. bad reputation log for sender neighbor)
-        return {false, true};
-      }
+        let block_identifier: String = block_super.get_block_identifier();
+        let error_message: String;
+        let en_pa_res = self.validate_coinbase_block(block_super);
+        dlog(
+            &format!(
+                "Received validate CoinbaseBlock result: status({}) should_purge_record({})",
+                en_pa_res.m_status,
+                en_pa_res.m_should_purge_record,
+            ),
+            constants::Modules::CB,
+            constants::SecLevel::TmpDebug);
 
-      CLog::log("dummy log pre add to DAG a CoinbaseBlock: " + cutils::serializeJson(export_block_to_json()), "cb", "trace");
-
-      addBlockToDAG();
-
-      postAddBlockToDAG();
-
-
-      // broadcast block to neighbors
-      if (cutils::isInCurrentCycle(m_block_creation_date))
-      {
-        bool push_res = SendingQHandler::pushIntoSendingQ(
-          m_block_type,
-          m_block_hash,
-          safe_stringify_block(false),
-          "Broadcasting the confirmed coinbase block(" + cutils::hash8c(m_block_hash) + ") in current cycle(" + m_cycle + ")");
-
-        CLog::log("coinbase push_res(" + cutils::dumpIt(push_res) + ")");
-      }
-
-      return {true, true};
-    }
-
-
-    /**
-    * @brief CoinbaseBlock::validateCoinbaseBlock
-    * @return <status, should_purge_record>
-    */
-    std::tuple<bool, bool> CoinbaseBlock::validateCoinbaseBlock() const
-    {
-
-      auto[cycleStamp, from_, to_, fromHour, toHour] = cutils::getCoinbaseInfo("", m_cycle);
-      Q_UNUSED(cycleStamp);
-      Q_UNUSED(fromHour);
-      Q_UNUSED(toHour);
-      CLog::log("\nValidate Coinbase Block(" + cutils::hash8c(m_block_hash) + ") cycle:(" + m_cycle + ") from:(" + from_ + ") to:(" + to_ + ")", "cb", "info");
-    //  let res = { err: true, shouldPurgeMessage: true, msg: '', sender: sender };
-
-
-      // in case of synching, we force machine to (maybe)conclude the open pollings
-      // this code should be somewhere else, because conceptually it has nothing with coinbase flow!
-      if (CMachine::is_in_sync_process())
-        PollingHandler::doConcludeTreatment(m_block_creation_date);
-
-      auto[status, local_regenerated_coinbase] = CoinbaseIssuer::doGenerateCoinbaseBlock(
-        m_cycle,
-        constants::STAGES::Regenerating,
-        m_block_version);
-      Q_UNUSED(status);
-
-      // re-write remote values on local values
-      local_regenerated_coinbase["ancestors"] = cutils::convertStringListToJSonArray(m_ancestors);
-      local_regenerated_coinbase["bHash"] = constants::HASH_PROP_PLACEHOLDER;
-      local_regenerated_coinbase["bLen"] = cutils::padding_length_value(cutils::serializeJson(local_regenerated_coinbase).length());
-
-      Block* tmp_block = BlockFactory::create(local_regenerated_coinbase);
-      tmp_block->setBlockHash(tmp_block->calcBlockHash());
-      local_regenerated_coinbase["bHash"] = tmp_block->getBlockHash();
-      JSonObject tmp_Jblock = tmp_block->export_block_to_json();
-    //  tmp_Jblock["bLen"] = cutils::padding_length_value(cutils::serializeJson(tmp_Jblock).length());
-      CLog::log("dummy dumping after calculating it's length(serialized): " + cutils::serializeJson(tmp_Jblock) , "cb", "info");
-      delete tmp_block;
-
-      CLog::log("dummy dumping local_regenerated_coinbase before calculating it's length(serialized): " + cutils::serializeJson(local_regenerated_coinbase) , "cb", "info");
-    //  CLog::log("dummy dumping local_regenerated_coinbase beofr calculating it's length(object): " + cutils::dumpIt(local_regenerated_coinbase) , "cb", "info");
-
-      if (tmp_Jblock.value("bDocsRootHash").to_string() != m_documents_root_hash)
-      {
-        String msg = "Discrepancy in bDocsRootHash locally created coinbase bDocsRootHash(" + cutils::hash8c(tmp_Jblock.value("bDocsRootHash").to_string());
-        msg += ") and remote-bDocsRootHash(" + cutils::hash8c(m_documents_root_hash) + ") Block(" + cutils::hash8c(m_block_hash) + ") ";
-        CLog::log(msg, "cb", "error");
-        CLog::log("Remote block" + dumpBlock(), "cb", "error");
-        CLog::log("Local regenrated block" + cutils::serializeJson(tmp_Jblock), "cb", "error");
-
+        if !en_pa_res.m_status
         {
-          // TODO: remove this block of code after all tests
-          auto[status, local_regenerated_coinbase] = CoinbaseIssuer::doGenerateCoinbaseBlock(
-            m_cycle,
-            constants::STAGES::Regenerating,
-            m_block_version);
-          Q_UNUSED(status);
-
-          Block* tmp_block = BlockFactory::create(local_regenerated_coinbase);
-          auto dummyHash = tmp_block->calcBlockHash();
+            // do something (e.g. bad reputation log for sender neighbor)
+            return en_pa_res;
         }
 
-        return {false, true};
-      }
+        dlog(
+            &format!(
+                "dummy log pre add to DAG a CoinbaseBlock: {}", serde_json::to_string(&block_super).unwrap()),
+            constants::Modules::CB,
+            constants::SecLevel::TmpDebug);
 
-      if (tmp_Jblock.value("bHash").to_string() == "")
-      {
-        CLog::log("big failllllllll 1 . Regenerated coinbase in local has no hash! " + cutils::dumpIt(tmp_Jblock), "cb", "error");
-        return {false, true};
-      }
+        block_super.add_block_to_dag();
 
-      if (tmp_Jblock.value("bHash").to_string() != m_block_hash)
-      {
-        CLog::log("big failllllllll2 in Regenerating coinbase in local, has differetnt hash! " + cutils::dumpIt(tmp_Jblock), "cb", "error");
-        return {false, true};
-      }
+        block_super.post_add_block_to_dag();
 
-      CLog::log("remoteConfidence(" + String::number(m_block_confidence)+ ")", "cb", "info");
-      CLog::log("Valid Coinbase block has received. Block(" + m_block_hash + ")", "cb", "info");
-      return {true, true};
+
+        // broadcast block to neighbors
+        if application().is_in_current_cycle(&block_super.m_block_creation_date)
+        {
+            let mut block_body = block_super.safe_stringify_block(true);
+
+            // serde_json::to_string(&block).unwrap();
+            block_body = ccrypto::b64_encode(&block_body);
+
+            let (_code, body) = make_a_packet(
+                vec![
+                    json!({
+                "cdType": block_super.m_block_type,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "bHash": block_super.m_block_hash.clone(),
+                // "ancestors": ancestors,
+                "block": block_body,
+            }),
+                ],
+                constants::DEFAULT_PACKET_TYPE,
+                constants::DEFAULT_PACKET_VERSION,
+                application().get_now(),
+            );
+            dlog(
+                &format!("prepared coinbase packet, before insert into DB code({}) {}", block_super.m_block_hash, body),
+                constants::Modules::App,
+                constants::SecLevel::Info);
+
+            let status = push_into_sending_q(
+                block_super.m_block_type.as_str(),
+                block_super.m_block_hash.as_str(),
+                &body,
+                &format!("Broadcasting the confirmed coinbase ({}) ", block_super.get_block_identifier()),
+                &vec![],
+                &vec![],
+                false,
+            );
+
+            dlog(
+                &format!("coinbase push res({})", status),
+                constants::Modules::App,
+                constants::SecLevel::Info);
+        }
+        error_message = format!(
+            "coinbase block confirmed and inserted to local DAG {}",
+            block_identifier, );
+        dlog(
+            &error_message,
+            constants::Modules::CB,
+            constants::SecLevel::Info);
+        return EntryParsingResult {
+            m_status: true,
+            m_should_purge_record: true,
+            m_message: error_message,
+        };
     }
-
-*/
 
     pub fn get_block_hashable_string(&self, block: &Block) -> String
     {
@@ -177,75 +146,97 @@ impl CoinbaseBlock {
 
         return ccrypto::keccak256(&hashable_block);
     }
+
+    pub fn calc_block_ext_root_hash(&self, _block: &Block) -> (bool, CDocHashT)
+    {
+        return (true, "".to_string());
+    }
+
+    pub fn export_block_to_json(
+        &self,
+        _block: &Block,
+        parent_json_obj: &mut JSonObject,
+        _ext_info_in_document: bool) -> JSonObject
+    {
+
+        // maybe remove add some item in object
+        if !parent_json_obj["bExtInfo"].is_null()
+        {
+            parent_json_obj["bExtInfo"] = "".into();
+        }
+
+        if !parent_json_obj["bExtHash"].is_null()
+        {
+            parent_json_obj["bExtHash"] = "".into();
+        }
+
+        if !parent_json_obj["fVotes"].is_null()
+        {
+            parent_json_obj["fVotes"] = "".into();
+        }
+
+        if !parent_json_obj["signals"].is_null()
+        {
+            parent_json_obj["signals"] = "".into();
+        }
+
+        if !parent_json_obj["backer"].is_null()
+        {
+            parent_json_obj["backer"] = "".into();
+        }
+
+        parent_json_obj["bCycle"] = self.m_cycle.clone().into();
+        parent_json_obj["bLen"] = constants::LEN_PROP_PLACEHOLDER.into();
+        return parent_json_obj.clone();
+    }
+
     /*
+     String CoinbaseBlock::safe_stringify_block(const bool ext_info_in_document) const
+     {
+       JSonObject block = export_block_to_json(ext_info_in_document);
 
-    JSonObject CoinbaseBlock::export_block_to_json(const bool ext_info_in_document) const
-    {
-      JSonObject block = Block::export_block_to_json(ext_info_in_document);
+       // recaluculate block final length
+       String tmp_stringified = cutils::serializeJson(block);
+       block["bLen"] = cutils::padding_length_value(tmp_stringified.length());
 
-      // maybe remove add some item in object
-      block.remove("bExtInfo");
+       String out = cutils::serializeJson(block);
+       CLog::log("Safe sringified block(Coinbase) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.length()) + ") the block: " + out, "app", "trace");
 
-      if (block.keys().contains("bExtHash"))
-        block.remove("bExtHash");
+       return out;
+     }
 
-      if (m_block_descriptions == "")
-        block["descriptions"] = constants::JS_FAKSE_NULL;
-
-      if (block["bVer"].to_string() > "0.0.0")
-        block.remove("descriptions");
-
-      if (block.keys().contains("fVotes"))
-        block.remove("fVotes");
-
-      if (block.keys().contains("signals"))
-        block.remove("signals");
-
-      if (block.keys().contains("backer"))
-        block.remove("backer");
-
-      block.insert("bCycle", m_cycle);
-      block["bLen"] = cutils::padding_length_value(calcBlockLength(block));
-      return block;
-    }
-
-    String CoinbaseBlock::safe_stringify_block(const bool ext_info_in_document) const
-    {
-      JSonObject block = export_block_to_json(ext_info_in_document);
-
-      // recaluculate block final length
-      String tmp_stringified = cutils::serializeJson(block);
-      block["bLen"] = cutils::padding_length_value(tmp_stringified.length());
-
-      String out = cutils::serializeJson(block);
-      CLog::log("Safe sringified block(Coinbase) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.length()) + ") the block: " + out, "app", "trace");
-
-      return out;
-    }
-
-    BlockLenT CoinbaseBlock::calcBlockLength(const JSonObject& block_obj) const
-    {
-      return cutils::serializeJson(block_obj).length();
-    }
-
-    bool CoinbaseBlock::controlBlockLength() const
-    {
-      String stringyfied_block = safe_stringify_block(false);
-      if (
-          (static_cast<BlockLenT>(stringyfied_block.length()) != m_block_length) &&
-          (static_cast<BlockLenT>(stringyfied_block.length()) != m_block_length + 136) // legacy JS coinbase created blocks have mis-calculated block length
-      )
-      {
-        CLog::log("Mismatch coinbase block length Block(" + cutils::hash8c(m_block_hash) + ") local length(" + String::number(stringyfied_block.length()) + ") remote length(" + String::number(m_block_length) + ") stringyfied_block:" + stringyfied_block, "sec", "error");
-        return false;
-      }
-      return true;
-    }
-
-    String CoinbaseBlock::stringify_block_ext_info() const
-    {
-      return "";
-    }
-
+     BlockLenT CoinbaseBlock::calcBlockLength(const JSonObject& block_obj) const
+     {
+       return cutils::serializeJson(block_obj).length();
+     }
     */
+
+    // old name was controlBlockLength
+    pub fn control_block_length(&self, block: &Block) -> bool
+    {
+        let stringified_block = block.safe_stringify_block(false);
+        if stringified_block.len() != block.m_block_length
+        {
+            dlog(
+                &format!(
+                    "Mismatch coinbase block length Block({})  local length({}) remote length({}) stringyfied block: {}",
+                    cutils::hash8c(&block.m_block_hash),
+                    stringified_block.len(),
+                    block.m_block_length,
+                    stringified_block),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return false;
+        }
+
+        return true;
+    }
+
+    /*
+        String CoinbaseBlock::stringify_block_ext_info() const
+        {
+          return "";
+        }
+
+        */
 }

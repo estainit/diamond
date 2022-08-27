@@ -1,16 +1,27 @@
-/*
+use serde_json::{json};
+use crate::{ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
+use crate::lib::custom_types::{JSonObject, VString};
 
-bool BlockUtils::ifAncestorsAreValid(const StringList& ancestors)
+
+//old_name_was ifAncestorsAreValid
+pub fn if_ancestors_are_valid(ancestors: &VString) -> bool
 {
-  // TODO: since the address is in hex base, add hex char controll
-  for (String an_ancestor: ancestors)
-  {
-  if ((an_ancestor == "") || (an_ancestor.len() != 64))
-    return false;
-  }
-  return true;
+    // TODO: since the address is in hex base, add hex char controll
+    for an_ancestor in ancestors
+    {
+        if (an_ancestor == "")
+            || (an_ancestor.len() != 64)
+            || !cutils::has_only_hex_chars(an_ancestor)
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
+
+/*
 /**
  * @brief BlockUtils::retrieveDPCostInfo
  * @param doc
@@ -49,10 +60,6 @@ std::tuple<bool, uint64_t, uint64_t> BlockUtils::retrieveDPCostInfo(
 
 
 */
-use serde_json::{json};
-use crate::{ccrypto, constants, cutils, dlog};
-use crate::cutils::remove_quotes;
-use crate::lib::custom_types::JSonObject;
 
 //old_name_was wrapSafeContentForDB
 pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str)
@@ -124,7 +131,6 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
     }
 
     return (true, safe_version, content);
-
 }
 
 /*

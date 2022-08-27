@@ -1,3 +1,9 @@
 pub mod coinbase_coins_handler;
 pub mod coinbase_issuer;
 pub mod coinbase_block;
+pub mod try_create_coinbase_block;
+pub mod do_generate_coinbase_block;
+pub mod validate_coinbase_block;
+pub mod control_coinbase_issuance_criteria;
+pub mod create_coinbase_core;
+pub mod random_ordering_neighbors;

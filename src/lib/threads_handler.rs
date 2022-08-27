@@ -12,7 +12,7 @@ use crate::lib::dag::normal_block::normal_coins_handler::do_import_coins;
 use crate::lib::file_buffer_handler::file_buffer_handler::{do_read_and_parse_hard_disk_inbox, maybe_boot_dag_from_bundle};
 use crate::lib::messaging_protocol::dag_message_handler::do_missed_blocks_invoker;
 use crate::lib::network::email::{received_email_checks, send_private_email, send_public_email};
-use crate::lib::parsing_q_handler::queue_picker::smart_pull_q;
+use crate::lib::parsing_q_handler::queue_pick::smart_pull_q;
 use crate::lib::sending_q_handler::sending_q_handler::send_out_the_packet;
 use crate::lib::transactions::basic_transactions::coins::coins_handler::do_coin_clean;
 use crate::lib::services::polling::polling_handler::do_conclude_treatment;

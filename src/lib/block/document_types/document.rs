@@ -34,7 +34,7 @@ pub struct Document
     pub m_if_proposal_doc: ProposalDocument,
     pub m_if_polling_doc: PollingDocument,
     pub m_if_basic_tx_doc: BasicTxDocument,
-    pub m_if_coinbase: CoinbaseDocument,
+    pub m_if_coinbase_doc: CoinbaseDocument,
 }
 
 impl Document
@@ -59,7 +59,7 @@ impl Document
             m_if_proposal_doc: ProposalDocument::new(),
             m_if_polling_doc: PollingDocument::new(),
             m_if_basic_tx_doc: BasicTxDocument::new(),
-            m_if_coinbase: CoinbaseDocument::new(),
+            m_if_coinbase_doc: CoinbaseDocument::new(),
         }
     }
 
@@ -326,7 +326,7 @@ impl Document
         */
 
 
-    pub fn export_doc_to_json_inner(&self, ext_info_in_document: bool) -> JSonObject
+    pub fn export_doc_to_json_super(&self, ext_info_in_document: bool) -> JSonObject
     {
         let mut document: JSonObject = json!({
             "dHash":self.m_doc_hash,
@@ -484,69 +484,165 @@ impl Document
     m_doc_ext_hash = calcDocExtInfoHash();
     }
 
-    GenRes Document::customValidateDoc(const Block* block) const
-    {
-    Q_UNUSED(block);
-    return {true, ""};
-    }
-
-    GenRes Document::fullValidate(const Block* block) const
-    {
-    String msg;
-    // doc length controll
-    DocLenT doc_lenght = safe_stringify_doc(true).len();
-    if(doc_lenght < 1)
-    {
-    msg = "Doc length can not be zero or negative! block(" + block.m_block_type + " / " + cutils::hash8c(block.m_block_hash) + ") doc(" + m_doc_type + " / " + cutils::hash8c(get_doc_hash()) + ") doc class(" + m_doc_class + ")";
-    CLog::log(msg, "sec", "error");
-    return {false, msg};
-    }
-    if(doc_lenght > constants::MAX_DOC_LENGTH_BY_CHAR)
-    {
-    CLog::log("Doc length excced! block(" + block.m_block_type + " / " + cutils::hash8c(block.m_block_hash) + ") doc(" + m_doc_type + " / " + cutils::hash8c(get_doc_hash()) + ") doc class(" + m_doc_class + ")", "sec", "error");
-    return {false, msg};
-    }
-    if ((m_doc_length != 0) && (doc_lenght > m_doc_length))
-    {
-    msg = "Doc real length is biger than stated length! block(" + block.m_block_type + " / " + cutils::hash8c(block.m_block_hash) + ") doc(" + m_doc_type + " / " + cutils::hash8c(get_doc_hash()) + ") doc class(" + m_doc_class + ")";
-    CLog::log(msg, "sec", "error");
-    return {false, msg};
-    }
-
-    // recalculate documents hash
-    if(get_doc_hash() != calcDocHash())
-    {
-    msg = "Mismatch document Hash! doc(" + m_doc_type + " / " + cutils::hash8c(get_doc_hash()) + ") localy calculated(" + cutils::hash8c(calcDocHash()) +") block(" + block.m_block_type + " / " + cutils::hash8c(block.m_block_hash) + ") ";
-    CLog::log(msg, "sec", "error");
-    return {false, msg};
-    }
-
-    // controll doc ext hash
-    if(m_doc_ext_hash != calcDocExtInfoHash())
-    {
-    msg = "Mismatch doc ext Hash. remote doc ext hash(" + m_doc_ext_hash + ") localy calculated(" + calcDocExtInfoHash() +") block(" + cutils::hash8c(block.m_block_hash) + ") " + safe_stringify_doc();
-    CLog::log(msg, "sec", "error");
-    return {false, msg};
-    }
-
-    // controll document signatures (if exist)
-    if(hasSignable())
-    if(!veridfyDocSignature())
-      return {false, "Failed in vrify doc signature"};
-
-    // general doc validation
-    GenRes custom_validate = customValidateDoc(block);
-    if(!custom_validate.status)
-    {
-    msg = "Failed validate Doc " +custom_validate.msg+ " hash(" + m_doc_ext_hash + ") block(" + cutils::hash8c(block.m_block_hash) + ")";
-    CLog::log(msg, "sec", "error");
-    return {false, msg};
-    }
-
-    return {true, "is Valid"};
-    }
 
     */
+
+    // old name was calcDocExtInfoHash
+    pub fn calc_doc_ext_info_hash(&self) -> String
+    {
+        if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.calc_doc_ext_info_hash(self);
+        }
+        panic!("Invalid document for calc hash {}", self.get_doc_identifier());
+    }
+
+    // old name was hasSignable
+    pub fn has_signable(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.has_signable(self);
+        }
+
+        // by default documents have no part to signing
+        panic!("Invalid document for has Signable {}", self.get_doc_identifier());
+    }
+
+    // old name was veridfyDocSignature
+    pub fn veridfy_doc_signature(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.verify_doc_signature(self);
+        }
+
+        panic!("Invalid document for verify doc sig {}", self.get_doc_identifier());
+    }
+
+    // customValidateDoc
+    pub fn custom_validate_doc(&self, block: &Block) -> (bool, String)
+    {
+        if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.custom_validate_doc(self, block);
+        }
+
+        panic!("Invalid document for 'custom Validate Doc' {}", self.get_doc_identifier());
+    }
+
+
+    pub fn get_doc_identifier(&self) -> String
+    {
+        let doc_identifier = format!(
+            " doc({}/#{}) ",
+            self.m_doc_type,
+            cutils::hash8c(&self.m_doc_hash));
+        return doc_identifier;
+    }
+
+    // old name was fullValidate
+    pub fn full_validate(&self, block: &Block) -> (bool, String)
+    {
+        let err_msg: String;
+
+        // doc length control
+        let doc_lenght: DocLenT = self.safe_stringify_doc(true).len();
+        if doc_lenght < 1
+        {
+            err_msg = format!(
+                "Doc length can not be zero or negative! {} {} doc class({})",
+                block.get_block_identifier(), self.get_doc_identifier(), self.m_doc_class);
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        if doc_lenght > constants::MAX_DOC_LENGTH_BY_CHAR
+        {
+            err_msg = format!(
+                "Doc length excced! {} {} doc class({})",
+                block.get_block_identifier(), self.get_doc_identifier(), self.m_doc_class);
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        if (self.m_doc_length != 0) && (doc_lenght > self.m_doc_length)
+        {
+            err_msg = format!(
+                "Doc real length is longer than stated length! {} {} + doc class({})",
+                block.get_block_identifier(), self.get_doc_identifier(), self.m_doc_class);
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        // recalculate documents hash
+        if self.get_doc_hash() != self.calc_doc_hash()
+        {
+            err_msg = format!(
+                "Mismatch document Hash! {} {} locally calculated({})",
+                block.get_block_identifier(), self.get_doc_identifier(), cutils::hash8c(&self.calc_doc_hash()));
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        // controll doc ext hash
+        if self.m_doc_ext_hash != self.calc_doc_ext_info_hash()
+        {
+            err_msg = format!(
+                "Mismatch doc ext Hash. {} {}. remote doc ext hash ({}) localy calculated({})  safe: {}",
+                block.get_block_identifier(), self.get_doc_identifier(), self.m_doc_ext_hash, self.calc_doc_ext_info_hash(), self.safe_stringify_doc(true));
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        // controll document signatures (if exist)
+        if self.has_signable()
+        {
+            if !self.veridfy_doc_signature()
+            {
+                err_msg = format!(
+                    "Failed in verify doc signature {} {} ",
+                    block.get_block_identifier(), self.get_doc_identifier());
+                dlog(
+                    &err_msg,
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
+                return (false, err_msg);
+            }
+        }
+
+        // custom doc validation
+        let (status, msg_) = self.custom_validate_doc(block);
+        if !status
+        {
+            err_msg = format!(
+                "Failed validate Doc {} {} {} ",
+                block.get_block_identifier(), self.get_doc_identifier(), msg_);
+            dlog(
+                &err_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, err_msg);
+        }
+
+        return (true, "is Valid doc".to_string());
+    }
+
     /**
      * @brief Document::applyDocFirstImpact
      * depends on the document type, the node does some impacts on database
@@ -579,12 +675,6 @@ impl Document
         return {false, 0};
         }
 
-        bool Document::hasSignable() const
-        {
-        // by default documents have no part to signing
-        return false;
-        }
-
         String Document::getDocToBeSignedHash() const
         {
         // by default documents have no part to signing
@@ -596,10 +686,6 @@ impl Document
         return "";
         }
 
-        bool Document::veridfyDocSignature() const
-        {
-        return true;
-        }
 
         GenRes Document::applyDocImpact2()
         {

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, ccrypto, constants, cutils};
+use crate::{application, ccrypto, constants, cutils, dlog};
+use crate::lib::custom_types::BlockLenT;
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
@@ -275,28 +276,37 @@ uint8_t SocietyRules::getPoWDifficulty(const CDateT& cDate)
   }
 }
 
-BlockLenT SocietyRules::getMaxBlockSize(const String& block_type)
+*/
+
+//old_name_was getMaxBlockSize
+pub fn get_max_block_size(block_type: &String) -> BlockLenT
 {
-  // TODO: implement it to retrieve max number from db, by voting process
+    // TODO: implement it to retrieve max number from db, by voting process
 
-  BlockLenT DEFAULT_MAX = 10000000 * 10; //MAX_BLOCK_LENGTH_BY_CHAR
-  QHash<String, BlockLenT> max_block_size = {
-    {constants::BLOCK_TYPES::Normal, DEFAULT_MAX},
-    {constants::block_types::COINBASE, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::RpBlock, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::FSign, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::SusBlock, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::FVote, DEFAULT_MAX},
-    {constants::BLOCK_TYPES::POW, 7100}};
+    let default_max: BlockLenT = 10_000_000 * 10; //MAX_BLOCK_LENGTH_BY_CHAR
+    let max_block_size: HashMap<String, BlockLenT> = HashMap::from([
+        (constants::block_types::NORMAL.to_string(), default_max),
+        (constants::block_types::COINBASE.to_string(), default_max),
+        (constants::block_types::REPAYMENT_BLOCK.to_string(), default_max),
+        (constants::block_types::FLOATING_SIGNATURE.to_string(), default_max),
+        (constants::block_types::SUS_BLOCK.to_string(), default_max),
+        (constants::block_types::FLOATING_VOTE.to_string(), default_max),
+        (constants::block_types::POW.to_string(), 7100 as BlockLenT)]);
 
-  if (max_block_size.keys().contains(block_type))
-    return max_block_size[block_type];
+    if max_block_size.keys().cloned().collect::<Vec<String>>().contains(block_type)
+    {
+        return max_block_size[block_type].clone();
+    }
 
-  CLog::log("Invalid block type! for length block_type(" + block_type + ")", "sec", "error");
-  return 0;
+    dlog(
+        &format!("Invalid block type! for length block_type({})", block_type),
+        constants::Modules::Sec,
+        constants::SecLevel::Error);
 
+    return 0 as BlockLenT;
 }
 
+/*
 
 double SocietyRules::getSingleFloatValue(
   const String& pollingKey,

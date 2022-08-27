@@ -60,4 +60,4 @@ DELETE FROM cdev_parsing_q;
 DELETE FROM cdev_sending_q;
 $$ LANGUAGE sql;
 
-select drop_tables();
+select empty_db();

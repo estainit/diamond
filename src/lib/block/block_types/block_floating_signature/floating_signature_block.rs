@@ -109,11 +109,7 @@ bool FloatingSignatureBlock::validateFSBlock() const
   return true;
 }
 
-/**
- * @brief FloatingSignatureBlock::handleReceivedBlock
- * @return <status, should_purge_record>
- */
-std::tuple<bool, bool> FloatingSignatureBlock::handleReceivedBlock() const
+std::tuple<bool, bool> FloatingSignatureBlock::handle_received_block() const
 {
 
   bool is_valid = validateFSBlock();

@@ -543,7 +543,7 @@ pub fn handle_received_leave_info(
         }
     }
 
-    add_missed_blocks_to_invoke(missed_hashes);
+    add_missed_blocks_to_invoke(&missed_hashes);
 
     //maybe launch missed block invoker
     //launchMissedBlocksInvoker()   // FIXME: do it in Async mode or thread

@@ -8,8 +8,9 @@ use crate::lib::database::tables::C_MISSED_BLOCKS;
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 
 //old_name_was addMissedBlocksToInvoke
-pub fn add_missed_blocks_to_invoke(mut hashes: VString) -> bool
+pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
 {
+    let mut hashes = hashes.clone();
     dlog(
         &format!("maybe add Missed Blocks To Invoke hashes: {:?}", hashes),
         constants::Modules::App,

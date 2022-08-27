@@ -4,7 +4,7 @@ use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{parse_handshake, parse_nice_to_meet_you};
 use crate::lib::messaging_protocol::dag_message_handler::{extract_leaves_and_push_in_sending_q, handle_received_leave_info};
 use crate::lib::messaging_protocol::dispatcher::PacketParsingResult;
-use crate::lib::parsing_q_handler::parsing_q_handler::push_to_parsing_q;
+use crate::lib::parsing_q_handler::queue_push::push_to_parsing_q;
 use crate::lib::utils::version_handler::is_valid_version_number;
 
 //old_name_was handleSingleMessages

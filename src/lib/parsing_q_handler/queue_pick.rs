@@ -3,8 +3,9 @@ use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog, machine};
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::QVDicT;
-use crate::lib::database::abs_psql::{q_custom_query, q_update, simple_eq_clause};
+use crate::lib::database::abs_psql::{q_custom_query, q_delete, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_PARSING_Q, C_PARSING_Q_FIELDS};
+use crate::lib::parsing_q_handler::queue_pars::handle_pulled_packet;
 
 //old_name_was smartPullQ
 pub fn smart_pull_q() -> bool
@@ -36,33 +37,45 @@ pub fn smart_pull_q() -> bool
         // reputation report
         return false;
     }
-    let (_status, _json_payload) = cutils::controlled_str_to_json(&unwrap_res);
-    /*
-    packet["pq_payload"] = json_payload;
+
+    let (status, json_payload) = cutils::controlled_str_to_json(&unwrap_res);
+    if !status
+    {
+        // purge record
+        // reputation report
+        return false;
+    }
+    println!("ooooooo 222 {}", json_payload);
 
     increase_to_parse_attempts_count(packet);
+    // packet["pq_payload"] = json_payload;
 
-      let(status, should_purge_record) = handlePulledPacket(packet);
-      if !should_purge_record
-      {
-          CLog::log("Why not purge1! pq_type(" + packet["pq_type"].to_string() + ") block(" + cutils::hash8c(packet["pq_code"].to_string()) + ")" + " from(" + packet["pq_sender"].to_string() + ")", "app", "error");
 
-        } else {
-          DbModel::dDelete(
+    let en_pa_res = handle_pulled_packet(packet);
+    //=(status, should_purge_record)
+
+    if !en_pa_res.m_should_purge_record
+    {
+        dlog(
+            &format!("Why not purge1! pq_type({}) block({}) from({})",
+                     packet["pq_type"],
+                     cutils::hash8c(&packet["pq_code"]),
+                     packet["pq_sender"]),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+    } else {
+        q_delete(
             C_PARSING_Q,
-              {
-                  {"pq_sender", packet["pq_sender"]},
-                  {"pq_type", packet["pq_type"]},
-                  {"pq_code", packet["pq_code"]}
-                });
-        }
-*/
-    /*
-      return status;
-      */
-    true
-}
+            vec![
+                simple_eq_clause("pq_sender", &packet["pq_sender"]),
+                simple_eq_clause("pq_type", &packet["pq_type"]),
+                simple_eq_clause("pq_code", &packet["pq_code"]),
+            ],
+            false);
+    }
 
+    return en_pa_res.m_status;
+}
 
 pub fn prepare_smart_query(limit: u16) -> (String, QVDicT)
 {
@@ -119,7 +132,7 @@ pub fn prepare_smart_query(limit: u16) -> (String, QVDicT)
 #[allow(unused, dead_code)]
 pub fn increase_to_parse_attempts_count(packet: &QVDicT) -> bool
 {
-    let mut parse_attempts = packet["pq_parse_attempts"].parse::<i64>().unwrap_or(0);
+    let mut parse_attempts = packet["pq_parse_attempts"].parse::<i32>().unwrap_or(0);
     parse_attempts = parse_attempts + 1;
     let now_ = application().get_now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
