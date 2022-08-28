@@ -777,10 +777,10 @@ pub fn parse_nice_to_meet_you(
         };
     }
 
-    let mut n_info = cutils::serialize_json(&json!({}));
+    let mut n_info = cutils::controlled_json_stringify(&json!({}));
     if sender_backer_address != ""
     {
-        n_info = cutils::serialize_json(&json!({"backerAddress": sender_backer_address}));
+        n_info = cutils::controlled_json_stringify(&json!({"backerAddress": sender_backer_address}));
     }
 
     let last_modified = application().get_now();

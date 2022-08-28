@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog};
-use crate::lib::block::document_types::document::Document;
+use crate::lib::block::document_types::document::{Document, set_document_outputs};
 use crate::lib::custom_types::{COutputIndexT, JSonArray, JSonObject};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{compact_unlockers_array, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
@@ -24,7 +24,7 @@ impl BasicTxDocument {
     }
 
     //old_name_was setByJsonObj
-    pub fn set_by_json_obj(&mut self, json_obj: &JSonObject) -> bool {
+    pub fn set_doc_by_json_obj(&mut self, json_obj: &JSonObject) -> bool {
         self.m_data_and_process_payment_indexes = vec![];
         let mut inx: usize = 0;
         while !json_obj["dPIs"][inx].is_null() {
@@ -41,7 +41,7 @@ impl BasicTxDocument {
         }
 
         if json_obj["outputs"].is_array() {
-            self.set_document_outputs(&json_obj["outputs"]);
+            self.set_document_outputs(json_obj["outputs"].as_array().unwrap());
         }
 
         return true;
@@ -57,7 +57,7 @@ impl BasicTxDocument {
 //  document["dLen"] = constants::LEN_PROP_PLACEHOLDER;
 //  document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).len());
 
-        let res: String = cutils::serialize_json(&document);
+        let res: String = cutils::controlled_json_stringify(&document);
         dlog(
             &format!("3 safe Sringify Doc({}): {}/{} length: {} serialized document: {}",
                      cutils::hash8c(&doc.m_doc_hash),
@@ -231,7 +231,7 @@ impl BasicTxDocument {
             return "".to_string();
         }
 
-        let mut doc_hahsables:String = "{".to_string();
+        let mut doc_hahsables: String = "{".to_string();
         doc_hahsables += &*("\"inputs\":".to_owned() + &stringify_inputs(&normalized_inputs) + ",");
         doc_hahsables += &*("\"outputs\":".to_owned() + &stringify_outputs(&normalized_outputs) + "}");
 
@@ -330,22 +330,24 @@ impl BasicTxDocument {
     }
 
     //old_name_was setDocumentOutputs
-    pub fn set_document_outputs(&mut self, obj: &JSonArray) -> bool
+    pub fn set_document_outputs(&mut self, obj: &Vec<JSonObject>) -> bool
     {
-        // JSonArray outputs = obj.toArray();
-        for an_output in obj.as_array().unwrap() {
-            // JSonArray oo = an_output.toArray();
-            let o: TOutput = TOutput {
-                m_address: an_output[0].to_string(),
-                m_amount: an_output[1].as_u64().unwrap(),
-                m_output_charachter: "".to_string(),
-                m_output_index: 0,
-            };
-            // new TOutput({oo[0].to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
-            self.m_outputs.push(o);
-        }
+        self.m_outputs = set_document_outputs(obj);
+        // // JSonArray outputs = obj.toArray();
+        // for an_output in obj.as_array().unwrap() {
+        //     // JSonArray oo = an_output.toArray();
+        //     let o: TOutput = TOutput {
+        //         m_address: an_output[0].to_string(),
+        //         m_amount: an_output[1].as_u64().unwrap(),
+        //         m_output_charachter: "".to_string(),
+        //         m_output_index: 0,
+        //     };
+        //     // new TOutput({oo[0].to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
+        //     self.m_outputs.push(o);
+        // }
         return true;
     }
+
     /*
 
         bool BasicTxDocument::appendOutput(

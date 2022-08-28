@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use crate::{application, cutils};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_coinbase::create_coinbase_core::create_coinbase_core;
+use crate::lib::block::block_types::block_coinbase::cb6_generate_coinbase_core::generate_coinbase_core;
 use crate::lib::block::block_types::block_floating_signature::floating_signature_block::aggrigate_floating_signatures;
 use crate::lib::constants;
 use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
@@ -34,7 +34,7 @@ pub fn do_generate_coinbase_block(
              _from_hour,
              _to_hour);
 
-    let (status, mut block) = create_coinbase_core(cycle, mode, version);
+    let (status, mut block) = generate_coinbase_core(cycle, mode, version);
     if !status {
         dlog(
             &format!("Failed in create CB Core cycle({cycle}),  mode({mode}),  version({version})"),
@@ -48,7 +48,7 @@ pub fn do_generate_coinbase_block(
     let mut leaves_hashes: Vec<String> = leaves.keys().cloned().collect::<Vec<String>>();
     leaves_hashes.sort();
     dlog(
-        &format!("do GenerateCoinbaseBlock retrieved cbInfo: from_({}) to_({})", from, to),
+        &format!("do Generate Coinbase Block retrieved cbInfo: from_({}) to_({})", from, to),
         constants::Modules::CB,
         constants::SecLevel::Info);
     dlog(
@@ -58,15 +58,13 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-    println!("GBC ----- 1");
     let now_ = application().get_now();
     let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&now_);
-    println!("GBC ----- 2");
     leaves_hashes = cutils::array_add(&leaves_hashes, &block_hashes);
     leaves_hashes.sort();
     leaves_hashes.dedup();
 
-// if requested cycle is current cycle and machine hasn't fresh leaves, so can not generate a CB block
+    // if requested cycle is current cycle and machine hasn't fresh leaves, so can not generate a CB block
     let now_ = application().get_now();
     if (mode == constants::stages::CREATING) &&
         (leaves_hashes.len() == 0) &&

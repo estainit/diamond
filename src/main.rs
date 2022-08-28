@@ -22,17 +22,14 @@ use crate::apis::{do_handshake_by_email};
 use crate::lib::machine::app_params::AppParams;
 
 static APPGLOBAL: Lazy<Mutex<AppParams>> = Lazy::new(|| Mutex::new(AppParams::new()));
-
 fn application() -> MutexGuard<'static, AppParams> { APPGLOBAL.lock().unwrap() }
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
-
 fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
-
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 fn main() {
@@ -46,8 +43,8 @@ fn main() {
     application().dummy_init();
 
     let force_clone_id: i8 = 0;
-    let _force_boot_in_dev_mod: bool = false;
-    machine().parse_args(env::args().collect(), force_clone_id);
+    let force_boot_in_dev_mod: bool = false;
+    machine().parse_args(env::args().collect(), force_clone_id, force_boot_in_dev_mod);
     initialize_log();
     machine().initialize_machine();
     machine().boot_machine();

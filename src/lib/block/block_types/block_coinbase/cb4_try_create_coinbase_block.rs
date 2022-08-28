@@ -1,9 +1,9 @@
 use postgres::types::ToSql;
 use serde_json::json;
 use crate::{application, ccrypto, cutils, machine};
-use crate::lib::block::block_types::block_coinbase::coinbase_issuer::if_passed_certain_time_of_cycle_to_record_in_dag;
-use crate::lib::block::block_types::block_coinbase::do_generate_coinbase_block::do_generate_coinbase_block;
-use crate::lib::block::block_types::block_coinbase::random_ordering_neighbors::if_i_have_first_hashed_email;
+use crate::lib::block::block_types::block_coinbase::cb1_maybe_create_coinbase_block::if_passed_certain_time_of_cycle_to_record_in_dag;
+use crate::lib::block::block_types::block_coinbase::cb5_do_generate_coinbase_block::do_generate_coinbase_block;
+use crate::lib::block::block_types::block_coinbase::cb2_random_ordering_neighbors::if_i_have_first_hashed_email;
 use crate::lib::constants;
 use crate::lib::custom_types::{QVDRecordsT};
 use crate::lib::dag::dag::{get_most_confidence_coinbase_block_from_dag, search_in_dag};
@@ -46,7 +46,7 @@ pub fn try_create_coinbase_block() -> bool
     }
 
     dlog(
-        &format!("Serialized locally created cb block. before objecting1 {}", serde_json::to_string(&block).unwrap()),
+        &format!("Serialized locally created cb block. before objecting1 {}", cutils::controlled_block_stringify(&block)),
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
 
@@ -57,7 +57,11 @@ pub fn try_create_coinbase_block() -> bool
     let block_hash = block.calc_block_hash();
     block.set_block_hash(&block_hash);
     dlog(
-        &format!("Serialized locally created coin base block. {}", serde_json::to_string(&block).unwrap()),
+        &format!("Serialized issued coin base block. {}", cutils::controlled_block_stringify(&block)),
+        constants::Modules::CB,
+        constants::SecLevel::TmpDebug);
+    dlog(
+        &format!("Serialized issued coin base block json. {}", block.safe_stringify_block(true)),
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
 
@@ -65,11 +69,11 @@ pub fn try_create_coinbase_block() -> bool
 
     // if local machine can create a coinbase block with more confidence or ancestors, broadcast it
     let now_ = application().get_now();
-    let (atleast_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&now_);
+    let (at_least_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&now_);
 
     let mut tmp_dag_confidence: f64 = 0.0;
     let mut tmp_dag_ancestors: Vec<String> = vec![];
-    if !atleast_one_coinbase_block_exist
+    if !at_least_one_coinbase_block_exist
     {
         dlog(
             &format!("DAG hasn't coinbase for cycle range ({}, {})", coinbase_from, coinbase_to),
@@ -143,7 +147,7 @@ pub fn try_create_coinbase_block() -> bool
 
     dlog(
         &format!("Is about to issuing coinbase block in cycle range ({}, {}) the block: {}",
-                 coinbase_from, coinbase_to, serde_json::to_string(&block).unwrap()),
+                 coinbase_from, coinbase_to, cutils::controlled_block_stringify(&block)),
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
 
@@ -156,10 +160,10 @@ pub fn try_create_coinbase_block() -> bool
             constants::SecLevel::Warning);
     }
 
-// FIXME: it is a way to avoid creating too many coinbases which have a little difference because of the ancestors.
-// could it be a security issue? when an adversory in last minutes(before midnight or mid-day) starts to spam network by blocks
-// and most of nodes can not be synched, so too many coinbase blocks creating
-//
+    // FIXME: it is a way to avoid creating too many coinbases which have a little difference because of the ancestors.
+    // could it be a security issue? when an adversory in last minutes(before midnight or mid-day) starts to spam network by blocks
+    // and most of nodes can not be synched, so too many coinbase blocks creating
+    //
     if (locally_created_coinbase_block_has_more_confidence_than_dag
         || locally_created_coinbase_block_has_more_ancestors_than_dag)
         && (get_missed_blocks_to_invoke(0).len() < 1)
@@ -169,15 +173,20 @@ pub fn try_create_coinbase_block() -> bool
         if application().is_in_current_cycle(&block.m_block_creation_date.to_string())
         {
             dlog(
-                &format!("pushing coinbase block to network: {}", block.m_block_hash),
+                &format!("pushing coinbase block to network (case A): {}", block.m_block_hash),
                 constants::Modules::CB,
                 constants::SecLevel::TmpDebug);
 
             let mut block_body = block.safe_stringify_block(true);
 
+            dlog(
+                &format!("The coinbase block safe stringifyed block, pushing to network (case A): {}", block_body),
+                constants::Modules::CB,
+                constants::SecLevel::TmpDebug);
+
             // serde_json::to_string(&block).unwrap();
             block_body = ccrypto::b64_encode(&block_body);
-            let _ancestors: Vec<String> = block.m_block_ancestors.clone();
+            // let _ancestors: Vec<String> = block.m_block_ancestors.clone();
 
             let (_code, body) = make_a_packet(
                 vec![
@@ -194,7 +203,10 @@ pub fn try_create_coinbase_block() -> bool
                 application().get_now(),
             );
             dlog(
-                &format!("prepared coinbase packet, before insert into DB code({}) {}", block.m_block_hash, body),
+                &format!(
+                    "prepared coinbase packet, before insert into DB code({}) {}",
+                    block.m_block_hash,
+                    body),
                 constants::Modules::App,
                 constants::SecLevel::Info);
 
@@ -202,25 +214,16 @@ pub fn try_create_coinbase_block() -> bool
                 constants::block_types::COINBASE,
                 block.m_block_hash.as_str(),
                 &body,
-                &format!("Coinbase block ({}) issued by me", block.get_block_identifier()),
+                &format!(
+                    "{} {} case A issued by {}",
+                    block.m_block_type,
+                    cutils::hash8c(&block.m_block_hash),
+                    application().machine_id()
+                ),
                 &vec![],
                 &vec![],
                 false,
             );
-
-            // let push_res: bool = push_into_sending_q(
-            //     constants::block_types::COINBASE,
-            //     &*block.m_block_hash,
-            //     &*serde_json::to_string(&block).unwrap(),
-            //     &format!("Broadcasting coinbase block CB({}) issued by({} for cycle range({}, {})",
-            //              &cutils::hash8c(&block.m_block_hash),
-            //              machine().get_pub_email_info().m_address,
-            //              coinbase_from,
-            //              coinbase_to),
-            //     &vec![],
-            //     &vec![],
-            //     false,
-            // );
 
             dlog(
                 &format!("coinbase push1 res({})", status),
@@ -235,28 +238,65 @@ pub fn try_create_coinbase_block() -> bool
 
             return status;
         }
-    } else if
-    if_passed_certain_time_of_cycle_to_record_in_dag(&now_) && !atleast_one_coinbase_block_exist
+    } else if if_passed_certain_time_of_cycle_to_record_in_dag(&now_)
+        && !at_least_one_coinbase_block_exist
     {
         // another psudo random emulatore
         // if already passed more than 1/4 of cycle and still no coinbase block recorded in DAG,
         // so the machine has to create one
-        if if_i_have_first_hashed_email("desc") {
-            let push_res: bool = push_into_sending_q(
-                constants::block_types::COINBASE,
-                &*block.m_block_hash,
-                &serde_json::to_string(&block).unwrap(),
-                &("Broadcasting coinbase block CB(".to_owned() + &cutils::hash8c(&block.m_block_hash) + ") issued by(" + &machine().get_pub_email_info().m_address + " for cycle range(" + &coinbase_from + ", " + &coinbase_to + ")"),
-                &vec![],
-                &vec![],
-                false);
+        if if_i_have_first_hashed_email("desc")
+        {
+            dlog(
+                &format!("pushing coinbase block to network (case B): {}", block.m_block_hash),
+                constants::Modules::CB,
+                constants::SecLevel::TmpDebug);
+
+            let mut block_body = block.safe_stringify_block(true);
 
             dlog(
-                &format!("coinbase push2 res({})", dump_it(push_res)),
+                &format!("The coinbase block safe stringifyed block, pushing to network (case B): {}", block_body),
+                constants::Modules::CB,
+                constants::SecLevel::TmpDebug);
+
+            // serde_json::to_string(&block).unwrap();
+            block_body = ccrypto::b64_encode(&block_body);
+            let _ancestors: Vec<String> = block.m_block_ancestors.clone();
+
+            let (_code, body) = make_a_packet(
+                vec![
+                    json!({
+                "cdType": constants::block_types::COINBASE,
+                "cdVer": constants::DEFAULT_CARD_VERSION,
+                "bHash": block.m_block_hash.clone(),
+                "block": block_body,
+            }),
+                ],
+                constants::DEFAULT_PACKET_TYPE,
+                constants::DEFAULT_PACKET_VERSION,
+                application().get_now(),
+            );
+
+            let status = push_into_sending_q(
+                constants::block_types::COINBASE,
+                block.m_block_hash.as_str(),
+                &body,
+                &format!(
+                    "{} {} case B issued by {}",
+                    block.m_block_type,
+                    cutils::hash8c(&block.m_block_hash),
+                    application().machine_id()
+                ),
+                &vec![],
+                &vec![],
+                false,
+            );
+
+            dlog(
+                &format!("coinbase push (case B) res({})", status),
                 constants::Modules::CB,
                 constants::SecLevel::TmpDebug);
             dlog(
-                &format!("Coinbase issued because of clause 2 CB({}) issued by({} for cycle range({}, {})",
+                &format!("Coinbase issued because of clause (case B) CB({}) issued by({} for cycle range({}, {})",
                          cutils::hash8c(&block.m_block_hash), &machine().get_pub_email_info().m_address, &coinbase_from, &coinbase_to),
                 constants::Modules::CB,
                 constants::SecLevel::TmpDebug);
@@ -264,7 +304,7 @@ pub fn try_create_coinbase_block() -> bool
         }
     } else {
         dlog(
-            &format!("Coinbase can be issued by clause 3 but local hasn't neither more confidence nor more ancestors and still not riched to 1/4 of cycle time. CB({}) issued by({} for cycle range({}, {})",
+            &format!("Coinbase can be issued by clause (case C) but local hasn't neither more confidence nor more ancestors and still not riched to 1/4 of cycle time. CB({}) issued by({} for cycle range({}, {})",
                      cutils::hash8c(&block.m_block_hash),
                      &machine().get_pub_email_info().m_address,
                      coinbase_from,

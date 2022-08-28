@@ -7,7 +7,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::u
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::{application, ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{generate_m, get_root_by_a_prove};
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VVString};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TInput
@@ -37,7 +37,7 @@ impl TInput {
         let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
         out += &*("\nOwner: ".to_owned() + &self.m_owner.clone());
         out += &*("\nAmount: ".to_owned() + &self.m_amount.to_string());
-        out += &*("\nUnlockset: ".to_owned() + &cutils::serialize_json(&self.m_unlock_set));
+        out += &*("\nUnlockset: ".to_owned() + &cutils::controlled_json_stringify(&self.m_unlock_set));
         //  out += "\nPrivate keys: " + m_private_keys.join(", ");
         return out;
     }
@@ -352,6 +352,8 @@ String stringify_outputs(const JSonArray outputs)
   return outputs_string;
 }
 */
+
+//old_name_was stringifyOutputs
 pub fn stringify_outputs(outputs: &Vec<TOutput>) -> String
 {
     let mut outputs_list: Vec<String> = vec![];
@@ -362,6 +364,19 @@ pub fn stringify_outputs(outputs: &Vec<TOutput>) -> String
     let outputs_string: String = "[".to_owned() + &outputs_list.join(",") + "]";
     return outputs_string;
 }
+
+pub fn make_outputs_tuples(outputs: &Vec<TOutput>) -> VVString
+{
+    let mut outputs_list: VVString = vec![];
+    for an_output in outputs
+    {
+        outputs_list.push(
+            vec![an_output.m_address.clone(), an_output.m_amount.to_string()]
+        );
+    }
+    return outputs_list;
+}
+
 /*
 
 JSonObject compactUnlocker(const JSonObject& u_set)

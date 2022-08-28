@@ -2,27 +2,19 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{application, ccrypto, constants, cutils, dlog};
+use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
-use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash, genesis_set_by_json_obj};
+use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::block::node_signals_handler::log_signals;
+use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::block_utils::wrap_safe_content_for_db;
 use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString};
-use crate::lib::dag::dag::append_descendants;
-use crate::lib::dag::dag_walk_through::{get_ancestors};
-use crate::lib::dag::leaves_handler::{add_to_leave_blocks, remove_from_leave_blocks};
-use crate::lib::dag::missed_blocks_handler::remove_from_missed_blocks;
-use crate::lib::dag::sceptical_dag_integrity_control::controls_of_new_block_insertion;
-use crate::lib::database::abs_psql::{OrderModifier, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::{C_BLOCK_EXTINFOS, C_BLOCKS};
-use crate::lib::file_handler::file_handler::file_write;
+use crate::lib::database::abs_psql::{q_insert, q_select};
+use crate::lib::database::tables::{C_BLOCK_EXTINFOS};
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
-use crate::lib::parsing_q_handler::queue_utils::remove_prerequisites;
 use crate::lib::services::society_rules::society_rules::get_max_block_size;
-use crate::lib::transactions::basic_transactions::coins::coins_handler::inherit_ancestors_visbility;
 
 #[allow(unused, dead_code)]
 pub struct TransientBlockInfo
@@ -42,9 +34,9 @@ pub struct TransientBlockInfo
     m_doc_index_by_hash: HashMap<CDocHashT, CDocIndexT>,
 
     m_block_total_output: CMPAISValueT,
-    m_block_documents_hashes: Vec<String>,
-    m_block_ext_infos_hashes: Vec<String>,
-    m_pre_requisities_ancestors: Vec<String>, // in case of creating a block which contains some ballots, the block explicitely includes the related polling blocks, in order to force and asure existance of polling recorded in DAG, befor applying the ballot(s)
+    m_block_documents_hashes: VString,
+    m_block_ext_infos_hashes: VString,
+    m_pre_requisities_ancestors: VString, // in case of creating a block which contains some ballots, the block explicitely includes the related polling blocks, in order to force and asure existance of polling recorded in DAG, befor applying the ballot(s)
 }
 
 impl TransientBlockInfo {
@@ -99,8 +91,8 @@ pub struct Block
     pub m_block_hash: String,
     pub m_block_type: String,
     pub m_block_version: String,
-    pub m_block_ancestors: Vec<String>,
-    pub m_block_descendants: Vec<String>,
+    pub m_block_ancestors: VString,
+    pub m_block_descendants: VString,
     pub m_block_signals: JSonObject,
     pub m_block_backer: String,
     pub m_block_confidence: f64,
@@ -210,123 +202,8 @@ impl Block {
       for(Document* d: m_documents)
         delete d;
     }
-
-    /**
-     * @brief Block::setByReceivedJsonDoc
-     * @param obj
-     * @return
-     * converts a JSon object(based on parsing text stream) to a standard c++ object
-     */
      */
 
-    pub fn set_by_json_obj(&mut self, obj: &JSonObject) -> bool
-    {
-        if !obj["local_receive_date"].is_null() {
-            self.m_block_receive_date = remove_quotes(&obj["local_receive_date"]);
-        }
-
-        if !obj["bNet"].is_null() {
-            self.m_block_net = remove_quotes(&obj["bNet"]);
-        }
-        if !obj["bVer"].is_null() {
-            self.m_block_version = remove_quotes(&obj["bVer"]);
-        }
-
-        if !obj["bType"].is_null() {
-            self.m_block_type = remove_quotes(&obj["bType"]);
-        }
-
-        if !obj["bDescriptions"].is_null() {
-            self.m_block_descriptions = remove_quotes(&obj["bDescriptions"]);
-        }
-
-        // if obj["bConfidence"].to_string() != "" {
-        //     println!("iiiiiiiiiiii {}", obj["bConfidence"]);
-        //     self.m_block_confidence = remove_quotes(&obj["bConfidence"].to_string().parse4>().unwrap());
-        // }
-
-        if !obj["bLen"].is_null() {
-            // let b_len = obj["bLen"].to_string().parse::<BlockLenT>();
-            let (status, b_len) = match obj["bLen"].to_string().parse::<BlockLenT>() {
-                Ok(l) => { (true, l) }
-                Err(e) => {
-                    dlog(
-                        &format!("Invalid bLen {:?} in received JSon Obj {:?}", obj["bLen"], e),
-                        constants::Modules::App,
-                        constants::SecLevel::Error);
-                    (false, 0)
-                }
-            };
-            if !status {
-                return false;
-            }
-            self.m_block_length = b_len;
-        }
-
-        if !obj["bHash"].is_null() {
-            self.m_block_hash = remove_quotes(&obj["bHash"]);
-        }
-
-        // if !obj["bAncestors"].toAis_null( > 0 {
-        //     self.m_block_ancestors = cutils::convertJSonArrayToStringVector(obj["bAncestors"].toArray());
-        // }
-
-        // if !obj["signals"].toOis_null(len() > 0 {
-        //     self.m_signals = remove_quotes(&obj["signals"].toObject());
-
-        if !obj["bCDate"].is_null()
-        {
-            self.m_block_creation_date = remove_quotes(&obj["bCDate"]);
-        }
-
-
-        if !obj["bDocsRootHash"].is_null()
-        {
-            self.m_block_documents_root_hash = remove_quotes(&obj["bDocsRootHash"]);
-        }
-
-        if !obj["bExtHash"].is_null() {
-            self.m_block_ext_root_hash = remove_quotes(&obj["bExtHash"]);
-        }
-
-        if !obj["bExtInfo"].is_null() {
-            // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);if !obj["bDocs"].is_null() {
-            // createDocuments(obj["bDocs"]);
-        }
-
-        // if !obj["bCycle"].to_is_null( {
-        //     self.m_block_cycle = remove_quotes(&obj["bCycle"].to_string());
-
-        if !obj["bBacker"].is_null() {
-            self.m_block_backer = remove_quotes(&obj["bBacker"]);
-        }
-
-        if !obj["bFVotes"].is_null() {
-            // self.m_floating_votes = obj["bFVotes"].toArray();
-        }
-
-
-        if self.m_block_type == constants::block_types::NORMAL {
-            return true;
-        } else if self.m_block_type == constants::block_types::COINBASE {
-            return self.m_if_coinbase_block.set_by_json_obj(obj);
-        } else if self.m_block_type == constants::block_types::REPAYMENT_BLOCK
-        {} else if self.m_block_type == constants::block_types::FLOATING_SIGNATURE
-        {} else if self.m_block_type == constants::block_types::FLOATING_VOTE
-        {} else if self.m_block_type == constants::block_types::POW
-        {} else if self.m_block_type == constants::block_types::GENESIS
-        {
-            return genesis_set_by_json_obj(self, obj);
-        }
-
-        println!("Invalid block type1 {:?} in received JSon Obj {:?}", self.m_block_type, serde_json::to_string(&obj).unwrap());
-        println!("Invalid block type2 {} in received JSon Obj {}", self.m_block_type, serde_json::to_string(&obj).unwrap());
-        dlog(
-            &format!("Invalid block type {} in received JSon Obj {}", self.m_block_type, serde_json::to_string(&obj).unwrap()),
-            constants::Modules::App,
-            constants::SecLevel::Error);
-        return false;
-    }
 
     // * the tests to avoid injection/maleformed data in received Jsons
     // * FIXME: add more tests
@@ -386,10 +263,10 @@ impl Block {
         // recaluculate block final length
         j_block["bLen"] = constants::LEN_PROP_PLACEHOLDER.into();
         j_block["bLen"] = cutils::padding_length_value(
-            cutils::serialize_json(&j_block).len().to_string(),
+            cutils::controlled_json_stringify(&j_block).len().to_string(),
             constants::LEN_PROP_LENGTH).into();
 
-        let out = cutils::serialize_json(&j_block);//serde_json::to_string
+        let out = cutils::controlled_json_stringify(&j_block);
         dlog(
             &format!(
                 "Safe stringified block(Base class) Block({}) length({}) the block: {}",
@@ -450,7 +327,12 @@ impl Block {
     {
         let mut documents: Vec<JSonObject> = vec![];
         for a_doc in &self.m_block_documents {
-            documents.push(a_doc.export_doc_to_json(ext_info_in_document));
+            let mut j_doc = a_doc.export_doc_to_json(ext_info_in_document);
+            j_doc["dLen"] = cutils::padding_length_value(
+                a_doc.calc_doc_length().to_string(),
+                constants::LEN_PROP_LENGTH)
+                .into();
+            documents.push(j_doc);
         }
         return documents;
     }
@@ -512,14 +394,14 @@ impl Block {
     {
         let serialized_block = self.safe_stringify_block(true);
         let (_status, deser_block) = cutils::controlled_str_to_json(&serialized_block);
-        let block_length = deser_block["bLen"].to_string().parse::<BlockLenT>().unwrap();
+        let block_length = remove_quotes(&deser_block["bLen"]).to_string().parse::<BlockLenT>().unwrap();
         block_length
     }
 
     pub fn get_block_identifier(&self) -> String
     {
         let block_identifier = format!(
-            " block({}/#{}) ",
+            " block({}/{}) ",
             self.m_block_type,
             cutils::hash8c(&self.m_block_hash));
         return block_identifier;
@@ -544,7 +426,7 @@ impl Block {
         };
     }
 
-    #[allow(unused,dead_code)]
+    #[allow(unused, dead_code)]
     pub fn get_max_block_size(&self) -> BlockLenT
     {
         return get_max_block_size(&self.m_block_type);
@@ -562,7 +444,7 @@ impl Block {
 
     pub fn control_block_length_parent(&self) -> bool
     {
-        let stringifyed_block: String = self.safe_stringify_block(false);
+        let stringifyed_block: String = self.safe_stringify_block(true);
         if stringifyed_block.len() != self.m_block_length
 
         {
@@ -619,205 +501,37 @@ impl Block {
     }
     */
 
-    //old_name_was addBlockToDAG
-    pub fn add_block_to_dag(&self) -> (bool, String)
+    // old name was createDocuments
+    pub fn create_block_documents(&mut self, documents: &Vec<JSonObject>) -> bool
     {
-        // duplicate check
-        let (_status, records) = q_select(
-            C_BLOCKS,
-            vec!["b_hash"],     // fields
-            vec![
-                simple_eq_clause("b_hash", &self.m_block_hash),
-            ],
-            vec![
-                &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
-                &OrderModifier { m_field: "b_id", m_order: "ASC" },
-            ],
-            1,   // limit
-            false,
-        );
-        if records.len() > 0
-        { return (true, "Block already existed in DAG".to_string()); }
-
-        // save hard copy of blocks(timestamped by receive date) to have backup
-        // in case of curruptions in DAG or bootstrp the DAG, machine doesn't need to download again entire DAG
-        // you can simply copy files from ~/backup-dag to folder ~/temporary/inbox
-        let dag_backup = application().dag_backup();
-        let file_name = application().get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt";
-        let clone_id = application().id();
-        if constants::DO_HARDCOPY_DAG_BACKUP {
-            file_write(
-                dag_backup,
-                file_name,
-                &self.safe_stringify_block(false),
-                clone_id);
-        }
-
-        //TODO: implementing atomicity(transactional) either in APP or DB
-
-        // insert into DB
-        let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
-        let confidence_float = confidence_string.parse::<f64>().unwrap();
-        let signals = cutils::serialize_json(&self.m_block_signals);
-        let (_status, _sf_version, body) = wrap_safe_content_for_db(&self.safe_stringify_block(false), constants::WRAP_SAFE_CONTENT_VERSION);
-        let docs_count = self.m_block_documents.len() as i32;
-        let ancestors = self.m_block_ancestors.join(",");
-        let ancestors_count = self.m_block_ancestors.len() as i32;
-        let descendants = self.m_block_descendants.join(",");
-        let cycle = application().get_coinbase_cycle_stamp(&self.m_block_creation_date);
-        let b_trxs_count = 0;
-        let b_receive_date = application().get_now();
-        let b_confirm_date = application().get_now();
-        let b_coins_imported = constants::NO.to_string();
-
-        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
-            ("b_hash", &self.m_block_hash as &(dyn ToSql + Sync)),
-            ("b_type", &self.m_block_type as &(dyn ToSql + Sync)),
-            ("b_confidence", &confidence_float as &(dyn ToSql + Sync)),
-            ("b_body", &body as &(dyn ToSql + Sync)),
-            ("b_docs_root_hash", &self.m_block_documents_root_hash as &(dyn ToSql + Sync)),
-            ("b_ext_root_hash", &self.m_block_ext_root_hash as &(dyn ToSql + Sync)),
-            ("b_signals", &signals as &(dyn ToSql + Sync)),
-            ("b_trxs_count", &b_trxs_count as &(dyn ToSql + Sync)),
-            ("b_docs_count", &docs_count as &(dyn ToSql + Sync)),
-            ("b_ancestors", &ancestors as &(dyn ToSql + Sync)),
-            ("b_ancestors_count", &ancestors_count as &(dyn ToSql + Sync)),
-            ("b_descendants", &descendants as &(dyn ToSql + Sync)),
-            ("b_creation_date", &self.m_block_creation_date as &(dyn ToSql + Sync)),
-            ("b_receive_date", &self.m_block_receive_date as &(dyn ToSql + Sync)),
-            ("b_confirm_date", &self.m_block_confirm_date as &(dyn ToSql + Sync)),
-            ("b_cycle", &cycle as &(dyn ToSql + Sync)),
-            ("b_backer", &self.m_block_backer as &(dyn ToSql + Sync)),
-            ("b_receive_date", &b_receive_date as &(dyn ToSql + Sync)),
-            ("b_confirm_date", &b_confirm_date as &(dyn ToSql + Sync)),
-            ("b_coins_imported", &b_coins_imported as &(dyn ToSql + Sync))]);
-
-        dlog(
-            &format!("--- recording block in DAG Block({})", cutils::hash8c(&self.m_block_hash)),
-            constants::Modules::App,
-            constants::SecLevel::TmpDebug);
-
-        q_insert(
-            C_BLOCKS,     // table
-            &values, // values to insert
-            true);
-
-        // // add newly recorded block to cache in order to reduce DB load. TODO: improve it
-        // update_cached_blocks(
-        //     machine,
-        //     &self.m_block_type,
-        //     &self.m_block_hash,
-        //     &self.m_block_creation_date,
-        //     &constants::NO.to_string());
-
-        // recording block ext Info (if exist)
-        let block_ext_info: String = self.stringify_block_ext_info();
-        if block_ext_info != "" {
-            self.insert_block_ext_info_to_db(&block_ext_info, &self.m_block_hash, &self.m_block_creation_date);
-        }
-
-        // adjusting leave blocks
-        remove_from_leave_blocks(&self.m_block_ancestors);
-        add_to_leave_blocks(&self.m_block_hash, &self.m_block_creation_date, &self.m_block_type);
-
-        // insert block signals
-        log_signals(&self);
-
-        if self.m_block_documents.len() > 0
+        // JSonArray docs = documents.toArray();
+        let mut doc_inx: CDocIndexT = 0;
+        while doc_inx < documents.len() as CDocIndexT
         {
-            for doc_inx in 0..self.m_block_documents.len()
+            // ; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
+            let (status, doc) = load_document(
+                &documents[doc_inx as usize],
+                self,
+                doc_inx);
+            if !status
             {
-                //FIXME: implement suspicious docs filtering!
-
-                let a_doc: &Document = &self.m_block_documents[doc_inx];
-                a_doc.apply_doc_first_impact(self);
-
-                // connect documents and blocks
-                a_doc.map_doc_to_block(&self.m_block_hash, doc_inx as CDocIndexT);
+                dlog(
+                    &format!(
+                        "Loading block documents failed {} {} doc body: {}",
+                        self.get_block_identifier(),
+                             doc.get_doc_identifier(),
+                    cutils::controlled_json_stringify(&documents[doc_inx as usize])),
+                    constants::Modules::App,
+                    constants::SecLevel::TmpDebug);
+                return false;
             }
+            self.m_block_documents.push(doc);
+            doc_inx += 1;
         }
-
-        // update ancestor's descendent info
-        append_descendants(&self.m_block_ancestors, &vec![self.m_block_hash.clone()]);
-
-        // sceptical_dag_integrity_controls
-        let (status, _msg) = controls_of_new_block_insertion(&self.m_block_hash);
-        if !status
-        {
-            dlog(
-                &format!("Error in sceptical Data Integrity Check: block({}) ", cutils::hash8c(&self.m_block_hash)),
-                constants::Modules::App,
-                constants::SecLevel::Info);
-
-            return (false, "Error in sceptical Data Integrity Check".to_string());
-        }
-
-        #[allow(unused_doc_comments)]
-        /**
-        {
-            // TODO: remove this block(variable/mechanism) after fixing sqlite database lock problem
-            if (CMachine::get().m_recorded_blocks_in_db == 0)
-            {
-                QueryRes
-                res = DbModel::customQuery(
-                    "db_comen_blocks",
-                    "SELECT COUNT(*) AS count_blocks FROM c_blocks",
-                    { "count_blocks" },
-                    0,
-                    {},
-                    false,
-                    true);
-                CMachine::get().m_recorded_blocks_in_db = res.records[0].value("count_blocks").toInt();
-            } else {
-                CMachine::get().m_recorded_blocks_in_db + +;
-            }
-        }
-         */
-        return (true, "block was added to DAG".to_string());
-    }
-
-
-    //old name was postAddBlockToDAG
-    pub fn post_add_block_to_dag(&self) -> bool
-    {
-        // remove prerequisite, if any block in parsing Q was needed to this block
-        remove_prerequisites(&self.m_block_hash);
-
-        // * sometimes (e.g. repayback blocks which can be created by delay and causing to add block to missed blocks)
-        // * we need to doublecheck if the block still is in missed blocks list and remove it
-        remove_from_missed_blocks(&self.get_block_hash());
-
-        // * inherit coin visibilities of ancestors of newly DAG-added block
-        // * current block inherits the visibility of it's ancestors
-        // * possibly first level ancestors can be floating signatures(which haven't entry in table trx_utxos),
-        // * so add ancestors of ancestors too, in order to being sure we keep good and reliable history in utxos
-        if ![constants::block_types::FLOATING_SIGNATURE, constants::block_types::FLOATING_VOTE].contains(&self.m_block_type.as_str())
-        {
-            let mut ancestors: VString = self.m_block_ancestors.clone();
-            ancestors = cutils::array_add(&ancestors, &get_ancestors(&ancestors, 1));
-            ancestors = cutils::array_add(&ancestors, &get_ancestors(&ancestors, 1));
-            ancestors = cutils::array_unique(&ancestors);
-            inherit_ancestors_visbility(
-                &ancestors,
-                &self.m_block_creation_date,
-                &self.get_block_hash());
-        }
-
         return true;
     }
 
     /*
-
-       bool Block::createDocuments(const QJsonValue& documents)
-       {
-         JSonArray docs = documents.toArray();
-         for(CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
-         {
-           Document* d = DocumentFactory::create(docs[doc_inx].toObject(), this, doc_inx);
-           m_documents.push(d);
-         }
-         return true;
-       }
 
        /**
         * @brief Block::getBlockExtInfo

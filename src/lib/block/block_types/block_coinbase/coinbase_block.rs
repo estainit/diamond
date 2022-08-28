@@ -2,6 +2,7 @@ use crate::lib::custom_types::{CDocHashT, JSonObject};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use crate::{application, ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::messaging_protocol::dispatcher::make_a_packet;
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
@@ -20,9 +21,11 @@ impl CoinbaseBlock {
         }
     }
 
-    pub fn set_by_json_obj(&mut self, _obj: &JSonObject) -> bool
+    pub fn set_block_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
-        // maybe drived class assignings
+        println!("rrrrrr 1 {}", obj["bDocs"]);
+        println!("rrrrrr 2 {}", obj["bDocs"].as_array().unwrap()[0]);
+        self.m_cycle = remove_quotes(&obj["bDocs"].as_array().unwrap()[0]["dCycle"]);
         return true;
     }
 
@@ -49,7 +52,7 @@ impl CoinbaseBlock {
 
         dlog(
             &format!(
-                "dummy log pre add to DAG a CoinbaseBlock: {}", serde_json::to_string(&block_super).unwrap()),
+                "dummy log pre add to DAG a CoinbaseBlock: {}", cutils::controlled_block_stringify(&block_super)),
             constants::Modules::CB,
             constants::SecLevel::TmpDebug);
 
@@ -133,18 +136,18 @@ impl CoinbaseBlock {
 
     pub fn calc_block_hash(&self, block: &Block) -> String
     {
-        let hashable_block: String = self.get_block_hashable_string(block);
+        let block_hash_ables: String = self.get_block_hashable_string(block);
 
         // clonedTransactionsRootHash: block.clonedTransactionsRootHash,
         // note that we do not put the clonedTransactions directly in block hash,
         // instead using clonedTransactions-merkle-root-hash
 
         dlog(
-            &format!("The Coinbase! block hashable: {}", hashable_block),
+            &format!("The Coinbase! block hashable: {}", block_hash_ables),
             constants::Modules::App,
             constants::SecLevel::TmpDebug);
 
-        return ccrypto::keccak256(&hashable_block);
+        return ccrypto::keccak256(&block_hash_ables);
     }
 
     pub fn calc_block_ext_root_hash(&self, _block: &Block) -> (bool, CDocHashT)
@@ -185,7 +188,6 @@ impl CoinbaseBlock {
             parent_json_obj["backer"] = "".into();
         }
 
-        parent_json_obj["bCycle"] = self.m_cycle.clone().into();
         parent_json_obj["bLen"] = constants::LEN_PROP_PLACEHOLDER.into();
         return parent_json_obj.clone();
     }
@@ -214,12 +216,12 @@ impl CoinbaseBlock {
     // old name was controlBlockLength
     pub fn control_block_length(&self, block: &Block) -> bool
     {
-        let stringified_block = block.safe_stringify_block(false);
+        let stringified_block = block.safe_stringify_block(true);
         if stringified_block.len() != block.m_block_length
         {
             dlog(
                 &format!(
-                    "Mismatch coinbase block length Block({})  local length({}) remote length({}) stringyfied block: {}",
+                    "Mismatch coinbase block length Block({})  local length({}) remote length({}) stringyfied remote block: {}",
                     cutils::hash8c(&block.m_block_hash),
                     stringified_block.len(),
                     block.m_block_length,

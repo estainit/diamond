@@ -7,35 +7,6 @@ use crate::lib::machine::machine_neighbor::get_neighbors;
 use crate::lib::services::dna::dna_handler::{get_machine_shares};
 use crate::lib::utils::dumper::dump_hashmap_of_qvd_records;
 
-//old_name_was makeEmailHashDict
-pub fn make_email_hash_dictionary() -> (String, String, String, QSDicT)
-{
-    let mut emails_hash_dict: QSDicT = HashMap::new();
-    let now_ = application().get_now();
-    let cycle: CDateT = application().get_coinbase_cycle_stamp(&now_);
-    let machine_email: String = machine().get_pub_email_info().m_address.clone();
-    let machine_key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &*machine_email));
-    emails_hash_dict.insert(machine_key.clone(), machine_email.clone());
-
-    let neightbors: QVDRecordsT = get_neighbors(
-        "",
-        constants::YES,
-        "",
-        0,
-        "");
-    dlog(
-        &format!("neightbors in makeEmail Hash Dict: {}", dump_hashmap_of_qvd_records(&neightbors)),
-        constants::Modules::CB,
-        constants::SecLevel::Trace);
-
-    for neighbor in neightbors
-    {
-        let key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &neighbor["n_email"]));
-        emails_hash_dict.insert(key, neighbor["n_email"].to_string());
-    }
-    return (cycle.to_string(), machine_email.clone(), machine_key.to_string(), emails_hash_dict);
-}
-
 //old_name_was haveIFirstHashedEmail
 pub fn if_i_have_first_hashed_email(order: &str) -> bool
 {
@@ -111,4 +82,33 @@ pub fn if_i_have_first_hashed_email(order: &str) -> bool
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
     return false;
+}
+
+//old_name_was makeEmailHashDict
+pub fn make_email_hash_dictionary() -> (String, String, String, QSDicT)
+{
+    let mut emails_hash_dict: QSDicT = HashMap::new();
+    let now_ = application().get_now();
+    let cycle: CDateT = application().get_coinbase_cycle_stamp(&now_);
+    let machine_email: String = machine().get_pub_email_info().m_address.clone();
+    let machine_key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &*machine_email));
+    emails_hash_dict.insert(machine_key.clone(), machine_email.clone());
+
+    let neightbors: QVDRecordsT = get_neighbors(
+        "",
+        constants::YES,
+        "",
+        0,
+        "");
+    dlog(
+        &format!("neightbors in makeEmail Hash Dict: {}", dump_hashmap_of_qvd_records(&neightbors)),
+        constants::Modules::CB,
+        constants::SecLevel::Trace);
+
+    for neighbor in neightbors
+    {
+        let key: String = ccrypto::keccak256(&(cycle.clone() + "::" + &neighbor["n_email"]));
+        emails_hash_dict.insert(key, neighbor["n_email"].to_string());
+    }
+    return (cycle.to_string(), machine_email.clone(), machine_key.to_string(), emails_hash_dict);
 }

@@ -424,7 +424,7 @@ pub mod document_types
 }
 
 // message parsing settings
-pub const MAX_PARSE_ATTEMPTS_COUNT: u8 = 5; // parse message tentative
+pub const MAX_PARSE_ATTEMPTS_COUNT: i32 = 5; // parse message tentative
 
 /*
 pub const NO_EXT_HASH = "NEH";

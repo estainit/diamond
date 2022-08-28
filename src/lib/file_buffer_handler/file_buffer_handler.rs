@@ -182,7 +182,7 @@ pub fn do_read_and_parse_hard_disk_inbox() -> bool
         {
             dlog(
                 &format!("Why should not purge the file {}? {} {}",
-                 file_name, pa_pa_res.m_message, cutils::serialize_json(&cpacket)),
+                 file_name, pa_pa_res.m_message, cutils::controlled_json_stringify(&cpacket)),
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
         }

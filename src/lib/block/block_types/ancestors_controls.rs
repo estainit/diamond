@@ -72,7 +72,9 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
         existed_hashes.push(a_block_record["b_hash"].to_string());
     }
 
-    let missed_blocks = cutils::array_diff(&block.m_block_ancestors, &existed_hashes);
+    let missed_blocks = cutils::array_diff(
+        &block.m_block_ancestors,
+        &existed_hashes);
     if missed_blocks.len() > 0
     {
         dlog(
@@ -81,7 +83,9 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
             constants::Modules::App,
             constants::SecLevel::Info);
 
-        append_prerequisites(&block.get_block_hash(), &missed_blocks, pq_type);
+        append_prerequisites(
+            &block.get_block_hash(),
+            &missed_blocks, pq_type);
 
         // check if the block already is in parsing queue? if not add it to missed blocks to invoke
         let mut missed_hashes_in_parsing_queue: VString = vec![];
@@ -129,14 +133,18 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
     let mut all_ancestors_are_imported = true;
     let mut not_imported_ancs: VString = vec![];
     let mut oldest_ancestor_creation_date = application().get_now();
-    for bk in &existed_record_blocks
+    println!("@@@@@@ existed_record_blocks {:?}", existed_record_blocks);
+    for a_blk in &existed_record_blocks
     {
         // controll ancestors creation date
-        if bk["creation_date"].to_string() > block.m_block_creation_date
+        if a_blk["b_creation_date"].to_string() > block.m_block_creation_date
         {
             error_message = format!(
                 "{} pq_type({}) creation date({}) is before it's ancestors({}) The creation Date({})",
-                block_identifier, pq_type, block.m_block_creation_date, cutils::hash6c(&bk["bHash"].to_string()), bk["creation_date"].to_string());
+                block_identifier, pq_type,
+                block.m_block_creation_date,
+                cutils::hash6c(&a_blk["b_hash"].to_string()),
+                a_blk["creation_date"].to_string());
             dlog(
                 &error_message,
                 constants::Modules::App,
@@ -154,14 +162,14 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
             constants::block_types::NORMAL,
             constants::block_types::COINBASE,
             constants::block_types::REPAYMENT_BLOCK
-        ].contains(&bk["bType"].as_str()) &&
-            (bk["bUtxoImported"].to_string() != constants::YES)
+        ].contains(&a_blk["b_type"].as_str()) &&
+            (a_blk["b_coins_imported"].to_string() != constants::YES)
         {
             all_ancestors_are_imported = false;
-            not_imported_ancs.push(bk["bHash"].to_string());
-            if oldest_ancestor_creation_date > bk["bCreationDate"].to_string()
+            not_imported_ancs.push(a_blk["b_hash"].to_string());
+            if oldest_ancestor_creation_date > a_blk["b_creation_date"].to_string()
             {
-                oldest_ancestor_creation_date = bk["bCreationDate"].to_string();
+                oldest_ancestor_creation_date = a_blk["b_creation_date"].to_string();
             }
         }
     }

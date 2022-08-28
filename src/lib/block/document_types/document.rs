@@ -9,9 +9,10 @@ use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
-use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, DocLenT, JSonObject};
+use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, CMPAIValueT, DocLenT, JSonObject, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_outputs_tuples, stringify_outputs, TOutput};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Document
@@ -81,7 +82,7 @@ impl Document
         }
     }
 
-    pub fn set_by_json_obj(
+    pub fn set_doc_by_json_obj(
         &mut self,
         obj: &JSonObject,
         block: &Block,
@@ -138,6 +139,11 @@ impl Document
             //self.m_doc_ext_info = remove_quotes(&obj[");
         }
 
+        if (self.m_doc_ext_info.len() > 0) && (doc_index != -1) && (block.m_block_hash != "")
+        {
+            self.maybe_assign_doc_ext_info(block, doc_index);
+        }
+
         if !obj["dExtHash"].is_null()
         {
             self.m_doc_ext_hash = remove_quotes(&obj["dExtHash"]);
@@ -154,7 +160,7 @@ impl Document
 
         if doc_type == constants::document_types::BASIC_TX
         {
-            self.m_if_basic_tx_doc.set_by_json_obj(obj);
+            return self.m_if_basic_tx_doc.set_doc_by_json_obj(obj);
         } else if doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
         {
             /*
@@ -163,10 +169,7 @@ impl Document
             */
         } else if doc_type == constants::document_types::COINBASE
         {
-            /*
-            doc = new
-            CoinbaseDocument(obj);
-            */
+            return self.m_if_coinbase_doc.set_doc_by_json_obj(obj);
         } else if doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {
             /*
@@ -187,10 +190,7 @@ impl Document
             */
         } else if doc_type == constants::document_types::POLLING
         {
-            /*
-            doc = new
-            PollingDocument(obj);
-            */
+            return self.m_if_polling_doc.set_doc_by_json_obj(obj);
         } else if doc_type == constants::document_types::ADMINISTRATIVE_POLLING
         {
             /*
@@ -199,7 +199,7 @@ impl Document
             */
         } else if doc_type == constants::document_types::PROPOSAL
         {
-            self.m_if_proposal_doc.set_by_json_doc(obj);
+            return self.m_if_proposal_doc.set_doc_by_json_doc(obj);
         } else if doc_type == constants::document_types::PLEDGE
         {
             /*
@@ -226,22 +226,20 @@ impl Document
             */
         }
 
-
-        if (self.m_doc_ext_info.len() > 0) && (doc_index != -1) && (block.m_block_hash != "")
-        {
-            self.maybe_assign_doc_ext_info(block, doc_index);
-        }
-
-        return true;
+        panic!("Invalid document type! {}", doc_type);
     }
 
+    //old_name_was calcDocLength
+    pub fn calc_doc_length(&self) -> DocLenT {
+        let doc_length: DocLenT = self.safe_stringify_doc(true).len();
+        return doc_length;
+    }
 
-    #[allow(unused, dead_code)]
     pub fn safe_stringify_doc(&self, ext_info_in_document: bool) -> String
     {
         let mut j_doc: JSonObject = self.export_doc_to_json(ext_info_in_document);
         j_doc["dLen"] = constants::LEN_PROP_PLACEHOLDER.into();
-        let serialized_j_doc: String = cutils::serialize_json(&j_doc);
+        let serialized_j_doc: String = cutils::controlled_json_stringify(&j_doc);
         // recaluculate block final length
         j_doc["dLen"] = cutils::padding_length_value(
             serialized_j_doc.len().to_string(),
@@ -250,7 +248,7 @@ impl Document
 
         dlog(
             &format!(
-                "5 safe Sringify Doc({}):  {} / {} length:{} serialized document: {}",
+                "5 safe Sringify A Doc({}):  {} / {} length:{} serialized document: {}",
                 cutils::hash8c(&self.m_doc_hash),
                 self.m_doc_type,
                 self.m_doc_class,
@@ -259,7 +257,7 @@ impl Document
             constants::Modules::App,
             constants::SecLevel::TmpDebug);
 
-        return cutils::serialize_json(&j_doc);
+        return cutils::controlled_json_stringify(&j_doc);
     }
 
     //old_name_was getRef
@@ -383,6 +381,8 @@ impl Document
     {
         if self.m_doc_type == constants::document_types::BASIC_TX {
             return self.m_if_basic_tx_doc.export_doc_to_json(self, ext_info_in_document);
+        } else if self.m_doc_type == constants::document_types::COINBASE {
+            return self.m_if_coinbase_doc.export_doc_to_json(self, ext_info_in_document);
         } else if self.m_doc_type == constants::document_types::PROPOSAL {
             return self.m_if_proposal_doc.export_doc_to_json(self, ext_info_in_document);
         }
@@ -435,7 +435,9 @@ impl Document
             return self.m_if_basic_tx_doc.calc_doc_hash(self);
         } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
         {} else if self.m_doc_type == constants::document_types::COINBASE
-        {} else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {
+            return self.m_if_coinbase_doc.calc_doc_hash(&self);
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {
 
             // } else if doc_type == constants::document_types::FPost
@@ -457,15 +459,44 @@ impl Document
         {}
 
 
-        return "".to_string();
+        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
     }
 
-    //old_name_was calcDocLength
-    #[allow(unused, dead_code)]
-    pub fn calc_doc_length(&self) -> DocLenT {
-        let doc_length: DocLenT = self.safe_stringify_doc(true).len();
-        return doc_length;
+    // old name was stringifyOutputs
+    pub fn stringify_outputs(&self) -> String
+    {
+        return stringify_outputs(&self.get_outputs());
     }
+
+    pub fn make_outputs_tuples(&self) -> VVString
+    {
+        return make_outputs_tuples(&self.get_outputs());
+    }
+
+    // old name was getOutputs
+    pub fn get_outputs(&self) -> &Vec<TOutput>
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.get_outputs();
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.get_outputs();
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
+    }
+
 
     /*
 
@@ -535,7 +566,7 @@ impl Document
     pub fn get_doc_identifier(&self) -> String
     {
         let doc_identifier = format!(
-            " doc({}/#{}) ",
+            " doc({}/{}) ",
             self.m_doc_type,
             cutils::hash8c(&self.m_doc_hash));
         return doc_identifier;
@@ -650,11 +681,16 @@ impl Document
      */
     pub fn apply_doc_first_impact(&self, block: &Block) -> bool
     {
-        if self.m_doc_type == constants::document_types::PROPOSAL
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.apply_doc_first_impact(self, block);
+        } else if self.m_doc_type == constants::document_types::PROPOSAL
         {
             return self.m_if_proposal_doc.apply_doc_first_impact(self, block);
         } else {}
-        return false;
+
+        panic!("Invalid doc type in 'apply doc first impact' {}", self.m_doc_type);
     }
 
     /*
@@ -848,4 +884,25 @@ pub fn map_doc_to_block(
         C_DOCS_BLOCKS_MAP,     // table
         &values, // values to insert
         true);
+}
+
+
+//old_name_was setDocumentOutputs
+pub fn set_document_outputs(obj: &Vec<JSonObject>) -> Vec<TOutput>
+{
+    let mut outputs: Vec<TOutput> = vec![];
+    // JSonArray outputs = obj.toArray();
+    for an_output in obj
+    {
+        // JSonArray oo = an_output.toArray();
+        let o: TOutput = TOutput {
+            m_address: remove_quotes(&an_output[0]),
+            m_amount: remove_quotes(&an_output[1]).parse::<CMPAIValueT>().unwrap(),
+            m_output_charachter: "".to_string(),
+            m_output_index: 0,
+        };
+        // new TOutput({oo[0].to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
+        outputs.push(o);
+    }
+    return outputs;
 }

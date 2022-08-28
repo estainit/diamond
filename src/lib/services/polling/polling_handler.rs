@@ -3,7 +3,6 @@ use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, TimeByMinutesT};
 use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_clause};
@@ -83,7 +82,16 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::LEN_PROP_LENGTH);
     params["dLen"] = doc_length.into();
 
-    let doc: Document = load_document(params, block, 0);
+    let (status, doc) = load_document(params, block, 0);
+    if !status
+    {
+        dlog(
+            &format!("Failed in load pooling document {} ",
+                     &params),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return false;
+    }
     let pll_hash = doc.m_if_polling_doc.calc_doc_hash(&doc); //old name was calcHashDPolling
 
     let voting_timeframe: f64 = match remove_quotes(&params["pTimeframe"])

@@ -6,7 +6,7 @@ use crate::lib::k_v_handler::set_value;
 
 impl CMachine {
     // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8)
+    pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8, force_boot_in_dev_mod: bool)
     {
         // cargo run cid=1 dev verbose config=/Users/silver/Documents/Diamond_files/config.txt
         // println!("Env args: {:?}", args);
@@ -33,6 +33,11 @@ impl CMachine {
                     _verbose = true;
                 }
             }
+        }
+
+        if force_boot_in_dev_mod
+        {
+            is_develop_mod = true;
         }
 
         // cid: clone id
@@ -74,7 +79,6 @@ impl CMachine {
         application().setup_app(self);
 
         // maybe_switch_db(self.m_clone_id);
-
     }
 
     // func name was setCloneDev

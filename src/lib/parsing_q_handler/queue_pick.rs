@@ -45,7 +45,7 @@ pub fn smart_pull_q() -> bool
         // reputation report
         return false;
     }
-    println!("ooooooo 222 {}", json_payload);
+    println!("ooooooo 222 smart pulled {}", json_payload);
 
     increase_to_parse_attempts_count(packet);
     // packet["pq_payload"] = json_payload;
@@ -57,7 +57,7 @@ pub fn smart_pull_q() -> bool
     if !en_pa_res.m_should_purge_record
     {
         dlog(
-            &format!("Why not purge1! pq_type({}) block({}) from({})",
+            &format!("Why not purge record! pq_type({}) block({}) from({})",
                      packet["pq_type"],
                      cutils::hash8c(&packet["pq_code"]),
                      packet["pq_sender"]),

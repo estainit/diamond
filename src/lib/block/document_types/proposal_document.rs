@@ -3,6 +3,7 @@ use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{application, ccrypto, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CDateT, CDocHashT, ClausesT, JSonObject, TimeByHoursT};
@@ -46,7 +47,7 @@ impl ProposalDocument {
         }
     }
 
-    pub fn set_by_json_doc(&mut self, obj: &JSonObject) -> bool
+    pub fn set_doc_by_json_doc(&mut self, obj: &JSonObject) -> bool
     {
         // panic!("gggggg {}" , obj);
         self.m_help_hours = obj["helpHours"].to_string().parse::<i32>().unwrap();
@@ -56,7 +57,7 @@ impl ProposalDocument {
         self.m_polling_profile = obj["pollingProfile"].to_string();
         self.m_polling_version = obj["pollingVersion"].to_string();
 
-        self.m_voting_timeframe = obj["pTimeframe"].to_string().parse::<TimeByHoursT>().unwrap();
+        self.m_voting_timeframe = remove_quotes(&obj["pTimeframe"]).parse::<TimeByHoursT>().unwrap();
         if application().cycle_length() == 1
         {
             self.m_voting_timeframe = self.m_voting_timeframe as TimeByHoursT;
@@ -117,19 +118,19 @@ impl ProposalDocument {
 
         // recaluculate block final length
         j_doc["dLen"] = cutils::padding_length_value(
-            cutils::serialize_json(&j_doc).len().to_string(),
+            cutils::controlled_json_stringify(&j_doc).len().to_string(),
             constants::LEN_PROP_LENGTH).into();
         dlog(
             &format!("do safe Sringify Doc({}): {} / {} length: {} serialized document: {}",
                      cutils::hash8c(&doc.m_doc_hash),
                      &doc.m_doc_type,
                      &doc.m_doc_class,
-                     cutils::serialize_json(&j_doc).len(),
-                     cutils::serialize_json(&j_doc)),
+                     cutils::controlled_json_stringify(&j_doc).len(),
+                     cutils::controlled_json_stringify(&j_doc)),
             constants::Modules::App,
             constants::SecLevel::TmpDebug);
 
-        return cutils::serialize_json(&j_doc);
+        return cutils::controlled_json_stringify(&j_doc);
     }
     /*
 

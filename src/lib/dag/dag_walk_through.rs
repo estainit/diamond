@@ -327,6 +327,7 @@ pub fn load_cached_blocks() -> QVDRecordsT
     machine().m_dag_cached_blocks.clone()
 }
 
+#[allow(dead_code, unused)]
 pub fn get_cached_blocks_hashes() -> Vec<String>
 {
     refresh_cached_blocks();

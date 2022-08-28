@@ -5,7 +5,7 @@ use crate::lib::dlog::dlog;
 use std::path::Path;
 use std::fs;
 use substring::Substring;
-use crate::{application, ccrypto, constants};
+use crate::{application, constants};
 
 pub fn file_read(
     mut file_path: String,
@@ -110,16 +110,37 @@ pub fn write_exact_file(file_path: &String, content: &String) -> (bool, String)
     let file_path = &get_os_care_path(file_path);
 
     dlog(
-        &format!("wirting file: {}", file_path),
+        &format!("wiring file: {}", file_path),
         constants::Modules::App,
         constants::SecLevel::Debug);
 
-    let mut file = File::create(file_path)
-        .expect("Error encountered while creating file!");
-    file.write_all(content.as_ref())
-        .expect("Error while writing to file");
-
-    return (true, "File Writed".to_string());
+    return match File::create(file_path)
+    {
+        Ok(mut r) => {
+            return match r.write_all(content.as_ref()) {
+                Ok(_r) => {
+                    (true, "File Wrote.".to_string())
+                }
+                Err(e) => {
+                    let err_msg = format!("Write file failed {}, {}", file_path, e);
+                    dlog(
+                        &err_msg,
+                        constants::Modules::App,
+                        constants::SecLevel::Error);
+                    (false, err_msg)
+                }
+            };
+        }
+        Err(e) => {
+            let err_msg = format!("Create file failed {}, {}", file_path, e);
+            dlog(
+                &err_msg,
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            // panic!("{}", err_msg);
+            (false, err_msg)
+        }
+    };
 }
 
 pub fn delete_exact_file(file_path: &String) -> bool
@@ -200,9 +221,9 @@ pub fn write_email_as_file(
     let file_name: String;
     if application().is_develop_mod()
     {
-        file_name = [receiver, sender, &application().get_now_sss(), title, ".txt"].join(",");
+        file_name = [receiver, sender, &application().get_now_compress(), title, ".txt"].join(",");
     } else {
-        file_name = [receiver, sender, &application().get_now_sss(), &ccrypto::get_random_number_as_string(5), ".txt"].join(",");
+        file_name = [receiver, sender, &application().get_now_compress(), ".txt"].join(",");
     }
     dlog(
         &format!("file Name: {}", file_name),

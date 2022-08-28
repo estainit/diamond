@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, cutils};
-use crate::lib::block::block_types::block_coinbase::control_coinbase_issuance_criteria::control_coinbase_issuance_criteria;
-use crate::lib::block::block_types::block_coinbase::random_ordering_neighbors::make_email_hash_dictionary;
-use crate::lib::block::block_types::block_coinbase::try_create_coinbase_block::try_create_coinbase_block;
+use crate::lib::block::block_types::block_coinbase::cb3_control_coinbase_issuance_criteria::control_coinbase_issuance_criteria;
+use crate::lib::block::block_types::block_coinbase::cb2_random_ordering_neighbors::make_email_hash_dictionary;
+use crate::lib::block::block_types::block_coinbase::cb4_try_create_coinbase_block::try_create_coinbase_block;
 use crate::lib::block::block_types::block_floating_signature::floating_signature_block::aggrigate_floating_signatures;
 use crate::lib::constants;
 use crate::lib::custom_types::{CDateT, CMPAIValueT, SharesCountT, QVDRecordsT, TimeByMinutesT};
@@ -17,6 +17,17 @@ use crate::lib::utils::dumper::dump_hashmap_of_qvd_records;
 pub struct TmpHolder {
     pub(crate) holder: String,
     pub(crate) dividend: CMPAIValueT,
+}
+
+//old_name_was maybeCreateCoinbaseBlock
+pub fn maybe_create_coinbase_block() -> bool
+{
+    let can_issue_new_cb = control_coinbase_issuance_criteria();
+    println!("kkkkkkkk 66 can_issue_new_cb? {}", can_issue_new_cb);
+    if !can_issue_new_cb {
+        return true;
+    }
+    return try_create_coinbase_block();
 }
 
 // pub fn get_coinbase_block_template() -> Block {
@@ -269,12 +280,10 @@ pub fn does_dag_has_more_confidence_cb() -> bool
     let mut already_recorded_ancestors: Vec<String> = vec![];
     for block_record in already_recorded_coinbase_blocks {
         already_recorded_confidents.push(cutils::i_floor_float(block_record["b_confidence"].parse().unwrap()));
+        let ancestors = cutils::convert_comma_separated_string_to_string_vector(&block_record["b_ancestors"]);
         already_recorded_ancestors = cutils::array_add(
             &already_recorded_ancestors,
-            &cutils::convert_json_array_to_string_vector(
-                &cutils::parse_to_json_array(&block_record["b_ancestors"])
-            ),
-        );
+            &ancestors);
     }
     already_recorded_ancestors = cutils::array_unique(&already_recorded_ancestors);
     dlog(
@@ -334,17 +343,6 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
         constants::SecLevel::TmpDebug);
 
     return res;
-}
-
-//old_name_was maybeCreateCoinbaseBlock
-pub fn maybe_create_coinbase_block() -> bool
-{
-    let can_issue_new_cb = control_coinbase_issuance_criteria();
-    println!("kkkkkkkk 66 can_issue_new_cb? {}", can_issue_new_cb);
-    if !can_issue_new_cb {
-        return true;
-    }
-    return try_create_coinbase_block();
 }
 
 

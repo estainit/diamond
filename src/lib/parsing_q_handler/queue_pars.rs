@@ -13,30 +13,30 @@ pub struct EntryParsingResult
 
 
 //old_name_was handlePulledPacket
-pub fn handle_pulled_packet(record: &QVDicT) -> EntryParsingResult
+pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
 {
     let err_msg;
 
     dlog(
-        &format!("handle Pulled Packet: {:?}", record),
+        &format!("handle Pulled Packet: {:?}", pulled_record),
         constants::Modules::App,
         constants::SecLevel::Debug);
 
     let mut receive_date: String = application().get_now();
-    if record["pq_receive_date"] != ""
+    if pulled_record["pq_receive_date"] != ""
     {
-        receive_date = record["pq_receive_date"].clone();
+        receive_date = pulled_record["pq_receive_date"].clone();
     }
-    let pq_type: String = record["pq_type"].to_string();
-    let pq_code: String = record["pq_code"].to_string();
-    let pq_sender: String = record["pq_sender"].to_string();
-    let connection_type: String = record["pq_connection_type"].to_string();
+    let pq_type: String = pulled_record["pq_type"].to_string();
+    let pq_code: String = pulled_record["pq_code"].to_string();
+    let pq_sender: String = pulled_record["pq_sender"].to_string();
+    let connection_type: String = pulled_record["pq_connection_type"].to_string();
     // * payload could be a block, GQL or even old-style messages
     // * TODO: optimizine to use heap allocation for bigger payloads
 
     if pq_type == ""
     {
-        err_msg = format!("missed pq_type in handle pulled packet: {:?}", record);
+        err_msg = format!("missed pq_type in handle pulled packet: {:?}", pulled_record);
         dlog(
             &err_msg,
             constants::Modules::App,
@@ -51,19 +51,19 @@ pub fn handle_pulled_packet(record: &QVDicT) -> EntryParsingResult
     if connection_type == ""
     {
         dlog(
-            &format!("missed connection type in handle pulled packet: {:?}", record),
+            &format!("missed connection type in handle pulled packet: {:?}", pulled_record),
             constants::Modules::App,
             constants::SecLevel::Error);
 
         return EntryParsingResult {
             m_status: false,
             m_should_purge_record: true,
-            m_message: format!("missed connection type in handle pulled packet, {:?}", record),
+            m_message: format!("missed connection type in handle pulled packet, {:?}", pulled_record),
         };
     }
 
     let (status, _sf_version, unwrapped_res) =
-        unwrap_safed_content_for_db(&record["pq_payload"].to_string());
+        unwrap_safed_content_for_db(&pulled_record["pq_payload"].to_string());
     if !status
     {
         // purge record
@@ -90,7 +90,7 @@ pub fn handle_pulled_packet(record: &QVDicT) -> EntryParsingResult
     if pq_sender == ""
     {
         dlog(
-            &format!("missed sender or payload to parse: {:?}", record),
+            &format!("missed sender or payload to parse: {:?}", pulled_record),
             constants::Modules::App,
             constants::SecLevel::Error);
 

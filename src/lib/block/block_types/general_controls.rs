@@ -10,7 +10,7 @@ impl Block {
     // old name was blockGeneralControls
     pub fn block_general_controls(&self) -> EntryParsingResult
     {
-        let error_message: String ;
+        let error_message: String;
         let block_identifier = self.get_block_identifier();
 
         if self.m_block_net != constants::SOCIETY_NAME
@@ -151,7 +151,7 @@ impl Block {
             };
         }
 
-        if cutils::is_valid_hash(&self.m_block_hash)
+        if !cutils::is_valid_hash(&self.m_block_hash)
         {
             error_message = format!(
                 "Invalid block hash for {} {}",
@@ -229,8 +229,11 @@ impl Block {
             if re_calc_block_hash != self.m_block_hash
             {
                 error_message = format!(
-                    "Mismatch block bHash. {} localy calculated({}) remote({}):  {}",
-                    block_identifier, re_calc_block_hash, self.m_block_hash, self.safe_stringify_block(true));
+                    "Mismatch block bHash. {} localy calculated({}) remote({}):  \n remote body: {}",
+                    block_identifier,
+                    re_calc_block_hash,
+                    self.m_block_hash,
+                    self.safe_stringify_block(true));
                 dlog(
                     &error_message,
                     constants::Modules::Sec,

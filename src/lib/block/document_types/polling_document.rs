@@ -1,7 +1,8 @@
 use crate::{ccrypto, constants, dlog};
 use crate::lib::block::document_types::document::Document;
-use crate::lib::custom_types::TimeByHoursT;
+use crate::lib::custom_types::{JSonObject, TimeByHoursT};
 use serde::{Serialize, Deserialize};
+use crate::cutils::remove_quotes;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PollingDocument
@@ -22,8 +23,8 @@ pub struct PollingDocument
 
 impl PollingDocument
 {
-    pub fn new()->PollingDocument{
-        PollingDocument{
+    pub fn new() -> PollingDocument {
+        PollingDocument {
             m_voting_timeframe: 0.0,
             m_polling_ref: "".to_string(),
             m_polling_ref_type: "".to_string(),
@@ -32,7 +33,7 @@ impl PollingDocument
             m_polling_creator: "".to_string(),
             m_polling_start_date: "".to_string(),
             m_polling_status: "".to_string(),
-            m_potential_voters_count: 0
+            m_potential_voters_count: 0,
         }
     }
     /*
@@ -42,62 +43,92 @@ impl PollingDocument
       set_by_json_obj(obj);
     }
 
-    bool PollingDocument::set_by_json_obj(const JSonObject& obj)
+*/
+
+    pub fn set_doc_by_json_obj(&mut self, json_obj: &JSonObject) -> bool
     {
-      Document::set_by_json_obj(obj);
+        println!("sssssssss set polling _doc_by_json_obj: json_obj: {}", json_obj);
 
-      if (obj.value("pTimeframe").toDouble() != 0)
-        m_voting_timeframe = obj.value("pTimeframe").toDouble();
+        if !json_obj["pTimeframe"].is_null()
+        {
+            self.m_voting_timeframe =
+                remove_quotes(&json_obj["pTimeframe"])
+                    .parse::<f64>()
+                    .unwrap_or(0.0);
+            if self.m_voting_timeframe == 0.0
+            {
+                dlog(
+                    &format!("Invalid polling Timeframe({}) {}", json_obj["pTimeframe"], json_obj),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                return false;
+            }
+        }
 
-      if (obj.value("dRef").to_string() != "")
-        m_polling_ref = obj.value("dRef").to_string();
+        if !json_obj["dRef"].is_null()
+        {
+            self.m_polling_ref = remove_quotes(&json_obj["dRef"]);
+        }
 
-      if (obj.value("dRefType").to_string() != "")
-        m_polling_ref_type = obj.value("dRefType").to_string();
+        if !json_obj["dRefType"].is_null()
+        {
+            self.m_polling_ref_type = remove_quotes(&json_obj["dRefType"]);
+        }
 
-      if (obj.value("dRefClass").to_string() != "")
-        m_polling_ref_class = obj.value("dRefClass").to_string();
+        if !json_obj["dRefClass"].is_null()
+        {
+            self.m_polling_ref_class = remove_quotes(&json_obj["dRefClass"]);
+        }
 
-      if (obj.value("dComment").to_string() != "")
-        m_polling_comment = obj.value("dComment").to_string();
+        if !json_obj["dComment"].is_null()
+        {
+            self.m_polling_comment = remove_quotes(&json_obj["dComment"]);
+        }
 
-      if (obj.value("dCreator").to_string() != "")
-        m_polling_creator = obj.value("dCreator").to_string();
+        if !json_obj["dCreator"].is_null()
+        {
+            self.m_polling_creator = remove_quotes(&json_obj["dCreator"]);
+        }
 
-      if (obj.value("startDate").to_string() != "")
-        m_polling_start_date = obj.value("startDate").to_string();
+        if !json_obj["startDate"].is_null()
+        {
+            self.m_polling_start_date = remove_quotes(&json_obj["startDate"]);
+        }
 
-      if (obj.value("status").to_string() != "")
-        m_polling_status = obj.value("status").to_string();
+        if !json_obj["status"].is_null()
+        {
+            self.m_polling_status = remove_quotes(&json_obj["status"]);
+        }
 
-      return true;
+        return true;
     }
 
-    JSonObject PollingDocument::export_doc_to_json(const bool ext_info_in_document) const
-    {
-      JSonObject document = Document::export_doc_to_json(ext_info_in_document);
+    /*
+        JSonObject PollingDocument::export_doc_to_json(const bool ext_info_in_document) const
+        {
+          JSonObject document = Document::export_doc_to_json(ext_info_in_document);
 
-      document["dCreator"] = m_polling_creator;
-      document["dRefType"] = m_polling_ref_type;
-      document["dRefClass"] = m_polling_ref_class;
-      document["pTimeframe"] = m_voting_timeframe;
+          document["dCreator"] = m_polling_creator;
+          document["dRefType"] = m_polling_ref_type;
+          document["dRefClass"] = m_polling_ref_class;
+          document["pTimeframe"] = m_voting_timeframe;
 
-      return document;
-    }
+          return document;
+        }
 
-    String PollingDocument::safe_stringify_doc(const bool ext_info_in_document) const
-    {
-      JSonObject document = export_doc_to_json(ext_info_in_document);
+        String PollingDocument::safe_stringify_doc(const bool ext_info_in_document) const
+        {
+          JSonObject document = export_doc_to_json(ext_info_in_document);
 
-      // recaluculate block final length
-      document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).length());
+          // recaluculate block final length
+          document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).length());
 
-      CLog::log("11 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document).length()) + " serialized document: " + cutils::serializeJson(document), "app", "trace");
+          CLog::log("11 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document).length()) + " serialized document: " + cutils::serializeJson(document), "app", "trace");
 
-      return cutils::serializeJson(document);
-    }
+          return cutils::serializeJson(document);
+        }
 
-    */
+        */
 
     //old_name_was getDocHashableString
     pub fn get_doc_hashable_string(&self, doc: &Document) -> String
@@ -215,9 +246,9 @@ impl PollingDocument
     {
       String hash, hashables = "";
 
-      hashables += "{\"signatures\":" + cutils::serializeJson(m_doc_ext_info[0].toObject().value("signatures").toVariant().toJsonArray()) + ",";
+      hashables += "{\"signatures\":" + cutils::serializeJson(m_doc_ext_info[0].toObject()["signatures"].toVariant().toJsonArray()) + ",";
       hashables += "\"signedHash\":\"" + getDocToBeSignedHash() + "\",";
-      hashables += "\"uSet\":" + SignatureStructureHandler::safeStringifyUnlockSet(m_doc_ext_info[0].toObject().value("uSet").toObject()) + "}";
+      hashables += "\"uSet\":" + SignatureStructureHandler::safeStringifyUnlockSet(m_doc_ext_info[0].toObject()["uSet"].toObject()) + "}";
 
       hash = ccrypto::keccak256(hashables);
       CLog::log("Ext Hash Hashables polling(" + m_doc_hash + ") Regenrated Ext hash: " + hash + " hashables: " + hashables, "app", "trace");

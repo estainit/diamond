@@ -76,7 +76,7 @@ pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str)
         return (
             true,
             safe_ver.to_string(),
-            cutils::serialize_json(&json_obj),
+            cutils::controlled_json_stringify(&json_obj),
         );
     } else {
         let msg = format!("unknown sfVer version: {}", safe_ver);
@@ -99,8 +99,9 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
     let (status, json_object) = cutils::controlled_str_to_json(wrapped);
     if !status
     {
+        let err_msg = "Invalid wrapped content! ".to_string();
         dlog(
-            &"Invalid wrapped content! ".to_string(),
+            &err_msg,
             constants::Modules::App,
             constants::SecLevel::Error);
         dlog(
@@ -111,7 +112,7 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
         return (
             false,
             constants::DEFAULT_SAFE_VERSION.to_string(),
-            "Invalid wrapped content! ".to_string());
+            err_msg);
     }
 
     let safe_version = remove_quotes(&json_object["sfVer"]);

@@ -1,47 +1,52 @@
 use std::collections::HashMap;
-use serde_json::json;
-use crate::{constants, dlog};
+use crate::{constants, cutils, dlog};
+use crate::cutils::controlled_str_to_json;
 use crate::lib::custom_types::JSonObject;
 use crate::lib::block::block_types::block::Block;
+use crate::lib::block_utils::unwrap_safed_content_for_db;
 
 pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, Block)
 {
-    let _b_body= record_row["b_body"].to_string();
+    println!("xxxxxxxxx 45 record_row: {:?}", record_row);
 
-    let obj: JSonObject = json!({
-        "local_receive_date": record_row["b_receive_date"],
-        "bNet": constants::SOCIETY_NAME,
-        "bType": record_row["b_type"],
-        "bConfidence": record_row["b_confidence"],
-        "bHash": record_row["b_hash"],
-        "bAncestors": record_row["b_ancestors"],
-        "signals": record_row["b_signals"],
-        "bCDate": record_row["b_creation_date"],
-        "bDocsRootHash": record_row["b_docs_root_hash"],
-        "bExtHash": record_row["b_ext_root_hash"],
-        "bBacker": record_row["b_backer"],
-        "bCycle": record_row["b_cycle"],
-        // "bVer": record_row[""],
-        // "bDescriptions": record_row[""],
-        // "bLen": record_row[""],
-        // "bExtInfo": record_row[""],
-        // "bDocs": record_row[""],
-        // "bFVotes": record_row[""],
+    let (status, _sf_ver, serialized_block_body) = unwrap_safed_content_for_db(&record_row["b_body"].to_string());
+    if !status
+    {
+        dlog(
+            &format!(
+                "Failed in unwrap safe content: {}",
+                &record_row["b_body"].to_string()),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, Block::new());
+    }
+    println!("xxxxxxxxx 45 b_body: {}", serialized_block_body);
 
-           });
-    return load_block(&obj);
+    let (status, j_obj) = controlled_str_to_json(&serialized_block_body);
+    if !status
+    {
+        dlog(
+            &format!(
+                "Failed in deser unwrapped safe content: {}",
+                &serialized_block_body),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, Block::new());
+    }
+    println!("xxxxxxxxx 45 jjj: {}", j_obj);
+
+    return load_block(&j_obj);
 }
 
 pub fn load_block(obj: &JSonObject) -> (bool, Block)
-
 {
     let mut block: Block = Block::new();
-    let status = block.set_by_json_obj(obj);
+    let status = block.set_block_by_json_obj(obj);
     if !status {
-        println!("Failed in set block by JSON obj: {}", serde_json::to_string(&obj).unwrap());
+        println!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj));
 
         dlog(
-            &format!("Failed in set block by JSON obj: {}", serde_json::to_string(&obj).unwrap()),
+            &format!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj)),
             constants::Modules::CB,
             constants::SecLevel::Error);
     }

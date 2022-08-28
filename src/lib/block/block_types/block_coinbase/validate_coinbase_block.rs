@@ -1,7 +1,7 @@
-use crate::{application, machine};
+use crate::{application, cutils, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
-use crate::lib::block::block_types::block_coinbase::do_generate_coinbase_block::do_generate_coinbase_block;
+use crate::lib::block::block_types::block_coinbase::cb5_do_generate_coinbase_block::do_generate_coinbase_block;
 use crate::lib::constants;
 use crate::lib::dlog::dlog;
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
@@ -66,11 +66,11 @@ impl CoinbaseBlock {
         }
 
         dlog(
-            &format!("dummy dumping after calculating it's length(serialized) Remote: {}", serde_json::to_string(&block_super_remote).unwrap()),
+            &format!("dummy dumping after calculating it's length(serialized) Remote: {}", cutils::controlled_block_stringify(&block_super_remote)),
             constants::Modules::CB,
             constants::SecLevel::TmpDebug);
         dlog(
-            &format!("dummy dumping after calculating it's length(serialized) local_regenerated_coinbase: {}", serde_json::to_string(&local_regenerated_coinbase).unwrap()),
+            &format!("dummy dumping after calculating it's length(serialized) local_regenerated_coinbase: {}", cutils::controlled_block_stringify(&local_regenerated_coinbase)),
             constants::Modules::CB,
             constants::SecLevel::TmpDebug);
 
@@ -87,11 +87,11 @@ impl CoinbaseBlock {
                 constants::Modules::CB,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Remote block: {}", serde_json::to_string(&block_super_remote).unwrap()),
+                &format!("Remote block: {}", cutils::controlled_block_stringify(&block_super_remote)),
                 constants::Modules::CB,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Local regenerated block: {}", serde_json::to_string(&local_regenerated_coinbase).unwrap()),
+                &format!("Local regenerated block: {}", cutils::controlled_block_stringify(&local_regenerated_coinbase)),
                 constants::Modules::CB,
                 constants::SecLevel::Error);
 
@@ -113,11 +113,11 @@ impl CoinbaseBlock {
                 constants::Modules::CB,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Remote block: {}", serde_json::to_string(&block_super_remote).unwrap()),
+                &format!("Remote block: {}", cutils::controlled_block_stringify(&block_super_remote)),
                 constants::Modules::CB,
                 constants::SecLevel::Error);
             dlog(
-                &format!("Local regenerated block: {}", serde_json::to_string(&local_regenerated_coinbase).unwrap()),
+                &format!("Local regenerated block: {}", cutils::controlled_block_stringify(&local_regenerated_coinbase)),
                 constants::Modules::CB,
                 constants::SecLevel::Error);
 

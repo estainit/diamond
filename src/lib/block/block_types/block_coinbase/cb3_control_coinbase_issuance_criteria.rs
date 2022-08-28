@@ -1,6 +1,6 @@
 use crate::{application};
-use crate::lib::block::block_types::block_coinbase::coinbase_issuer::does_dag_has_more_confidence_cb;
-use crate::lib::block::block_types::block_coinbase::random_ordering_neighbors::if_i_have_first_hashed_email;
+use crate::lib::block::block_types::block_coinbase::cb1_maybe_create_coinbase_block::does_dag_has_more_confidence_cb;
+use crate::lib::block::block_types::block_coinbase::cb2_random_ordering_neighbors::if_i_have_first_hashed_email;
 use crate::lib::constants;
 use crate::lib::custom_types::TimeBySecT;
 use crate::lib::dag::leaves_handler::{has_fresh_leaves};

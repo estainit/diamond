@@ -1,10 +1,8 @@
 use std::collections::HashMap;
-use serde_json::json;
 use crate::cmerkle::generate_m;
 use crate::{application, cutils};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_coinbase::coinbase_issuer::{calc_definite_releasable_micro_pai_per_one_cycle_now_or_before, TmpHolder};
-use crate::lib::block::block_types::block_factory::load_block;
+use crate::lib::block::block_types::block_coinbase::cb1_maybe_create_coinbase_block::{calc_definite_releasable_micro_pai_per_one_cycle_now_or_before, TmpHolder};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::constants;
 use crate::lib::custom_types::{CDateT, CMPAIValueT, TimeByMinutesT};
@@ -15,13 +13,13 @@ use crate::lib::utils::dumper::dump_vec_of_t_output;
 
 
 //old_name_was createCBCore
-pub fn create_coinbase_core(
+pub fn generate_coinbase_core(
     cycle_: &str,
     mode: &str,
     version: &str) -> (bool, Block)
 {
     dlog(
-        &format!("create CBCore cycle({cycle_}) mode({mode})"),
+        &format!("create CBCore cycle({}) mode({})", cycle_, mode),
         constants::Modules::CB,
         constants::SecLevel::Info);
 
@@ -54,8 +52,9 @@ pub fn create_coinbase_core(
     let block_creation_date: CDateT = application().get_coinbase_range_by_cycle_stamp(&cycle).from;
     let mut doc: Document = Document::new();
     doc.m_doc_type = constants::document_types::COINBASE.to_string();
-    // doc.m_if_coinbase = get_coinbase_doc_template_object();
-
+    doc.m_doc_class = constants::DEFAULT.to_string();
+    doc.m_doc_length = 0;
+    doc.m_doc_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
     doc.m_if_coinbase_doc.m_doc_cycle = cycle.clone();
 
     let (from_date, to_date, incomes) = calc_treasury_incomes(&c_date);
@@ -147,29 +146,27 @@ pub fn create_coinbase_core(
     }
     doc.m_if_coinbase_doc.m_outputs = outputs;
     dlog(
-        &format!("Coinbase recalculated outputs on Cycle({}): details: {}", cycle, dump_vec_of_t_output(&doc.m_if_coinbase_doc.m_outputs)),
+        &format!("Coinbase outputs on Cycle({}): details: {}", cycle, dump_vec_of_t_output(&doc.m_if_coinbase_doc.m_outputs)),
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
 
     // let doc: Document = load_document(&doc, &Block::new(), 0);
+
+    doc.m_doc_length = doc.calc_doc_length();
+    dlog(
+        &format!(
+            "5 safe Sringify B length:{} ",
+            doc.m_doc_length),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
+
     doc.m_doc_hash = doc.calc_doc_hash(); // trxHashHandler.doHashTransaction(trx)
 
-    let (status, mut block) = load_block(&json!({
-        "bNet": constants::SOCIETY_NAME,
-        "bType": constants::block_types::COINBASE,
-        "bHash": constants::HASH_ZEROS_PLACEHOLDER,
-        "bLen": 12,
-    }));
-    if !status {
-        dlog(
-            &format!("Failed in load block from predefined JSON obj: {:?}", serde_json::to_string(&block).unwrap()),
-            constants::Modules::CB,
-            constants::SecLevel::Error);
-        return (false, block);
-    }
-
+    let mut block: Block = Block::new();
+    block.m_block_net = constants::SOCIETY_NAME.to_string();
+    block.m_block_type = constants::block_types::COINBASE.to_string();
+    block.m_block_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
     block.m_block_version = version.to_string();
-
     block.m_if_coinbase_block.m_cycle = cycle.clone();
 
     let (root, _verifies, _merkle_version, _levels, _leaves) =

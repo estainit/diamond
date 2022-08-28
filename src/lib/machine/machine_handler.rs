@@ -181,6 +181,11 @@ impl CMachine {
         return self.m_clone_id;
     }
 
+    pub fn get_app_machine_id(&self) -> String
+    {
+        return self.m_profile.m_mp_settings.m_machine_alias.clone();
+    }
+
     //func name was shouldLoopThreads
     #[allow(dead_code, unused)]
     pub fn should_loop_threads(&self) -> bool {
@@ -214,8 +219,7 @@ impl CMachine {
             self.init_last_sync_status();
             last_sync_status = get_value("last_sync_status");
         }
-        let mut last_sync_status_json_obj: JSonObject = cutils::parse_to_json_obj(&last_sync_status);
-
+        let (_status, mut last_sync_status_json_obj) = cutils::controlled_str_to_json(&last_sync_status);
 
         let cycle_by_minutes = application().get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
@@ -252,7 +256,7 @@ impl CMachine {
             if is_in_sync_process {
                 last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = application().get_now().into();
             }
-            upsert_kvalue("last_sync_status", &cutils::serialize_json(&last_sync_status_json_obj), false);
+            upsert_kvalue("last_sync_status", &cutils::controlled_json_stringify(&last_sync_status_json_obj), false);
             self.set_is_in_sync_process(is_in_sync_process, &application().get_now());
             return is_in_sync_process;
         }
@@ -842,7 +846,8 @@ impl CMachine {
             self.init_last_sync_status();
             last_sync_status = get_value("last_sync_status");
         }
-        return cutils::parse_to_json_obj(&last_sync_status);
+        let (_status, j_obj) = cutils::controlled_str_to_json(&last_sync_status);
+        return j_obj;
     }
 
     //old_name_was initLastSyncStatus
@@ -867,7 +872,7 @@ impl CMachine {
             });
         return upsert_kvalue(
             "last_sync_status",
-            &cutils::serialize_json(&last_sync_status),
+            &cutils::controlled_json_stringify(&last_sync_status),
             true);
     }
     /*
@@ -966,7 +971,7 @@ impl CMachine {
 
 */
     //old_name_was cachedBlocks
-    #[allow(unused,dead_code)]
+    #[allow(unused, dead_code)]
     pub fn cached_blocks(
         &mut self,
         action: &str,
@@ -1001,7 +1006,7 @@ impl CMachine {
     }
 
     //old_name_was cachedBlockHashes
-    #[allow(unused,dead_code)]
+    #[allow(unused, dead_code)]
     pub fn cached_block_hashes(
         &mut self,
         action: &str,
@@ -1032,7 +1037,7 @@ impl CMachine {
     }
 
     // old name was cachedSpendableCoins
-    #[allow(unused,dead_code)]
+    #[allow(unused, dead_code)]
     pub fn cached_spendable_coins(
         &mut self,
         action: &str,

@@ -1,7 +1,7 @@
+use serde_json::json;
 use crate::{application, ccrypto, constants, dlog};
 use crate::cutils::remove_quotes;
-use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::JSonObject;
+use crate::lib::custom_types::{JSonObject, VString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::missed_blocks_handler::remove_from_missed_blocks;
 use crate::lib::database::abs_psql::simple_eq_clause;
@@ -80,7 +80,7 @@ pub fn handle_a_single_block(
     }
 
     let mut is_valid_js = false;
-    let block: Block = match serde_json::from_str(&block_body) {
+    let mut block_json: JSonObject = match serde_json::from_str(&block_body) {
         Ok(b) =>
             {
                 is_valid_js = true;
@@ -93,7 +93,7 @@ pub fn handle_a_single_block(
                     &err_msg,
                     constants::Modules::Sec,
                     constants::SecLevel::Error);
-                Block::new()
+                json!({})
             }
     };
     if !is_valid_js
@@ -104,7 +104,7 @@ pub fn handle_a_single_block(
             m_message: err_msg,
         };
     }
-    println!("deserialized block: {:?}", block);
+    println!("deserialized block: {}", block_json);
 
     dlog(
         &format!("--- Pushing block({}) type({}) from({}) to 'c_parsing_q'",
@@ -112,15 +112,103 @@ pub fn handle_a_single_block(
         constants::Modules::App,
         constants::SecLevel::Info);
 
-    card_body["block_type"] = block.m_block_type.into();
+    let mut block_type = "".to_string();
+    if !block_json["bType"].is_null()
+    {
+        block_type = remove_quotes(&block_json["bType"]);
+    }
+    if block_type == "".to_string()
+    {
+        err_msg = format!("Invalid in block type! block({}) type({}) from({})", block_hash, card_type, sender);
+        dlog(
+            &err_msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: err_msg,
+        };
+    }
+    block_json["block_type"] = block_type.into();
+
+    let mut creation_date = "".to_string();
+    if !block_json["bCDate"].is_null()
+    {
+        creation_date = remove_quotes(&block_json["bCDate"]);
+    }
+    if creation_date == "".to_string()
+    {
+        err_msg = format!("Invalid block missed creation date! block({}) type({}) from({})", block_hash, card_type, sender);
+        dlog(
+            &err_msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: err_msg,
+        };
+    }
+    block_json["creation_date"] = creation_date.clone().into();
+
+    let mut block_hash = "".to_string();
+    if !block_json["bHash"].is_null()
+    {
+        block_hash = remove_quotes(&block_json["bHash"]);
+    }
+    if block_hash == "".to_string()
+    {
+        err_msg = format!("Invalid block missed creation date! block({}) type({}) from({})", block_hash, card_type, sender);
+        dlog(
+            &err_msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: err_msg,
+        };
+    }
+    block_json["block_hash"] = block_hash.clone().into();
+
+    let mut block_ancestors: VString = vec![];
+    if block_json["bAncestors"].is_array()
+    {
+        block_ancestors = block_json["bAncestors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|x| remove_quotes(&x))
+            .collect::<VString>();
+    }
+    if block_ancestors.len() == 0
+    {
+        err_msg = format!(
+            "Invalid block which has no ancestor(s)! block({}) type({}) from({})",
+            block_hash,
+            card_type,
+            sender);
+        dlog(
+            &err_msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return PacketParsingResult {
+            m_status: false,
+            m_should_purge_file: true,
+            m_message: err_msg,
+        };
+    }
+    block_json["ancestors"] = block_ancestors.clone().into();
+
     let pa_pa_res = push_to_parsing_q(
-        card_body,
-        &block.m_block_creation_date,
+        &mut block_json,
+        &creation_date,
         &card_type.to_string(),
         &block_hash,
         sender,
         connection_type,
-        block.m_block_ancestors);
+        block_ancestors);
 
     // if it is a valid block, update last received block info
     if pa_pa_res.m_status
@@ -128,13 +216,12 @@ pub fn handle_a_single_block(
         let now_ = application().get_now();
         set_last_received_block_timestamp(
             card_type,
-            &block.m_block_hash,
+            &block_hash,
             &now_);
     }
 
     // remove from missed blocks (if exist)
-    remove_from_missed_blocks(&block.m_block_hash);
-
+    remove_from_missed_blocks(&block_hash);
 
     return PacketParsingResult {
         m_status: true,

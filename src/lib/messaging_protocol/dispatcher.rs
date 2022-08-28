@@ -371,7 +371,7 @@ pub fn make_a_packet(
         "pType": packet_type,
         "pVer": packet_version,
         "pDate": packet_creation_date});
-    let body: String = cutils::serialize_json(&body_json);
+    let body: String = cutils::controlled_json_stringify(&body_json);
     let code: String = ccrypto::keccak256(&body);
     return (code, body);
 }

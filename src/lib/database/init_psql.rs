@@ -589,7 +589,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     pq_receive_date varchar(32) NOT NULL,    -- receiving time in local node but utc-timezone
     pq_payload TEXT NOT NULL,    -- stringified body of block
     pq_prerequisites TEXT NULL,    -- stringified array of block hash which are needed to validate this block
-    pq_parse_attempts INT NULL,    -- parse attempts, to avoid blocking on one block
+    pq_parse_attempts INT4 NULL,    -- parse attempts, to avoid blocking on one block
     pq_v_status varchar(64) NULL,    -- the validation status of block
     pq_creation_date varchar(32) NOT NULL,    -- the block creation date
     pq_insert_date varchar(32) NOT NULL,

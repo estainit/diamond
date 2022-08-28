@@ -3,9 +3,8 @@ use postgres::types::ToSql;
 use crate::cutils::remove_quotes;
 use crate::{application, constants, cutils, dlog};
 use crate::lib::block_utils::wrap_safe_content_for_db;
-use crate::lib::custom_types::JSonObject;
+use crate::lib::custom_types::{JSonObject, VString};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::dag::dag_walk_through::get_cached_blocks_hashes;
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_PARSING_Q, CDEV_PARSING_Q};
 use crate::lib::messaging_protocol::dispatcher::PacketParsingResult;
@@ -62,6 +61,7 @@ pub fn push_to_parsing_q(
         }
     }
 
+    prerequisites = cutils::array_unique(&prerequisites);
     if prerequisites.len() > 0
     {
         // check if ancestors exist in parsing q
@@ -89,9 +89,16 @@ pub fn push_to_parsing_q(
             constants::Modules::App,
             constants::SecLevel::Info);
 
-        // remove if missed anc already exist in cache?
-        let cached_blocks_hashes = &get_cached_blocks_hashes();
-        prerequisites = cutils::array_diff(&prerequisites, &cached_blocks_hashes);
+        let queued_ancestors = queued_ancestors
+            .iter()
+            .map(|x| x["pq_code"].to_string())
+            .collect::<VString>();
+        prerequisites = cutils::array_unique(&prerequisites);
+        prerequisites = cutils::array_diff(&prerequisites, &queued_ancestors);
+
+        // // remove if missed anc already exist in cache?
+        // let cached_blocks_hashes = &get_cached_blocks_hashes();
+        // prerequisites = cutils::array_diff(&prerequisites, &cached_blocks_hashes);
     }
 
     if prerequisites.len() > 0
@@ -116,11 +123,12 @@ pub fn push_to_parsing_q(
         );
         if daged_blocks.len() > 0
         {
-            prerequisites = cutils::array_diff(
-                &prerequisites,
-                &daged_blocks.iter()
-                    .map(|r, | r["b_hash"].to_string())
-                    .collect::<Vec<String>>());
+            let daged_blocks = daged_blocks
+                .iter()
+                .map(|r, | r["b_hash"].to_string())
+                .collect::<VString>();
+            prerequisites = cutils::array_unique(&prerequisites);
+            prerequisites = cutils::array_diff(&prerequisites, &daged_blocks);
         }
     }
 
@@ -172,7 +180,7 @@ pub fn push_to_parsing_q(
     // potentially attacks: sql injection, corrupted JSON object ...
 
     let (status, _safe_version, pq_payload) = wrap_safe_content_for_db(
-        &cutils::serialize_json(&card_j_obj), constants::DEFAULT_SAFE_VERSION);
+        &cutils::controlled_json_stringify(&card_j_obj), constants::DEFAULT_SAFE_VERSION);
     if !status
     {
         dlog(
@@ -233,7 +241,7 @@ pub fn clean_expired_entries()
     remove_from_parsing_q(vec![
         ModelClause {
             m_field_name: "pq_parse_attempts",
-            m_field_single_str_value: &constants::MAX_PARSE_ATTEMPTS_COUNT.to_string(),
+            m_field_single_str_value: &constants::MAX_PARSE_ATTEMPTS_COUNT,
             m_clause_operand: ">",
             m_field_multi_values: vec![],
         },

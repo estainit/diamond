@@ -1,8 +1,6 @@
-use crate::{constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_ancestors_controls::ancestors_controls;
+use crate::lib::block::block_types::ancestors_controls::ancestors_controls;
 use crate::lib::custom_types::{ClausesT};
-use crate::lib::dag::dag_walk_through::get_cached_blocks_hashes;
 use crate::lib::database::abs_psql::{q_delete};
 use crate::lib::database::tables::{C_PARSING_Q};
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
@@ -41,27 +39,27 @@ pub fn parse_pure_block(
     _receive_date: &String,
 ) -> EntryParsingResult
 {
-    let err_msg: String;
 
-    // DAG existance ancestors controlls
-    let needed_blocks =
-        cutils::array_diff(&block.m_block_ancestors, &get_cached_blocks_hashes());
-    if needed_blocks.len() > 0
-    {
-        err_msg = format!("in order to parse 1 block({}) machine needs blocks({:?}) exist in DAG",
-                          cutils::hash6c(&block.get_block_hash()), needed_blocks);
-        dlog(
-            &err_msg,
-            constants::Modules::App,
-            constants::SecLevel::TmpDebug);
-
-        // TODO: maybe some reputation system to report diorder of neighbor
-        return EntryParsingResult {
-            m_status: false,
-            m_should_purge_record: false,
-            m_message: err_msg,
-        };
-    }
+    // let err_msg: String;
+    // // Cached existance ancestors controlls
+    // let needed_blocks =
+    //     cutils::array_diff(&block.m_block_ancestors, &get_cached_blocks_hashes());
+    // if needed_blocks.len() > 0
+    // {
+    //     err_msg = format!("in order to parse 1 block({}) machine needs blocks({:?}) exist in DAG",
+    //                       cutils::hash6c(&block.get_block_hash()), needed_blocks);
+    //     dlog(
+    //         &err_msg,
+    //         constants::Modules::App,
+    //         constants::SecLevel::TmpDebug);
+    //
+    //     // TODO: maybe some reputation system to report disorder of neighbor
+    //     return EntryParsingResult {
+    //         m_status: false,
+    //         m_should_purge_record: false,
+    //         m_message: err_msg,
+    //     };
+    // }
 
     // (b_status, b_should_purge_record) =
     let en_pa_res = block.block_general_controls();

@@ -4,6 +4,7 @@ use crate::cutils::{left_padding};
 use crate::lib::custom_types::{CDateT, TimeByMinutesT, TimeBySecT};
 
 pub struct AppParams {
+    m_app_machine_id: String,
     m_app_config_file: String,
     m_app_is_develop_mod: bool,
     m_app_clone_id: i8,
@@ -35,6 +36,7 @@ impl AppParams {
         eprintln!("New AppParams was create.");
 
         AppParams {
+            m_app_machine_id: "".to_string(),
             m_app_config_file: "".to_string(),
             m_app_is_develop_mod: false,
             m_app_clone_id: 0,
@@ -56,6 +58,7 @@ impl AppParams {
 
     pub fn setup_app(&mut self, machine: &CMachine) -> bool {
         self.m_app_clone_id = machine.get_app_clone_id();
+        self.m_app_machine_id = machine.get_app_machine_id();
         self.m_app_is_develop_mod = machine.is_develop_mod();
         self.m_app_launch_date = machine.get_launch_date();
 
@@ -80,6 +83,10 @@ impl AppParams {
 
     pub fn id(&self) -> i8 {
         self.m_app_clone_id
+    }
+
+    pub fn machine_id(&self) -> String {
+        self.m_app_machine_id.clone()
     }
 
     pub fn root_path(&self) -> String {
@@ -383,6 +390,12 @@ impl AppParams {
     pub fn get_now(&self) -> String
     {
         Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
+    }
+
+    //old_name_was getNow
+    pub fn get_now_compress(&self) -> String
+    {
+        Utc::now().format("%Y%m%d%H%M%S%3f").to_string()
     }
 
     pub fn get_now_sss(&self) -> String

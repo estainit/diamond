@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use serde_json::json;
+use serde_json::{json, Value};
 use crate::{application, constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
@@ -19,7 +19,7 @@ pub fn set_last_received_block_timestamp(
     block_hash: &String,
     receive_date: &String) -> bool
 {
-    let kv_value = cutils::serialize_json(&json!({
+    let kv_value = cutils::controlled_json_stringify(&json!({
         "last_block_type": block_type,
         "last_block_hash": block_hash,
         "last_block_receive_date": receive_date
@@ -290,7 +290,8 @@ pub fn get_last_received_block_timestamp() -> JSonObject
             "last_block_hash": "-" ,
             "last_block_receive_date": now_});
     }
-    return cutils::parse_to_json_obj(&res);
+    let (_status, j_obj) = cutils::controlled_str_to_json(&res);
+    return j_obj;
 }
 
 //old_name_was getMaybeAskForLatestBlocksFlag
@@ -318,7 +319,7 @@ pub fn invoke_leaves() -> bool
     // let payload: JSonObject = json!({
     //     "mType": constants::card_types::DAG_INVOKE_LEAVES,
     //     "mVer": "0.0.0"});
-    // let serialized_payload = cutils::serialize_json(&payload);
+    // let serialized_payload = cutils::safe_json_to_string(&payload);
 
     let status = push_into_sending_q(
         constants::card_types::DAG_INVOKE_LEAVES, // sqType
@@ -360,7 +361,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         // if we currently asked for leave information, so do not flood the network with multiple asking
         let last_leave_invoke_response_str: String = get_value("last_received_leaves_info_timestamp");
         if last_leave_invoke_response_str != "" {
-            let last_leave_invoke_response: JSonObject = cutils::parse_to_json_obj(&last_leave_invoke_response_str);
+            let (_status, last_leave_invoke_response) = cutils::controlled_str_to_json(&last_leave_invoke_response_str);
             // TODO: tune the gap time
             let now_ = application().get_now();
             if application().time_diff(
@@ -463,10 +464,10 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> PacketParsingRes
         false,
     );
 
-    return PacketParsingResult{
+    return PacketParsingResult {
         m_status: true,
         m_should_purge_file: status,
-        m_message: "".to_string()
+        m_message: "".to_string(),
     };
 }
 
@@ -522,9 +523,29 @@ pub fn handle_received_leave_info(
         constants::Modules::App,
         constants::SecLevel::Error);
 
-    let leaves: Vec<JSonObject> = vec![]; // = message.clone();
+    let mut leaves: Vec<Value> = vec![]; // = message.clone();
+    if message["leaves"].is_array()
+    {
+        let the_leaves = match message["leaves"].as_array() {
+            Some(r) => r,
+            _ => {
+                dlog(
+                    &format!("leaves deser in message failed, {} ", message),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                &leaves
+            }
+        };
+        leaves = the_leaves.clone();
+    }
+    dlog(
+        &format!("FIX ME: the leaves {:?}", leaves),
+        constants::Modules::App,
+        constants::SecLevel::Error);
+
     // update last_received_leaves_info_timestamp
-    set_last_received_leave_info_timestamp(&leaves, &application().get_now());
+    let now_ = application().get_now();
+    set_last_received_leave_info_timestamp(&leaves, &now_);
 
     // control if block exist in local, if not adding to missed blocks to invoke
     let mut missed_hashes: Vec<String> = vec![];
@@ -549,18 +570,18 @@ pub fn handle_received_leave_info(
     //launchMissedBlocksInvoker()   // FIXME: do it in Async mode or thread
 
 
-        return PacketParsingResult {
-            m_status: true,
-            m_should_purge_file: true,
-            m_message: "".to_string(),
-        };
+    return PacketParsingResult {
+        m_status: true,
+        m_should_purge_file: true,
+        m_message: "".to_string(),
+    };
 }
 
 //old_name_was setLastReceivedLeaveInfoTimestamp
 pub fn set_last_received_leave_info_timestamp(leaves: &Vec<JSonObject>, c_date: &CDateT)
 {
     let last_modified = application().get_now();
-    let kv_value = cutils::serialize_json(&json!({
+    let kv_value = cutils::controlled_json_stringify(&json!({
         "leaves": leaves,
         "receiveDate": c_date
     }));

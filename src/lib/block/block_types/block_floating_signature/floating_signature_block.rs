@@ -151,7 +151,6 @@ JSonObject FloatingSignatureBlock::export_block_to_json(const bool ext_info_in_d
   block.remove("bDocsRootHash");
 
   block["confidence"] = m_block_confidence;
-  block["bCycle"] = m_cycle;
 
   block["bLen"] = cutils::padding_length_value(calcBlockLength(block));
 
@@ -329,12 +328,6 @@ String FloatingSignatureBlock::safe_stringify_block(const bool ext_info_in_docum
 
   return out;
 }
-
-bool FloatingSignatureBlock::createDocuments(const QJsonValue& documents)
-{
-  return true;
-}
-
 
 String FloatingSignatureBlock::stringify_block_ext_info() const
 {

@@ -5,7 +5,8 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde_json::json;
 use crate::{application, constants, dlog};
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonArray, JSonObject, VString, VVString};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonObject, VString, VVString};
 
 pub fn remove_quotes(input_value: &JSonObject) -> String {
     input_value.as_str().unwrap().to_string()
@@ -113,19 +114,19 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
                         true
                     } else {
                         dlog(
-                            &format!("failed in convert_ float_ to_ string1 = {:?}", segments),
+                            &format!("maybe issue in convert_ float_ to_ string1 = {:?}", segments),
                             constants::Modules::App,
                             constants::SecLevel::Info);
-                        // panic!("failed in convert_ float_ to_ string1 = {:?}", segments);
+                        // panic!("maybe issue in convert_ float_ to_ string1 = {:?}", segments);
                         false
                     }
                 }
                 _ => {
                     dlog(
-                        &format!("failed in convert_ float_ to_ string2 = {:?}", segments),
+                        &format!("maybe issue in convert_ float_ to_ string2 = {:?}", segments),
                         constants::Modules::App,
                         constants::SecLevel::Info);
-                    // panic!("failed in convert_ float_ to_ string2 = {:?}", segments);
+                    // panic!("maybe issue in convert_ float_ to_ string2 = {:?}", segments);
                     false
                 }
             };
@@ -392,33 +393,6 @@ pub fn short_bech16(s: &String) -> String
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
 }
 
-//old_name_was serializeJson
-pub fn serialize_json(j_obj: &JSonObject) -> String
-{
-    serde_json::to_string(&j_obj).unwrap()
-}
-
-//old_name_was parseToJsonObj
-pub fn parse_to_json_obj(serialized: &String) -> JSonObject
-{
-    return serde_json::from_str(serialized).unwrap();
-}
-
-//old_name_was parseToJsonObxjContolled
-pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
-{
-    return match serde_json::from_str(serialized) {
-        Ok(r) => { (true, r) }
-        Err(e) => {
-            dlog(
-                &format!("Failed in deserializing json object: {} {}", serialized, e),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            (false, json!({}))
-        }
-    };
-}
-
 //old_name_was sepNum
 pub fn sep_num_3(number: i64) -> String
 {
@@ -464,21 +438,21 @@ pub fn i_floor_float(number: f64) -> f64
 {
     return custom_floor_float(number, constants::FLOAT_LENGTH); // in order to keep maximum 11 digit after point
 }
-
-//old_name_was convertJSonArrayToStringList
-//old_name_was convertJSonArrayToStringVector
-pub fn convert_json_array_to_string_vector(inp: &JSonArray) -> Vec<String> {
-    if !inp.is_array() {
-        return vec![];
-    }
-    let mut out: Vec<String> = vec![];
-    let mut inx: usize = 0;
-    while !inp[inx].is_null() {
-        out.push(inp[inx].to_string());
-        inx += 1;
-    }
-    return out;
-}
+//
+// //old_name_was convertJSonArrayToStringList
+// //old_name_was convertJSonArrayToStringVector
+// pub fn convert_json_array_to_string_vector(inp: &JSonArray) -> Vec<String> {
+//     if !inp.is_array() {
+//         return vec![];
+//     }
+//     let mut out: Vec<String> = vec![];
+//     let mut inx: usize = 0;
+//     while !inp[inx].is_null() {
+//         out.push(inp[inx].to_string());
+//         inx += 1;
+//     }
+//     return out;
+// }
 
 pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
 {
@@ -490,12 +464,6 @@ pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
         .map(|x| x.to_string())
         .collect::<VString>();
     return vec_val;
-}
-
-//old_name_was parseToJsonArr
-pub fn parse_to_json_array(serialized: &String) -> JSonArray
-{
-    serde_json::from_str(serialized).unwrap()
 }
 
 //old_name_was arrayDiff
@@ -581,4 +549,51 @@ pub fn is_valid_hash(s: &String) -> bool
 pub fn has_only_hex_chars(s: &String) -> bool
 {
     strip_non_hex_chars(s).len() == s.len()
+}
+
+pub fn controlled_json_stringify(inp: &JSonObject) -> String
+{
+    let (_status, str) = match serde_json::to_string(inp) {
+        Ok(r) => (true, r),
+        Err(e) => {
+            dlog(
+                &format!("json serde serializing failed for input: {} {}", e, inp),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, "".to_string())
+        }
+    };
+    str
+}
+
+pub fn controlled_block_stringify(inp: &Block) -> String
+{
+    let (_status, str) = match serde_json::to_string(inp) {
+        Ok(r) => (true, r),
+        Err(e) => {
+            dlog(
+                &format!("block serde serializing failed for input: {} {:?}", e, inp),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, "".to_string())
+        }
+    };
+    str
+}
+
+//old_name_was parseToJsonObxjContolled
+//old_name_was parseToJsonArr
+//old_name_was parseToJsonObj
+pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
+{
+    return match serde_json::from_str(serialized) {
+        Ok(r) => { (true, r) }
+        Err(e) => {
+            dlog(
+                &format!("Failed in deserializing json object: {} {}", serialized, e),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            (false, json!({}))
+        }
+    };
 }
