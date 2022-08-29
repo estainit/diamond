@@ -167,7 +167,7 @@ pub fn get_dna_active_date_range(c_date: &CDateT) -> (String, String)
 //old_name_was getSharesInfo
 pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, SharesCountT>, Vec<Shareholder>)
 {
-    // cDate = application().get_now();
+    // cDate = application().now();
 
     // retrieve the total shares in last 24 hours, means -36 to -24 based on greenwich time
     // (Note: it is not the machine local time)
@@ -208,8 +208,6 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
         &vec![],
         true);
 
-    println!("ssssssss 77 records: {:?}", records);
-
     let mut sum_shares: SharesCountT = 0.0;
     let mut holders_order_by_shares: Vec<Shareholder> = vec![];
     let mut share_amount_per_holder: HashMap<String, SharesCountT> = HashMap::new();
@@ -247,7 +245,7 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
   CDateT cDate)
 {
   if(cDate == "")
-    cDate = application().get_now();
+    cDate = application().now();
 
   auto[sum_shares, share_amount_per_holder, tmp_] = getSharesInfo(cDate);
   Q_UNUSED(tmp_);
@@ -267,7 +265,6 @@ std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
 pub fn get_machine_shares(c_date: &CDateT) -> (String, SharesCountT, SharesPercentT)
 {
     let (sum_shares, share_amount_per_holder, _tmp) = get_shares_info(c_date);
-    println!("kkkkkkkk machine_shares 1 ");
     let backer_address: CAddressT = machine().get_backer_address();
     let mut shares: SharesCountT = 0.0;
     if share_amount_per_holder.contains_key(&*backer_address) {

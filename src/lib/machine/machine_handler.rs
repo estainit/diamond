@@ -223,7 +223,7 @@ impl CMachine {
 
         let cycle_by_minutes = application().get_cycle_by_minutes();
         // control if the last status-check is still valid (is younger than 30 minutes?= 24 times in a cycle)
-        let now_ = application().get_now();
+        let now_ = application().now();
         if !force_to_control_based_on_dag_status &&
             (last_sync_status_json_obj["checkDate"].to_string() >
                 application().minutes_before(
@@ -235,7 +235,7 @@ impl CMachine {
                 application().minutes_before(
                     2 * cycle_by_minutes,
                     &now_);
-            self.set_is_in_sync_process(is_in_sync, &application().get_now());
+            self.set_is_in_sync_process(is_in_sync, &application().now());
             return is_in_sync;
         } else {
             // re-check graph info&  update status-check info too
@@ -243,7 +243,7 @@ impl CMachine {
             if !status {
                 panic!("No block in DAG exit!!");
             }
-            let now_ = application().get_now();
+            let now_ = application().now();
             let is_in_sync_process: bool = block.m_block_creation_date < application().minutes_before(2 * cycle_by_minutes, &now_);
 
             if is_in_sync_process {
@@ -251,13 +251,13 @@ impl CMachine {
             } else {
                 last_sync_status_json_obj["isInSyncMode"] = "N".into();
             }
-            last_sync_status_json_obj["checkDate"] = application().get_now().into();
+            last_sync_status_json_obj["checkDate"] = application().now().into();
             last_sync_status_json_obj["lastDAGBlockCreationDate"] = block.m_block_creation_date.into();
             if is_in_sync_process {
-                last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = application().get_now().into();
+                last_sync_status_json_obj["lastTimeMachineWasInSyncMode"] = application().now().into();
             }
             upsert_kvalue("last_sync_status", &cutils::controlled_json_stringify(&last_sync_status_json_obj), false);
-            self.set_is_in_sync_process(is_in_sync_process, &application().get_now());
+            self.set_is_in_sync_process(is_in_sync_process, &application().now());
             return is_in_sync_process;
         }
     }
@@ -484,7 +484,7 @@ impl CMachine {
         // initializing default valuies and save it
         self.m_profile.m_mp_code = constants::DEFAULT.to_string();
         self.m_profile.m_mp_name = constants::DEFAULT.to_string();
-        self.m_profile.m_mp_last_modified = application().get_now();
+        self.m_profile.m_mp_last_modified = application().now();
 
         println!("Generating RSA key pairs.");
         {
@@ -546,7 +546,7 @@ impl CMachine {
             "Backer Address (".to_owned() +
                 &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_type + &" ".to_owned() +
                 &self.m_profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_ver + &")".to_owned(),
-            application().get_now(),
+            application().now(),
         );
         let (_status, _msg) = insert_address(&w_address);
 
@@ -854,7 +854,7 @@ impl CMachine {
     pub fn init_last_sync_status(&self) -> bool
     {
         let back_in_time = application().get_cycle_by_minutes() * 2;
-        let now_ = application().get_now();
+        let now_ = application().now();
         let last_time_machine_was_in_sync_mode = application().minutes_before(
             back_in_time,
             &now_);

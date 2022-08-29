@@ -7,7 +7,7 @@ impl CMachine {
     {
         println!("Adding some neighbors");
 
-        let now_ = application().get_now();
+        let now_ = application().now();
         let (status, msg) = add_a_new_neighbor(
             "seed1@seed.pro".to_string(),
             constants::PUBLIC.to_string(),
@@ -39,7 +39,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = USER_PUPLIC_KEY.to_string();
                     self.m_profile.m_mp_settings.m_public_email.m_address = USER_PUBLIC_EMAIL.to_string();
 
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     if user_and_hu_are_neighbor
                     {
                         // add Hu as a neighbor
@@ -54,7 +54,7 @@ impl CMachine {
                     }
 
                     // add Eve as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -77,7 +77,7 @@ impl CMachine {
                     if user_and_hu_are_neighbor
                     {
                         // add user as a neighbor
-                        let now_ = application().get_now();
+                        let now_ = application().now();
                         add_a_new_neighbor(
                             USER_PUBLIC_EMAIL.to_string(),
                             constants::PUBLIC.to_string(),
@@ -89,7 +89,7 @@ impl CMachine {
                     }
 
                     // add Eve as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -111,7 +111,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = EVE_PUPLIC_KEY.to_string();
 
                     // add User as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         USER_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -122,7 +122,7 @@ impl CMachine {
                         now_);
 
                     // add Hu as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -133,7 +133,7 @@ impl CMachine {
                         now_);
 
                     // add Bob as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -154,7 +154,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = BOB_PUPLIC_KEY.to_string();
 
                     // add Eve as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         EVE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -165,7 +165,7 @@ impl CMachine {
                         now_);
 
                     // add Alice as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         ALICE_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -186,7 +186,7 @@ impl CMachine {
                     self.m_profile.m_mp_settings.m_public_email.m_pgp_public_key = ALICE_PUPLIC_KEY.to_string();
 
                     // add Hu as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         HU_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),
@@ -197,7 +197,7 @@ impl CMachine {
                         now_);
 
                     // add Bob as a neighbor
-                    let now_ = application().get_now();
+                    let now_ = application().now();
                     add_a_new_neighbor(
                         BOB_PUBLIC_EMAIL.to_string(),
                         constants::PUBLIC.to_string(),

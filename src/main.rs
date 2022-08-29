@@ -70,7 +70,7 @@ fn main() {
     let msg = &format!(
         "Running Diamond Node (version {}). started at {} {}",
         constants::CLIENT_VERSION,
-        application().get_now(),
+        application().now(),
         web_server_msg);
     dlog(
         msg,

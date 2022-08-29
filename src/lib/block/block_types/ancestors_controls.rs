@@ -132,7 +132,7 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
 
     let mut all_ancestors_are_imported = true;
     let mut not_imported_ancs: VString = vec![];
-    let mut oldest_ancestor_creation_date = application().get_now();
+    let mut oldest_ancestor_creation_date = application().now();
     println!("@@@@@@ existed_record_blocks {:?}", existed_record_blocks);
     for a_blk in &existed_record_blocks
     {
@@ -179,7 +179,7 @@ pub fn ancestors_controls(pq_type: &String, block: &Block) -> EntryParsingResult
         && [constants::block_types::NORMAL].contains(&block.m_block_type.as_str())     // in order to let adding FVote blocks to DAG, before importing uplinked Normal block
         && !all_ancestors_are_imported
     {
-        let now_ = application().get_now();
+        let now_ = application().now();
         let block_age = application().time_diff(block.m_block_creation_date.clone(), now_.clone()).as_minutes;
         if block_age < application().get_cycle_by_minutes() / 6
         {

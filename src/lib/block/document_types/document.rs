@@ -869,7 +869,7 @@ pub fn map_doc_to_block(
     doc_index: CDocIndexT)
 {
     let dbm_doc_index = doc_index;
-    let dbm_last_control = application().get_now();
+    let dbm_last_control = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("dbm_block_hash", &block_hash as &(dyn ToSql + Sync)),
         ("dbm_doc_index", &dbm_doc_index as &(dyn ToSql + Sync)),

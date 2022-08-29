@@ -196,7 +196,7 @@ pub fn create_m_of_n_merkle<'a>(
             an_unlock_set.m_salt = cutils::hash16c(
                 &ccrypto::keccak256(
                     &(an_unlock_set.dump()
-                        + &application().get_now()
+                        + &application().now()
                         + &format!("{}", rand::thread_rng().gen::<u32>())
                     )
                 )

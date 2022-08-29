@@ -143,7 +143,7 @@ impl ProposalDocument {
     {
       Q_UNUSED(extraLength);
       if (cDate == "")
-        cDate =application().get_now();
+        cDate =application().now();
 
       DocLenT dLen = m_doc_length;
 

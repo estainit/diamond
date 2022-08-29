@@ -125,7 +125,7 @@ pub fn add_a_new_neighbor_by_email(neighbor_email: String) -> (bool, String, i64
     let neighbor_name = neighbor_email.split("@").collect::<Vec<&str>>()[0].to_string();
     let neighbor_name = format!("{}({})", neighbor_name, mp_code);
     let neighbor_info = NeighborInfo { m_name: neighbor_name };
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (status, msg) = add_a_new_neighbor(
         neighbor_email.clone(),
         constants::PUBLIC.to_string(),
@@ -198,7 +198,7 @@ pub fn add_a_new_neighbor(
         if neighbor_public_key != ""
         {
             //update pgp key
-            let now_ = application().get_now();
+            let now_ = application().now();
             let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
                 ("n_pgp_public_key", &neighbor_public_key as &(dyn ToSql + Sync)),
                 ("n_last_modified", &now_ as &(dyn ToSql + Sync)),
@@ -221,7 +221,7 @@ pub fn add_a_new_neighbor(
     }
 
     if creation_date == "" {
-        creation_date = application().get_now();
+        creation_date = application().now();
     }
 
     let (status, serialized_neighbor_info) = match serde_json::to_string(&neighbor_info) {
@@ -239,7 +239,7 @@ pub fn add_a_new_neighbor(
         return (false, "Failed in serialization neighbor_info 2".to_string());
     }
 
-    let now_ = application().get_now();
+    let now_ = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("n_mp_code", &mp_code as &(dyn ToSql + Sync)),
         ("n_email", &neighbor_email as &(dyn ToSql + Sync)),
@@ -471,7 +471,7 @@ pub fn parse_handshake(
 
     if !email_already_exist
     {
-        let now_ = application().get_now();
+        let now_ = application().now();
         add_a_new_neighbor(
             sender_email.to_string(),
             connection_type.to_string(),
@@ -637,7 +637,7 @@ pub fn flood_email_to_neighbors(
             //TODO: adding some expiration control to have availabality to re-broadcast email
             already_presented_neighbors.push(NeighborPresentation {
                 m_vertice: vertice,
-                m_date: application().get_now(),
+                m_date: application().now(),
             });
 
             let machine_address = machine().get_pub_email_info().m_address.clone();
@@ -783,7 +783,7 @@ pub fn parse_nice_to_meet_you(
         n_info = cutils::controlled_json_stringify(&json!({"backerAddress": sender_backer_address}));
     }
 
-    let last_modified = application().get_now();
+    let last_modified = application().now();
     let updates: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("n_info", &n_info as &(dyn ToSql + Sync)),
         ("n_pgp_public_key", &sender_pgp_public_key as &(dyn ToSql + Sync)),

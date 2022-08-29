@@ -213,7 +213,7 @@ pub fn handle_a_single_block(
     // if it is a valid block, update last received block info
     if pa_pa_res.m_status
     {
-        let now_ = application().get_now();
+        let now_ = application().now();
         set_last_received_block_timestamp(
             card_type,
             &block_hash,

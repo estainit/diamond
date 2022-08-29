@@ -76,7 +76,7 @@ impl CoinbaseBlock {
                 ],
                 constants::DEFAULT_PACKET_TYPE,
                 constants::DEFAULT_PACKET_VERSION,
-                application().get_now(),
+                application().now(),
             );
             dlog(
                 &format!("prepared coinbase packet, before insert into DB code({}) {}", block_super.m_block_hash, body),

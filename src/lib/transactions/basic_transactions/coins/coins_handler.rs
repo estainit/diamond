@@ -50,7 +50,7 @@ pub fn do_coin_clean(_c_date: &CDateT)
     // * they are placed 4 level backward(or older) in history
     // * since it is a optional process to lightening DB loadness, it could be done for 8 level previous too
 
-    let _minimum_date: CDateT = application().get_now();
+    let _minimum_date: CDateT = application().now();
     // JSonObject leaves = LeavesHandler::getLeaveBlocks();
     /*
   StringList leaves_hashes = leaves.keys();
@@ -88,7 +88,7 @@ pub fn do_coin_clean(_c_date: &CDateT)
 bool UTXOHandler::refreshVisibility(CDateT c_date)
 {
   if (c_date == "")
-    c_date = application().get_now();
+    c_date = application().now();
 
   String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + C_TRX_COINS +
   " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";

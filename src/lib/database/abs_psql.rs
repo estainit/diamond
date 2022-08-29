@@ -378,7 +378,6 @@ pub fn q_custom_query(
                 }
                 out_rows.push(a_row_dict);
             }
-            println!(">>> out_dict: {:?}", out_rows);
             (true, out_rows)
         }
         Err(e) => {
@@ -576,7 +575,6 @@ pub fn exec_query(
                 }
                 out_rows.push(a_row_dict);
             }
-            //println!(">>> out_dict: {:?}", out_rows);
             (true, out_rows)
         }
         Err(e) => {

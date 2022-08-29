@@ -18,7 +18,7 @@ use crate::lib::utils::dumper::{dump_it, dump_vec_of_str};
 //old_name_was tryCreateCoinbaseBlock
 pub fn try_create_coinbase_block() -> bool
 {
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (
         _coinbase_cycle_stamp,
         coinbase_from,
@@ -68,7 +68,7 @@ pub fn try_create_coinbase_block() -> bool
     let tmp_local_confidence: f64 = block.m_block_confidence as f64;
 
     // if local machine can create a coinbase block with more confidence or ancestors, broadcast it
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (at_least_one_coinbase_block_exist, most_confidence_in_dag) = get_most_confidence_coinbase_block_from_dag(&now_);
 
     let mut tmp_dag_confidence: f64 = 0.0;
@@ -200,7 +200,7 @@ pub fn try_create_coinbase_block() -> bool
                 ],
                 constants::DEFAULT_PACKET_TYPE,
                 constants::DEFAULT_PACKET_VERSION,
-                application().get_now(),
+                application().now(),
             );
             dlog(
                 &format!(
@@ -273,7 +273,7 @@ pub fn try_create_coinbase_block() -> bool
                 ],
                 constants::DEFAULT_PACKET_TYPE,
                 constants::DEFAULT_PACKET_VERSION,
-                application().get_now(),
+                application().now(),
             );
 
             let status = push_into_sending_q(

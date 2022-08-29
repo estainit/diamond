@@ -43,7 +43,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
         // coin importing
         {
             // import new minted coins
-            let now_ = application().get_now();
+            let now_ = application().now();
             import_minted_coins(&now_);
 
             // double checking repayblock importing
@@ -51,13 +51,13 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             if constants::DATABASAE_AGENT == "sqlite"
             {
                 // // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-                // do_import_coins(application().get_now());
+                // do_import_coins(application().now());
                 // PollingHandler::doConcludeTreatment();
                 // ParsingQHandler::smartPullQ();
             }
 
             // import Normal Coins
-            let now_ = application().get_now();
+            let now_ = application().now();
             do_import_coins(&now_);
 
             // remove unusefull visibility in order to lightening coins table

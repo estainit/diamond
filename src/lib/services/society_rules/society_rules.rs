@@ -549,7 +549,7 @@ QVDicT SocietyRules::readAdministrativeCurrentValues()
   /**
   * instead of fetching from a single table, tha values are retrived from proper functions in ConfParamsHandler
   */
-  CDateT cDate = application().get_now();
+  CDateT cDate = application().now();
   CDateT cycleStartDate = cutils::getACycleRange().from;
 
   QVDicT res {

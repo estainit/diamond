@@ -23,7 +23,7 @@ pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
         constants::Modules::App,
         constants::SecLevel::Debug);
 
-    let mut receive_date: String = application().get_now();
+    let mut receive_date: String = application().now();
     if pulled_record["pq_receive_date"] != ""
     {
         receive_date = pulled_record["pq_receive_date"].clone();

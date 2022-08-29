@@ -164,7 +164,7 @@ pub fn prepare_packets_for_neighbors(
                 email_body,   //sqPyload
             ]);
 
-        let now_ = application().get_now();
+        let now_ = application().now();
         add_sent_block(&mut HashMap::from([
             ("lb_type", &sq_type as &(dyn ToSql + Sync)),
             ("lb_code", &sq_code as &(dyn ToSql + Sync)),
@@ -233,7 +233,7 @@ pub fn push_into_sending_q(
 
         if records.len() == 0
         {
-            let now = application().get_now();
+            let now = application().now();
             let sq_send_attempts = 0;
             let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
                 ("sq_type", &packet[2] as &(dyn ToSql + Sync)),

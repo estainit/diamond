@@ -12,7 +12,7 @@ use crate::lib::messaging_protocol::dag_message_handler::set_maybe_ask_for_lates
 //old_name_was controlCoinbaseIssuanceCriteria
 pub fn control_coinbase_issuance_criteria() -> bool
 {
-    let now_ = application().get_now();
+    let now_ = application().now();
     let current_cycle_range = application().get_coinbase_range(&now_);
     dlog(
         &format!("Coinbase check Range (from {} to {} ", current_cycle_range.from, current_cycle_range.to),
@@ -55,7 +55,6 @@ pub fn control_coinbase_issuance_criteria() -> bool
 
     // postpond coinbase-generating if machine missed some blocks
     let missed_blocks: Vec<String> = get_missed_blocks_to_invoke(0);
-    println!("mmmmmmm missed_blocks {:?}", missed_blocks);
 
     if missed_blocks.len() > 0 {
 
@@ -69,7 +68,7 @@ pub fn control_coinbase_issuance_criteria() -> bool
         //     return res;
         // }
 
-        let now_ = application().get_now();
+        let now_ = application().now();
         let latenancy_factor: f64 = ((missed_blocks.len() + 1) as f64 / (constants::MAX_TOLERATED_MISS_BLOCKS as f64)) * application().get_coinbase_age_by_seconds(&now_) as f64;
         let are_we_in_4_of_5: bool = application().get_coinbase_age_by_seconds(&now_) < (application().get_cycle_by_seconds() * 4 / 5);
         if are_we_in_4_of_5 && (application().get_coinbase_age_by_seconds(&now_) < latenancy_factor as TimeBySecT)
@@ -83,7 +82,6 @@ pub fn control_coinbase_issuance_criteria() -> bool
     }
 
     // a psudo random mechanisem
-    println!("mmmmmmm 65 76 ");
     let am_i_qualified_to_issue_coinbase: bool = if_i_have_first_hashed_email("asc");
     if !am_i_qualified_to_issue_coinbase {
         dlog(

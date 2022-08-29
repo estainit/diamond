@@ -175,19 +175,16 @@ use crate::lib::utils::dumper::dump_hashmap_of_qvd_records;
 pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<String>)
 {
     // retrieve prev cycle info
-    println!("aaaaaa ----- 1");
     let launch_date = application().launch_date();
     let to_= application().get_coinbase_range(&launch_date).to;
-    if application().get_now() > to_
+    if application().now() > to_
     {
-        println!("aaaaaa ----- 1.1");
         let (
             cycle_stamp,
             from_t,
             _to,
             _from_hour,
             _to_hour) = application().get_prev_coinbase_info(c_date);
-        println!("aaaaaa ----- 2");
 
         // retrieve prev cycle coinbases
         let prv_coinbase_blocks: QVDRecordsT = search_in_dag(
@@ -209,7 +206,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
             0,
             true,
         );
-        println!("aaaaaa ----- 3");
         dlog(
             &format!("prvCoinbaseBlocks: {}", dump_hashmap_of_qvd_records(&prv_coinbase_blocks)),
             constants::Modules::CB,
@@ -221,7 +217,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
         }
 
         // retrieve all floating signature blocks which are created in prev cycle
-        println!("aaaaaa ----- 4");
         dlog(
             &format!("retrieve floating signatures for cycle({}) from({}) ", cycle_stamp, from_t),
             constants::Modules::CB,
@@ -245,7 +240,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
             0,
             true);
 
-        println!("aaaaaa ----- 5");
         let mut block_hashes: Vec<String> = vec![];
         let mut backers: DoubleDicT = HashMap::new();
         for a_fs_w_block in f_s_w_blocks
@@ -275,7 +269,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
             backers.insert(a_fs_w_block["b_backer"].to_string(), a_fs_w_block["b_confidence"].parse::<f64>().unwrap());
             block_hashes.push(a_fs_w_block["b_hash"].to_string());
         }
-        println!("aaaaaa ----- 7");
         let mut confidence: f64 = 0.0;
         for (_bckr, v) in &backers
         {
@@ -283,7 +276,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
         }
         let confidence = cutils::i_floor_float(confidence);
 
-        println!("aaaaaa ----- 8");
         return (
             confidence,
             block_hashes,
@@ -291,7 +283,6 @@ pub fn aggrigate_floating_signatures(c_date: &CDateT) -> (f64, Vec<String>, Vec<
         );
     } else {
         // machine is in init cycle, so there is no floating signature
-        println!("cccccc ----- uuuu");
         let genesis: QVDRecordsT = search_in_dag(
             vec![simple_eq_clause("b_type", &constants::block_types::GENESIS.to_string())],
             vec!["b_hash", "b_ancestors", "b_confidence", "b_backer"],

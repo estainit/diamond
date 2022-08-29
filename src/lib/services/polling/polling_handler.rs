@@ -416,7 +416,7 @@ bool maybeUpdatePollingStat(const CDocHashT& polling_hash)
     }
   }
 
-  vStatistics.m_polling_status = (polling.value("pll_end_date").to_string() < application().get_now()) ? constants::CLOSE : constants::OPEN;
+  vStatistics.m_polling_status = (polling.value("pll_end_date").to_string() < application().now()) ? constants::CLOSE : constants::OPEN;
 
   CLog::log("vStatistics: " + vStatistics.dumpMe(), "app", "trace");
 
@@ -509,7 +509,7 @@ void doOnePollingConcludeTreatment(
   CLog::log("retrive for conclude Treatment polling(" + cutils::hash8c(aPolling.value("pll_hash").to_string()) + ") polling_end_date(" + polling_end_date + ")", "app", "info");
 
   // generaly Close the pollings which are finished the voting time
-  if (polling_end_date < application().get_now())
+  if (polling_end_date < application().now())
   {
     maybeUpdatePollingStat(aPolling.value("pll_hash").to_string());
 
@@ -976,7 +976,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   // calculate ballot cost
   auto[adm_cost_status, adm_dp_cost] = adm_polling_doc->calcDocDataAndProcessCost(
     constants::STAGES::Creating,
-    application().get_now());
+    application().now());
   if (!adm_cost_status)
   {
     msg = "Failed in Adm-polling calculation for: " + adm_polling_doc.m_doc_comment;
@@ -1025,7 +1025,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   // 4. create trx to pay real polling costs
   auto[polling_cost_status, polling_dp_cost] = polling_doc->calcDocDataAndProcessCost(
     constants::STAGES::Creating,
-    application().get_now());
+    application().now());
   if (!polling_cost_status)
   {
     msg = "Failed in polling calculation for: " + adm_polling_doc.m_doc_comment;

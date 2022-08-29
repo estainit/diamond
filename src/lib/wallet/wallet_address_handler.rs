@@ -95,7 +95,7 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
   if (sum == false)
     return {addresses_info.records, {}};
 
-  CDateT nowT = application().get_now();
+  CDateT nowT = application().now();
   QV2DicT addressDict = {};
   String complete_query = "select wf_address, SUM(wf_o_value) mat_sum, COUNT(*) mat_count FROM " + stbl_machine_wallet_funds + " ";
   complete_query += "WHERE wf_mp_code=:wf_mp_code AND wf_mature_date<:wf_mature_date GROUP BY wf_address";
@@ -123,7 +123,7 @@ std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
     complete_query,
     {"wf_address", "unmat_sum", "unmat_count"},
     0,
-    {{"wf_mp_code", mp_code}, {"wf_mature_date", application().get_now()}});
+    {{"wf_mp_code", mp_code}, {"wf_mature_date", application().now()}});
 
   for (QVDicT elm: tmpRes.records)
   {
@@ -257,7 +257,7 @@ GenRes Wallet::createANewAddress(
     &unlock_doc,
     CMachine::getSelectedMProfile(),   // mp code
     signature_type + " address (" + signature_mod + " signatures) ver(" + signature_version + ")",
-    application().get_now()));
+    application().now()));
 
   CGUI::signalUpdateWalletCoins();
   CGUI::signalUpdateWalletAccounts();

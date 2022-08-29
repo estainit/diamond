@@ -401,7 +401,7 @@ void DAG::set_coins_import_status(
 bool DAG::isDAGUptodated(String c_date)
 {
   if (c_date == "")
-    c_date = application().get_now();
+    c_date = application().now();
 
   QVDRecordsT latestBlockDate = searchInDAG(
     {},
@@ -477,7 +477,7 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
 {
     let mut c_date = c_date_.to_string();
     if c_date == ""
-    { c_date = application().get_now(); }
+    { c_date = application().now(); }
 
     let latest_blocks: QVDRecordsT = search_in_dag(
         vec![],
@@ -602,7 +602,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
 //  }
 //  processed_outputs = processed_outputs.map(x => x.join('\t   ')).join('\n');
 
-  CMPAIValueT coinbase_value = (calculated_coinbase.len() * CoinbaseIssuer::calcPotentialMicroPaiPerOneCycle(application().get_now().split("-")[0]));
+  CMPAIValueT coinbase_value = (calculated_coinbase.len() * CoinbaseIssuer::calcPotentialMicroPaiPerOneCycle(application().now().split("-")[0]));
 
   return {sum, processed_outputs, coinbase_value};
 }
@@ -812,7 +812,7 @@ QVDicT DAG::getLatestRecordedBlcok()
 pub fn get_most_confidence_coinbase_block_from_dag(c_date: &CDateT) -> (bool, QVDicT)
 {
     // if (c_date == "")
-    //   c_date = application().get_now();
+    //   c_date = application().now();
 
     let (
         _coinbase_cycle_stamp,

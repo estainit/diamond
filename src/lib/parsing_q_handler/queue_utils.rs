@@ -64,7 +64,7 @@ pub fn append_prerequisites(
         constants::SecLevel::TmpDebug);
 
     let prerequisites = format!(",{}", current_prereq.join(","));
-    let last_modified = application().get_now();
+    let last_modified = application().now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("pq_prerequisites", &prerequisites as &(dyn ToSql + Sync)),
         ("pq_last_modified", &last_modified as &(dyn ToSql + Sync))

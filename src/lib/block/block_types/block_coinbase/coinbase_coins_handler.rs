@@ -26,7 +26,7 @@ pub fn loop_import_coinbase_coins()
     while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        let now_ = application().get_now();
+        let now_ = application().now();
         import_minted_coins(&now_);
         /*
 
@@ -36,7 +36,7 @@ pub fn loop_import_coinbase_coins()
         if ( (constants::DATABASAE_AGENT == "sqlite") && (CMachine::shouldLoopThreads()) )
         {
         // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
-        do_import_coins(application().get_now());
+        do_import_coins(application().now());
 
         PollingHandler::doConcludeTreatment();
 

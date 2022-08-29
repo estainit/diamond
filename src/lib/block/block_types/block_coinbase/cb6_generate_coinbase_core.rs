@@ -29,7 +29,7 @@ pub fn generate_coinbase_core(
 
     if cycle == ""
     {
-        c_date = application().get_now();
+        c_date = application().now();
         cycle = application().get_coinbase_cycle_stamp(&c_date);
     } else {
         if application().cycle_length() == 1

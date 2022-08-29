@@ -23,7 +23,6 @@ pub struct TmpHolder {
 pub fn maybe_create_coinbase_block() -> bool
 {
     let can_issue_new_cb = control_coinbase_issuance_criteria();
-    println!("kkkkkkkk 66 can_issue_new_cb? {}", can_issue_new_cb);
     if !can_issue_new_cb {
         return true;
     }
@@ -115,12 +114,12 @@ CDateT due,
 CDateT c_date)
 {
 if (c_date == "")
-c_date = application().get_now();
+c_date = application().now();
 
 if (due == "")
-due = application().get_now();
+due = application().now();
 
-if (c_date > application().get_now())
+if (c_date > application().now())
 {
 CLog::log("for now the formule does not support future contribute calculation. TODO: implement it", "app", "error");
 return {0, 0, 0};
@@ -168,7 +167,7 @@ DNAShareCountT current_total_sahres,
 uint32_t annualContributeGrowthRate)
 {
 if (c_date == "")
-c_date = application().get_now();
+c_date = application().now();
 
 CMPAIValueT total_incomes = 0;
 std::vector<MonthCoinsReport> monthly_incomes {};
@@ -249,7 +248,7 @@ CLog::log("Gracefully stopped thread(" + thread_prefix + thread_code + ") of loo
 //old_name_was doesDAGHasMoreConfidenceCB
 pub fn does_dag_has_more_confidence_cb() -> bool
 {
-    let now_ = application().get_now();
+    let now_ = application().now();
     let current_cycle_range_from: CDateT = application().get_coinbase_range(&now_).from;
 
     let already_recorded_coinbase_blocks: QVDRecordsT = search_in_dag(
@@ -306,7 +305,7 @@ pub fn does_dag_has_more_confidence_cb() -> bool
 
     let max_recorded_confident: f64 = already_recorded_confidents[0];
 
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (the_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&now_);
     let not_recorded_blocks: Vec<String> = cutils::array_diff(&block_hashes, &already_recorded_ancestors);
     if (the_confidence > max_recorded_confident) || (not_recorded_blocks.len() > 0) {
@@ -334,7 +333,7 @@ pub fn if_passed_certain_time_of_cycle_to_record_in_dag(c_date: &CDateT) -> bool
         cycle_by_minutes = application().cycle_length() as TimeByMinutesT;
     }
     let from_t_ = application().get_coinbase_range(c_date).from;
-    let to_t_ = application().get_now();
+    let to_t_ = application().now();
     let res: bool = application().time_diff(from_t_, to_t_).as_seconds
         >= (cycle_by_minutes as f64 * 60.0 * constants::COINBASE_FLOOR_TIME_TO_RECORD_IN_DAG * (1 + (machine_index.pow(7) / 131)) as f64) as u64;
     dlog(

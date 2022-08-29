@@ -123,7 +123,7 @@ pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
         { continue; }
 
         let zero_i32: i32 = 0;
-        let insert_date = application().get_now();
+        let insert_date = application().now();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("mb_block_hash", &hash as &(dyn ToSql + Sync)),
             ("mb_insert_date", &insert_date as &(dyn ToSql + Sync)),
@@ -207,7 +207,7 @@ pub fn increase_missed_attempts_number(block_hash: &CBlockHashT) -> bool
     }
 
     attempts_count = attempts_count + 1;
-    let now_ = application().get_now();
+    let now_ = application().now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("mb_invoke_attempts", &attempts_count as &(dyn ToSql + Sync)),
         ("mb_last_invoke_date", &now_ as &(dyn ToSql + Sync)),

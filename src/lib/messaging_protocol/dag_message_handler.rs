@@ -28,7 +28,7 @@ pub fn set_last_received_block_timestamp(
         "last_block_hash": block_hash,
         "last_block_receive_date": receive_date
     }));
-    let now_ = application().get_now();
+    let now_ = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("kv_value", &kv_value as &(dyn ToSql + Sync)),
         ("kv_last_modified", &now_ as &(dyn ToSql + Sync)),
@@ -237,7 +237,7 @@ void DAGMessageHandler::loopMissedBlocksInvoker()
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
 {
-    let now_ = application().get_now();
+    let now_ = application().now();
     let cycle = application().get_coinbase_cycle_stamp(&now_);
     dlog(
         &format!("ReMiBcInv cycle({}) called recursive MissedBlocks Invoker", cycle),
@@ -288,7 +288,7 @@ pub fn invoke_block(block_hash: &String) -> bool
             "bHash": block_hash})],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now(),
+        application().now(),
     );
 
     let status = push_into_sending_q(
@@ -347,7 +347,7 @@ pub fn invoke_leaves() -> bool
             "cdVer": constants::DEFAULT_CARD_VERSION})],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now(),
+        application().now(),
     );
 
     let status = push_into_sending_q(
@@ -392,7 +392,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         if last_leave_invoke_response_str != "" {
             let (_status, last_leave_invoke_response) = cutils::controlled_str_to_json(&last_leave_invoke_response_str);
             // TODO: tune the gap time
-            let now_ = application().get_now();
+            let now_ = application().now();
             if application().time_diff(
                 last_leave_invoke_response["receiveDate"].to_string(),
                 now_).as_seconds
@@ -407,7 +407,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         let last_block: JSonObject = get_last_received_block_timestamp();
 
         // TODO: tune the gap time
-        let now_ = application().get_now();
+        let now_ = application().now();
         let invoke_gap = application().time_diff(
             remove_quotes(&last_block["last_block_receive_date"]),
             now_).as_seconds;
@@ -428,7 +428,7 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
             vec![],
             0);
         if machine_request_status.len() > 0 {
-            let now_ = application().get_now();
+            let now_ = application().now();
             let invoke_age: TimeBySecT = application().time_diff(
                 machine_request_status[0]["kv_last_modified"].to_string(),
                 now_).as_seconds;
@@ -476,7 +476,7 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> PacketParsingRes
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now(),
+        application().now(),
     );
     dlog(
         &format!("prepared packet, before insert into DB code({}) to ({}): {}", code, sender, body),
@@ -572,7 +572,7 @@ pub fn handle_block_invoke_request(
             "block": block_body})],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now(),
+        application().now(),
     );
     dlog(
         &format!(
@@ -640,7 +640,7 @@ pub fn handle_received_leave_info(
         constants::SecLevel::Error);
 
     // update last_received_leaves_info_timestamp
-    let now_ = application().get_now();
+    let now_ = application().now();
     set_last_received_leave_info_timestamp(&leaves, &now_);
 
     // control if block exist in local, if not adding to missed blocks to invoke
@@ -681,7 +681,7 @@ pub fn handle_received_leave_info(
 //old_name_was setLastReceivedLeaveInfoTimestamp
 pub fn set_last_received_leave_info_timestamp(leaves: &Vec<JSonObject>, c_date: &CDateT)
 {
-    let last_modified = application().get_now();
+    let last_modified = application().now();
     let kv_value = cutils::controlled_json_stringify(&json!({
         "leaves": leaves,
         "receiveDate": c_date

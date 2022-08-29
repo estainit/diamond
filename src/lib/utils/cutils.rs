@@ -512,7 +512,7 @@ pub fn unpack_coin_code(coin: &CCoinCodeT) -> (String, COutputIndexT)
 //old_name_was isGreaterThanNow
 pub fn is_greater_than_now(c_date: &String) -> bool
 {
-    *c_date > application().get_now()
+    *c_date > application().now()
 }
 
 //old_name_was stripNonHex

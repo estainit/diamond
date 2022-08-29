@@ -179,7 +179,7 @@ impl AppParams {
     {
         let mut c_date: CDateT = c_date_.clone();
         if c_date == "".to_string() {
-            c_date = self.get_now();
+            c_date = self.now();
         }
 
         if self.cycle_length() == 1
@@ -333,7 +333,6 @@ impl AppParams {
         c_date: &CDateT)
         -> (String, String, String, String, String)
     {
-        println!("cccccc ----- 1");
         let cycle_range = self.get_a_cycle_range(
             c_date,
             1,
@@ -342,7 +341,6 @@ impl AppParams {
         let info = self.get_coinbase_info(
             &cycle_range.from,
             "");
-        println!("cccccc ----- 2");
         info
     }
 
@@ -352,13 +350,13 @@ impl AppParams {
         let mut from_t = from_t_;
         if from_t == ""
         {
-            from_t = self.get_now();
+            from_t = self.now();
         }
 
         let mut to_t = to_t_;
         if to_t == ""
         {
-            to_t = self.get_now();
+            to_t = self.now();
         }
 
         let mut res: TimeDiff = TimeDiff::new();
@@ -383,7 +381,7 @@ impl AppParams {
 
 
     //old_name_was getNow
-    pub fn get_now(&self) -> String
+    pub fn now(&self) -> String
     {
         Utc::now().format("%Y-%m-%d %H:%M:%S").to_string()
     }
@@ -440,7 +438,7 @@ impl AppParams {
     //old_name_was isGreaterThanNow
     pub fn is_greater_than_now(&self, c_date: &CDateT) -> bool
     {
-        if c_date.to_string() > self.get_now()
+        if c_date.to_string() > self.now()
         {
             return true;
         }
@@ -450,13 +448,13 @@ impl AppParams {
     //old_name_was getCurrentYear
     pub fn get_current_year(&self) -> String
     {
-        return self.get_now().split("-").collect::<Vec<&str>>()[0].to_string();
+        return self.now().split("-").collect::<Vec<&str>>()[0].to_string();
     }
 
     //old name was getNowByMinutes
     pub fn get_now_by_minutes(&self) -> u32
     {
-        let minutes_dtl: String = self.get_now().clone();
+        let minutes_dtl: String = self.now().clone();
         let minutes_dtl: Vec<&str> = minutes_dtl.split(" ").collect();
         let minutes_dtl: Vec<&str> = minutes_dtl[1].split(":").collect();
         let now_by_minutes: u32 = (minutes_dtl[0].to_string().parse::<u32>().unwrap() * 60) + minutes_dtl[1].to_string().parse::<u32>().unwrap();
@@ -469,7 +467,7 @@ impl AppParams {
     {
         let mut c_date = c_date_;
         if c_date == "".to_string() {
-            c_date = self.get_now();
+            c_date = self.now();
         }
 
         let cycle_start_time: CDateT = self.get_a_cycle_range(&c_date.clone(), 0, 0).from;
@@ -479,7 +477,7 @@ impl AppParams {
     //old_name_was isInCurrentCycle
     pub fn is_in_current_cycle(&self, c_date: &CDateT) -> bool
     {
-        let now_ = self.get_now();
+        let now_ = self.now();
         c_date >= &self.get_coinbase_range(&now_).from
     }
 
@@ -514,7 +512,6 @@ impl AppParams {
     pub fn get_coinbase_info(&self, c_date: &CDateT, cycle_stamp_inp: &str) ->
     (String, String, String, String, String)
     {
-        println!("mmmmm get_coinbase_info: c_date: {}, cycle: {}", c_date, cycle_stamp_inp);
         if c_date != ""
         {
             let the_range = self.get_coinbase_range(c_date);

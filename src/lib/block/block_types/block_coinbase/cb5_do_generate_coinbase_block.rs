@@ -19,20 +19,13 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (
         _cycle_stamp,
         from,
         to,
         _from_hour,
         _to_hour) = application().get_coinbase_info(&now_, cycle);
-
-    println!("mmmmmmmm ressss: {}, {}, {}, {}, {}",
-             _cycle_stamp,
-             from,
-             to,
-             _from_hour,
-             _to_hour);
 
     let (status, mut block) = generate_coinbase_core(cycle, mode, version);
     if !status {
@@ -58,14 +51,14 @@ pub fn do_generate_coinbase_block(
         constants::Modules::CB,
         constants::SecLevel::Info);
 
-    let now_ = application().get_now();
+    let now_ = application().now();
     let (_confidence, block_hashes, _backers) = aggrigate_floating_signatures(&now_);
     leaves_hashes = cutils::array_add(&leaves_hashes, &block_hashes);
     leaves_hashes.sort();
     leaves_hashes.dedup();
 
     // if requested cycle is current cycle and machine hasn't fresh leaves, so can not generate a CB block
-    let now_ = application().get_now();
+    let now_ = application().now();
     if (mode == constants::stages::CREATING) &&
         (leaves_hashes.len() == 0) &&
         (cycle == application().get_coinbase_cycle_stamp(&now_))

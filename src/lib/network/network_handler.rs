@@ -23,7 +23,7 @@ pub fn i_push(
         to_send_message = constants::message_tags::ENVELOPE_CUSTOM_START.to_string() + &to_send_message + &constants::message_tags::ENVELOPE_CUSTOM_END;
     }
 
-    let mut email_body: String = application().get_now() + constants::NL;
+    let mut email_body: String = application().now() + constants::NL;
     email_body += &*("time: ".to_owned() + &application().get_now_sss() + &constants::NL);
     email_body += &(constants::message_tags::SENDER_START_TAG.to_owned() + sender + constants::message_tags::SENDER_END_TAG + constants::NL);
     email_body += &(constants::message_tags::RECEIVE_START_TAG.to_owned() + receiver + constants::message_tags::RECEIVE_END_TAG + constants::NL);
@@ -78,7 +78,7 @@ pub fn i_push(
             constants::SecLevel::TmpDebug);
         return true;
     } else {
-        sent_emails_obj.insert(email_hash, application().get_now());
+        sent_emails_obj.insert(email_hash, application().now());
         upsert_kvalue(
             "SENT_EMAILS",
             &serde_json::to_string(&sent_emails_obj).unwrap(),
@@ -87,7 +87,7 @@ pub fn i_push(
 
     let mut refresh_sents: HashMap<String, String> = HashMap::new();
     let back_in_time = application().get_cycle_by_minutes();
-    let now_=application().get_now();
+    let now_=application().now();
     let c_date: String = application().minutes_before(
         back_in_time,
         &now_);

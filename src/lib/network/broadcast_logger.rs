@@ -11,7 +11,7 @@ pub fn list_sent_blocks(after_that_: &CDateT, fields: Vec<&str>) -> QVDRecordsT
     let mut after_that = after_that_.clone();
     if after_that == ""
     {
-        let now_ = application().get_now();
+        let now_ = application().now();
         if machine().is_in_sync_process(false) {
             let back_in_time = application().get_cycle_by_minutes()  / 40;
             after_that = application().minutes_before(back_in_time, &now_);

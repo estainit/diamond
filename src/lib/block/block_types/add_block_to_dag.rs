@@ -61,8 +61,8 @@ impl Block {
         let descendants = self.m_block_descendants.join(",");
         let cycle = application().get_coinbase_cycle_stamp(&self.m_block_creation_date);
         let b_trxs_count = 0;
-        let b_receive_date = application().get_now();
-        let b_confirm_date = application().get_now();
+        let b_receive_date = application().now();
+        let b_confirm_date = application().now();
         let b_coins_imported = constants::NO.to_string();
 
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([

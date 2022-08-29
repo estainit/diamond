@@ -134,7 +134,7 @@ pub fn increase_to_parse_attempts_count(packet: &QVDicT) -> bool
 {
     let mut parse_attempts = packet["pq_parse_attempts"].parse::<i32>().unwrap_or(0);
     parse_attempts = parse_attempts + 1;
-    let now_ = application().get_now();
+    let now_ = application().now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("pq_parse_attempts", &parse_attempts as &(dyn ToSql + Sync)),
         ("pq_last_modified", &now_ as &(dyn ToSql + Sync))

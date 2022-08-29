@@ -30,7 +30,7 @@ pub fn remove_from_leave_blocks(leaves: &Vec<String>) -> (bool, String)
     let serialized_leaves: String = serde_json::to_string(&new_leaves).unwrap();
 
     // update db
-    let kv_last_modified = application().get_now();
+    let kv_last_modified = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("kv_value", &serialized_leaves as &(dyn ToSql + Sync)),
         ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
@@ -89,7 +89,7 @@ pub fn add_to_leave_blocks(
     current_leaves.insert(block_hash.to_string(), a_leave);
 
     let kv_value = serde_json::to_string(&current_leaves).unwrap();
-    let kv_last_modified = application().get_now();
+    let kv_last_modified = application().now();
     let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("kv_value", &kv_value as &(dyn ToSql + Sync)),
         ("kv_last_modified", &kv_last_modified as &(dyn ToSql + Sync)),
@@ -111,8 +111,6 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
     // the leaves younger than two cylce (24 hours) old
     let leaves: HashMap<String, LeaveBlock> = get_leave_blocks(&"".to_string());
 
-    println!("mmmmmmm get_fresh_leaves {:?}", leaves);
-
     dlog(
         &format!("current leaves: {}", serde_json::to_string(&leaves).unwrap()),
         constants::Modules::App,
@@ -121,10 +119,9 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
     if leaves.keys().len() == 0 {
         return leaves;
     }
-    println!("mmmmmmm get_fresh_leaves oooooooooooo", );
 
     let mut refreshes: HashMap<String, LeaveBlock> = HashMap::new();
-    let now_ = application().get_now();
+    let now_ = application().now();
     for (a_key, a_leave) in leaves {
         let leave_age: TimeByMinutesT = application().time_diff(
             a_leave.m_creation_date.clone(),
@@ -165,7 +162,6 @@ pub fn get_fresh_leaves() -> HashMap<String, LeaveBlock>
 pub fn has_fresh_leaves() -> bool
 {
     let keys = get_fresh_leaves().keys().cloned().collect::<Vec<String>>();
-    println!("mmmmmmm fresh leaves keys {}, {:?}", keys.len(), keys);
     keys.len() > 0
 }
 

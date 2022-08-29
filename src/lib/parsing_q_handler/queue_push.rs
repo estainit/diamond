@@ -193,7 +193,7 @@ pub fn push_to_parsing_q(
             m_message: "".to_string(),
         };
     }
-    let now_ = application().get_now();
+    let now_ = application().now();
     let pq_prerequisites = format!(",{}", prerequisites.join(","));
     let zero: i32 = 0;
     let pq_v_status = "new".to_string();
@@ -237,7 +237,7 @@ pub fn push_to_parsing_q(
 pub fn clean_expired_entries()
 {
     let back_in_time = application().get_cycle_by_minutes();
-    let now_ = application().get_now();
+    let now_ = application().now();
     remove_from_parsing_q(vec![
         ModelClause {
             m_field_name: "pq_parse_attempts",

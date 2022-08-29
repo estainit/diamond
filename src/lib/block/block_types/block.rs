@@ -596,7 +596,7 @@ impl Block {
           if (m_documents.len() == 0)
             return transient_block_info;
 
-          String now_ = application().get_now();
+          String now_ = application().now();
           for (CDocIndexT doc_inx = 0; doc_inx < m_documents.len(); doc_inx++)
           {
             Document *a_doc = m_documents[doc_inx];

@@ -83,7 +83,7 @@ pub fn create_handshake_request(
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now()
+        application().now()
     );
     dlog(
         &format!("prepared handshake packet, before insert into DB code({}) to ({}): {}",code, receiver_info["n_email"], body),
@@ -162,7 +162,7 @@ pub fn create_nice_to_meet_you(
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now()
+        application().now()
     );
     dlog(
         &format!("prepared Nice To Meet You packet, before insert into DB code({}) to ({}): {}",code, receiver_email, body),
@@ -230,7 +230,7 @@ pub fn create_here_is_new_neighbor(
         ],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,
-        application().get_now()
+        application().now()
     );
     dlog(
         &format!("prepared here is a new neighbor packet, before insert into DB code({}) to ({}): {}",code, new_neighbor_email, body),

@@ -64,7 +64,7 @@ bool KVHandler::updateKValue(const String &key, const String &value)
 {
   return DbModel::update(
     C_KVALUE,
-    {{"kv_value", value}, {"kv_last_modified", application().get_now()}},
+    {{"kv_value", value}, {"kv_last_modified", application().now()}},
     {{"kv_key", key}});
 }
 
@@ -75,7 +75,7 @@ pub fn upsert_kvalue(
     value: &str,
     log: bool) -> bool
 {
-    let dt = application().get_now();
+    let dt = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> =
         [("kv_value", &value as &(dyn ToSql + Sync)),
             ("kv_last_modified", &dt as &(dyn ToSql + Sync))]

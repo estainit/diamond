@@ -55,7 +55,7 @@ pub fn decrypt_and_parse_packet(
             constants::Modules::Sec,
             constants::SecLevel::Info);
 
-        let now_ = application().get_now();
+        let now_ = application().now();
         add_a_new_neighbor(
             sender.clone(),
             constants::PUBLIC.to_string(),
@@ -238,7 +238,7 @@ pub fn i_update(_file_name: &String) -> bool
 pub fn i_create(file_id: &String) -> bool
 {
     let zero: i32 = 0;
-    let now_ = application().get_now();
+    let now_ = application().now();
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("msg_file_id", file_id as &(dyn ToSql + Sync)),
         ("msg_try_count", &zero as &(dyn ToSql + Sync)),

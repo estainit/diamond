@@ -26,7 +26,7 @@ pub fn loop_import_normal_coins()
     while application().should_loop_threads()
     {
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::RUNNING.to_string());
-        let now_ = application().get_now();
+        let now_ = application().now();
         do_import_coins(&now_);
 
         machine().report_thread_status(&thread_prefix, &thread_code, &constants::thread_state::SLEEPING.to_string());
@@ -45,7 +45,7 @@ pub fn do_import_coins(c_date_: &CDateT)
 {
     let mut c_date = c_date_.clone();
     if c_date == ""
-    { c_date = application().get_now(); }
+    { c_date = application().now(); }
 
     import_normal_block_coins(&c_date);
 
@@ -89,7 +89,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
         },
     ];  // (12 hours * 60 minutes) from now
 
-    let now_ = application().get_now();
+    let now_ = application().now();
     if dag_has_blocks_which_are_created_in_current_cycle(&now_)
     {
         //  * by (DAG-Has-Blocks-Which-Are-Created-In-Currrent-Cycle) clause we are almost sure the machine is synched
@@ -104,7 +104,7 @@ pub fn retrieve_proper_blocks(c_date: &CDateT) -> QVDRecordsT
             constants::SecLevel::TmpDebug);
 
         let back_in_time = application().get_cycle_by_minutes();
-        let now_=application().get_now();
+        let now_=application().now();
         if last_sync_status["lastTimeMachineWasInSyncMode"].to_string() < application().minutes_before(back_in_time, &now_)
         {
             clauses.push(ModelClause {
