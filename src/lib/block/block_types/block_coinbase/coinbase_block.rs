@@ -23,8 +23,6 @@ impl CoinbaseBlock {
 
     pub fn set_block_by_json_obj(&mut self, obj: &JSonObject) -> bool
     {
-        println!("rrrrrr 1 {}", obj["bDocs"]);
-        println!("rrrrrr 2 {}", obj["bDocs"].as_array().unwrap()[0]);
         self.m_cycle = remove_quotes(&obj["bDocs"].as_array().unwrap()[0]["dCycle"]);
         return true;
     }

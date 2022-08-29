@@ -173,8 +173,6 @@ pub fn q_delete(
     do_log: bool) -> bool
 {
     let (_complete_query, query_elements) = prepare_to_delete(table, &clauses);
-    println!("query_elements.m_complete_query: {:?}", query_elements.m_complete_query);
-    println!("query_elements.m_params: {:?}", query_elements.m_params);
     let (status, _records) = exec_query(&query_elements, do_log);
     return status;
 }

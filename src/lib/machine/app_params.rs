@@ -227,7 +227,6 @@ impl AppParams {
         let end_minute: TimeByMinutesT = start_minute + self.get_cycle_by_minutes() - 1;
         let from_ = day.clone() + " " + &self.convert_minutes_to_hhmm(start_minute) + ":00";
         let to_ = day.clone() + " " + &self.convert_minutes_to_hhmm(end_minute) + ":59";
-        println!("mmmmmm 88 from {} to_ {}", from_, to_);
 
         return TimeRange {
             from: from_,
@@ -287,13 +286,11 @@ impl AppParams {
         if c_date == ""
         {
             minutes = self.get_now_by_minutes();
-            println!("wwwwwww minutes1: {}", minutes);
         } else {
             let minutes_dtl1: Vec<&str> = c_date.split(" ").collect();
             let minutes_dtl2: String = minutes_dtl1[1].to_string().clone();
             let minutes_dtl3: Vec<&str> = minutes_dtl2.split(":").collect();
             minutes = (minutes_dtl3[0].to_string().parse::<u32>().unwrap() * 60) + minutes_dtl3[1].to_string().parse::<u32>().unwrap();
-            println!("wwwwwww minutes2: {}", minutes);
         }
 
         let cycle_number: String;
@@ -302,7 +299,6 @@ impl AppParams {
         } else {
             cycle_number = (minutes / self.get_cycle_by_minutes() as u32).to_string();
         }
-        println!("wwwwwww cycle_number: {}", cycle_number);
         return cycle_number;
     }
 

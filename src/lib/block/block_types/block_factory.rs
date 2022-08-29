@@ -22,8 +22,6 @@ pub fn load_block(obj: &JSonObject) -> (bool, Block)
 
 pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, Block)
 {
-    println!("xxxxxxxxx 45 record_row: {:?}", record_row);
-
     let (status, _sf_ver, serialized_block_body) = unwrap_safed_content_for_db(&record_row["b_body"].to_string());
     if !status
     {
@@ -35,7 +33,6 @@ pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, B
             constants::SecLevel::Error);
         return (false, Block::new());
     }
-    println!("xxxxxxxxx 45 b_body: {}", serialized_block_body);
 
     let (status, j_obj) = controlled_str_to_json(&serialized_block_body);
     if !status
@@ -48,7 +45,6 @@ pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, B
             constants::SecLevel::Error);
         return (false, Block::new());
     }
-    println!("xxxxxxxxx 45 jjj: {}", j_obj);
 
     return load_block(&j_obj);
 }
