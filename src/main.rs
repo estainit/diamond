@@ -87,6 +87,8 @@ fn main() {
         }
     }
 
+    // let hashes: VString = vec!["885e153255a445bbbf128e83f169de2beb9e37968ef79762bb20c919de1515d1".to_string()];
+    // add_missed_blocks_to_invoke(&hashes);
 
     launch_giga_loop(false);//    launch_threads();
 }

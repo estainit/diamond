@@ -3,16 +3,17 @@ use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, constants, cutils, dlog};
-use crate::cutils::remove_quotes;
+use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::document_factory::load_document;
-use crate::lib::block_utils::wrap_safe_content_for_db;
+use crate::lib::block_utils::{unwrap_safed_content_for_db, wrap_safe_content_for_db};
 use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString};
-use crate::lib::database::abs_psql::{q_insert, q_select};
-use crate::lib::database::tables::{C_BLOCK_EXTINFOS};
+use crate::lib::dag::dag::search_in_dag;
+use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::{C_BLOCK_EXT_INFO};
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
 use crate::lib::services::society_rules::society_rules::get_max_block_size;
 
@@ -147,50 +148,50 @@ impl Block {
     //  -  -  -  Block Record
     bool BlockRecord::setByRecordDict(const QVDicT& values)
     {
-      if (values.value("b_id", "").to_string() != "")
-        m_id = values.value("b_id", "").toUInt();
-      if (values.value("b_hash", "").to_string() != "")
-        m_hash = values.value("b_hash", "").to_string();
-      if (values.value("b_type", "").to_string() != "")
-        m_type = values.value("b_type", "").to_string();
-      if (values.value("b_cycle", "").to_string() != "")
-        m_cycle = values.value("b_cycle", "").to_string();
+      if (values["b_id"] "").to_string() != "")
+        m_id = values["b_id"] "").toUInt();
+      if (values["b_hash"] "").to_string() != "")
+        m_hash = values["b_hash"] "").to_string();
+      if (values["b_type"] "").to_string() != "")
+        m_type = values["b_type"] "").to_string();
+      if (values["b_cycle"] "").to_string() != "")
+        m_cycle = values["b_cycle"] "").to_string();
 
-      if (values.value("b_confidence", "").to_string() != "")
-        m_confidence = values.value("b_confidence", "").toFloat();
+      if (values["b_confidence"] "").to_string() != "")
+        m_confidence = values["b_confidence"] "").toFloat();
 
-      if (values.value("b_ext_root_hash", "").to_string() != "")
-        m_ext_root_hash = values.value("b_ext_root_hash", "").to_string();
-      if (values.value("b_docs_root_hash", "").to_string() != "")
-        m_documents_root_hash = values.value("b_docs_root_hash", "").to_string();
-      if (values.value("b_signals", "").to_string() != "")
-        m_signals = values.value("b_signals", "").to_string();
-      if (values.value("b_trxs_count", "").to_string() != "")
-        m_trxs_count = values.value("b_trxs_count", "").toUInt();
-      if (values.value("b_docs_count", "").to_string() != "")
-        m_docs_count = values.value("b_docs_count", "").toUInt();
+      if (values["b_ext_root_hash"] "").to_string() != "")
+        m_ext_root_hash = values["b_ext_root_hash"] "").to_string();
+      if (values["b_docs_root_hash"] "").to_string() != "")
+        m_documents_root_hash = values["b_docs_root_hash"] "").to_string();
+      if (values["b_signals"] "").to_string() != "")
+        m_signals = values["b_signals"] "").to_string();
+      if (values["b_trxs_count"] "").to_string() != "")
+        m_trxs_count = values["b_trxs_count"] "").toUInt();
+      if (values["b_docs_count"] "").to_string() != "")
+        m_docs_count = values["b_docs_count"] "").toUInt();
 
-      if (values.value("b_ancestors_count", "").to_string() != "")
-        m_ancestors_count = values.value("b_ancestors_count", "").toUInt();
+      if (values["b_ancestors_count"] "").to_string() != "")
+        m_ancestors_count = values["b_ancestors_count"] "").toUInt();
 
-      if (values.value("b_ancestors", "").to_string() != "")
-        m_ancestors = values.value("b_ancestors", "").to_string().split(",");
+      if (values["b_ancestors"] "").to_string() != "")
+        m_ancestors = values["b_ancestors"] "").to_string().split(",");
 
-      if (values.value("b_descendants", "").to_string() != "")
-        m_descendents = values.value("b_descendants", "").to_string().split(",");
+      if (values["b_descendants"] "").to_string() != "")
+        m_descendents = values["b_descendants"] "").to_string().split(",");
 
-      if (values.value("b_body", "").to_string() != "")
-        m_body = values.value("b_body", "").to_string();
-      if (values.value("b_creation_date", "").to_string() != "")
-        m_creation_date = values.value("b_creation_date", "").to_string();
-      if (values.value("b_receive_date", "").to_string() != "")
-        m_receive_date = values.value("b_receive_date", "").to_string();
-      if (values.value("b_confirm_date", "").to_string() != "")
-        m_confirm_date = values.value("b_confirm_date", "").to_string();
-      if (values.value("b_backer", "").to_string() != "")
-        m_block_backer = values.value("b_backer", "").to_string();
-      if (values.value("b_coins_imported", "").to_string() != "")
-        m_coin_imported = values.value("b_coins_imported", "").to_string();
+      if (values["b_body"] "").to_string() != "")
+        m_body = values["b_body"] "").to_string();
+      if (values["b_creation_date"] "").to_string() != "")
+        m_creation_date = values["b_creation_date"] "").to_string();
+      if (values["b_receive_date"] "").to_string() != "")
+        m_receive_date = values["b_receive_date"] "").to_string();
+      if (values["b_confirm_date"] "").to_string() != "")
+        m_confirm_date = values["b_confirm_date"] "").to_string();
+      if (values["b_backer"] "").to_string() != "")
+        m_block_backer = values["b_backer"] "").to_string();
+      if (values["b_coins_imported"] "").to_string() != "")
+        m_coin_imported = values["b_coins_imported"] "").to_string();
       return true;
     }
 
@@ -287,9 +288,9 @@ impl Block {
     StringList Block::getDocumentsHashes(const JSonObject& block)
     {
       StringList hashes {};
-      JSonArray documents = block.value("docs").toArray();
+      JSonArray documents = block["docs"].toArray();
       for (auto a_doc: documents)
-        hashes.push(a_doc.toObject().value("dHash").to_string());
+        hashes.push(a_doc.toObject()["dHash"].to_string());
       return hashes;
     }
 
@@ -519,8 +520,8 @@ impl Block {
                     &format!(
                         "Loading block documents failed {} {} doc body: {}",
                         self.get_block_identifier(),
-                             doc.get_doc_identifier(),
-                    cutils::controlled_json_stringify(&documents[doc_inx as usize])),
+                        doc.get_doc_identifier(),
+                        cutils::controlled_json_stringify(&documents[doc_inx as usize])),
                     constants::Modules::App,
                     constants::SecLevel::TmpDebug);
                 return false;
@@ -531,52 +532,30 @@ impl Block {
         return true;
     }
 
+    #[allow(unused, dead_code)]
+    pub fn get_block_ext_info(&self) -> (bool, bool, Vec<JSonObject>)
+    {
+        if self.m_block_ext_info.len() > 0
+        {
+            return (true, true, self.m_block_ext_info[0].clone());
+        }
+
+        return get_block_ext_info(&self.m_block_hash);
+    }
     /*
+           bool Block::appendToDocuments(Document* doc)
+           {
+             m_documents.push(doc);
+             return true;
+           }
 
-       /**
-        * @brief Block::getBlockExtInfo
-        * @param blockHash
-        * @return <status, extInfoExist?, extinfoJsonObj>
+           bool Block::appendToExtInfo(const JSonArray& an_ext_info)
+           {
+             m_block_ext_info.push(an_ext_info);
+             return true;
+           }
+
         */
-       std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo(const String& block_hash)
-       {
-         JSonArray block_ext_info;
-         QueryRes res = DbModel::select(
-           C_BLOCK_EXT_INFO,
-           {"x_block_hash", "x_detail"},
-           {{"x_block_hash", block_hash}});
-         if (res.records.len() != 1)
-         {
-           CLog::log("get Block Ext Infos: the block(" + cutils::hash8c(block_hash) + ") has not ext Info", "app", "trace");
-           return {true, false, {}};
-         }
-
-         String serialized_block = BlockUtils::unwrapSafeContentForDB(res.records[0].value("x_detail").to_string()).content;
-         block_ext_info = cutils::parseToJsonArr(serialized_block);
-         return {true, true, block_ext_info};
-       }
-
-       std::tuple<bool, bool, JSonArray> Block::getBlockExtInfo() const
-       {
-         if (m_block_ext_info.len() > 0)
-           return {true, true, m_block_ext_info[0].toArray()};
-
-         return Block::getBlockExtInfo(m_block_hash);
-       }
-
-       bool Block::appendToDocuments(Document* doc)
-       {
-         m_documents.push(doc);
-         return true;
-       }
-
-       bool Block::appendToExtInfo(const JSonArray& an_ext_info)
-       {
-         m_block_ext_info.push(an_ext_info);
-         return true;
-       }
-
-    */
     //old_name_was getBlockExtInfoByDocIndex
     pub fn get_block_ext_info_by_doc_index(&self, document_index: usize) -> &Vec<JSonObject>
     {
@@ -592,7 +571,7 @@ impl Block {
         limit: u32) -> QVDRecordsT
     {
         let (_status, records) = q_select(
-            C_BLOCK_EXTINFOS,
+            C_BLOCK_EXT_INFO,
             fields,
             clauses,
             order,
@@ -783,7 +762,7 @@ impl Block {
         //  if (bExtInfo.records.len() == 0)
         //    return {false, JSonObject {}};
 
-        //  QVariant x_detail = bExtInfo.records[0].value("x_detail");
+        //  QVariant x_detail = bExtInfo.records[0]["x_detail"];
         //  String serializedBextInfo = x_detail.to_string();
         //  auto[unwrap_status, unwrap_ver, unwrap_content] = BlockUtils::unwrapSafeContentForDB(serializedBextInfo);
 
@@ -822,8 +801,8 @@ impl Block {
 
 
         return q_insert(
-            C_BLOCK_EXTINFOS,     // table
-            &values, // values to insert
+            C_BLOCK_EXT_INFO,
+            &values,
             true);
     }
     /*
@@ -850,48 +829,141 @@ impl Block {
           const JSonObject& block,
           const CDocHashT& doc_hash)
         {
-          JSonArray documents = block.value("docs").toArray();
+          JSonArray documents = block["docs"].toArray();
           for (CDocIndexT doc_inx = 0; doc_inx < documents.len(); doc_inx++)
           {
-            if (documents[doc_inx].toObject().value("dHash").to_string() == doc_hash)
+            if (documents[doc_inx].toObject()["dHash"].to_string() == doc_hash)
               return {doc_inx, documents[doc_inx].toObject()};
           }
           return {-1, {}};
         }
 
-        /**
-        *
-        * @param {string} blockHash
-        * static retrieves complete version of recorded block in 2 different tables i_blocks & i_block_segwits
-        */
-        std::tuple<bool, JSonObject> Block::regenerateBlock(const CBlockHashT& block_hash)
-        {
-          JSonObject Jblock {};
-          //listener.doCallSync('SPSH_before_regenerate_block', { block_hash });
-          QVDRecordsT block_records = DAG::searchInDAG({{"b_hash", block_hash}});
-          if (block_records.len() == 0)
-          {
-            // TODO: the block is valid and does not exist in local. or
-            // invalid block invoked, maybe some penal for sender!
-            CLog::log("The requested block to regenrate doesn't exist in DAG! Block("+ cutils::hash8c(block_hash) + ") ", "app", "warning");
-            return {false, Jblock};
-          }
+*/
+}
 
-          try {
-            QVDicT the_block = block_records[0];
-            Jblock = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(the_block.value("b_body").to_string()).content);
+//old_name_was regenerateBlock
+pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
+{
+    //listener.doCallSync('SPSH_before_regenerate_block', { block_hash });
+    let records = search_in_dag(
+        vec![simple_eq_clause("b_hash", block_hash)],
+        vec!["b_body"],
+        vec![],
+        0,
+        false);
+    if records.len() == 0
+    {
+        // TODO: the block is valid and does not exist in local. or
+        // invalid block invoked, maybe some penal for sender!
+        dlog(
+            &format!(
+                "The requested block to regenerate, which doesn't exist in DAG! {}",
+                block_hash
+            ),
+            constants::Modules::App,
+            constants::SecLevel::Warning);
+        return (false, json!({}));
+    }
 
-            auto[status, extExist, block_ext_info] = getBlockExtInfo(block_hash);
-            if (extExist)
-              Jblock["bExtInfo"] = block_ext_info;
+    let (status, _sf_ver, serialized_block) =
+        unwrap_safed_content_for_db(&records[0]["b_body"].to_string());
+    if !status
+    {
+        dlog(
+            &format!(
+                "Failed in un-wrap safe record{},  {:?}",
+                block_hash,
+                &records
+            ),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, json!({}));
+    }
+    let (status, mut j_block) = controlled_str_to_json(&serialized_block);
+    if !status
+    {
+        dlog(
+            &format!(
+                "Failed in deser safe un-wrapped record{},  {:?}",
+                block_hash,
+                &serialized_block
+            ),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, json!({}));
+    }
 
-            return {true, Jblock};
+    let (status, ext_info_exist, block_ext_info) =
+        get_block_ext_info(block_hash);
+    if !status
+    {
+        return (false, json!({}));
+    }
 
-          } catch (std::exception) {
-            return {false, Jblock};
-          }
+    if ext_info_exist
+    {
+        j_block["bExtInfo"] = serde_json::Value::Array(block_ext_info);
+    }
 
+    return (true, j_block);
+}
+
+//old_name_was getBlockExtInfo
+pub fn get_block_ext_info(block_hash: &String) -> (bool, bool, Vec<JSonObject>)
+{
+    let (status, records) = q_select(
+        C_BLOCK_EXT_INFO,
+        vec!["x_block_hash", "x_detail"],
+        vec![simple_eq_clause("x_block_hash", block_hash)],
+        vec![],
+        0, false);
+
+    if !status
+    {
+        return (false, false, vec![]);
+    }
+
+    if records.len() != 1
+    {
+        dlog(
+            &format!("get Block Ext Info: the block({}) has not ext Info", cutils::hash8c(block_hash)),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+
+        return (true, false, vec![]);
+    }
+
+    let (status, _sf_ver, serialized_block) = unwrap_safed_content_for_db(
+        &records[0]["x_detail"].to_string());
+    if !status
+    {
+        dlog(
+            &format!("Failed on un-wrapping safe wrapped doc ext info {}",
+                     records[0]["x_detail"].to_string()),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+        return (true, false, vec![]);
+    }
+
+    let mut is_valid: bool = true;
+    let block_ext_info: Vec<JSonObject> = match serde_json::from_str(&serialized_block) {
+        Ok(r) => r,
+        Err(e) => {
+            is_valid = false;
+            dlog(
+                &format!(
+                    "Failed on json deser un-wrapped doc ext info {} {}",
+                    e,
+                    serialized_block),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            vec![]
         }
+    };
+    if !is_valid
+    {
+        return (false, false, vec![]);
+    }
 
-        */
+    return (true, true, block_ext_info);
 }

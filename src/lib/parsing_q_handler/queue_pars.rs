@@ -2,6 +2,7 @@ use crate::{application, constants, cutils, dlog};
 use crate::lib::block::block_types::block_factory::load_block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::QVDicT;
+use crate::lib::messaging_protocol::dag_message_handler::handle_block_invoke_request;
 use crate::lib::parsing_q_handler::parsing_q_handler::parse_pure_block;
 
 pub struct EntryParsingResult
@@ -181,6 +182,15 @@ pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
+    if pq_type == constants::card_types::DAG_INVOKE_BLOCK
+    {
+        //communications
+        return handle_block_invoke_request(
+            &pq_sender,
+            &json_payload,
+            &connection_type);
+    }
+
     /*
     // GQL part
     if (pq_type == constants::CARD_TYPES::ProposalLoanRequest)
@@ -212,16 +222,9 @@ pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
 //            receive_date
 //        });
 //        break;
-    } else if (pq_type == constants::card_types::DAG_INVOKE_BLOCK)
-    {
-        //comunications
-        auto
-        [status, should_purge_record] = DAGMessageHandler::handleBlockInvokeReq(
-            pq_sender,
-            payload,
-            connection_type);
-        return { status, should_purge_record };
-    } else if (pq_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
+*/
+    /*
+    } else else if (pq_type == constants::card_types::DAG_INVOKE_DESCENDENTS)
     {
 //    case message_types.DAG_INVOKE_DESCENDENTS:
 //        res = dagMsgHandler.handleDescendentsInvokeReq({

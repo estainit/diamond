@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog};
 use crate::lib::custom_types::{CBlockHashT, VString};
 use crate::lib::dag::dag::search_in_dag;
-use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_delete, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_delete, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::C_MISSED_BLOCKS;
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 
@@ -77,23 +77,23 @@ pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
         c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
     }
 
-    let exist_in_parse = search_parsing_q(
+    let exist_in_parsing_q = search_parsing_q(
         vec![c1],
         vec!["pq_code"],
         vec![],
         0,
     );
 
-    if exist_in_parse.len() > 0
+    if exist_in_parsing_q.len() > 0
     {
         let mut existed_hashes: VString = vec![];
-        for elm in &exist_in_parse
+        for elm in &exist_in_parsing_q
         {
             existed_hashes.push(elm["pq_code"].to_string());
         }
 
         dlog(
-            &format!("The {} blocks of seemly missed blocks {} already exist in table parsing queue", exist_in_parse.len(), hashes.len()),
+            &format!("The {} blocks of seemly missed blocks {} already exist in table parsing queue", exist_in_parsing_q.len(), hashes.len()),
             constants::Modules::App,
             constants::SecLevel::Info);
 
@@ -122,14 +122,14 @@ pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
         if records.len() > 0
         { continue; }
 
-        let zero: i64 = 0;
+        let zero_i32: i32 = 0;
         let insert_date = application().get_now();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("mb_block_hash", &hash as &(dyn ToSql + Sync)),
             ("mb_insert_date", &insert_date as &(dyn ToSql + Sync)),
             ("mb_last_invoke_date", &insert_date as &(dyn ToSql + Sync)),
-            ("mb_invoke_attempts", &zero as &(dyn ToSql + Sync)),
-            ("mb_descendants_count", &zero as &(dyn ToSql + Sync)),
+            ("mb_invoke_attempts", &zero_i32 as &(dyn ToSql + Sync)),
+            ("mb_descendants_count", &zero_i32 as &(dyn ToSql + Sync)),
         ]);
         q_insert(
             C_MISSED_BLOCKS,
@@ -187,35 +187,39 @@ pub fn remove_from_missed_blocks(block_hash: &CBlockHashT) -> bool
         false)
 }
 
-/*
-
-bool MissedBlocksHandler::increaseAttempNumber(const CBlockHashT& block_hash)
+//old_name_was increaseAttempNumber
+pub fn increase_missed_attempts_number(block_hash: &CBlockHashT) -> bool
 {
-  QueryRes attemps = DbModel::select(
-    C_MISSED_BLOCKS,
-    {"mb_block_hash", "mb_invoke_attempts"},
-    {{"mb_block_hash", block_hash}});
+    let (_status, attempts) = q_select(
+        C_MISSED_BLOCKS,
+        vec!["mb_block_hash", "mb_invoke_attempts"],
+        vec![simple_eq_clause("mb_block_hash", block_hash)],
+        vec![],
+        0,
+        false);
 
-  uint attemps_count;
-  if (attemps.records.len() > 0)
-  {
-    attemps_count = attemps.records[0]["mb_invoke_attempts"].toUInt();
-  } else {
-    attemps_count = 0;
-  }
-
-  DbModel::update(
-    C_MISSED_BLOCKS,
+    let mut attempts_count: i32;
+    if attempts.len() > 0
     {
-      {"mb_invoke_attempts", attemps_count + 1},
-      {"mb_last_invoke_date", application().get_now()}
-    },
-    {{"mb_block_hash", block_hash}});
+        attempts_count = attempts[0]["mb_invoke_attempts"].parse::<i32>().unwrap();
+    } else {
+        attempts_count = 0;
+    }
 
-  return true;
+    attempts_count = attempts_count + 1;
+    let now_ = application().get_now();
+    let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("mb_invoke_attempts", &attempts_count as &(dyn ToSql + Sync)),
+        ("mb_last_invoke_date", &now_ as &(dyn ToSql + Sync)),
+    ]);
+    q_update(
+        C_MISSED_BLOCKS,
+        &update_values,
+        vec![simple_eq_clause("mb_block_hash", block_hash)],
+        false);
+
+    return true;
 }
-
-*/
 
 //old_name_was refreshMissedBlock()
 pub fn refresh_missed_block() -> bool

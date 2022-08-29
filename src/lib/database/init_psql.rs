@@ -553,9 +553,9 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     (
     mb_block_hash varchar(256) NOT NULL,
     mb_insert_date varchar(32) NOT NULL,    -- the datein which machine discovered she missed this block
-    mb_invoke_attempts INT NULL,    -- invoke attempts, to avoid blocking on one block
+    mb_invoke_attempts INT4 NULL,    -- invoke attempts, to avoid blocking on one block
     mb_last_invoke_date varchar(32) NOT NULL,
-    mb_descendants_count INT NULL,    -- number of blocks whom need this block (potential descendents)
+    mb_descendants_count INT4 NULL,    -- number of blocks whom need this block (potential descendents)
     mb_descendants text    -- potentially descendents hash
     );
 ",

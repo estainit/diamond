@@ -26,9 +26,9 @@ pub const C_BLOCKS: &str = "c_blocks";
 pub const C_BLOCKS_FIELDS: [&str; 19] = ["b_id", "b_hash", "b_type", "b_cycle", "b_confidence", "b_ext_root_hash", "b_docs_root_hash", "b_signals", "b_trxs_count", "b_docs_count", "b_ancestors_count", "b_ancestors", "b_descendants", "b_body", "b_creation_date", "b_receive_date", "b_confirm_date", "b_backer", "b_coins_imported"];
 
 #[allow(dead_code, unused)]
-pub const C_BLOCK_EXTINFOS: &str = "c_block_extinfos";
+pub const C_BLOCK_EXT_INFO: &str = "c_block_extinfos";
 #[allow(dead_code, unused)]
-pub const C_BLOCK_EXTINFOS_FIELDS: [&str; 3] = ["x_block_hash", "x_detail", "x_creation_date"];
+pub const C_BLOCK_EXT_INFO_FIELDS: [&str; 3] = ["x_block_hash", "x_detail", "x_creation_date"];
 
 #[allow(dead_code, unused)]
 pub const C_DOCS_BLOCKS_MAP: &str = "c_docs_blocks_map";

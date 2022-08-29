@@ -73,7 +73,10 @@ pub fn do_generate_coinbase_block(
         if mode == constants::stages::CREATING
         {
             dlog(
-                &format!("generating new CB in generating mode failed!! leaves({})", leaves_hashes.join(",")),
+                &format!(
+                    "generating new CB in generating mode failed!! cycle({}) leaves({})",
+                    cycle,
+                    leaves_hashes.join(",")),
                 constants::Modules::CB,
                 constants::SecLevel::Info);
         } else {

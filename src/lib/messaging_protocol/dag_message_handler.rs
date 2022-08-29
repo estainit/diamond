@@ -1,16 +1,20 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json, Value};
-use crate::{application, constants, cutils, dlog, get_value, machine};
+use crate::{application, ccrypto, constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CDateT, JSonObject, QVDRecordsT, TimeBySecT};
+use crate::lib::block::block_types::block::regenerate_block;
+use crate::lib::block::block_types::block_factory::load_block;
+use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
-use crate::lib::dag::missed_blocks_handler::add_missed_blocks_to_invoke;
+use crate::lib::dag::missed_blocks_handler::{add_missed_blocks_to_invoke, get_missed_blocks_to_invoke, increase_missed_attempts_number};
 use crate::lib::database::abs_psql::{q_upsert, simple_eq_clause};
 use crate::lib::database::tables::C_KVALUE;
 use crate::lib::k_v_handler::{search_in_kv, set_value};
 use crate::lib::messaging_protocol::dispatcher::{make_a_packet, PacketParsingResult};
+use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
+use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 use crate::lib::sending_q_handler::sending_q_handler::push_into_sending_q;
 
 //old_name_was setLastReceivedBlockTimestamp
@@ -233,52 +237,81 @@ void DAGMessageHandler::loopMissedBlocksInvoker()
 //old_name_was doMissedBlocksInvoker
 pub fn do_missed_blocks_invoker()
 {
-    /*
-  String cycle = cutils::getCoinbaseCycleStamp();
-  CLog::log("ReMiBcInv cycle(" + cycle + ") called recursive MissedBlocks Invoker", "app", "trace");
-  StringList missed = getMissedBlocksToInvoke(2);
-  // listener.doCallAsync("APSH_control_if_missed_block");
+    let now_ = application().get_now();
+    let cycle = application().get_coinbase_cycle_stamp(&now_);
+    dlog(
+        &format!("ReMiBcInv cycle({}) called recursive MissedBlocks Invoker", cycle),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  if (missed.len() > 0)
-  {
-    CLog::log("ReMiBcInv cycle(" + cycle + ") recursive Missed Blocks Invoker has " + String::number(missed.len()) + " missed blocks(" + cutils::dumpIt(missed) + ")", "app", "trace");
-    for(String a_missed: missed)
+    let missed = get_missed_blocks_to_invoke(2);
+
+    if missed.len() > 0
     {
-      //check if not already exist in parsing q
-      QVDRecordsT existsInParsingQ = ParsingQHandler::searchParsingQ(
-        {{"pq_code", a_missed}},
-        {"pq_type", "pq_code"});
+        dlog(
+            &format!(
+                "ReMiBcInv cycle({}) recursive Missed Blocks Invoker has {} missed blocks({:?})",
+                cycle, missed.len(), missed),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
 
-      if (existsInParsingQ.len() == 0)
-      {
-        invokeBlock(a_missed);
-        MissedBlocksHandler::increaseAttempNumber(a_missed);
-      }
+        for a_missed in &missed
+        {
+            //check if not already exist in parsing q
+            let exists_in_parsing_q = search_parsing_q(
+                vec![simple_eq_clause("pq_code", a_missed)],
+                vec!["pq_type", "pq_code"],
+                vec![],
+                0);
+
+            if exists_in_parsing_q.len() == 0
+            {
+                invoke_block(a_missed);
+                increase_missed_attempts_number(a_missed);
+            }
+        }
     }
-  }
-    */
 }
-/*
-bool DAGMessageHandler::invokeBlock(const String &block_hash)
+
+//old_name_was invokeBlock
+pub fn invoke_block(block_hash: &String) -> bool
 {
-  CLog::log("invoking for block(" + cutils::hash16c(block_hash) + ")", "app", "trace");
-  JSonObject payload {
-    {"mType", constants::card_types::DAG_INVOKE_BLOCK},
-    {"mVer", "0.0.0"},
-    {"bHash", block_hash}};
-  String serialized_payload = cutils::serializeJson(payload);
-  CLog::log("invoked for keaves (" + block_hash + ")", "app", "trace");
+    dlog(
+        &format!("invoking for block({})", cutils::hash16c(block_hash)),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  bool status = SendingQHandler::pushIntoSendingQ(
-    constants::card_types::DAG_INVOKE_BLOCK, // sqType
-    block_hash,  // sqCode
-    serialized_payload,
-    "Invoke Block(" + cutils::hash16c(block_hash) + ")");
+    let (code, body) = make_a_packet(
+        vec![json!({
+            "cdType": constants::card_types::DAG_INVOKE_BLOCK,
+            "cdVer": constants::DEFAULT_CARD_VERSION,
+            "bHash": block_hash})],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        application().get_now(),
+    );
 
-  return status;
+    let status = push_into_sending_q(
+        constants::card_types::DAG_INVOKE_BLOCK,
+        &cutils::hash32c(&code),
+        &body,
+        format!("Invoking Block {}", cutils::hash8c(&block_hash)).as_str(),
+        &vec![],
+        &vec![],
+        false,
+    );
+
+    dlog(
+        &format!(
+            "invoking for block({}) was sent! status({})",
+            cutils::hash64c(block_hash),
+            status),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
+
+    return status;
 }
 
-*/
 //old_name_was getLastReceivedBlockTimestamp
 pub fn get_last_received_block_timestamp() -> JSonObject
 {
@@ -316,14 +349,10 @@ pub fn invoke_leaves() -> bool
         constants::DEFAULT_PACKET_VERSION,
         application().get_now(),
     );
-    // let payload: JSonObject = json!({
-    //     "mType": constants::card_types::DAG_INVOKE_LEAVES,
-    //     "mVer": "0.0.0"});
-    // let serialized_payload = cutils::safe_json_to_string(&payload);
 
     let status = push_into_sending_q(
-        constants::card_types::DAG_INVOKE_LEAVES, // sqType
-        &cutils::hash6c(&code),  // sqCode
+        constants::card_types::DAG_INVOKE_LEAVES,
+        &cutils::hash6c(&code),
         &body,
         "Invoking for DAG leaves",
         &vec![],
@@ -471,46 +500,113 @@ pub fn extract_leaves_and_push_in_sending_q(sender: &String) -> PacketParsingRes
     };
 }
 
-/*
-
-std::tuple<bool, bool> DAGMessageHandler::handleBlockInvokeReq(
-  const String& sender,
-  const JSonObject& payload,
-  const String& connection_type)
+//old_name_was handleBlockInvokeReq
+pub fn handle_block_invoke_request(
+    sender: &String,
+    jason_payload: &JSonObject,
+    _connection_type: &String) -> EntryParsingResult
 {
-  const CBlockHashT& block_hash = payload["bHash"].to_string();
+    let error_message: String;
+    let block_hash: CBlockHashT = remove_quotes(&jason_payload["bHash"]);
 
-  String short_hash = cutils::hash8c(block_hash);
-  CLog::log("handle Block Invoke Req block(" + short_hash + ")", "app", "trace");
+    let short_hash: String = cutils::hash8c(&block_hash);
+    dlog(
+        &format!("handle Block Invoke Req block({})", short_hash),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  // retrieve block from DAG
-  auto[status, regenerated_json_block] = Block::regenerateBlock(block_hash);
+    // retrieve block from DAG
+    let (status, regenerated_json_block) = regenerate_block(&block_hash);
 
-  if (!status)
-  {
-    // TODO: the block is valid and does not exist in local. or
-    // invalid block invoked, maybe some penal for sender!
-    // msg = `The block (${short}) invoked by ${args.sender} does not exist in local. `;
-    // clog.sec.error(msg);
-    CLog::log("Invoked block regenration failed! Block(" + short_hash + ")", "app", "error");
-    return {false, true};
-  }
+    if !status
+    {
+        // TODO: the block is valid and does not exist in local. or
+        // invalid block invoked, maybe some penal for sender!
+        // msg = `The block (${short}) invoked by ${args.sender} does not exist in local. `;
+        // clog.sec.error(msg);
+        error_message = format!("Invoked block regeneration failed! Block({})", short_hash);
+        dlog(
+            &error_message,
+            constants::Modules::App,
+            constants::SecLevel::Error);
 
-  CLog::log("Broadcasting Replay to invoke for block(" + regenerated_json_block["bType"].to_string() + " / " + cutils::hash8c(block_hash) + ")", "app", "trace");
-  Block* block = BlockFactory::create(regenerated_json_block);
-  bool push_res = SendingQHandler::pushIntoSendingQ(
-    block.m_block_type,
-    block_hash,
-    block->safe_stringify_block(false),
-    "Replay to invoke for block(" + short_hash + ") type(" + block.m_block_type  + ")",
-    {sender});
+        return EntryParsingResult {
+            m_status: false,
+            m_should_purge_record: true,
+            m_message: error_message,
+        };
+    }
+    dlog(
+        &format!(
+            "Broadcasting Replay to invoke for block({}/ {})",
+            regenerated_json_block["bType"].to_string(),
+            cutils::hash8c(&block_hash)
+        ),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  CLog::log("invoke block push_res(" + cutils::dumpIt(push_res) + ") block(" + short_hash + ") type(" + block.m_block_type  + ")", "app", "trace");
+    let (status, block) = load_block(&regenerated_json_block);
+    if !status
+    {
+        error_message = format!("Invoked block regeneration load failed! Block({})", short_hash);
+        dlog(
+            &error_message,
+            constants::Modules::App,
+            constants::SecLevel::Error);
 
-  return {true, true};
+        return EntryParsingResult {
+            m_status: false,
+            m_should_purge_record: true,
+            m_message: error_message,
+        };
+    }
+
+    let mut block_body = block.safe_stringify_block(true);
+    block_body = ccrypto::b64_encode(&block_body);
+
+    let (_code, body) = make_a_packet(
+        vec![json!({
+            "cdType": block.m_block_type,
+            "cdVer": constants::DEFAULT_CARD_VERSION,
+            "bHash": block.get_block_hash(),
+            "block": block_body})],
+        constants::DEFAULT_PACKET_TYPE,
+        constants::DEFAULT_PACKET_VERSION,
+        application().get_now(),
+    );
+    dlog(
+        &format!(
+            "Broadcasting the packet Replay to invoke for {}: {}",
+            block.get_block_identifier(),
+            &body
+        ),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
+
+    let status = push_into_sending_q(
+        block.m_block_type.as_str(),
+        block.m_block_hash.as_str(),
+        &body,
+        format!("Replay to invoke for block {}", short_hash).as_str(),
+        &vec![sender.to_string()],
+        &vec![],
+        false,
+    );
+
+    dlog(
+        &format!(
+            "Reply block push_res({}) for {}",
+            status,
+            block.get_block_identifier()),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
+
+    return EntryParsingResult {
+        m_status: true,
+        m_should_purge_record: true,
+        m_message: "Invoked block was sent".to_string(),
+    };
 }
-
- */
 
 //old_name_was handleReceivedLeaveInfo
 pub fn handle_received_leave_info(
@@ -563,6 +659,11 @@ pub fn handle_received_leave_info(
             missed_hashes.push(a_leave_hash);
         }
     }
+
+    dlog(
+        &format!("current missed hashes! {:?}", missed_hashes),
+        constants::Modules::App,
+        constants::SecLevel::Info);
 
     add_missed_blocks_to_invoke(&missed_hashes);
 

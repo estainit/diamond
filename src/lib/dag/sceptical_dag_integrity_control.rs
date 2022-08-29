@@ -14,7 +14,7 @@ pub fn controls_of_new_block_insertion(block_hash:&String) ->(bool,String)
 
   // is block hash valid?
   // retrieve block from DAG
-//  let regBlock = dagHandler.regenerateBlock(blockHash);
+//  let regBlock = dagHandler.regenerate_block(blockHash);
 //  if (regBlock.err != false) {
 //     msg = `sDIC block(${utils.hash6c(blockHash)}) regenerating failed ${regBlock.msg}`;
 //     clog.app.error(msg);

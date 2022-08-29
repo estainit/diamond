@@ -357,31 +357,26 @@ pub fn hash4c(s: &String) -> String
     s.substring(0, 4).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn hash6c(s: &String) -> String
 {
     s.substring(0, 6).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn hash8c(s: &String) -> String
 {
     s.substring(0, 8).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn hash16c(s: &String) -> String
 {
     s.substring(0, 16).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn hash32c(s: &String) -> String
 {
     s.substring(0, 32).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn hash64c(s: &String) -> String
 {
     s.substring(0, 64).to_string()

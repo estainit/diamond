@@ -1,4 +1,4 @@
-use crate::{constants, dlog};
+use crate::{constants, cutils, dlog};
 use crate::cutils::remove_quotes;
 use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{parse_handshake, parse_nice_to_meet_you};
@@ -42,7 +42,7 @@ pub fn handle_a_single_card(
     if card_type == constants::card_types::DAG_INVOKE_BLOCK
     {
         dlog(
-            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ constants::card_types::DAG_INVOKE_BLOCK @@@@@@@@@@@@@@@@@@@@@@@@@@@@@"),
+            &format!("@@@@@@@@@@@@@@@@@@@@@@@@@@@@ DAG_INVOKE_BLOCK @@@@@@@@@@@@@@@@@@@@@@@@@@@@@"),
             constants::Modules::App,
             constants::SecLevel::Info);
 
@@ -50,7 +50,7 @@ pub fn handle_a_single_card(
             card_body,
             creation_date,
             &card_type.to_string(),
-            &card_code,
+            &format!("Invoke for block {}", cutils::hash64c(&card_code)),
             sender,
             connection_type,
             vec![]);

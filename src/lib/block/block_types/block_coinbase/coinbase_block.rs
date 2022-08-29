@@ -65,8 +65,6 @@ impl CoinbaseBlock {
         if application().is_in_current_cycle(&block_super.m_block_creation_date)
         {
             let mut block_body = block_super.safe_stringify_block(true);
-
-            // serde_json::to_string(&block).unwrap();
             block_body = ccrypto::b64_encode(&block_body);
 
             let (_code, body) = make_a_packet(
@@ -74,8 +72,7 @@ impl CoinbaseBlock {
                     json!({
                 "cdType": block_super.m_block_type,
                 "cdVer": constants::DEFAULT_CARD_VERSION,
-                "bHash": block_super.m_block_hash.clone(),
-                // "ancestors": ancestors,
+                "bHash": block_super.get_block_hash(),
                 "block": block_body,
             }),
                 ],
@@ -92,7 +89,7 @@ impl CoinbaseBlock {
                 block_super.m_block_type.as_str(),
                 block_super.m_block_hash.as_str(),
                 &body,
-                &format!("Broadcasting the confirmed coinbase ({}) ", block_super.get_block_identifier()),
+                &format!("Broadcasting the confirmed coinbase {} ", cutils::hash16c(&block_super.get_block_hash())),
                 &vec![],
                 &vec![],
                 false,

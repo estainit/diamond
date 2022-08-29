@@ -5,6 +5,21 @@ use crate::lib::custom_types::JSonObject;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 
+pub fn load_block(obj: &JSonObject) -> (bool, Block)
+{
+    let mut block: Block = Block::new();
+    let status = block.set_block_by_json_obj(obj);
+    if !status {
+        println!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj));
+
+        dlog(
+            &format!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj)),
+            constants::Modules::CB,
+            constants::SecLevel::Error);
+    }
+    return (status, block);
+}
+
 pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, Block)
 {
     println!("xxxxxxxxx 45 record_row: {:?}", record_row);
@@ -36,21 +51,6 @@ pub fn load_block_by_db_record(record_row: &HashMap<String, String>) -> (bool, B
     println!("xxxxxxxxx 45 jjj: {}", j_obj);
 
     return load_block(&j_obj);
-}
-
-pub fn load_block(obj: &JSonObject) -> (bool, Block)
-{
-    let mut block: Block = Block::new();
-    let status = block.set_block_by_json_obj(obj);
-    if !status {
-        println!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj));
-
-        dlog(
-            &format!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj)),
-            constants::Modules::CB,
-            constants::SecLevel::Error);
-    }
-    return (status, block);
 }
 
 
