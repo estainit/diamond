@@ -1,8 +1,13 @@
 use crate::lib::constants;
-use crate::lib::database::abs_psql::{q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{OrderModifier, q_select, simple_eq_clause};
 use crate::lib::machine::machine_neighbor::{NeighborPresentation};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
+use serde_json::json;
+use warp::body::json;
+use warp::sse::retry;
+use crate::get_value;
+use crate::lib::custom_types::{JSonObject, VVString};
 use crate::lib::database::tables::C_MACHINE_PROFILES;
 
 
@@ -40,44 +45,6 @@ pub struct MachineProfile
 }
 
 impl MachineProfile {
-    pub fn get_profile_from_db(mp_code: &str) -> (bool, MachineProfile)
-    {
-        let (_status, records) = q_select(
-            C_MACHINE_PROFILES,
-            vec!["mp_code", "mp_name", "mp_settings"],
-            vec![
-                simple_eq_clause("mp_code", &mp_code.to_string())],
-            vec![],   // order
-            1,
-            true,
-        );
-        if records.len() == 1
-        {
-            let mp_prof:MachineProfile = serde_json::from_str(&records[0]["mp_settings"].clone()).unwrap();
-
-            // let (status, mp_settings) = match serde_json::from_str(&records[0]["mp_settings"].clone()) {
-            //     Ok(s) => (true, s),
-            //     Err(e) => {
-            //         dlog(
-            //             &format!("Failed in deserializing machine profile! {} {}",
-            //                      e, records[0]["mp_settings"]),
-            //             constants::Modules::App,
-            //             constants::SecLevel::Error);
-            //         panic!("zzzz z z z z zz z z z: {} {}",e,&records[0]["mp_settings"].clone());
-            //         (false, MPSetting::new())
-            //     }
-            // };
-            let machine_profile = MachineProfile {
-                m_mp_code: mp_prof.m_mp_code,
-                m_mp_name: mp_prof.m_mp_name,
-                m_mp_last_modified: mp_prof.m_mp_last_modified,
-                m_mp_settings: mp_prof.m_mp_settings,
-            };
-            return (true, machine_profile);
-        }
-        (false, MachineProfile::new())
-    }
-
     pub fn new() -> MachineProfile {
         return MachineProfile {
             m_mp_code: "".to_string(),
@@ -86,6 +53,91 @@ impl MachineProfile {
             m_mp_settings: MPSetting::new(),
         };
     }
+}
+
+pub fn get_profile_from_db(mp_code: &str) -> (bool, MachineProfile)
+{
+    let (_status, records) = q_select(
+        C_MACHINE_PROFILES,
+        vec!["mp_code", "mp_name", "mp_settings"],
+        vec![
+            simple_eq_clause("mp_code", &mp_code.to_string())],
+        vec![],   // order
+        1,
+        true,
+    );
+    if records.len() == 1
+    {
+        let mp_prof: MachineProfile = serde_json::from_str(&records[0]["mp_settings"].clone()).unwrap();
+
+        // let (status, mp_settings) = match serde_json::from_str(&records[0]["mp_settings"].clone()) {
+        //     Ok(s) => (true, s),
+        //     Err(e) => {
+        //         dlog(
+        //             &format!("Failed in deserializing machine profile! {} {}",
+        //                      e, records[0]["mp_settings"]),
+        //             constants::Modules::App,
+        //             constants::SecLevel::Error);
+        //         panic!("zzzz z z z z zz z z z: {} {}",e,&records[0]["mp_settings"].clone());
+        //         (false, MPSetting::new())
+        //     }
+        // };
+        let machine_profile = MachineProfile {
+            m_mp_code: mp_prof.m_mp_code,
+            m_mp_name: mp_prof.m_mp_name,
+            m_mp_last_modified: mp_prof.m_mp_last_modified,
+            m_mp_settings: mp_prof.m_mp_settings,
+        };
+        return (true, machine_profile);
+    }
+    (false, MachineProfile::new())
+}
+
+pub fn get_current_profile() -> MachineProfile
+{
+    let mp_code = get_value("selected_profile");
+    let (status, profile) = get_profile_from_db(&mp_code);
+    if !status
+    { return MachineProfile::new(); }
+    return profile;
+}
+
+pub fn get_profiles_list() -> Vec<JSonObject>
+{
+    let mp_code: String = get_value("selected_profile");
+
+    let (_status, records) = q_select(
+        C_MACHINE_PROFILES,
+        vec!["mp_code", "mp_name", "mp_last_modified"],
+        vec![],
+        vec![
+            &OrderModifier { m_field: "mp_code", m_order: "ASC" },
+            &OrderModifier { m_field: "mp_name", m_order: "ASC" },
+        ],
+        0,
+        false,
+    );
+    if records.len() == 0
+    {
+        return vec![];
+    }
+    let mut out: Vec<JSonObject> = vec![];
+    println!("ffffffff records: {:?}", records);
+    for a_profile in &records
+    {
+        let mut is_selected = false;
+        if mp_code == a_profile["mp_code"]
+        {
+            is_selected = true;
+        }
+        out.push(json!({
+                "mp_code": a_profile["mp_code"],
+                "mp_name": a_profile["mp_name"],
+                "mp_last_modified": a_profile["mp_last_modified"],
+                "is_selected": is_selected,
+            }));
+    }
+    return out;
 }
 
 #[derive(Clone, Serialize, Deserialize)]

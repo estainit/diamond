@@ -13,7 +13,7 @@ use crate::lib::dlog::dlog;
 use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
 // use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
-use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile};
+use crate::lib::machine::machine_profile::{EmailSettings, get_profile_from_db, MachineProfile};
 use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
@@ -94,7 +94,6 @@ pub trait CMachineThreadGaps {
 
 impl CMachine {
     pub fn new() -> CMachine {
-        // let (_status, profile) = MachineProfile::get_profile_from_db(constants::DEFAULT);
         eprintln!("New CMachine was create.");
 
         CMachine {
@@ -164,6 +163,15 @@ impl CMachine {
         {
             panic!("failed on maybe initialize db2 {}", msg)
         }
+
+
+        let (status, _msg) = self.maybe_init_default_profile();
+        if status != true {
+            return false;
+        }
+
+        // load machine selected profile
+        self.load_selected_profile();
 
         self.maybe_add_seed_neighbors();
 
@@ -379,6 +387,9 @@ impl CMachine {
         if !status
         { return false; }
 
+        println!("selffffffff m_mp_code {:?}", &self.m_profile.m_mp_code);
+        println!("selffffffff m_mp_name {:?}", &self.m_profile.m_mp_name);
+        // panic!("Why mp_code and mp_name are empty!");
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
             ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),
@@ -471,9 +482,9 @@ impl CMachine {
     }
 
     //old_name_was initDefaultProfile
-    pub fn init_default_profile(&mut self) -> (bool, String)
+    pub fn maybe_init_default_profile(&mut self) -> (bool, String)
     {
-        let (_status, profile) = MachineProfile::get_profile_from_db(&constants::DEFAULT);
+        let (_status, profile) = get_profile_from_db(&constants::DEFAULT);
         self.m_profile = profile;
         // panic!("elf.m_profile.m_mp_code {}", self.m_profile.m_mp_code);
         if self.m_profile.m_mp_code == constants::DEFAULT.to_string()
@@ -587,15 +598,7 @@ impl CMachine {
             set_value("machine_and_dag_are_safely_initialized", constants::NO, true);
         }
 
-        let (status, _msg) = self.init_default_profile();
-        if status != true {
-            return false;
-        }
-
         /*
-
-              // load machine settings
-              loadSelectedProfile();
 
               m_machine_is_loaded = true;
               s_DAG_is_initialized = true;
@@ -758,7 +761,6 @@ impl CMachine {
         }
 
         let mp_code: String = get_value("selected_profile");
-        // console.log('resresresresres', res);
         if mp_code == "" {
             dlog(
                 &format!("NoooOOOOOOOOOOOOOOooooooooooooo profile!"),

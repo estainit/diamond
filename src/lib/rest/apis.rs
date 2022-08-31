@@ -1,32 +1,52 @@
-use actix_web::{get, web, App, HttpServer};
+use actix_web::{get, web, App, HttpServer, http};
+use actix_cors::Cors;
+use warp::Filter;
 use crate::dlog;
 use crate::lib::constants;
+use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
-
-// #[get("/")]
-// pub async fn hello() -> impl Responder {
-//     HttpResponse::Ok().body(constants::SOCIETY_NAME)
-//     // HttpResponse::Ok().body("hello world")
-// }
+use crate::lib::machine::machine_profile::MachineProfile;
+use crate::lib::rest::profile_apis::{profile, profiles};
 
 pub async fn run_web_server() -> std::io::Result<()> {
     HttpServer::new(|| {
+        // FIXME: The permissive constructor should not be used in production.
+        let cors = Cors::permissive();
+        // default()
+        //     .allowed_methods(vec!["GET", "POST"])
+        //     .allowed_origin("*")
+        //     .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+        //     .allowed_header(http::header::CONTENT_TYPE)
+        //     .allowed_header(http::header::ACCESS_CONTROL_ALLOW_ORIGIN)
+        //     .max_age(3600);
+
         App::new()
+            .wrap(cors)
+            .service(hi)
             .service(hello)
+            .service(profile)
+            .service(profiles)
     })
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
 }
 
-use crate::lib::machine::machine_profile::MachineProfile;
 
-#[get("/")]
+#[get("/hello")]
 pub async fn hello() -> web::Json<MachineProfile> {
     let t = tokio::task::spawn_blocking(|| {
-        crate::lib::machine::machine_profile::MachineProfile::get_profile_from_db(&constants::DEFAULT)
+        crate::lib::machine::machine_profile::get_profile_from_db(&constants::DEFAULT)
     }).await.expect("Task panicked");
     web::Json(t.1)
+}
+
+#[get("/")]
+pub async fn hi() -> web::Json<Vec<String>> {
+    let t = tokio::task::spawn_blocking(|| {
+        vec!["HI iiiii".to_string()]
+    }).await.expect("Task panicked");
+    web::Json(t)
 }
 
 

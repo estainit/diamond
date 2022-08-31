@@ -40,6 +40,7 @@ chrono = { version = "0.4", features = ["serde"] }
 futures = { version = "0.3.4", default-features = false, features = ["async-await"]}
 
 actix-web = "4.1.0"
+actix-cors = "0.6.2"
 
 native-tls = "0.2.10"
 imap = "2.4.1"
