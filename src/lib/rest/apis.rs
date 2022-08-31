@@ -6,7 +6,8 @@ use crate::lib::constants;
 use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
 use crate::lib::machine::machine_profile::MachineProfile;
-use crate::lib::rest::profile_apis::{profile, profiles};
+use crate::lib::rest::profile_apis::{create_post, profile, profiles};
+use serde::{Serialize, Deserialize};
 
 pub async fn run_web_server() -> std::io::Result<()> {
     HttpServer::new(|| {
@@ -26,12 +27,19 @@ pub async fn run_web_server() -> std::io::Result<()> {
             .service(hello)
             .service(profile)
             .service(profiles)
+            .service(create_post)
     })
         .bind(("127.0.0.1", 8080))?
         .run()
         .await
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct APIResponse {
+    pub status: bool,
+    pub message: String,
+    pub info: JSonObject,
+}
 
 #[get("/hello")]
 pub async fn hello() -> web::Json<MachineProfile> {
