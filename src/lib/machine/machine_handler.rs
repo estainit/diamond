@@ -73,6 +73,8 @@ pub struct CMachine {
 
     pub m_email_is_active: bool,
     pub m_use_hard_disk_as_a_buffer: bool,
+    pub m_should_run_web_server: bool,
+    pub m_web_server_address: String,
     pub m_config_source: String,
     pub m_hard_root_path: String,
     pub m_launch_date: String,
@@ -107,6 +109,8 @@ impl CMachine {
             m_selected_profile: "".to_string(),
             m_email_is_active: false,
             m_use_hard_disk_as_a_buffer: false,
+            m_should_run_web_server: false,
+            m_web_server_address: "".to_string(),
 
             /*
           const static String stb_machine_block_buffer;

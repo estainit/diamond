@@ -15,6 +15,8 @@ pub struct AppParams {
 
     m_app_email_is_active: bool,
     m_app_use_hard_disk_as_a_buffer: bool,
+    m_app_should_run_web_server: bool,
+    m_app_web_server_address: String,
     #[allow(dead_code, unused)]
     m_app_config_source: String,
     m_app_hard_root_path: String,
@@ -45,6 +47,8 @@ impl AppParams {
             m_app_is_db_initialized: false,
             m_app_email_is_active: false,
             m_app_use_hard_disk_as_a_buffer: false,
+            m_app_should_run_web_server: false,
+            m_app_web_server_address: "".to_string(),
             m_app_config_source: "".to_string(),
             m_app_hard_root_path: "".to_string(),
             m_app_launch_date: "".to_string(),
@@ -71,6 +75,8 @@ impl AppParams {
         self.m_app_should_loop_threads = machine.m_should_loop_threads;
         self.m_app_email_is_active = machine.m_email_is_active;
         self.m_app_use_hard_disk_as_a_buffer = machine.m_use_hard_disk_as_a_buffer.clone();
+        self.m_app_should_run_web_server = machine.m_should_run_web_server.clone();
+        self.m_app_web_server_address = machine.m_web_server_address.clone();
         self.m_app_hard_root_path = machine.m_hard_root_path.clone();
 
         true
@@ -152,6 +158,16 @@ impl AppParams {
     pub fn use_hard_disk_as_a_buffer(&self) -> bool
     {
         self.m_app_use_hard_disk_as_a_buffer
+    }
+
+    pub fn should_run_web_server(&self) -> bool
+    {
+        self.m_app_should_run_web_server
+    }
+
+    pub fn web_server_address(&self) -> String
+    {
+        self.m_app_web_server_address.clone()
     }
 
 

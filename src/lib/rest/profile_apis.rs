@@ -1,5 +1,4 @@
-use std::ops::Deref;
-use actix_web::{get, post, web, App, HttpServer, http, Responder, HttpResponse};
+use actix_web::{get, post, web, Responder, HttpResponse};
 use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_profile::{get_current_profile, get_profile_from_db, get_profiles_list, MachineProfile};
 use serde::{Serialize, Deserialize};
@@ -38,12 +37,12 @@ pub struct NewPost {
 #[post("/saveSettings")]
 pub async fn create_post(post: String) -> impl Responder
 {
-    let (status, request) = controlled_str_to_json(&post);
+    let (_status, request) = controlled_str_to_json(&post);
     println!("New POST request to create a post! request {:?}", request);
 
     let mp_code = remove_quotes(&request["mpCode"]);
     let message = format!("updating machine profile {}", mp_code);
-    println!("{}",message);
+    println!("{}", message);
     dlog(
         &message,
         constants::Modules::App,

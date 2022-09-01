@@ -22,14 +22,17 @@ use crate::apis::{do_handshake_by_email};
 use crate::lib::machine::app_params::AppParams;
 
 static APPGLOBAL: Lazy<Mutex<AppParams>> = Lazy::new(|| Mutex::new(AppParams::new()));
+
 fn application() -> MutexGuard<'static, AppParams> { APPGLOBAL.lock().unwrap() }
 
 static CMACHINE: Lazy<Mutex<CMachine>> = Lazy::new(|| Mutex::new(CMachine::new()));
+
 fn machine() -> MutexGuard<'static, CMachine> {
     CMACHINE.lock().unwrap()
 }
 
 static DBHANDLER: Lazy<Mutex<DBHandler>> = Lazy::new(|| Mutex::new(DBHandler::new()));
+
 fn dbhandler() -> MutexGuard<'static, DBHandler> { DBHANDLER.lock().unwrap() }
 
 fn main() {
@@ -49,9 +52,8 @@ fn main() {
     machine().initialize_machine();
     machine().boot_machine();
 
-    let mut web_server_msg: &str = "";
-    let should_launch_web_server = true;
-    if should_launch_web_server
+    let mut web_server_msg: String = "".to_string();
+    if application().should_run_web_server()
     {
         web_server_msg = match tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -59,10 +61,12 @@ fn main() {
             .unwrap()
             .block_on(lib::rest::apis::run_web_server()) {
             Ok(_r) => {
-                ". Webserver Ready on http://localhost:8080"
+                format!(
+                    ". Webserver Ready on {}",
+                    application().web_server_address())
             }
             Err(_e) => {
-                ". Webserver Failed!"
+                ". Webserver Failed!".to_string()
             }
         };
     }

@@ -4,10 +4,8 @@ use crate::lib::machine::machine_neighbor::{NeighborPresentation};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use warp::body::json;
-use warp::sse::retry;
 use crate::get_value;
-use crate::lib::custom_types::{JSonObject, VVString};
+use crate::lib::custom_types::{JSonObject};
 use crate::lib::database::tables::C_MACHINE_PROFILES;
 
 

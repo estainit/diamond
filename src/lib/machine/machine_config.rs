@@ -108,6 +108,8 @@ impl CMachine {
         self.m_last_sync_status_check = self.m_launch_date.clone();
         self.m_email_is_active = config.getbool("default", "email_is_active").unwrap().unwrap();
         self.m_use_hard_disk_as_a_buffer = Ini::getbool(&config, "default", "use_hard_disk_as_a_buffer").unwrap().unwrap();
+        self.m_should_run_web_server = Ini::getbool(&config, "default", "should_run_web_server").unwrap().unwrap();
+        self.m_web_server_address = config.get("default", "web_server_address").unwrap();
 
         self.m_db_host = config.get("database", "db_host").unwrap();
         self.m_db_name = config.get("database", "db_name").unwrap();

@@ -1,7 +1,6 @@
-use actix_web::{get, web, App, HttpServer, http};
+use actix_web::{get, web, App, HttpServer};
 use actix_cors::Cors;
-use warp::Filter;
-use crate::dlog;
+use crate::{application, dlog};
 use crate::lib::constants;
 use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
@@ -10,6 +9,10 @@ use crate::lib::rest::profile_apis::{create_post, profile, profiles};
 use serde::{Serialize, Deserialize};
 
 pub async fn run_web_server() -> std::io::Result<()> {
+    let webserver = application().web_server_address().clone();
+    let webserver = webserver.split(":").collect::<Vec<&str>>();
+    let host_ = format!("{}", webserver[0]);
+    let port_ = format!("{}", webserver[1]).parse::<u16>().unwrap();
     HttpServer::new(|| {
         // FIXME: The permissive constructor should not be used in production.
         let cors = Cors::permissive();
@@ -29,7 +32,7 @@ pub async fn run_web_server() -> std::io::Result<()> {
             .service(profiles)
             .service(create_post)
     })
-        .bind(("127.0.0.1", 8080))?
+        .bind((host_, port_))?
         .run()
         .await
 }
