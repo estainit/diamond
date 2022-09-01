@@ -8,6 +8,9 @@ db_pass = diamondpass
 email_is_active = false
 use_hard_disk_as_a_buffer = true
 
+clone_id = 0
+develop_mod = false
+
 should_run_web_server = true
 web_server_address = localhost:8080
 

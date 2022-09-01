@@ -45,9 +45,7 @@ fn main() {
 
     application().dummy_init();
 
-    let force_clone_id: i8 = 0;
-    let force_boot_in_dev_mod: bool = true;
-    machine().parse_args(env::args().collect(), force_clone_id, force_boot_in_dev_mod);
+    machine().parse_args(env::args().collect());
     initialize_log();
     machine().initialize_machine();
     machine().boot_machine();

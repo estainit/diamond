@@ -6,14 +6,12 @@ use crate::lib::k_v_handler::set_value;
 
 impl CMachine {
     // func name was parseArgs
-    pub fn parse_args(&mut self, args: VString, forcing_manual_clone_id: i8, force_boot_in_dev_mod: bool)
+    pub fn parse_args(&mut self, args: VString)
     {
         // cargo run cid=1 dev verbose config=/Users/silver/Documents/Diamond_files/config.txt
         // println!("Env args: {:?}", args);
 
-        let mut clone_id: i8 = 0;
         let mut config_file: String;
-        let mut is_develop_mod: bool = false;
         let mut _verbose: bool = false;
 
         let mut args_dic: HashMap<String, String> = HashMap::new();
@@ -26,23 +24,12 @@ impl CMachine {
                 if a_param == "dev"
                 {
                     args_dic.insert(a_param, constants::YES.to_string());
-                    is_develop_mod = true;
                 } else if a_param == "verbose"
                 {
                     args_dic.insert(a_param, constants::YES.to_string());
                     _verbose = true;
                 }
             }
-        }
-
-        if force_boot_in_dev_mod
-        {
-            is_develop_mod = true;
-        }
-
-        // cid: clone id
-        if args_dic.contains_key("cid") {
-            clone_id = args_dic["cid"].parse::<i8>().unwrap();
         }
 
         // config: config file
@@ -57,12 +44,6 @@ impl CMachine {
             config_source = "Command-line";
         }
 
-        if forcing_manual_clone_id > 0 {
-            clone_id = forcing_manual_clone_id;
-        }
-
-        self.m_clone_id = clone_id;
-        self.m_is_develop_mod = is_develop_mod;
         self.m_config_file = config_file.clone();
 
         if args_dic.contains_key("config") {
@@ -77,8 +58,6 @@ impl CMachine {
 
         // set global values
         application().setup_app(self);
-
-        // maybe_switch_db(self.m_clone_id);
     }
 
     // func name was setCloneDev
@@ -103,7 +82,8 @@ impl CMachine {
         println!("Config file was loaded({}). {}", self.m_config_source, self.m_config_file);
         // remove "/config.txt" from the end of path
         self.m_hard_root_path = self.m_config_file.substring(0, self.m_config_file.len() - 11).to_string();
-
+        self.m_clone_id = config.getuint("default", "clone_id").unwrap().unwrap() as i8;
+        self.m_is_develop_mod = config.getbool("default", "develop_mod").unwrap().unwrap();
         self.m_launch_date = config.get("default", "launch_date").unwrap();
         self.m_last_sync_status_check = self.m_launch_date.clone();
         self.m_email_is_active = config.getbool("default", "email_is_active").unwrap().unwrap();
