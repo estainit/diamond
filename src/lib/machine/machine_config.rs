@@ -40,18 +40,11 @@ impl CMachine {
 
         let mut config_source = "Default";
         if args_dic.contains_key("config") {
-            config_file = args_dic["config"].clone();
+            config_file = args_dic["config"].to_string();
             config_source = "Command-line";
         }
 
         self.m_config_file = config_file.clone();
-
-        if args_dic.contains_key("config") {
-            // update database
-            set_value("config_file", &config_file.to_string(), false);
-        } else {
-            // it should be loaded from somewhere (probably db)
-        }
 
         self.m_config_source = config_source.to_string();
         self.parse_config_file();
