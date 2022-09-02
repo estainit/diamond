@@ -391,9 +391,13 @@ impl CMachine {
         if !status
         { return false; }
 
-        println!("selffffffff m_mp_code {:?}", &self.m_profile.m_mp_code);
-        println!("selffffffff m_mp_name {:?}", &self.m_profile.m_mp_name);
-        // panic!("Why mp_code and mp_name are empty!");
+        if self.m_profile.m_mp_code=="" || self.m_profile.m_mp_name == ""
+        {
+            println!("selffffffff m_mp_code {:?}", &self.m_profile.m_mp_code);
+            println!("selffffffff m_mp_name {:?}", &self.m_profile.m_mp_name);
+            panic!("Why mp_code and mp_name are empty!");
+        }
+
         let values = HashMap::from([
             ("mp_code", &self.m_profile.m_mp_code as &(dyn ToSql + Sync)),
             ("mp_name", &self.m_profile.m_mp_name as &(dyn ToSql + Sync)),

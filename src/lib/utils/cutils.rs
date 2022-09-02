@@ -9,7 +9,25 @@ use crate::lib::block::block_types::block::Block;
 use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonObject, VString, VVString};
 
 pub fn remove_quotes(input_value: &JSonObject) -> String {
-    input_value.as_str().unwrap().to_string()
+    if input_value.is_null() {
+        dlog(
+            &format!("JSon Object (to be removed quotes) is null {}", input_value),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return "".to_string();
+    }
+
+    return match input_value.as_str() {
+        Some(r) => r.to_string(),
+        _ =>
+            {
+                dlog(
+                    &format!("Failed in JSon Object (to be removed quotes) {}", input_value),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                "".to_string()
+            }
+    };
 }
 
 #[allow(unused, dead_code)]

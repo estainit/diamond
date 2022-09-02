@@ -5,7 +5,7 @@ use crate::lib::constants;
 use crate::lib::custom_types::JSonObject;
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handshake_neighbor};
 use crate::lib::machine::machine_profile::MachineProfile;
-use crate::lib::rest::profile_apis::{create_post, profile, profiles};
+use crate::lib::rest::profile_apis::{save_machine_settings, profile, profiles};
 use serde::{Serialize, Deserialize};
 
 pub async fn run_web_server() -> std::io::Result<()> {
@@ -30,7 +30,7 @@ pub async fn run_web_server() -> std::io::Result<()> {
             .service(hello)
             .service(profile)
             .service(profiles)
-            .service(create_post)
+            .service(save_machine_settings)
     })
         .bind((host_, port_))?
         .run()
