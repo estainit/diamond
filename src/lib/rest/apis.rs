@@ -7,7 +7,7 @@ use crate::lib::machine::machine_neighbor::{add_a_new_neighbor_by_email, handsha
 use crate::lib::machine::machine_profile::MachineProfile;
 use crate::lib::rest::profile_apis::{save_machine_settings, profile, profiles};
 use serde::{Serialize, Deserialize};
-use crate::lib::rest::monitor_apis::{dag_info, get_inbox_files, get_leaves_by_kv, get_missed_blocks, get_outbox_files, get_parsing_q, get_sending_q, list_fresh_leaves};
+use crate::lib::rest::monitor_apis::{dag_info, get_inbox_files, get_leaves_by_kv, get_missed_blocks, get_outbox_files, get_parsing_q, get_sending_q, is_synchronizing, list_fresh_leaves};
 
 pub async fn run_web_server() -> std::io::Result<()> {
     let webserver = application().web_server_address().clone();
@@ -44,6 +44,7 @@ pub async fn run_web_server() -> std::io::Result<()> {
             .service(get_outbox_files)
             .service(get_leaves_by_kv)
             .service(list_fresh_leaves)
+            .service(is_synchronizing)
     })
         .bind((host_, port_))?
         .run()

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use actix_web::{get, web};
-use crate::application;
+use crate::{application, machine};
 use crate::lib::custom_types::{QVDRecordsT, VString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::leaves_handler::{get_fresh_leaves, get_leave_blocks, LeaveBlock};
@@ -125,8 +125,18 @@ pub async fn list_fresh_leaves() -> web::Json<HashMap<String, LeaveBlock>>
 {
     let api_res = tokio::task::spawn_blocking(|| {
         let fresh_leaves = get_fresh_leaves();
-        println!(" fresh leaves {:?}", fresh_leaves);
         fresh_leaves
+    }).await.expect("Failed in retrieve fresh leaves!");
+    web::Json(api_res)
+}
+
+#[get("/isSynchronizing")]
+pub async fn is_synchronizing() -> web::Json<bool>
+{
+    let api_res = tokio::task::spawn_blocking(|| {
+        let is_in_sync_process = machine().is_in_sync_process(false);
+        println!(" is_in_sync_process {:?}", is_in_sync_process);
+        is_in_sync_process
     }).await.expect("Failed in retrieve fresh leaves!");
     web::Json(api_res)
 }
