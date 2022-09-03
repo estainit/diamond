@@ -30,29 +30,10 @@ pub fn smart_pull_q() -> bool
     }
 
     let packet = &records[0];
-    let (status, _sf_version, unwrap_res) = unwrap_safed_content_for_db(&packet["pq_payload"].to_string());
-    if !status
-    {
-        // purge record
-        // reputation report
-        return false;
-    }
-
-    let (status, json_payload) = cutils::controlled_str_to_json(&unwrap_res);
-    if !status
-    {
-        // purge record
-        // reputation report
-        return false;
-    }
-    println!("ooooooo 222 smart pulled {}", json_payload);
 
     increase_to_parse_attempts_count(packet);
-    // packet["pq_payload"] = json_payload;
-
 
     let en_pa_res = handle_pulled_packet(packet);
-    //=(status, should_purge_record)
 
     if !en_pa_res.m_should_purge_record
     {
