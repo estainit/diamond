@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog, machine};
-use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::QVDicT;
 use crate::lib::database::abs_psql::{q_custom_query, q_delete, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_PARSING_Q, C_PARSING_Q_FIELDS};

@@ -198,7 +198,7 @@ pub fn i_read(file_name: &String) -> QVDRecordsT
 {
     let (_status, records) = q_select(
         C_CPACKET_TICKETING,
-        C_CPACKET_TICKETING_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        Vec::from(C_CPACKET_TICKETING_FIELDS),
         vec![simple_eq_clause("msg_file_id", file_name)],
         vec![],
         0,

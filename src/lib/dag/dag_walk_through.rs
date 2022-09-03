@@ -15,7 +15,7 @@ pub fn get_latest_block_record() -> (bool, Block)
 {
     let last_recorded_block: QVDRecordsT = search_in_dag(
         vec![],
-        C_BLOCKS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        Vec::from(C_BLOCKS_FIELDS),
         vec![&OrderModifier { m_field: "b_creation_date", m_order: "DESC" }],
         1,
         true,

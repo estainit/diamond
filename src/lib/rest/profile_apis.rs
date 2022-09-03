@@ -36,7 +36,7 @@ pub struct NewPost {
 #[post("/saveSettings")]
 pub async fn save_machine_settings(post: String) -> impl Responder
 {
-    let res = tokio::task::spawn_blocking(move || {
+    let api_res = tokio::task::spawn_blocking(move || {
         let (_status, request) = controlled_str_to_json(&post);
         println!("New POST request to create a post! request {:?}", request);
 
@@ -73,12 +73,12 @@ pub async fn save_machine_settings(post: String) -> impl Responder
         machine().m_profile = the_profile;
         machine().save_settings();
 
-        let res = json!({
+        let api_res = json!({
             "status": true,
             "message": "Profile updated".to_string(),
             "info": json!({}),
         });
-        res
+        api_res
     }).await.expect("saveSettings panicked");
-    web::Json(res)
+    web::Json(api_res)
 }

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog};
-use crate::lib::custom_types::{CBlockHashT, VString};
+use crate::lib::custom_types::{CBlockHashT, ClausesT, LimitT, OrderT, QVDRecordsT, VString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_delete, q_insert, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::C_MISSED_BLOCKS;
+use crate::lib::database::tables::{C_MISSED_BLOCKS, C_MISSED_BLOCKS_FIELDS};
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
 
 //old_name_was addMissedBlocksToInvoke
@@ -140,27 +140,26 @@ pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
     return true;
 }
 
-/*
-
-QVDRecordsT MissedBlocksHandler::listMissedBlocks(
-  StringList fields,
-  const ClausesT& clauses,
-  const OrderT& order,
-  const int& limit)
+//old_name_was listMissedBlocks
+pub fn list_missed_blocks(
+    mut fields: Vec<&str>,
+    clauses: ClausesT,
+    order: OrderT,
+    limit: LimitT) -> QVDRecordsT
 {
-  if (fields.len() == 0)
-    fields = C_MISSED_BLOCKS_fields;
+    if fields.len() == 0
+    { fields = Vec::from(C_MISSED_BLOCKS_FIELDS); }
 
-  QueryRes res = DbModel::select(
-    C_MISSED_BLOCKS,
-    fields,
-    clauses,
-    order,
-    limit);
+    let (_status, records) = q_select(
+        C_MISSED_BLOCKS,
+        fields,
+        clauses,
+        order,
+        limit,
+        false);
 
-  return res.records;
+    return records;
 }
-*/
 
 //old_name_was getMissedBlocksToInvoke
 pub fn get_missed_blocks_to_invoke(limit: u64) -> Vec<String>

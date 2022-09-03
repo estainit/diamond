@@ -50,13 +50,14 @@ pub fn remove_from_leave_blocks(leaves: &Vec<String>) -> (bool, String)
 pub fn get_leave_blocks(only_before_date: &CDateT) -> HashMap<String, LeaveBlock>
 {
     let value: String = get_value("dag_leave_blocks");
-    if value == "" {
+    if value == "".to_string()
+    {
         return HashMap::new();
     }
 
     let deser_leaves: HashMap<String, LeaveBlock> = serde_json::from_str(&value).unwrap();
 
-    if *only_before_date == ""
+    if only_before_date == &"".to_string()
     {
         return deser_leaves;
     }

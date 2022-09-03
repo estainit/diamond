@@ -437,7 +437,7 @@ bool DAG::loopPrerequisitiesRemover()
 */
 
 //old_name_was doPrerequisitiesRemover
-pub fn do_prerequisities_remover() -> bool
+pub fn do_prerequisites_remover() -> bool
 {
     /*
 

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use substring::Substring;
 use crate::{application, CMachine, constants};
 use crate::lib::custom_types::VString;
-use crate::lib::k_v_handler::set_value;
 
 impl CMachine {
     // func name was parseArgs

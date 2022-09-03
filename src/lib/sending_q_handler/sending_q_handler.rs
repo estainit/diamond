@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog, machine};
-use crate::lib::custom_types::{CBlockHashT, ClausesT, OrderT, QVDicT, QVDRecordsT, VVString};
+use crate::lib::custom_types::{CBlockHashT, ClausesT, LimitT, OrderT, QVDicT, QVDRecordsT, VVString};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{ModelClause, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_SENDING_Q, C_SENDING_Q_FIELDS, CDEV_SENDING_Q};
@@ -283,10 +283,11 @@ pub fn push_into_sending_q(
 pub fn fetch_from_sending_q(
     mut fields: Vec<&str>,
     clauses: ClausesT,
-    order: OrderT) -> QVDRecordsT
+    order: OrderT,
+    limit: LimitT) -> QVDRecordsT
 {
     if fields.len() == 0 {
-        fields = C_SENDING_Q_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>();
+        fields = Vec::from(C_SENDING_Q_FIELDS);
     }
 
     let (_status, records) = q_select(
@@ -294,7 +295,7 @@ pub fn fetch_from_sending_q(
         fields,
         clauses,
         order,
-        0,
+        limit,
         true);
     return records;
 }
@@ -401,8 +402,8 @@ pub fn send_out_the_packet() -> bool
 {
     maybe_cancel_ivoke_blocks_request();
 
-    let cpackets: QVDRecordsT = fetch_from_sending_q(vec![], vec![], vec![]);
-    if cpackets.len() == 0
+    let records: QVDRecordsT = fetch_from_sending_q(vec![], vec![], vec![], 1);
+    if records.len() == 0
     {
         dlog(
             &format!("No packet in sending q to Send"),
@@ -413,7 +414,7 @@ pub fn send_out_the_packet() -> bool
     }
 
     // always pick the first pkt! TODO: maybe more intelligent solution needed
-    let packet: &QVDicT = &cpackets[0];
+    let packet: &QVDicT = &records[0];
     let send_res: bool = i_push(
         &packet["sq_title"].to_string(),
         &packet["sq_payload"].to_string(),

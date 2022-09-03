@@ -6,7 +6,7 @@ use crate::lib::constants;
 use crate::lib::dlog::dlog;
 use crate::lib::block::block_types::block_coinbase::cb1_maybe_create_coinbase_block::maybe_create_coinbase_block;
 use crate::lib::block::block_types::block_repayback::repayback_block::import_double_check;
-use crate::lib::dag::dag::do_prerequisities_remover;
+use crate::lib::dag::dag::do_prerequisites_remover;
 use crate::lib::dag::missed_blocks_handler::refresh_missed_block;
 use crate::lib::dag::normal_block::normal_coins_handler::do_import_coins;
 use crate::lib::file_buffer_handler::file_buffer_handler::{do_read_and_parse_hard_disk_inbox, maybe_boot_dag_from_bundle};
@@ -83,7 +83,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
             do_missed_blocks_invoker();
 
             // prerequisities cleaner
-            do_prerequisities_remover();
+            do_prerequisites_remover();
         }
 
         // output cpackets

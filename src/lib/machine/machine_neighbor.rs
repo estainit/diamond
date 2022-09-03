@@ -308,7 +308,7 @@ pub fn get_neighbors(
 
     let (_status, records) = q_select(
         C_MACHINE_NEIGHBORS,
-        C_MACHINE_NEIGHBORS_FIELDS.iter().map(|&x| x).collect::<Vec<&str>>(),
+        Vec::from(C_MACHINE_NEIGHBORS_FIELDS),
         clauses,
         vec![
             &OrderModifier { m_field: "n_connection_type", m_order: "DESC" },
