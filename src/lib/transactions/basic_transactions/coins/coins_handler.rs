@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::thread;
 use postgres::types::ToSql;
 use crate::lib::constants;
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CMPAISValueT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CMPAISValueT, QVDRecordsT, VString};
 use crate::lib::dlog::dlog;
 use crate::{application, cutils, machine};
-use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_TRX_COINS;
 
 /*
@@ -310,7 +310,7 @@ pub fn add_new_coin(
     if (coin_value < 0) || (coin_value > constants::MAX_COIN_VALUE)
     {
         dlog(
-            &format!("Invalid coin value to insert! {}" , coin_value),
+            &format!("Invalid coin value to insert! {}", coin_value),
             constants::Modules::Sec,
             constants::SecLevel::Fatal);
         return false;
@@ -557,37 +557,54 @@ std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
   return {sum, utxos, utxos_dict };
 }
 
-QVDRecordsT UTXOHandler::extractUTXOsBYAddresses(const StringList& addresses)
+*/
+//old_name_was extractUTXOsBYAddresses
+pub fn extract_coins_by_addresses(addresses: &VString) -> QVDRecordsT
 {
-  if (addresses.len() == 0)
-    return {};
+    if addresses.len() == 0
+    { return vec![]; }
 
-  auto[clauses_, values_] = DbModel::clauses_query_generator({{"ut_o_address", addresses, "IN"}});
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "ut_o_address",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for an_address in addresses {
+        c1.m_field_multi_values.push(an_address as &(dyn ToSql + Sync));
+    }
 
-  String complete_query = "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date ";
-  complete_query += "FROM " + C_TRX_COINS + " WHERE " + clauses_;
-  complete_query += "GROUP BY ut_coin, ut_o_address, ut_o_value ORDER BY min(ut_ref_creation_date), ut_o_address, ut_o_value";
+    let tmp_clauses = vec![c1];
+    let (clauses_, values_) = clauses_query_generator(
+        0,
+        &tmp_clauses);
 
-  QueryRes utxos = DbModel::customQuery(
-    "db_comen_spendable_coins",
-    complete_query,
-    {"ut_coin", "ut_o_address", "ut_o_value", "ref_creation_date"},
-    0,
-    values_,
-    true,
-    false);
-  QVDRecordsT new_UTXOs = {};
-  for (QVDicT element: utxos.records)
-  {
-    new_UTXOs.push(QVDicT {
-      {"ut_ref_creation_date", element["ref_creation_date"]},
-      {"ut_coin", element["ut_coin"]},
-      {"ut_o_address", element["ut_o_address"]},
-      {"ut_o_value", element["ut_o_value"]}});
-  };
-  return new_UTXOs;
+    let mut complete_query = format!(
+        "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date \
+        FROM {} WHERE {} GROUP BY ut_coin, ut_o_address, ut_o_value \
+        ORDER BY min(ut_ref_creation_date), ut_o_address, ut_o_value",
+        C_TRX_COINS, clauses_);
+
+    let (_status, records) = q_custom_query(
+        &complete_query,
+        &values_,
+        false);
+    let mut new_coins: QVDRecordsT = vec![];
+    for element in records
+    {
+        let a_coin = HashMap::from([
+            ("ut_ref_creation_date".to_string(), element["ref_creation_date"].clone()),
+            ("ut_coin".to_string(), element["ut_coin"].clone()),
+            ("ut_o_address".to_string(), element["ut_o_address"].clone()),
+            ("ut_o_value".to_string(), element["ut_o_value"].clone())
+        ]);
+        new_coins.push(a_coin);
+    };
+    return new_coins;
 }
 
+/*
 QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
 {
   String complete_query = "SELECT DISTINCT ut_visible_by, ut_coin, ut_o_address, ut_o_value FROM " + C_TRX_COINS + " ORDER BY ut_visible_by, ut_coin, ut_o_address, ut_o_value";

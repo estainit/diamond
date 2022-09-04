@@ -7,7 +7,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::u
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::{application, ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{generate_m, get_root_by_a_prove};
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VVString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TInput
@@ -18,7 +18,7 @@ pub struct TInput
 
     pub m_owner: CAddressT,
     pub m_amount: CMPAIValueT,
-    pub m_private_keys: Vec<String>,
+    pub m_private_keys: VString,
     // they are need to sign the coin in order to spend it
     pub m_unlock_set: JSonObject,
 }

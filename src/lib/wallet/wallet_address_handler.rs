@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, dlog};
-use crate::lib::custom_types::{ClausesT, QVDRecordsT};
-use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
-use crate::lib::database::tables::C_MACHINE_WALLET_ADDRESSES;
+use crate::{application, constants, dlog, machine};
+use crate::lib::custom_types::{ClausesT, CAddressT, QVDicT, QV2DicT, QVDRecordsT};
+use crate::lib::database::abs_psql::{ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::{C_MACHINE_WALLET_ADDRESSES, C_MACHINE_WALLET_FUNDS};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::utils::dumper::{dump_hashmap_of_str_string};
 
@@ -55,7 +55,7 @@ pub fn search_wallet_addresses(
         m_clause_operand: "IN",
         m_field_multi_values: vec![],
     };
-    for an_add in &addresses{
+    for an_add in &addresses {
         c1.m_field_multi_values.push(an_add as &(dyn ToSql + Sync));
     }
     clauses.push(c1);
@@ -72,77 +72,116 @@ pub fn search_wallet_addresses(
     return (true, records);
 }
 
-/*
-std::tuple<QVDRecordsT, QV2DicT> Wallet::getAddressesList(
-    String mp_code,
-    const StringList& fields,
-    const bool& sum)
+//old_name_was getAddressesList
+pub fn get_addresses_list(
+    mp_code: &String,
+    fields: Vec<&str>,
+    calc_sum: bool) -> (QVDRecordsT, QV2DicT)
 {
-  ClausesT clauses{};
+    let mut clauses: ClausesT = vec![];
 
-  if (mp_code == "")
-    mp_code = CMachine::getSelectedMProfile();
-
-  if (mp_code != constants::ALL)
-    clauses.push(ModelClause("wa_mp_code", mp_code));
-
-  QueryRes addresses_info = DbModel::select(
-    stbl_machine_wallet_addresses,
-    fields,
-    clauses
-  );
-
-  if (sum == false)
-    return {addresses_info.records, {}};
-
-  CDateT nowT = application().now();
-  QV2DicT addressDict = {};
-  String complete_query = "select wf_address, SUM(wf_o_value) mat_sum, COUNT(*) mat_count FROM " + stbl_machine_wallet_funds + " ";
-  complete_query += "WHERE wf_mp_code=:wf_mp_code AND wf_mature_date<:wf_mature_date GROUP BY wf_address";
-  QueryRes tmpRes = DbModel::customQuery(
-    "db_comen_wallets",
-    complete_query,
-    {"wf_address", "mat_sum", "mat_count"},
-    0,
-    {{"wf_mp_code", mp_code}, {"wf_mature_date", nowT}});
-
-  for (QVDicT elm: tmpRes.records)
-  {
-    CAddressT add = elm.value("wf_address").to_string();
-    if (!addressDict.keys().contains(add))
-      addressDict[add] = QVDicT {
-      {"mat_sum", elm.value("mat_sum").toDouble()},
-      {"mat_count", elm.value("mat_count").toDouble()}};
-  }
-
-  // unmaturated coins
-  complete_query = "SELECT wf_address, SUM(wf_o_value) unmat_sum, COUNT(*) unmat_count FROM " + stbl_machine_wallet_funds + " ";
-  complete_query += "WHERE wf_mp_code=:wf_mp_code AND wf_mature_date >= :wf_mature_date GROUP BY wf_address";
-  tmpRes = DbModel::customQuery(
-    "db_comen_wallets",
-    complete_query,
-    {"wf_address", "unmat_sum", "unmat_count"},
-    0,
-    {{"wf_mp_code", mp_code}, {"wf_mature_date", application().now()}});
-
-  for (QVDicT elm: tmpRes.records)
-  {
-    CAddressT add = elm.value("wf_address").to_string();
-    if (!addressDict.keys().contains(add))
+    let mut mp_code = mp_code.clone();
+    if mp_code == ""
     {
-      addressDict[add] = QVDicT {
-      {"unmat_sum", elm.value("unmat_sum").toDouble()},
-      {"unmat_count", elm.value("unmat_count").toDouble()}};
-    }else{
-      addressDict[add]["unmat_sum"] = elm.value("unmat_sum").toDouble();
-      addressDict[add]["unmat_count"] = elm.value("unmat_count").toDouble();
+        mp_code = machine().get_selected_m_profile();
     }
-  }
 
-  return {addresses_info.records, addressDict};
+    if mp_code != constants::ALL.to_string()
+    {
+        clauses.push(simple_eq_clause("wa_mp_code", &mp_code));
+    }
 
+    let (status, records) = q_select(
+        C_MACHINE_WALLET_ADDRESSES,
+        fields,
+        clauses,
+        vec![],
+        0,
+        false);
+
+    dlog(
+        &format!("Wallet Addresses: {:?}", records),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    if !calc_sum
+    {
+        return (records, HashMap::new());
+    }
+
+    let now_ = application().now();
+    let mut addresses_dict: QV2DicT = HashMap::new();
+    let mut complete_query = format!(
+        "SELECT wf_address, CAST(SUM(wf_o_value) AS varchar) AS mat_sum, COUNT(*) mat_count FROM {} \
+        WHERE wf_mp_code=$1 AND wf_mature_date<$2 GROUP BY wf_address", C_MACHINE_WALLET_FUNDS);
+    let params = vec![
+        &mp_code as &(dyn ToSql + Sync),
+        &now_ as &(dyn ToSql + Sync),
+    ];
+
+    let (status, tmp_records) = q_custom_query(
+        &complete_query,
+        &params,
+        false);
+    dlog(
+        &format!("Wallet Addresses funds: {:?}", tmp_records),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    for elm in &tmp_records
+    {
+        let add: CAddressT = elm["wf_address"].to_string();
+        if !addresses_dict.keys().cloned().collect::<Vec<CAddressT>>().contains(&add)
+        {
+            let coins_info: QVDicT = HashMap::from([
+                ("mat_sum".to_string(), elm["mat_sum"].clone()),
+                ("mat_count".to_string(), elm["mat_count"].clone())
+            ]);
+            addresses_dict.insert(add, coins_info);
+        }
+    }
+
+    // unmaturated coins
+    complete_query = format!(
+        "SELECT wf_address, SUM(wf_o_value) unmat_sum, COUNT(*) unmat_count FROM {} \
+      WHERE wf_mp_code=$1 AND wf_mature_date >= $2 GROUP BY wf_address", C_MACHINE_WALLET_FUNDS);
+
+    let now_ = application().now();
+    let params = vec![
+        &mp_code as &(dyn ToSql + Sync),
+        &now_ as &(dyn ToSql + Sync),
+    ];
+
+    let (status, records) = q_custom_query(
+        &complete_query,
+        &params,
+        false);
+    for elm in &records
+    {
+        let add: CAddressT = elm["wf_address"].to_string();
+        if !addresses_dict
+            .keys()
+            .cloned()
+            .collect::<Vec<String>>()
+            .contains(&add)
+        {
+            let coins_info = HashMap::from([
+                ("unmat_sum".to_string(), elm["unmat_sum"].clone()),
+                ("unmat_count".to_string(), elm["unmat_count"].clone())
+            ]);
+            addresses_dict.insert(add, coins_info);
+        } else {
+            let coins_info = HashMap::from([
+                ("unmat_sum".to_string(), elm["unmat_sum"].clone()),
+                ("unmat_count".to_string(), elm["unmat_count"].clone())
+            ]);
+            addresses_dict.insert(add, coins_info);
+        }
+    }
+
+    return (records, addresses_dict);
 }
-*/
+
 //old_name_was convertToValues
 pub fn convert_to_values(w_address: &WalletAddress) -> (bool, HashMap<&str, String>)
 {
@@ -278,7 +317,7 @@ GenRes Wallet::getAnOutputAddress(
   }
 
   auto[wallet_controlled_accounts, details] = getAddressesList();
-  the_address = wallet_controlled_accounts[rand() * wallet_controlled_accounts.len()].value("wa_address").to_string();
+  the_address = wallet_controlled_accounts[rand() * wallet_controlled_accounts.len()]["wa_address"].to_string();
   return {(the_address != ""), the_address};
 }
 

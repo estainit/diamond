@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog};
-use crate::lib::custom_types::BlockLenT;
-use crate::lib::database::abs_psql::q_insert;
+use crate::lib::custom_types::{BlockLenT, CDateT, CMPAIValueT, DocLenT};
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
 pub mod polling_types
@@ -28,6 +28,7 @@ pub mod polling_types
 }
 
 //old_name_was getAdmDefaultValues
+#[allow(unused, dead_code)]
 pub fn get_administrative_default_values() -> HashMap<String, f64>
 {
 
@@ -85,157 +86,210 @@ pub fn init_administrative_configurations_history()
             false,
         );
     }
-
 }
 
-/*
 
-/**
-* func retrieves the last date before given cDate in which the value is refined
-* @param {*} args
-*/
-QVariant SocietyRules::getAdmValue(
-  const String& pollingKey,
-  String cDate)
+//* func retrieves the last date before given cDate in which the value is refined
+//old_name_was getAdmValue
+#[allow(unused, dead_code)]
+pub fn get_administrative_value(
+    polling_key: &str,
+    c_date: &CDateT) -> String
 {
-  QueryRes res = DbModel::select(
-    stbl_administrative_refines_history,
-    {"arh_value"},
-    {{"arh_subject", pollingKey},
-    {"arh_apply_date", cDate, "<="}},
-    {{"arh_apply_date", "DESC"}},
-    1);
+    let (_status, records) = q_select(
+        C_ADMINISTRATIVE_REFINES_HISTORY,
+        vec!["arh_value"],
+        vec![
+            simple_eq_clause("arh_subject", &polling_key.to_string()),
+            ModelClause {
+                m_field_name: "arh_apply_date",
+                m_field_single_str_value: &c_date as &(dyn ToSql + Sync),
+                m_clause_operand: "<=",
+                m_field_multi_values: vec![],
+            },
+        ],
+        vec![
+            &OrderModifier { m_field: "arh_apply_date", m_order: "DESC" },
+        ],
+        1,
+        true);
 
-  if (res.records.len() == 0)
-    cutils::exiter("invalid arh_apply_date for (" + pollingKey + ") on date(" + cDate + ")", 1125);
+    if records.len() == 0
+    {
+        let err_msg = format!("Invalid arh_apply_date for ({}) on date({})", polling_key, c_date);
+        dlog(
+            &err_msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
 
-  return res.records[0].value("arh_value");
+        panic!("{}", err_msg);
+    }
+
+    return records[0]["arh_value"].clone();
 }
 
-
-CMPAIValueT SocietyRules::getSingleIntegerValue(
-  const String& pollingKey,
-  const CDateT& cDate)
+//old_name_was getSingleIntegerValue
+#[allow(unused, dead_code)]
+pub fn get_single_integer_value(
+    polling_key: &str,
+    c_date: &CDateT) -> CMPAIValueT
 {
-  // fetch from DB the price for calculation Date
-  QVariant value = getAdmValue(pollingKey, cDate);
-  CLog::log("Retrieveing RFRf for pollingKey(" + pollingKey + ") on date(" + cDate + ") -> value(" + value.to_string() + ")", "app", "trace");
-  return value.toDouble();
+    // fetch from DB the price for calculation Date
+    let val = get_administrative_value(polling_key, c_date);
+    dlog(
+        &format!(
+            "Retrieving Refine Request for ({}) on date({}) -> value({})",
+            polling_key, c_date, val.to_string()),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
+
+    return val.parse::<CMPAIValueT>().unwrap();
 }
 
-CMPAIValueT SocietyRules::getBasicTxDPCost(
-  const DocLenT& dLen,
-  const CDateT& cDate)
+//old_name_was getBasicTxDPCost
+#[allow(unused, dead_code)]
+pub fn get_basic_transaction_data_and_process_cost(
+    doc_length: DocLenT,
+    c_date: &CDateT) -> CMPAIValueT
 {
-  CMPAIValueT TxBasePrice = getSingleIntegerValue(POLLING_TYPES::RFRfTxBPrice, cDate);
+    let tx_base_price: CMPAIValueT = get_single_integer_value(polling_types::REQUEST_FOR_REFINE_BASE_PRICE, c_date);
 
-  /**
-   * TODO: maybe can be modified in next version of transaction to be more fair
-   * specially after implementing the indented bach32 unlockers(recursively unlimited unlockers which have another bech32 as an unlocker)
-   */
-  auto[x, y, gain, revGain] = cutils::calcLog(dLen, constants::MAX_DOC_LENGTH_BY_CHAR, 1);//(dLen * 1) / (iConsts.MAX_DOC_LENGTH_BY_CHAR * 1);
-  Q_UNUSED(x);
-  Q_UNUSED(y);
-  Q_UNUSED(gain);
-  CMPAIValueT cost = cutils::iFloorFloat(TxBasePrice * pow(100 * revGain, 20));
-  return cost;
+    // * TODO: maybe can be modified in next version of transaction to be more fair
+    // * specially after implementing the indented bach32 unlockers(recursively unlimited unlockers which have another bech32 as an unlocker)
+    let (_x, _y, _gain, rev_gain) = cutils::calc_log(
+        doc_length as f64,
+        constants::MAX_DOC_LENGTH_BY_CHAR as u64,
+        1);//(dLen * 1) / (iConsts.MAX_DOC_LENGTH_BY_CHAR * 1);
+    let powered = (100.0 * rev_gain).powf(20.0);
+    let cost = cutils::i_floor_float(tx_base_price as f64 * powered);
+    return cost as CMPAIValueT;
 }
 
-CMPAIValueT SocietyRules::getBasePricePerChar(const CDateT& cDate)
+//old_name_was getBasePricePerChar
+#[allow(unused, dead_code)]
+pub fn get_base_price_per_char(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfBasePrice, cDate);
+    return get_single_integer_value(
+        polling_types::REQUEST_FOR_REFINE_BASE_PRICE,
+        c_date);
 }
 
-CMPAIValueT SocietyRules::getPollingDPCost(const CDateT& cDate)
+//old_name_was getPollingDPCost
+#[allow(unused, dead_code)]
+pub fn get_polling_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfPollingPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_POLLING_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getPledgeDPCost(const CDateT& cDate)
+//old_name_was getPledgeDPCost
+#[allow(unused, dead_code)]
+pub fn get_pledge_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfPLedgePrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_PLEDGE_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getClosePledgeDPCost(const CDateT& cDate)
+//old_name_was getClosePledgeDPCost
+#[allow(unused, dead_code)]
+pub fn get_close_pledge_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfClPLedgePrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_CONCLUDE_PLEDGE_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getCloseDNAProposalDPCost(const CDateT& cDate)
+//old_name_was getCloseDNAProposalDPCost
+#[allow(unused, dead_code)]
+pub fn get_close_proposal_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfDNAPropPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_PROPSAL_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getBallotDPCost(const CDateT& cDate)
+//old_name_was getBallotDPCost
+#[allow(unused, dead_code)]
+pub fn get_ballot_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfBallotPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_BALLOT_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getINameRegDPCost(const CDateT& cDate)
+//old_name_was getINameRegDPCost
+#[allow(unused, dead_code)]
+pub fn get_i_name_reg_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfINameRegPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_INAME_REGISTER_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getINameBindDPCost(const CDateT& cDate)
+//old_name_was getINameBindDPCost
+#[allow(unused, dead_code)]
+pub fn get_i_name_bind_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfINameBndPGPPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_INAME_BIND_PGP_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getINameMsgDPCost(const CDateT& cDate)
+//old_name_was getINameMsgDPCost
+#[allow(unused, dead_code)]
+pub fn get_i_name_msg_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfINameMsgPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_INAME_MESSAGE_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getCPostDPCost(const CDateT& cDate)
+//old_name_was getCPostDPCost
+#[allow(unused, dead_code)]
+pub fn get_free_post_data_and_process_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfFPostPrice, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_FREE_POST_PRICE, c_date);
 }
 
-CMPAIValueT SocietyRules::getBlockFixCost(const CDateT& cDate)
+//old_name_was getBlockFixCost
+#[allow(unused, dead_code)]
+pub fn get_block_fix_cost(c_date: &CDateT) -> CMPAIValueT
 {
-  return getSingleIntegerValue(POLLING_TYPES::RFRfBlockFixCost, cDate);
+    return get_single_integer_value(polling_types::REQUEST_FOR_REFINE_BLOCK_FIXED_COST, c_date);
 }
+
 
 // TODO: optimize it to catch price-set and fetch it once in every 12 hours
-QVDicT SocietyRules::prepareDocExpenseDict(
-  const CDateT& cDate,
-  const DocLenT& dLen)
+//old_name_was prepareDocExpenseDict
+pub fn prepare_doc_expense_dict(
+    c_date: &CDateT,
+    doc_len: DocLenT) -> HashMap<&str, CMPAIValueT>
 {
-  QVDicT servicePrices {
-    {constants::document_types::BASIC_TX, QVariant::fromValue(getBasicTxDPCost(dLen, cDate))},
-    {constants::DOC_TYPES::AdmPolling, QVariant::fromValue(getPollingDPCost(cDate))},
-    {constants::DOC_TYPES::Polling, QVariant::fromValue(getPollingDPCost(cDate))},
-    {constants::DOC_TYPES::Pledge, QVariant::fromValue(getPledgeDPCost(cDate))},
-    {constants::DOC_TYPES::ClosePledge, QVariant::fromValue(getClosePledgeDPCost(cDate))},
-    {constants::DOC_TYPES::DNAProposal, QVariant::fromValue(getCloseDNAProposalDPCost(cDate))},
-    {constants::DOC_TYPES::Ballot, QVariant::fromValue(getBallotDPCost(cDate))},
-    {constants::DOC_TYPES::INameReg, QVariant::fromValue(getINameRegDPCost(cDate))},
-    {constants::DOC_TYPES::INameBind, QVariant::fromValue(getINameBindDPCost(cDate))},
-    {constants::DOC_TYPES::INameMsgTo, QVariant::fromValue(getINameMsgDPCost(cDate))},
-    {constants::DOC_TYPES::FPost, QVariant::fromValue(getCPostDPCost(cDate))}};
+    let service_prices: HashMap<&str, CMPAIValueT> = HashMap::from([
+        (constants::document_types::BASIC_TX, get_basic_transaction_data_and_process_cost(doc_len, c_date)),
+        (constants::document_types::ADMINISTRATIVE_POLLING, get_polling_data_and_process_cost(c_date)),
+        (constants::document_types::POLLING, get_polling_data_and_process_cost(c_date)),
+        (constants::document_types::PLEDGE, get_pledge_data_and_process_cost(c_date)),
+        (constants::document_types::CLOSE_PLEDGE, get_close_pledge_data_and_process_cost(c_date)),
+        (constants::document_types::PROPOSAL, get_close_proposal_data_and_process_cost(c_date)),
+        (constants::document_types::BALLOT, get_ballot_data_and_process_cost(c_date)),
+        (constants::document_types::I_NAME_REGISTER, get_i_name_reg_data_and_process_cost(c_date)),
+        (constants::document_types::I_NAME_BIND, get_i_name_bind_data_and_process_cost(c_date)),
+        (constants::document_types::I_NAME_MESSAGE_TO, get_i_name_msg_data_and_process_cost(c_date)),
+        (constants::document_types::FREE_POST, get_free_post_data_and_process_cost(c_date))
+    ]);
 
-  return servicePrices;
+    return service_prices;
 }
 
-CMPAIValueT SocietyRules::getDocExpense(
-  const String& doc_type,
-  const DocLenT& doc_len,
-  const String& doc_lass,
-  const CDateT& cDate)
+//old_name_was getDocExpense
+#[allow(unused, dead_code)]
+pub fn get_doc_expense(
+    doc_type: &str,
+    doc_len: DocLenT,
+    _doc_class: &str,
+    c_date: &CDateT) -> CMPAIValueT
 {
-  Q_UNUSED(doc_lass);
-  if (doc_len > constants::MAX_DOC_LENGTH_BY_CHAR)
+    if doc_len > constants::MAX_DOC_LENGTH_BY_CHAR
+    { return 0; }
+
+    let service_prices = prepare_doc_expense_dict(c_date, doc_len);
+
+    if service_prices.keys().cloned().collect::<Vec<&str>>().contains(&doc_type)
+    {
+        return service_prices[doc_type];
+    }
+
     return 0;
 
-  QVDicT servicePrices = prepareDocExpenseDict(cDate, doc_len);
-
-  if (servicePrices.keys().contains(doc_type))
-    return servicePrices[doc_type].toUInt();
-
-  return 0;
-
-  //TODO: implement plugin price
-  // if type of documents is not defined, so accept it as a base feePerByte
+    //TODO: implement plugin price
+    // if type of documents is not defined, so accept it as a base feePerByte
 //  let pluginPrice = listener.doCallSync('SASH_calc_service_price', args);
 //  if (_.has(pluginPrice, 'err')&& pluginPrice.err != false) {
 //      utils.exiter("wrong plugin price calc for ${utils.stringify(args)}", 434);
@@ -246,24 +300,23 @@ CMPAIValueT SocietyRules::getDocExpense(
 //  return pluginPrice.fee;
 }
 
-
-/**
- * returns minimum transaction fee by microPAI
- */
-CMPAIValueT SocietyRules::getTransactionMinimumFee(const CDateT& cDate)
+//old_name_was getTransactionMinimumFee
+#[allow(unused, dead_code)]
+pub fn get_transaction_minimum_fee(c_date: &CDateT) -> CMPAIValueT
 {
-  return cutils::truncMPAI(static_cast<double>(
-    constants::TRANSACTION_MINIMUM_LENGTH *
-    getBasePricePerChar(cDate) *
-    getDocExpense(
-      constants::document_types::BASIC_TX,
-      constants::TRANSACTION_MINIMUM_LENGTH,
-      cDate)
-  ));
+    return
+        constants::TRANSACTION_MINIMUM_LENGTH as CMPAIValueT *
+            get_base_price_per_char(c_date) *
+            get_doc_expense(
+                constants::document_types::BASIC_TX,
+                constants::TRANSACTION_MINIMUM_LENGTH,
+                "",
+                c_date);
 }
 
+/*
 
-uint8_t SocietyRules::getPoWDifficulty(const CDateT& cDate)
+uint8_t SocietyRules::getPoWDifficulty(cDate: &CDateT)
 {
   if (cDate < "2020-10-01 00:00:00") {
     return 4;
@@ -279,6 +332,7 @@ uint8_t SocietyRules::getPoWDifficulty(const CDateT& cDate)
 */
 
 //old_name_was getMaxBlockSize
+#[allow(unused, dead_code)]
 pub fn get_max_block_size(block_type: &String) -> BlockLenT
 {
     // TODO: implement it to retrieve max number from db, by voting process
@@ -310,7 +364,7 @@ pub fn get_max_block_size(block_type: &String) -> BlockLenT
 
 double SocietyRules::getSingleFloatValue(
   const String& pollingKey,
-  const CDateT& cDate)
+  cDate: &CDateT)
 {
   if (!cutils::isValidDateForamt(cDate))
     cutils::exiter("invalid cDate for get Single Float Value for pollingKey(" + pollingKey + ") cDate:(" + cDate + ") ", 812);
@@ -326,29 +380,29 @@ double SocietyRules::getSingleFloatValue(
 }
 
 //  -  -  -  shares parameters settings
-DNASharePercentT SocietyRules::getMinShareToAllowedIssueFVote(const CDateT& cDate)
+DNASharePercentT SocietyRules::getMinShareToAllowedIssueFVote(cDate: &CDateT)
 {
-  return getSingleFloatValue(POLLING_TYPES::RFRfMinFVote, cDate);
+  return getSingleFloatValue(polling_types::RFRfMinFVote, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedVoting(const CDateT& cDate)
+DNASharePercentT SocietyRules::getMinShareToAllowedVoting(cDate: &CDateT)
 {
-  return getSingleFloatValue(POLLING_TYPES::RFRfMinS2V, cDate);
+  return getSingleFloatValue(polling_types::RFRfMinS2V, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedSignCoinbase(const CDateT& cDate)
+DNASharePercentT SocietyRules::getMinShareToAllowedSignCoinbase(cDate: &CDateT)
 {
-  return getSingleFloatValue(POLLING_TYPES::RFRfMinFSign, cDate);
+  return getSingleFloatValue(polling_types::RFRfMinFSign, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedWiki(const CDateT& cDate)
+DNASharePercentT SocietyRules::getMinShareToAllowedWiki(cDate: &CDateT)
 {
-  return getSingleFloatValue(POLLING_TYPES::RFRfMinS2Wk, cDate);
+  return getSingleFloatValue(polling_types::RFRfMinS2Wk, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedDemos(const CDateT& cDate)
+DNASharePercentT SocietyRules::getMinShareToAllowedDemos(cDate: &CDateT)
 {
-  return getSingleFloatValue(POLLING_TYPES::RFRfMinS2DA, cDate);
+  return getSingleFloatValue(polling_types::RFRfMinS2DA, cDate);
 }
 
 bool SocietyRules::logRefineDetail(
@@ -389,7 +443,7 @@ bool SocietyRules::treatPollingWon(
   const QVDicT& polling,
   const CDateT& approveDate)
 {
-  CDocHashT admPollingHash = polling.value("pll_ref").to_string();
+  CDocHashT admPollingHash = polling["pll_ref"].to_string();
   QueryRes admPollings = DbModel::select(
     stbl_administrative_pollings,
     stbl_administrative_pollings_fields,
@@ -400,19 +454,19 @@ bool SocietyRules::treatPollingWon(
     return false;
   }
   QVDicT admPolling = admPollings.records[0];
-  JSonObject the_values = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(admPolling.value("apr_values").to_string()).content);
+  JSonObject the_values = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(admPolling["apr_values"].to_string()).content);
   CLog::log("Treat Polling Won adm Polling: " + cutils::dumpIt(admPolling), "app", "trace");
   CDateT arh_apply_date = cutils::getACycleRange(
     approveDate,
     0,
     2).from;
 
-  if (StringList {"RFRfMinS2V", "RFRfMinFSign", "RFRfMinFVote"}.contains(admPolling.value("apr_subject").to_string()))
+  if (StringList {"RFRfMinS2V", "RFRfMinFSign", "RFRfMinFVote"}.contains(admPolling["apr_subject"].to_string()))
   {
     logRefineDetail(
       admPollingHash,
-      admPolling.value("apr_subject").to_string(),
-      the_values.value("pShare").toDouble(), //.share,
+      admPolling["apr_subject"].to_string(),
+      the_values["pShare"].toDouble(), //.share,
       arh_apply_date);
 
   } else if (StringList {
@@ -427,16 +481,16 @@ bool SocietyRules::treatPollingWon(
     "RFRfINameRegPrice",
     "RFRfINameBndPGPPrice",
     "RFRfINameMsgPrice",
-    "RFRfFPostPrice"}.contains(admPolling.value("apr_subject").to_string()))
+    "RFRfFPostPrice"}.contains(admPolling["apr_subject"].to_string()))
   {
     logRefineDetail(
       admPollingHash,
-      admPolling.value("apr_subject").to_string(),
-      the_values.value("pFee").toDouble(),  //.pFee,
+      admPolling["apr_subject"].to_string(),
+      the_values["pFee"].toDouble(),  //.pFee,
       arh_apply_date);
 
   } else {
-    CLog::log("Unknown apr_subject in 'treat Polling Won' " + admPolling.value("apr_subject").to_string(), "sec", "error");
+    CLog::log("Unknown apr_subject in 'treat Polling Won' " + admPolling["apr_subject"].to_string(), "sec", "error");
     return false;
   }
 
@@ -455,7 +509,7 @@ bool SocietyRules::concludeAdmPolling(
   const QVDicT& polling,
   const CDateT& approveDate)
 {
-  CDocHashT admPollingHash = polling.value("pll_ref").to_string();
+  CDocHashT admPollingHash = polling["pll_ref"].to_string();
 
   // update proposal
   DbModel::update(
@@ -567,11 +621,11 @@ QVDicT SocietyRules::readAdministrativeCurrentValues()
 }
 
 JSonArray SocietyRules::loadAdmPollings(
-  const CDateT& cDate)
+  cDate: &CDateT)
 {
   JSonArray admPollings = {
     JSonObject {
-      {"key", POLLING_TYPES::RFRfBasePrice},
+      {"key", polling_types::RFRfBasePrice},
       {"label", "Request for Refine charachter base pice of Data & Process costs(DPCost), currently is " + cutils::microPAIToPAI6(getBasePricePerChar(cDate)) + " PAI per Char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getBasePricePerChar(cDate)).toDouble()},
@@ -580,7 +634,7 @@ JSonArray SocietyRules::loadAdmPollings(
     },
 
     JSonObject {
-      {"key", POLLING_TYPES::RFRfTxBPrice},
+      {"key", polling_types::RFRfTxBPrice},
       {"label", "Request for Refine Transaction DPCost, currently is " + cutils::microPAIToPAI6(cutils::CFloor(getBasicTxDPCost(constants::TRANSACTION_MINIMUM_LENGTH, cDate))) + " micro PAI per Char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getBasicTxDPCost(constants::TRANSACTION_MINIMUM_LENGTH, cDate)).toDouble()},
@@ -589,7 +643,7 @@ JSonArray SocietyRules::loadAdmPollings(
     },
 
     JSonObject {
-      {"key", POLLING_TYPES::RFRfBlockFixCost},
+      {"key", polling_types::RFRfBlockFixCost},
       {"label", "Request for Refine Block Fix Cost, currently is " + cutils::microPAIToPAI6(getBlockFixCost(cDate)) + " micro PAI per Block"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getBlockFixCost(cDate)).toDouble()},
@@ -597,7 +651,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfPollingPrice},
+      {"key", polling_types::RFRfPollingPrice},
       {"label", "Request for Refine DPCost of Polling Document, currently is " + cutils::microPAIToPAI6(getPollingDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getPollingDPCost(cDate)).toDouble()},
@@ -605,7 +659,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfPLedgePrice},
+      {"key", polling_types::RFRfPLedgePrice},
       {"label", "Request for Refine DPCost of Pledge Document, currently is " + cutils::microPAIToPAI6(getPledgeDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getPledgeDPCost(cDate)).toDouble()},
@@ -613,7 +667,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfClPLedgePrice},
+      {"key", polling_types::RFRfClPLedgePrice},
       {"label", "Request for Refine DPCost of Close a Pledged Account, currently is " + cutils::microPAIToPAI6(getClosePledgeDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getClosePledgeDPCost(cDate)).toDouble()},
@@ -621,7 +675,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfDNAPropPrice},
+      {"key", polling_types::RFRfDNAPropPrice},
       {"label", "Request for Refine DPCost of offer a DNAProposal, currently is " + cutils::microPAIToPAI6(getCloseDNAProposalDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getCloseDNAProposalDPCost(cDate)).toDouble()},
@@ -629,7 +683,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfBallotPrice},
+      {"key", polling_types::RFRfBallotPrice},
       {"label", "Request for Refine DPCost of Ballot, currently is " + cutils::microPAIToPAI6(getBallotDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getBallotDPCost(cDate)).toDouble()},
@@ -637,7 +691,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfINameRegPrice},
+      {"key", polling_types::RFRfINameRegPrice},
       {"label", "Request for Refine DPCost of register an iName, currently is " + cutils::microPAIToPAI6(getINameRegDPCost(cDate)) + " PAIs per unit "},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getINameRegDPCost(cDate)).toDouble()},
@@ -645,7 +699,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfINameBndPGPPrice},
+      {"key", polling_types::RFRfINameBndPGPPrice},
       {"label", "Request for Refine DPCost of Binding an iPGP key to an iName, currently is " + cutils::microPAIToPAI6(getINameBindDPCost(cDate)) + " PAIs per a pair-key "},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getINameBindDPCost(cDate)).toDouble()},
@@ -653,7 +707,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfINameMsgPrice},
+      {"key", polling_types::RFRfINameMsgPrice},
       {"label", "Request for Refine DPCost of a message via DAG, currently is " + cutils::microPAIToPAI6(getINameMsgDPCost(cDate)) + " PAIs per char. it refers to entire encrypted message and head & tail & ..."},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getINameMsgDPCost(cDate)).toDouble()},
@@ -661,7 +715,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfFPostPrice},
+      {"key", polling_types::RFRfFPostPrice},
       {"label", "Request for Refine DPCost of a Free Post (including text, file, media...), currently is " + cutils::microPAIToPAI6(getCPostDPCost(cDate)) + " PAIs per char"},
       {"pValues", JSonObject {
         {"pFee", QVariant::fromValue(getCPostDPCost(cDate)).toDouble()},
@@ -669,7 +723,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfMinS2Wk},
+      {"key", polling_types::RFRfMinS2Wk},
       {"label", "Request for Refine Minimum Shares to be Allowed to participate in Wiki Activities, currently is " + String::number(getMinShareToAllowedWiki(cDate)) + " Percent"},
       {"pValues", JSonObject {
         {"pShare", QVariant::fromValue(getMinShareToAllowedWiki(cDate)).toDouble()},
@@ -677,7 +731,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfMinS2DA},
+      {"key", polling_types::RFRfMinS2DA},
       {"label", "Request for Refine Minimum Shares to be Allowed to participate in Demos Discussions, currently is " + String::number(getMinShareToAllowedDemos(cDate)) + " Percent"},
       {"pValues", JSonObject {
         {"pShare", QVariant::fromValue(getMinShareToAllowedDemos(cDate)).toDouble()},
@@ -685,7 +739,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfMinS2V},
+      {"key", polling_types::RFRfMinS2V},
       {"label", "Request for Refine Minimum Shares to be Allowed to participate in ellections, currently is " + String::number(getMinShareToAllowedVoting(cDate)) + " Percent"},
       {"pValues", JSonObject {
         {"pShare", QVariant::fromValue(getMinShareToAllowedVoting(cDate)).toDouble()},
@@ -693,7 +747,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfMinFSign},
+      {"key", polling_types::RFRfMinFSign},
       {"label", "Request for Refine Minimum Shares to be Allowed to Sign a Coinbase block, currently is " + String::number(getMinShareToAllowedSignCoinbase(cDate)) + " Percent"},
       {"pValues", JSonObject {
         {"pShare", QVariant::fromValue(getMinShareToAllowedSignCoinbase(cDate)).toDouble()},
@@ -701,7 +755,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRfMinFVote},
+      {"key", polling_types::RFRfMinFVote},
       {"label", "Request for Refine Minimum Shares to be Allowed to Issue a Floating Vote (either a block or an entry), currently is " + String::number(getMinShareToAllowedIssueFVote(cDate)) + " Percent"},
       {"pValues", JSonObject {
         {"pShare", QVariant::fromValue(getMinShareToAllowedIssueFVote(cDate)).toDouble()},
@@ -709,7 +763,7 @@ JSonArray SocietyRules::loadAdmPollings(
       }
     },
     JSonObject {
-      {"key", POLLING_TYPES::RFRlRsCoins},
+      {"key", polling_types::RFRlRsCoins},
       {"label", "Request for release a Reserved Block"},
     },
   };
@@ -740,7 +794,7 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
   QVDRecordsT votes = BallotHandler::searchInLocalBallots();
   QV2DicT local_votes_dict {};
   for (QVDicT a_vote: votes)
-    local_votes_dict[a_vote.value("lbt_pll_hash").to_string()] = a_vote;
+    local_votes_dict[a_vote["lbt_pll_hash"].to_string()] = a_vote;
 
   String complete_query = R"(
     SELECT ppr.ppr_name, ppr.ppr_perform_type, ppr.ppr_votes_counting_method,
@@ -793,11 +847,11 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     // calc potentiasl voter gains
     if (voter != "")
     {
-      uint64_t diff = cutils::time_diff(a_society_polling.value("pll_start_date").to_string()).asMinutes;
+      uint64_t diff = cutils::time_diff(a_society_polling["pll_start_date"].to_string()).asMinutes;
       auto[yes_gain, no_abstain_gain, latenancy_] = PollingHandler::calculateVoteGain(
         diff,
         diff,
-        a_society_polling.value("pll_timeframe").toDouble() * 60.0);
+        a_society_polling["pll_timeframe"].toDouble() * 60.0);
       Q_UNUSED(latenancy_);
 
 //      let vGain = pollHandler.calculateVoteGain(diff, diff, a_society_polling.pll_timeframe * 60);
@@ -811,26 +865,26 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
       a_society_polling["your_no_gain"] = 0.0;
     }
 
-    CDateT conclude_date = a_society_polling.value("pr_conclude_date").to_string();
+    CDateT conclude_date = a_society_polling["pr_conclude_date"].to_string();
     if (conclude_date == "")
     {
-      CDateT polling_end_date = a_society_polling.value("pll_end_date").to_string();
+      CDateT polling_end_date = a_society_polling["pll_end_date"].to_string();
       CDateT approve_date_ = cutils::minutesAfter(cutils::get_cycle_by_minutes() * 2, polling_end_date);
       conclude_date = cutils::get_coinbase_range(approve_date_).from;
     }
 
     String win_complementary_text = "";
     String win_complementary_tip = "";
-    if (a_society_polling.value("pll_ct_done").to_string() == constants::YES)
+    if (a_society_polling["pll_ct_done"].to_string() == constants::YES)
     {
       QVDRecordsT dna_records = DNAHandler::searchInDNA(
-        {{"dn_doc_hash", a_society_polling.value("pll_ref").to_string()}});
+        {{"dn_doc_hash", a_society_polling["pll_ref"].to_string()}});
       if (dna_records.len() > 0)
       {
-        win_complementary_text = " Shares created on " + dna_records[0].value("dn_creation_date").to_string();
+        win_complementary_text = " Shares created on " + dna_records[0]["dn_creation_date"].to_string();
         win_complementary_tip = "First income on " + cutils::minutesAfter(
           constants::SHARE_MATURITY_CYCLE * cutils::get_cycle_by_minutes(),
-          dna_records[0].value("dn_creation_date").to_string());
+          dna_records[0]["dn_creation_date"].to_string());
       }
     } else{
       win_complementary_tip = "First income (if win) on " + cutils::minutesAfter(
@@ -838,92 +892,92 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     }
 
     final_result[row_inx] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"apr_comment", a_society_polling.value("apr_comment")},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"apr_comment", a_society_polling["apr_comment"]},
       {"polling_number", result_number + 1},
-      {"pr_contributor_account", a_society_polling.value("pr_contributor_account")},
-      {"pll_status", constants::STATUS_TO_LABEL[a_society_polling.value("pll_status").to_string()]},
-      {"ppr_name", a_society_polling.value("ppr_name")},
+      {"pr_contributor_account", a_society_polling["pr_contributor_account"]},
+      {"pll_status", constants::STATUS_TO_LABEL[a_society_polling["pll_status"].to_string()]},
+      {"ppr_name", a_society_polling["ppr_name"]},
     };
 
 
     final_result[row_inx + 1] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"apr_creator", a_society_polling.value("apr_creator")},
-      {"pll_ct_done", constants::STATUS_TO_LABEL[a_society_polling.value("pll_ct_done").to_string()]},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"apr_creator", a_society_polling["apr_creator"]},
+      {"pll_ct_done", constants::STATUS_TO_LABEL[a_society_polling["pll_ct_done"].to_string()]},
       {"the_conclude_date", conclude_date},
-      {"ppr_perform_type", a_society_polling.value("ppr_perform_type")},
+      {"ppr_perform_type", a_society_polling["ppr_perform_type"]},
     };
 
     final_result[row_inx + 2] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"pll_hash", a_society_polling.value("pll_hash")},
-      {"ppr_votes_counting_method", a_society_polling.value("ppr_votes_counting_method")},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"pll_hash", a_society_polling["pll_hash"]},
+      {"ppr_votes_counting_method", a_society_polling["ppr_votes_counting_method"]},
     };
 
     final_result[row_inx + 3] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"pr_descriptions", a_society_polling.value("pr_descriptions")},
-      {"", a_society_polling.value("")},
-    };
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"pr_descriptions", a_society_polling["pr_descriptions"]},
+      {"", a_society_polling["")},
+ ]  };
 
     CDateT end_y_date;
     if (application().cycle() == 1)
     {
-      end_y_date = cutils::minutesAfter(a_society_polling.value("pll_timeframe").toDouble() * 60, a_society_polling.value("pll_start_date").to_string());
+      end_y_date = cutils::minutesAfter(a_society_polling["pll_timeframe"].toDouble() * 60, a_society_polling["pll_start_date"].to_string());
 
     } else{
       // test ambient
-      TimeByHoursT yes_timeframe_by_minutes = static_cast<uint64_t>(a_society_polling.value("pll_timeframe").toDouble() * 60.0);
-      CLog::log("yes_timeframe_by_minutes____pll_timeframe" + String::number(a_society_polling.value("pll_timeframe").toDouble()));
+      TimeByHoursT yes_timeframe_by_minutes = static_cast<uint64_t>(a_society_polling["pll_timeframe"].toDouble() * 60.0);
+      CLog::log("yes_timeframe_by_minutes____pll_timeframe" + String::number(a_society_polling["pll_timeframe"].toDouble()));
       CLog::log("yes_timeframe_by_minutes____" + String::number(yes_timeframe_by_minutes));
-      end_y_date = cutils::minutesAfter(yes_timeframe_by_minutes, a_society_polling.value("pll_start_date").to_string());
+      end_y_date = cutils::minutesAfter(yes_timeframe_by_minutes, a_society_polling["pll_start_date"].to_string());
 
     }
 
 
     final_result[row_inx + 4] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"pr_tags", a_society_polling.value("pr_tags")},
-      {"pll_start_date", a_society_polling.value("pll_start_date")},
-      {"pll_y_count", a_society_polling.value("pll_y_count")},
-      {"pll_y_shares", a_society_polling.value("pll_y_shares")},
-      {"pll_y_gain", a_society_polling.value("pll_y_gain")},
-      {"pll_y_value", a_society_polling.value("pll_y_value")},
-      {"your_yes_gain", a_society_polling.value("your_yes_gain")},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"pr_tags", a_society_polling["pr_tags"]},
+      {"pll_start_date", a_society_polling["pll_start_date"]},
+      {"pll_y_count", a_society_polling["pll_y_count"]},
+      {"pll_y_shares", a_society_polling["pll_y_shares"]},
+      {"pll_y_gain", a_society_polling["pll_y_gain"]},
+      {"pll_y_value", a_society_polling["pll_y_value"]},
+      {"your_yes_gain", a_society_polling["your_yes_gain"]},
     };
 
     final_result[row_inx + 5] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"pr_help_hours", a_society_polling.value("pr_help_hours")},
-      {"end_y", end_y_date}, //cutils::minutesAfter(yes_timeframe * 60, a_society_polling.value("pll_start_date").to_string())},
-      {"pll_a_count", a_society_polling.value("pll_a_count")},
-      {"pll_a_shares", a_society_polling.value("pll_a_shares")},
-      {"pll_a_gain", a_society_polling.value("pll_a_gain")},
-      {"pll_a_value", a_society_polling.value("pll_a_value")},
-      {"your_abstain_gain", a_society_polling.value("your_abstain_gain")},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"pr_help_hours", a_society_polling["pr_help_hours"]},
+      {"end_y", end_y_date}, //cutils::minutesAfter(yes_timeframe * 60, a_society_polling["pll_start_date"].to_string())},
+      {"pll_a_count", a_society_polling["pll_a_count"]},
+      {"pll_a_shares", a_society_polling["pll_a_shares"]},
+      {"pll_a_gain", a_society_polling["pll_a_gain"]},
+      {"pll_a_value", a_society_polling["pll_a_value"]},
+      {"your_abstain_gain", a_society_polling["your_abstain_gain"]},
     };
 
     final_result[row_inx + 6] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"pr_help_level", a_society_polling.value("pr_help_level")},
-      {"end_n", a_society_polling.value("pll_end_date")},
-      {"pll_n_count", a_society_polling.value("pll_n_count")},
-      {"pll_n_shares", a_society_polling.value("pll_n_shares")},
-      {"pll_n_gain", a_society_polling.value("pll_n_gain")},
-      {"pll_n_value", a_society_polling.value("pll_n_value")},
-      {"your_no_gain", a_society_polling.value("your_no_gain")},
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"pr_help_level", a_society_polling["pr_help_level"]},
+      {"end_n", a_society_polling["pll_end_date"]},
+      {"pll_n_count", a_society_polling["pll_n_count"]},
+      {"pll_n_shares", a_society_polling["pll_n_shares"]},
+      {"pll_n_gain", a_society_polling["pll_n_gain"]},
+      {"pll_n_value", a_society_polling["pll_n_value"]},
+      {"your_no_gain", a_society_polling["your_no_gain"]},
     };
 
     final_result[row_inx + 7] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
-      {"proposed_shares", a_society_polling.value("pr_help_level").toInt() * a_society_polling.value("pr_help_hours").toInt()},
-      {"", a_society_polling.value("")},
-      {"", a_society_polling.value("")},
-    };
+      {"apr_hash", a_society_polling["apr_hash"]},
+      {"proposed_shares", a_society_polling["pr_help_level"].toInt() * a_society_polling["pr_help_hours"].toInt()},
+      {"", a_society_polling["")},
+ ]    {"", a_society_polling["")},
+ ]  };
 
     String final_status_color, final_status_text;
-    if (a_society_polling.value("pll_y_value").toUInt() >= a_society_polling.value("pll_n_value").toUInt())
+    if (a_society_polling["pll_y_value"].toUInt() >= a_society_polling["pll_n_value"].toUInt())
     {
       final_status_color = "00ff00";
       final_status_text = "Approved (";
@@ -933,18 +987,18 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
       final_status_text = "Missed (";
 
     }
-    final_status_text += cutils::sepNum(a_society_polling.value("pll_y_value").toUInt() - a_society_polling.value("pll_n_value").toUInt()) +" points)";
+    final_status_text += cutils::sep_num_3(a_society_polling["pll_y_value"].toUInt() - a_society_polling["pll_n_value"].toUInt()) +" points)";
     final_status_text += win_complementary_text;
 
     final_result[row_inx + 8] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
+      {"apr_hash", a_society_polling["apr_hash"]},
       {"final_status_color", final_status_color},
       {"final_status_text", final_status_text},
       {"win_complementary_tip", win_complementary_tip},
     };
 
     final_result[row_inx + 9] = QVDicT {
-      {"apr_hash", a_society_polling.value("apr_hash")},
+      {"apr_hash", a_society_polling["apr_hash"]},
     };
 
 //    a_society_polling.pllEndDateAbstainOrNo = utils.minutesAfter(utils.floor(a_society_polling.pll_timeframe * 60 * 1.5), a_society_polling.pll_start_date);

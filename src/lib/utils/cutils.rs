@@ -6,7 +6,7 @@ use regex::Regex;
 use serde_json::json;
 use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonObject, VString, VVString};
 
 pub fn remove_quotes(input_value: &JSonObject) -> String {
     if input_value.is_null() {
@@ -520,7 +520,6 @@ pub fn pack_coin_code(ref_trx_hash: &CDocHashT, output_index: COutputIndexT) -> 
 }
 
 //old_name_was unpackCoinCode
-#[allow(unused, dead_code)]
 pub fn unpack_coin_code(coin: &CCoinCodeT) -> (String, COutputIndexT)
 {
     let segments: Vec<&str> = coin.split(":").collect();
@@ -609,4 +608,69 @@ pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
             (false, json!({}))
         }
     };
+}
+
+pub fn calc_log(
+    x_value: f64,
+    range: u64,
+    exp: u64) -> (f64, f64, f64, f64)
+{
+    return (0.0, 0.0, 0.0, 0.0);
+    /*
+    let powed = range.pow(exp as u32) as f64;
+    let hundredPercent = powed.log(0.0);
+    let yValue: f64;
+    if x_value >= range as f64
+    {
+        yValue = 0.0;
+    } else {
+        let powed = (range as f64 - x_value).pow( exp);
+        yValue = powed.log(0.0);
+    }
+    let gain = i_floor_float((yValue * 100.0) / hundredPercent);
+
+//  if ((gain == Number.POSITIVE_INFINITY || gain == Number.NEGATIVE_INFINITY))
+//  {gain = Number.MAX_VALUE;}
+
+    let revGain = 1.0 / gain;
+//  if ((revGain == Number.POSITIVE_INFINITY || revGain == Number.NEGATIVE_INFINITY))
+//  {revGain = Number.MAX_VALUE;}
+
+    return (
+        x_value,
+        yValue,
+        gain,
+        revGain);
+
+     */
+}
+
+//old_name_was microPAIToPAI6
+pub fn micro_pai_to_pai_6(int_amount: CMPAISValueT) -> String
+{
+    return int_amount.to_string();
+    // if int_amount == 0
+    // { return "0.0".to_string(); }
+    //
+    // let mut str_number = int_amount.to_string();
+    // let mut sign = "";
+    // if str_number.substring(0, 1).to_string() == "-")
+    // {
+    //     str_number = str_number.substring(1, str_number.len()-1).to_string();
+    //     sign = "-";
+    // }
+    //
+    // if ((0 < int_amount) && (int_amount < 1_000_000)) ||
+    // ((-1_000_000 < int_amount) && (int_amount < 0))
+    // { return sign + "0." + left_padding(str_number, 6) }
+    //
+    // let PAIs = str_number.substring(0, str_number.length() - 6).to_string().rightJustified(18, '0');
+    // StringList segments = chunkString(PAIs, 3);
+    // PAIs = segments.join(",");
+    // while (StringList{"0", ","}.contains(PAIs.midRef(0, 1).to_string()))
+    // PAIs = PAIs.midRef(1).to_string();
+    // if (PAIs.length() == 0)
+    // PAIs = "0";
+    // str_number = PAIs + "." + str_number.midRef(str_number.length() - 6, 6).to_string();
+    // return sign + str_number;
 }

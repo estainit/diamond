@@ -124,6 +124,16 @@ pub const C_TRX_COINS: &str = "c_trx_coins";
 #[allow(dead_code, unused)]
 pub const C_TRX_COINS_FIELDS: [&str; 7] = ["ut_id", "ut_creation_date", "ut_coin", "ut_o_address", "ut_o_value", "ut_visible_by", "ut_ref_creation_date"];
 
+#[allow(dead_code, unused)]
+pub const C_TRX_REJECTED_TRANSACTIONS: &str = "c_trx_rejected_transactions";
+#[allow(dead_code, unused)]
+pub const C_TRX_REJECTED_TRANSACTIONS_FIELDS: [&str; 4] = ["rt_block_hash", "rt_doc_hash", "rt_coin", "rt_insert_date"];
+
+#[allow(dead_code, unused)]
+pub const C_MACHINE_USED_COINS: &str = "c_machine_used_coins";
+#[allow(dead_code, unused)]
+pub const C_MACHINE_USED_COINS_FIELDS: [&str; 4] = ["lu_mp_code", "lu_coin", "lu_spend_loc", "lu_insert_date"];
+
 
 
 

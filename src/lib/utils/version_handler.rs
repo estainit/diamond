@@ -75,12 +75,12 @@ pub fn is_valid_version_number(version: &str) -> bool
     { return false; }
 
     // let ver_segments = ver.split(".");
-    // if (ver_segments.size() != 3)
+    // if (ver_segments.len() != 3)
     // return false;
     //
-    // for (QString aSeg : ver_segments)
+    // for (String aSeg : ver_segments)
     // {
-    //     if (QString::number(aSeg.toUInt()) != aSeg)
+    //     if (String::number(aSeg.toUInt()) != aSeg)
     //     return false;
     // }
 

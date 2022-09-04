@@ -227,15 +227,15 @@ if (StringList {
   constants::FullDAGDownloadRequest,
   constants::pleaseRemoveMeFromYourNeighbors}.contains(type))
 {
-String dummy_hash = CCrypto::keccak256(CUtils::getNowSSS());
-if (!CUtils::isValidVersionNumber(message["cdVer"].to_string()))
+String dummy_hash = CCrypto::keccak256(cutils::getNowSSS());
+if (!cutils::isValidVersionNumber(message["cdVer"].to_string()))
 {
   CLog::log("invalid cdVer for GQL(" + dummy_hash + ") in dispatcher! type(" + type + ")", "sec", "error");
   return {false, true};
 }
 auto[status, should_purge_file] = ParsingQHandler::push_to_parsing_q(
   message,
-  CUtils::getNow(),
+  cutils::getNow(),
   type,
   dummy_hash,
   sender,
@@ -247,18 +247,18 @@ else if (card_type == constants::FullDAGDownloadResponse)
 {
 JSonObject block = message["block"].toObject();
 String block_hash = block["bHash"].to_string();
-if (!CUtils::isValidVersionNumber(message["cdVer"].to_string()))
+if (!cutils::isValidVersionNumber(message["cdVer"].to_string()))
 {
   CLog::log("invalid cdVer for GQL(" + block_hash + ") in dispatcher! type(" + type + ")", "sec", "error");
   return {false, true};
 }
 
 // update flag LastFullDAGDownloadResponse
-KVHandler::upsertKValue("LastFullDAGDownloadResponse", CUtils::getNow());
+KVHandler::upsertKValue("LastFullDAGDownloadResponse", cutils::getNow());
 
 // control if already exist in DAG
 QVDRecordsT alreadyRecordedInDAG = DAG::searchInDAG({{"b_hash", block_hash}});
-if (alreadyRecordedInDAG.size()> 0)
+if (alreadyRecordedInDAG.len()> 0)
 {
   CLog::log("Duplicated packet received " + type + "-" + block_hash, "app", "trace");
   return {true, true};

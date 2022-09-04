@@ -60,13 +60,13 @@ pub type QHash<String, StringList> QSLDicT; // custom dictionary
 pub type QHash<String, QSDicT>      QS2DicT; // custom dictionary
 */
 // pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
-pub type QVDicT = HashMap<String, String>;
 // custom dictionary
 /*
 pub type QHash<String, JSonObject> QJODicT; // custom dictionary
 pub type QHash<String, JSonArray>  QJADicT; // custom dictionary
-pub type QHash<String, QVDicT>      QV2DicT;
 */
+pub type QVDicT = HashMap<String, String>;
+pub type QV2DicT = HashMap<String, QVDicT>      ;
 pub type QVDRecordsT = Vec<HashMap<String, String>>;
 pub type JSonObject = Value;
 pub type JSonArray = Value;

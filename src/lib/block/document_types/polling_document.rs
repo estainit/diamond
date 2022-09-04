@@ -184,7 +184,7 @@ impl PollingDocument
           m_doc_type,
           m_doc_class,
           dLen);
-        CLog::log("calc cutom post the_cost + machine interest(" + cutils::sepNum(the_cost) +" micro PAIs) type/class(" + m_doc_type + "/" + m_doc_class + ") Doc(" + cutils::hash8c(m_doc_hash) + ")", "app", "trace");
+        CLog::log("calc cutom post the_cost + machine interest(" + cutils::sep_num_3(the_cost) +" micro PAIs) type/class(" + m_doc_type + "/" + m_doc_class + ") Doc(" + cutils::hash8c(m_doc_hash) + ")", "app", "trace");
       }
 
       return {true, cutils::CFloor(the_cost)};

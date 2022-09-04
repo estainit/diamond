@@ -343,7 +343,7 @@ pub fn invoke_leaves() -> bool
 
     let (code, body) = make_a_packet(
         vec![json!({
-            "cdType": constants::card_types::DAG_INVOKE_LEAVES,//CConsts::CARD_TYPES::FullDAGDownloadRequest
+            "cdType": constants::card_types::DAG_INVOKE_LEAVES,//constants::CARD_TYPES::FullDAGDownloadRequest
             "cdVer": constants::DEFAULT_CARD_VERSION})],
         constants::DEFAULT_PACKET_TYPE,
         constants::DEFAULT_PACKET_VERSION,

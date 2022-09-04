@@ -26,7 +26,7 @@ pub const SOCIETY_NAME: &str = "im";
 pub const BECH32_ADDRESS_VER: &str = "0";
 pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
-pub const  MAX_COIN_VALUE:CMPAISValueT = 9_007_199_254_740_991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
+pub const MAX_COIN_VALUE: CMPAISValueT = 9_007_199_254_740_991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
 
 pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
@@ -137,8 +137,8 @@ pub const HASH_ZEROS_PLACEHOLDER: &str = "00000000000000000000000000000000000000
 /*
 
   const uint16_t TRANSACTION_PADDING_LENGTH = 100;
-  const uint16_t TRANSACTION_MINIMUM_LENGTH = 375;    // smallest transaction has 375 charachter length
 */
+pub const TRANSACTION_MINIMUM_LENGTH: DocLenT = 375;    // smallest transaction has 375 charachter length
 
 /**
  * this "MAX_BLOCK_LENGTH_BY_CHAR" is a single max size of single message after adding headers and encrypting
@@ -175,16 +175,14 @@ pub mod thread_state
     pub const STOPPED: &str = "STOPPED";
 }
 
-/*
-  namespace COIN_SELECTING_METHOD
-  {
-    pub const PRECISE = "PRECISE";
-    pub const BIGGER_FIRST = "BIGGER_FIRST";
-    pub const SMALLER_FIRST = "SMALLER_FIRST";
-    pub const RANDOM = "RANDOM";
-  };
+pub mod coin_selecting_method
+{
+    pub const PRECISE: &str = "PRECISE";
+    pub const BIGGER_FIRST: &str = "BIGGER_FIRST";
+    pub const SMALLER_FIRST: &str = "SMALLER_FIRST";
+    pub const RANDOM: &str = "RANDOM";
+}
 
-*/
 
 #[allow(unused, dead_code)]
 pub const DEFAULT_LANG: &str = "eng";
