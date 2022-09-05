@@ -115,7 +115,7 @@ pub fn decrypt_and_parse_packet(
         connection_type = constants::PUBLIC.to_string();
     } else {
         dlog(
-            &format!("in parse PacketSync unknown email cpacket: {}", receiver),
+            &format!("in parse PacketSync unknown email cpacket, since I am not {}!", receiver),
             constants::Modules::Sec,
             constants::SecLevel::Error);
         return (false, connection_type, message_obj);

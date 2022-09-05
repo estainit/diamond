@@ -14,6 +14,7 @@ pub fn remove_quotes(input_value: &JSonObject) -> String {
             &format!("JSon Object (to be removed quotes) is null {}", input_value),
             constants::Modules::App,
             constants::SecLevel::Error);
+        panic!("JSon Object (to be removed quotes) is null {}", input_value);
         return "".to_string();
     }
 

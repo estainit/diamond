@@ -33,7 +33,7 @@ use crate::lib::database::tables::C_MACHINE_PROFILES;
  // TODO: maybe machine have to have ability to have more than one email to comunicate to prevent against any censorship
 
  */
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MachineProfile
 {
     pub m_mp_code: String,
@@ -138,7 +138,7 @@ pub fn get_profiles_list() -> Vec<JSonObject>
     return out;
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MPSetting
 {
     pub m_public_email: EmailSettings,
@@ -166,7 +166,7 @@ impl MPSetting {
     }
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct EmailSettings {
     pub m_address: String,
     pub m_password: String,

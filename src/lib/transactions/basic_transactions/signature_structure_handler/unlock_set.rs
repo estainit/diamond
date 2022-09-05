@@ -4,7 +4,7 @@ use crate::lib::constants;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::{dump_vec_of_ind_sig, IndividualSignature};
 use crate::lib::utils::dumper::dump_vec_of_str;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct UnlockSet
 {
     pub m_signature_type: String,

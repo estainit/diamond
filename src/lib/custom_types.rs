@@ -99,7 +99,7 @@ typedef uint32_t CDocIndexT;
 typedef uint16_t CInputIndexT; // customizing document index maximum number
 typedef uint16_t CSigIndexT;
 */
-pub type COutputIndexT = u16;
+pub type COutputIndexT = i32;
 // customizing document index maximum number
 /*
 

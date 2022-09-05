@@ -41,10 +41,6 @@ pub fn get_connection() -> Client {
     let db_user: String = application().db_user();
     let db_pass: String = application().db_pass();
 
-    if application().id() > 0 {
-        db_name = format!("{}{}", db_name, &application().id());
-    }
-
     let mut connection_str = format!(
         "host={} dbname={} user={}",
         db_host,

@@ -3,7 +3,7 @@ use crate::lib::constants;
 use crate::lib::custom_types::TimeByHoursT;
 
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct IndividualSignature
 {
     pub m_signer_id: String,

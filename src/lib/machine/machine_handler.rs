@@ -632,33 +632,6 @@ impl CMachine {
 
         return true;
     }
-    /*
-
-    void CMachine::parseArgs(int argc, char *argv[], int manual_clone_id)
-    {
-      qDebug() << argc;
-      for (int param_inx = 0; param_inx < argc; param_inx++)
-        qDebug() << param_inx << " " << argv[param_inx];
-
-      uint8_t clone_id = 0;    // FIXME: this value must be defined by command line
-      if (argc > 1)
-        clone_id = atoi(argv[1]);
-
-      if (manual_clone_id > 0)
-        clone_id = manual_clone_id;
-
-      bool is_develop_mod = false;
-      if (argc > 2)
-        is_develop_mod = true;
-
-    //  clone_id = 1;
-      qDebug() << " clone_id " << clone_id;
-
-      setCloneDev(clone_id, is_develop_mod);
-
-    }
-
-*/
 
     //old_name_was createFolders
     pub fn create_folders(&self) -> bool

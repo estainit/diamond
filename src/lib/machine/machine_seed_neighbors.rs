@@ -1,6 +1,10 @@
-use crate::{application, CMachine, constants, dlog};
-use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
+use std::os::macos::raw::stat;
+use crate::{application, ccrypto, CMachine, constants, dlog, get_value};
+use crate::lib::k_v_handler::upsert_kvalue;
+use crate::lib::machine::dev_neighbors::dev_neighbors::{ALICE_PRIVATE_KEY, ALICE_PUBLIC_EMAIL, ALICE_PUPLIC_KEY, BOB_PRIVATE_KEY, BOB_PUBLIC_EMAIL, BOB_PUPLIC_KEY, EVE_PRIVATE_KEY, EVE_PUBLIC_EMAIL, EVE_PUPLIC_KEY, get_hu_profile, HU_PRIVATE_KEY, HU_PUBLIC_EMAIL, HU_PUPLIC_KEY, USER_PRIVATE_KEY, USER_PUBLIC_EMAIL, USER_PUPLIC_KEY};
 use crate::lib::machine::machine_neighbor::{add_a_new_neighbor, NeighborInfo};
+use crate::lib::machine::machine_profile::MachineProfile;
+use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 
 impl CMachine {
     pub fn maybe_add_seed_neighbors(&mut self) -> bool
@@ -22,8 +26,15 @@ impl CMachine {
             constants::SecLevel::Info);
 
 
-        if self.is_develop_mod() {
+        if self.is_develop_mod()
+        {
             // this block existed ONLY for test and development environment
+
+            if get_value("dev_settings_done") == constants::YES.to_string()
+            {
+                return true;
+            }
+            upsert_kvalue("dev_settings_done", constants::YES, false);
 
             let user_and_hu_are_neighbor = false;
             let clone_id = self.get_app_clone_id();
@@ -65,6 +76,9 @@ impl CMachine {
                         now_);
 
                     self.save_settings();
+
+                    // add Hu address to wallet
+                    insert_hu_key();
                 } else if clone_id == 1
                 {
                     println!("Setting machine as a developing node (Hu)");
@@ -99,8 +113,10 @@ impl CMachine {
                         NeighborInfo::new(),
                         now_);
 
-
                     self.save_settings();
+
+                    // add Hu address to wallet
+                    insert_hu_key();
                 } else if self.m_clone_id == 2
                 {
                     println!("Setting machine as a developing node (Eve)");
@@ -214,4 +230,24 @@ impl CMachine {
 
         return true;
     }
+}
+
+pub fn insert_hu_key() -> bool
+{
+    let profile: MachineProfile = get_hu_profile();
+    println!("xxxxx profile {:?}", profile);
+    let w_address = WalletAddress::new(
+        &profile.m_mp_settings.m_backer_detail,
+        constants::DEFAULT.to_string(),   // mp code
+        "Backer Address (".to_owned() +
+            &profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_type + &" ".to_owned() +
+            &profile.m_mp_settings.m_backer_detail.m_unlock_sets[0].m_signature_ver + &")".to_owned(),
+        application().now(),
+    );
+    let (status, msg) = insert_address(&w_address);
+    if !status
+    {
+        println!("Failed in Hu info insertion {}", msg);
+    }
+    return status;
 }

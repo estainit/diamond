@@ -1,3 +1,14 @@
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CDateT, CDocHashT, CMPAISValueT, COutputIndexT, QVDRecordsT, VString};
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_delete, q_insert, q_select, simple_eq_clause};
+use crate::lib::database::tables::{C_MACHINE_WALLET_FUNDS, C_MACHINE_WALLET_FUNDS_FIELDS};
+use crate::{application, constants, dlog, get_value, machine};
+use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
+use crate::lib::dag::dag::search_in_dag;
+use crate::lib::k_v_handler::upsert_kvalue;
+use crate::lib::wallet::update_funds_from_new_block::update_funds_from_new_block;
+use crate::lib::wallet::wallet_address_handler::{get_addresses_list};
 
 /*
 
@@ -22,294 +33,226 @@ QVDRecordsT Wallet::retrieveSpendableCoins(StringList w_addresses)
     auto[address_records, details] = getAddressesList();
     Q_UNUSED(details);
     for(QVDicT add: address_records)
-      wallet_ddresses.push(add.value("wa_address").to_string());
+      wallet_ddresses.push(add["wa_address"].to_string());
   }
   QVDRecordsT UTXOs = extract_coins_by_addresses(wallet_ddresses);
   return UTXOs;
 }
 
-
-bool Wallet::refreshCoins()
+*/
+//old_name_was refreshCoins
+pub fn refresh_coins() -> bool
 {
-  String mp_code = CMachine::getSelectedMProfile();
+    let mp_code = machine().get_selected_m_profile();
 
-  //prepare the wallet addreses:
-  auto[addresses_, details] = getAddressesList(mp_code, {"wa_address"}, false);
-  Q_UNUSED(details);
-  StringList addresses;
-  for(QVDicT elm: addresses_)
-    addresses.push(elm.value("wa_address").to_string());
-
-  if (addresses.len() == 0)
-    return false;
-
-  CDateT latest_update =  KVHandler::getValue("latest_refresh_funds");
-  CLog::log("latest refresh funds: " + latest_update, "app" "info");
-  if (latest_update == "")
-    KVHandler::upsertKValue("latest_refresh_funds", CMachine::getLaunchDate());
-
-
-  QVDRecordsT block_records = DAG::searchInDAG(
-    {{"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote, constants::BLOCK_TYPES::POW}, "NOT IN"},
-    {"b_creation_date", CMachine::getLaunchDate(), ">="}}, // TODO improve it to reduce process load. (e.g. use latest_update instead)
-    {"b_type", "b_hash", "b_body"},
-    {{"b_creation_date", "ASC"}});
-
-  // FIXME: (improve it) remove this and search in c_blocks only new blocks
-  DbModel::dDelete(
-    stbl_machine_wallet_funds,
-    {{"wf_mp_code", mp_code}});
-
-  for (QVDicT a_block_records: block_records)
-    updateFundsFromNewBlock(a_block_records, addresses);
-
-  KVHandler::upsertKValue("latest_refresh_funds", cutils::getNow());
-
-  return true;
-}
-
-QVDRecordsT Wallet::getCoinsList(const bool should_refresh_coins)
-{
-  if (should_refresh_coins)
-    refreshCoins();
-
-  String mp_code = CMachine::getSelectedMProfile();
-
-  QueryRes res = DbModel::select(
-    stbl_machine_wallet_funds,
-    stbl_machine_wallet_funds_fields,
-    {{"wf_mp_code", mp_code}},
-    {{"wf_mature_date", "ASC"}});
-
-  return res.records;
-}
-
-bool Wallet::insertAnUTXOInWallet(
-  const CBlockHashT& wf_block_hash,
-  const CDocHashT& wf_trx_hash,
-  const COutputIndexT wf_o_index,
-  const CAddressT& wf_address,
-  const CMPAIValueT& wf_o_value,
-  const String& wf_trx_type,
-  const CDateT& wf_creation_date,
-  const CDateT& wf_mature_date,
-  String wf_mp_code)
-{
-  if (wf_mp_code == "")
-    wf_mp_code = CMachine::getSelectedMProfile();
-
-  QueryRes dblChk = DbModel::select(
-    stbl_machine_wallet_funds,
-    {"wf_trx_hash"},
-    {{"wf_mp_code", wf_mp_code},
-    {"wf_trx_hash", wf_trx_hash},
-    {"wf_o_index", wf_o_index}},
-    {},
-    0,
-    false,
-    false);
-  if (dblChk.records.len() > 0)
-  {
-    // maybe update!
-
-  } else {
-    //insert
-    QVDicT values {
-      {"wf_mp_code", wf_mp_code},
-      {"wf_address", wf_address},
-      {"wf_block_hash", wf_block_hash},
-      {"wf_trx_type", wf_trx_type},
-      {"wf_trx_hash", wf_trx_hash},
-      {"wf_o_index", wf_o_index},
-      {"wf_o_value", QVariant::fromValue(wf_o_value)},
-      {"wf_creation_date", wf_creation_date},
-      {"wf_mature_date", wf_mature_date},
-      {"wf_last_modified", cutils::getNow()}};
-
-    DbModel::insert(
-      stbl_machine_wallet_funds,
-      values);
-
-  }
-
-  return true;
-}
-
-
-bool Wallet::deleteFromFunds(
-  const CDocHashT& wf_trx_hash,
-  const COutputIndexT wf_o_index,
-  String wf_mp_code)
-{
-  if (wf_mp_code == "")
-  wf_mp_code = CMachine::getSelectedMProfile();
-
-  DbModel::dDelete(
-    stbl_machine_wallet_funds,
-    {{"wf_mp_code", wf_mp_code},
-    {"wf_trx_hash", wf_trx_hash},
-    {"wf_o_index", wf_o_index}});
-
-  return true;
-}
-
-bool Wallet::deleteFromFunds(
-  const BasicTxDocument* trx)
-{
-  bool res = true;
-  for (auto an_input: trx->getInputs())
-    res &= deleteFromFunds(an_input->m_transaction_hash, an_input->m_output_index);
-  return res;
-}
-
-
-bool Wallet::updateFundsFromNewBlock(
-  const QVDicT& block_record,
-  const StringList& wallet_addresses)
-{
-  // since all validation controls (relatd to transaction input/output) are already done before recording block_record in DAG,
-  //here we trust the block_record information and just extract the funds from transactions
-
-//  String mp_code = CMachine::getSelectedMProfile();
-  JSonObject block = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(block_record.value("b_body").to_string()).content);    // do not need safe open check
-  CLog::log("Update wallet funds for Block(" + block.value("b_type").to_string() + " / " + cutils::hash8c(block.value("b_hash").to_string()) + ")", "app" , "trace");
-
-  // extract unmatured outputs
-  for (auto aDoc_: block.value("docs").toArray())
-  {
-    JSonObject a_doc = aDoc_.toObject();
-
-    if (a_doc.value("dType").to_string() == constants::DOC_TYPES::Coinbase)
+    //prepare the wallet addreses:
+    let (addresses_, _details) =
+        get_addresses_list(&mp_code, vec!["wa_address"], false);
+    let mut addresses: VString = vec![];
+    for elm in &addresses_
     {
-      QJsonArray outputs = a_doc.value("outputs").toArray();
-      for (COutputIndexT output_index = 0; output_index < outputs.len(); output_index++)
-      {
-        QJsonArray anOutput = outputs[output_index].toArray();
-        if (!wallet_addresses.contains(anOutput[0].to_string()))
-          continue;
-
-        insertAnUTXOInWallet(
-          block.value("bHash").to_string(),
-          a_doc.value("dHash").to_string(),
-          output_index,
-          anOutput[0].to_string(),
-          anOutput[1].toDouble(),
-          a_doc.value("dType").to_string(),
-          block.value("bCDate").to_string(),
-          CoinbaseUTXOHandler::calcCoinbasedOutputMaturationDate(block.value("bCDate").to_string()));
-
-      }
-
-    } else if (a_doc.value("dType").to_string() == constants::DOC_TYPES::DPCostPay) {
-      QJsonArray outputs = a_doc.value("outputs").toArray();
-      for (COutputIndexT output_index = 0; output_index < outputs.len(); output_index++)
-      {
-        QJsonArray anOutput = outputs[output_index].toArray();
-        // import only wallet controlled funds, implicitely removes the "TP_DP" outputs too.
-        if (!wallet_addresses.contains(anOutput[0].to_string()))
-          continue;
-
-        insertAnUTXOInWallet(
-          block.value("bHash").to_string(),
-          a_doc.value("dHash").to_string(),
-          output_index,
-          anOutput[0].to_string(),
-          anOutput[1].toDouble(),
-          a_doc.value("dType").to_string(),
-          block.value("bCDate").to_string(),
-          cutils::minutesAfter(cutils::getCycleByMinutes(), block.value("bCDate").to_string()));
-
-      }
-
-    } else if (a_doc.value("dType").to_string() == constants::DOC_TYPES::BasicTx) {
-      QJsonArray outputs = a_doc.value("outputs").toArray();
-      for (COutputIndexT output_index = 0; output_index < outputs.len(); output_index++)
-      {
-        QJsonArray anOutput = outputs[output_index].toArray();
-
-        // import only wallet controlled funds, implicitely removes the outputs dedicated to treasury payments too
-        if (!wallet_addresses.contains(anOutput[0].to_string()))
-          continue;
-
-        // do not import DPCost payment outputs, because they are already spen in DPCostPay doc
-        if (a_doc.value("dPIs").toArray().contains(output_index))
-          continue;
-
-        insertAnUTXOInWallet(
-          block.value("bHash").to_string(),
-          a_doc.value("dHash").to_string(),
-          output_index,
-          anOutput[0].to_string(),
-          anOutput[1].toDouble(),
-          a_doc.value("dType").to_string(),
-          block.value("bCDate").to_string(),
-          cutils::minutesAfter(cutils::getCycleByMinutes(), block.value("bCDate").to_string()));
-
-      }
-
-      // removing spent UTXOs in block too
-      for (auto input: a_doc.value("inputs").toArray())
-        deleteFromFunds(input.toArray()[0].to_string(), input.toArray()[1].toInt());
-
-    } else if (a_doc.value("dType").to_string() == constants::DOC_TYPES::RpDoc) {
-      QJsonArray outputs = a_doc.value("outputs").toArray();
-      for (COutputIndexT output_index = 0; output_index < outputs.len(); output_index++)
-      {
-        QJsonArray anOutput = outputs[output_index].toArray();
-
-        // import only wallet controlled funds, implicitely removes the outputs dedicated to treasury payments too
-        if (a_doc.value("dPIs").toArray().contains(output_index))
-          continue;
-
-        // import only wallet controlled funds, implicitely removes the outputs dedicated to treasury payments too
-        if (!wallet_addresses.contains(anOutput[0].to_string()))
-          continue;
-
-        insertAnUTXOInWallet(
-          block.value("bHash").to_string(),
-          a_doc.value("dHash").to_string(),
-          output_index,
-          anOutput[0].to_string(),
-          anOutput[1].toDouble(),
-          a_doc.value("dType").to_string(),
-          block.value("bCDate").to_string(),
-          cutils::minutesAfter(cutils::getCycleByMinutes(), block.value("bCDate").to_string()));
-
-      }
-
-      // removing spent UTXOs in block too
-      for (auto input: a_doc.value("inputs").toArray())
-        deleteFromFunds(input.toArray()[0].to_string(), input.toArray()[1].toInt());
-
-
-    } else if (a_doc.value("dType").to_string() == constants::DOC_TYPES::RlDoc) {
-      // FIXME: needs more tests before relaese the first reserved block
-      //for (let output_index = 0; output_index < a_doc.value("outputs.length; output_index++) {
-      //  let anOutput = a_doc.value("outputs[output_index];
-      //  if (!wallet_addresses.includes(anOutput[0]))
-      //      continue;
-
-      //  await WalletHandler.insertAnUTXOInWallet({
-      //      wfmpCode: mp_code,
-      //      wfTrxHash: a_doc.value("hash,
-      //      wfOIndex: output_index,
-      //      wfAddress: anOutput[0],
-      //      wfBlockHash: block.blockHash,
-      //      wfTrxType: a_doc.value("dType,
-      //      wfOValue: anOutput[1],
-      //      wfCreation Date: block.creation Date,
-      //      wfMatureDate: coinbaseUTXOs.calcCoinbasedOutputMaturationDate(block.creation Date)
-      //  });
-      //}
+        addresses.push(elm["wa_address"].to_string());
     }
-  }
 
-  // finally remove locally used coins from wallet funds
-  excludeLocallyUsedCoins();
+    if addresses.len() == 0
+    {
+        return false;
+    }
 
-  return true;
+    let latest_update = get_value("latest_refresh_funds");
+    println!("xxxxxx latest refresh funds: {}", latest_update);
+    dlog(
+        &format!("latest refresh funds: {}", latest_update),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    if latest_update == ""
+    {
+        let date_ = machine().get_launch_date();
+        upsert_kvalue("latest_refresh_funds", &date_, false);
+    }
+
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_type",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "NOT IN",
+        m_field_multi_values: vec![],
+    };
+    for a_type in &[constants::block_types::FLOATING_SIGNATURE, constants::block_types::FLOATING_VOTE, constants::block_types::POW]
+    {
+        c1.m_field_multi_values.push(a_type as &(dyn ToSql + Sync));
+    }
+    let launch_date = machine().get_launch_date();
+    let block_records = search_in_dag(
+        vec![
+            c1,
+            ModelClause {
+                m_field_name: "b_creation_date",
+                m_field_single_str_value: &launch_date as &(dyn ToSql + Sync),
+                m_clause_operand: ">=",
+                m_field_multi_values: vec![],
+            },
+        ],// TODO improve it to reduce process load. (e.g. use latest_update instead)
+        vec!["b_type", "b_hash", "b_body"],
+        vec![&OrderModifier { m_field: "b_creation_date", m_order: "ASC" }],
+        0,
+        false);
+
+    // FIXME: (improve it) remove this and search in c_blocks only new blocks
+    q_delete(
+        C_MACHINE_WALLET_FUNDS,
+        vec![simple_eq_clause("wf_mp_code", &mp_code)],
+        false);
+
+    println!("xxxxxx Going to update funds of {} blocks", block_records.len());
+    dlog(
+        &format!("Going to update funds of {} blocks", block_records.len()),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    dlog(
+        &format!("Going to update funds of addresses: {:?} ", addresses),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    for a_block_records in &block_records
+    {
+        update_funds_from_new_block(a_block_records, &addresses);
+    }
+
+    let now_ = application().now();
+    upsert_kvalue("latest_refresh_funds", &now_, false);
+
+    return true;
 }
 
+//old_name_was getCoinsList
+pub fn get_coins_list(should_refresh_coins: bool) -> QVDRecordsT
+{
+    if should_refresh_coins
+    { refresh_coins(); }
+
+    let mp_code = machine().get_selected_m_profile();
+
+    let (status, records) = q_select(
+        C_MACHINE_WALLET_FUNDS,
+        Vec::from(C_MACHINE_WALLET_FUNDS_FIELDS),
+        vec![simple_eq_clause("wf_mp_code", &mp_code)],
+        vec![
+            &OrderModifier { m_field: "wf_mature_date", m_order: "ASC" }],
+        0,
+        false);
+
+    return records;
+}
+
+//old_name_was insertAnUTXOInWallet
+pub fn insert_a_coin_in_wallet(
+    wf_block_hash: &CBlockHashT,
+    wf_trx_hash: &CDocHashT,
+    wf_o_index: COutputIndexT,
+    wf_address: &CAddressT,
+    wf_o_value: CMPAISValueT,
+    wf_trx_type: &String,
+    wf_creation_date: &CDateT,
+    wf_mature_date: &CDateT,
+    wf_mp_code: &String) -> bool
+{
+    println!("xxxxxx insert_a_coin_in_wallet");
+    let mut wf_mp_code = wf_mp_code.to_string();
+    if wf_mp_code == "".to_string()
+    {
+        wf_mp_code = machine().get_selected_m_profile();
+    }
+
+    let (status, dbl_chk_records) = q_select(
+        C_MACHINE_WALLET_FUNDS,
+        vec!["wf_trx_hash"],
+        vec![
+            simple_eq_clause("wf_mp_code", &wf_mp_code),
+            simple_eq_clause("wf_trx_hash", wf_trx_hash),
+            ModelClause {
+                m_field_name: "wf_o_index",
+                m_field_single_str_value: &wf_o_index as &(dyn ToSql + Sync),
+                m_clause_operand: "=",
+                m_field_multi_values: vec![],
+            },
+        ],
+        vec![],
+        0,
+        false);
+    if dbl_chk_records.len() > 0
+    {
+        // maybe update!
+        return true;
+    } else {
+        //insert
+        let now_ = application().now();
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("wf_mp_code", &wf_mp_code as &(dyn ToSql + Sync)),
+            ("wf_address", &wf_address as &(dyn ToSql + Sync)),
+            ("wf_block_hash", &wf_block_hash as &(dyn ToSql + Sync)),
+            ("wf_trx_type", &wf_trx_type as &(dyn ToSql + Sync)),
+            ("wf_trx_hash", &wf_trx_hash as &(dyn ToSql + Sync)),
+            ("wf_o_index", &wf_o_index as &(dyn ToSql + Sync)),
+            ("wf_o_value", &wf_o_value as &(dyn ToSql + Sync)),
+            ("wf_creation_date", &wf_creation_date as &(dyn ToSql + Sync)),
+            ("wf_mature_date", &wf_mature_date as &(dyn ToSql + Sync)),
+            ("wf_last_modified", &now_ as &(dyn ToSql + Sync)),
+        ]);
+        dlog(
+            &format!("Going to insert new fund to wallet {:?}", &values),
+            constants::Modules::Trx,
+            constants::SecLevel::TmpDebug);
+
+        return q_insert(
+            C_MACHINE_WALLET_FUNDS,
+            &values,
+            false);
+    }
+}
+
+//old_name_was deleteFromFunds
+pub fn delete_from_funds(
+    wf_trx_hash: &CDocHashT,
+    wf_o_index: COutputIndexT,
+    wf_mp_code: &String) -> bool
+{
+    q_delete(
+        C_MACHINE_WALLET_FUNDS,
+        vec![
+            simple_eq_clause("wf_mp_code", &wf_mp_code),
+            simple_eq_clause("wf_trx_hash", wf_trx_hash),
+            ModelClause {
+                m_field_name: "wf_o_index",
+                m_field_single_str_value: &wf_o_index as &(dyn ToSql + Sync),
+                m_clause_operand: "=",
+                m_field_multi_values: vec![],
+            },
+        ],
+        true);
+
+    return true;
+}
+
+//old_name_was deleteFromFunds
+pub fn delete_from_funds_by_trx(
+    trx: &BasicTxDocument) -> bool
+{
+    let mut res: bool = true;
+    let wf_mp_code = machine().get_selected_m_profile();
+    for an_input in trx.get_inputs()
+    {
+        res &= delete_from_funds(
+            &an_input.m_transaction_hash,
+            an_input.m_output_index,
+            &wf_mp_code,
+        );
+    }
+    return res;
+}
+/*
 
 
 void Wallet::removeRef(CCoinCodeT coin_code)
@@ -338,7 +281,7 @@ void Wallet::restorUnUsedUTXOs()
     true);
   CLog::log("found unused coins: " + cutils::dumpIt(res.records));
   for (QVDicT row: res.records)
-    removeRef(row.value("lu_coin").to_string());
+    removeRef(row["lu_coin"].to_string());
 }
 
 

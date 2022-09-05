@@ -61,3 +61,7 @@ DELETE FROM cdev_sending_q;
 $$ LANGUAGE sql;
 
 select empty_db();
+
+-- call file in command line:
+-- psql diamond -f ~diamond/src/lib/database/some_handy_queries/empty_db_func.txt
+-- psql diamond1 -f ~diamond/src/lib/database/some_handy_queries/empty_db_func.txt

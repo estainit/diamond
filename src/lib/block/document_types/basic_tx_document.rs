@@ -124,7 +124,7 @@ impl BasicTxDocument {
       }
 
       if (m_doc_class == constants::TRX_CLASSES::P4P)
-        dLen = dLen * getDPIs().len();  // the transaction which new transaction is going to pay for
+        dLen = dLen * get_dpis().len();  // the transaction which new transaction is going to pay for
 
       uint64_t theCost =
         dLen *
@@ -137,7 +137,7 @@ impl BasicTxDocument {
           m_doc_class,
           dLen,
           extra_length,
-          getDPIs().len());
+          get_dpis().len());
 
       return {true, trunc(theCost) };
     }
@@ -291,11 +291,11 @@ impl BasicTxDocument {
         return m_doc_ref;
         }
 
-        QVector<COutputIndexT> BasicTxDocument::getDPIs() const
-        {
-        return m_data_and_process_payment_indexes;
-        }
     */
+    pub fn get_dpis(&self) -> &Vec<COutputIndexT>
+    {
+        return &self.m_data_and_process_payment_indexes;
+    }
 
     //old_name_was getInputs
     pub fn get_inputs(&self) -> &Vec<TInput>
@@ -317,7 +317,7 @@ impl BasicTxDocument {
             // JSonArray io = an_input.toArray();
             let inp_entry: TInput = TInput {
                 m_transaction_hash: an_input[0].to_string(),
-                m_output_index: an_input[1].as_u64().unwrap() as u16,
+                m_output_index: an_input[1].as_u64().unwrap() as i32,
                 m_owner: "".to_string(),
                 m_amount: 0,
                 m_private_keys: vec![],
@@ -796,7 +796,7 @@ impl BasicTxDocument {
         CMPAISValueT BasicTxDocument::getDocCosts() const
         {
         CMPAISValueT costs = 0;
-        for (auto a_cost_index: getDPIs())
+        for (auto a_cost_index: get_dpis())
         costs += m_outputs[a_cost_index].m_amount;
         return costs;
         }

@@ -1,6 +1,8 @@
+use crate::{application, cutils, machine};
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::q_select;
 use crate::lib::database::tables::C_MACHINE_USED_COINS;
+use crate::lib::wallet::wallet_coins::delete_from_funds;
 
 /*
 
@@ -23,21 +25,33 @@ void Wallet::locallyMarkUTXOAsUsed(const BasicTxDocument* trx)
       values);
   }
 }
+*/
 
-bool Wallet::excludeLocallyUsedCoins()
+//old_name_was excludeLocallyUsedCoins
+pub fn exclude_locally_used_coins() ->bool
 {
-  QueryRes locally_used_coins = DbModel::select(
-    stbl_machine_used_coins,
-    {"lu_coin"});
-  for(QVDicT a_coin: locally_used_coins.records)
+  let(status, locally_used_coins) = q_select(
+    C_MACHINE_USED_COINS,
+    vec!["lu_coin"],
+    vec![],
+    vec![],
+  0,
+  false);
+    let mp_code = machine().get_selected_m_profile();
+  for a_coin in locally_used_coins
   {
-    auto[doc_hash, output_index] = cutils::unpackCoinCode(a_coin.value("lu_coin").toString());
-    deleteFromFunds(doc_hash, output_index);
+    let(doc_hash, output_index) =
+        cutils::unpack_coin_code(&a_coin["lu_coin"]);
+    delete_from_funds(
+        &doc_hash,
+        output_index,
+        &mp_code
+    );
   }
   return true;
 }
 
-*/
+
 
 //old_name_was searchLocallyMarkedUTXOs
 pub fn search_in_locally_marked_coins(
@@ -110,14 +124,14 @@ std::tuple<bool, QString> Wallet::walletSigner(
   QHash<CCoinCodeT, TInput> inputs {};
   for (QVDicT a_coin: coins_records)
   {
-    CAddressT coin_owner = a_coin.value("ut_o_address").toString();
-    CMPAIValueT coin_value = a_coin.value("ut_o_value").toDouble();
+    CAddressT coin_owner = a_coin["ut_o_address"].toString();
+    CMPAIValueT coin_value = a_coin["ut_o_value"].toDouble();
 
     envolved_spending_addresses.append(coin_owner);
     spendable_amount += coin_value;
 
-    QStringList a_coin_segments = a_coin.value("ut_coin").toString().split(":");
-    inputs[a_coin.value("ut_coin").toString()] = TInput {
+    QStringList a_coin_segments = a_coin["ut_coin"].toString().split(":");
+    inputs[a_coin["ut_coin"].toString()] = TInput {
       a_coin_segments[0],
       static_cast<CInputIndexT>(QVariant::fromValue(a_coin_segments[1]).toUInt()),
       coin_owner,
@@ -168,17 +182,17 @@ std::tuple<bool, QString> Wallet::walletSigner(
   QVDRecordsT addresses_records = getAddressesInfo(envolved_spending_addresses);
   QV2DicT addresses_dict = {};
   for(QVDicT an_address: addresses_records)
-    addresses_dict[an_address.value("wa_address").toString()] = an_address;
+    addresses_dict[an_address["wa_address"].toString()] = an_address;
 
   // find the unlockers
   for (QString a_coin: inputs.keys())
   {
 
-    QJsonObject address_details = cutils::parseToJsonObj(addresses_dict[inputs[a_coin].m_owner].value("wa_detail").toString());
-    QJsonObject uSet = address_details.value("uSets").toArray()[unlocker_index].toObject();
+    QJsonObject address_details = cutils::parseToJsonObj(addresses_dict[inputs[a_coin].m_owner]["wa_detail"].toString());
+    QJsonObject uSet = address_details["uSets"].toArray()[unlocker_index].toObject();
     inputs[a_coin].m_unlock_set = uSet;
-    QString salt = uSet.value("salt").toString();
-    QJsonArray private_keys = address_details.value("the_private_keys").toObject()[salt].toArray();
+    QString salt = uSet["salt"].toString();
+    QJsonArray private_keys = address_details["the_private_keys"].toObject()[salt].toArray();
     inputs[a_coin].m_private_keys = cutils::convertJSonArrayToQStringList(private_keys);
 
     CLog::log("\nCoin to be sepnt: " + inputs[a_coin].dumpMe(), "trx", "info");
@@ -230,20 +244,20 @@ std::tuple<bool, QString, QStringList, QJsonObject> Wallet::signByAnAddress(
     return {false, msg, {}, {}};
   }
 
-  QJsonObject addrDtl = cutils::parseToJsonObj(addresses_details[0].value("wa_detail").toString());
+  QJsonObject addrDtl = cutils::parseToJsonObj(addresses_details[0]["wa_detail"].toString());
   QStringList signatures {};
   QJsonObject dExtInfo {};
-  QJsonObject unlock_set = addrDtl.value("uSets").toArray()[unlocker_index].toObject();
-  QJsonArray sSets = unlock_set.value("sSets").toArray();
+  QJsonObject unlock_set = addrDtl["uSets"].toArray()[unlocker_index].toObject();
+  QJsonArray sSets = unlock_set["sSets"].toArray();
 
   for (CSigIndexT inx = 0; inx < sSets.size(); inx++)
   {
     auto[signing_res, signature_hex, signature] = CCrypto::ECDSAsignMessage(
-      addrDtl.value("the_private_keys").toObject()[unlock_set.value("salt").toString()].toArray()[inx].toString(),
+      addrDtl["the_private_keys"].toObject()[unlock_set["salt"].toString()].toArray()[inx].toString(),
       sign_message);
     if (!signing_res)
     {
-      msg = "Failed in sign of Salt(" + unlock_set.value("salt").toString() + ")";
+      msg = "Failed in sign of Salt(" + unlock_set["salt"].toString() + ")";
       CLog::log(msg, "app", "error");
       return {false, msg, {}, {}};
     }

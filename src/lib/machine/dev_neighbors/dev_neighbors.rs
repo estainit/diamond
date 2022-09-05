@@ -1,3 +1,9 @@
+use std::collections::HashMap;
+use crate::lib::machine::machine_profile::{EmailSettings, MachineProfile, MPSetting};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
+
 // User <user@imagine.com>
 pub const USER_PUBLIC_EMAIL: &str = "user@imagine.com";
 pub const USER_PRIVATE_KEY: &str = "-----BEGIN PRIVATE KEY-----\r\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLHgVeB43L9E1t\r\noJnlZSY6sUFyrInYlm6LHEwhsOjHrpBQQnwj8PobpDV/Ybp4bScBtyqGPm0BNqEd\r\nq5bOlK0eqbR65EFQgZPK6A0J9s9pzxvFNFwuxhUPR1ATdDEw1DfKtV7JWz+MOYjP\r\niKFDZ4A5ojwcfdTnmbui9GaG987tFsbbjYx9ESlRTYkvtjQclN6kzdA04GHnB8t4\r\nUlgRIpLVCshuZRxy8rI6h0X99vag0c86hj3oA18o1SA9W2aoAP6wLMLxs6LBabwc\r\n3BdQFSsgTjxK8EdAhf1xeWTf0ep/hXnk7brHgmD7diC0+twyF26Aj4Gy/QvufZny\r\ndL34gZ8NAgMBAAECggEAL00YduNPdDW6alNCQ5egpX5t/WSM3XF64M6ANEBclVPj\r\nq60v97bAp/s/siByKmVQ9idPsd+LxwKP1rcE8arR/hgLPas2QqdKYbBUiQN/Hebr\r\nUqt05Deg4+P5k+41Hmftbjl6j22+iMtFPv9Ufrv1snZDhWcQU7cLaVF9JuVCvRds\r\nV5b4S8Tk1iR0K2+FyuyRKEyrjtHB3jhVBZvdpNUEoHJotZHdALxFOu/TfG6SGQzn\r\nNP132/9aZV9akWBZ717DxP2pB2k8XPwNfFMKTZtNCz3w6ldvNtlTcWD1O5CkHc8R\r\nACNdb13nHwU/uXfSIq24fzsaoy4nD/Mcz5OPAsf2AQKBgQDVAIjFrCI3GNnEzgMJ\r\nL2ehyw9lxAlMdYBewK0+hgDpuAmaIG/sA+cJpQiZJx2Eu4tySOAylCgDWILmQBWe\r\nTuSkUskMK+ZW2rvaHwhj48Nrmhn6z4RCt92qm3ZAItBC0i13nShJMXAx19fB7Db+\r\n8Cw5QtghDOHhki3jNnA0PiCcTQKBgQD0HqllP3xN/R5q2HZ1ushTadUpzbX2Ao0K\r\nMJF8sqOh162pfacMOeKY3REz9rfsFNyeD6mE2FlBXcLYls2xzxXKyUD9+cvB0QAq\r\nphd9VXru83wlKdQwk6bo4a4XNb7eFVq2cW5UDWBojockmd+dV2Q6KBW/nd+uka6s\r\ndRemcFttwQKBgDyYTlCNy54I/8qxIMP4LG8mqVa2Ej8iHkbWYXKsBI54wKKMH8rw\r\nwUVJIc0QB6G/CMiWWtGIvGlXQMXn7T6ACyOEOZWw13JV/6LpuSVRokJ2MHXdmy6v\r\nx+vFFjrgrIaV7EFfABryaYyEbujIHk0gXjRcA8hDNe9J+qvszLbQBc7xAoGAOaK3\r\nmcj4Xy1grhc3OKqFu3PkOP9xc4i8peg7oTZH/eD/BmI9O1y7TB39fshEOj/eqo7G\r\nFjBCOnWZmCtamx1qZrtHVe9RFQx0Pp2CNDwnTx07dUa/60wg/yCxSpeM3cAq76Iu\r\nSzfxSB5Gd/TAX9SPPE/Ueq4abovEssDeeZRTccECgYEAg5wxn2PDek4gomtucnRv\r\niyQ1oeehcYkaqtH4xV2PSrkkUqPUHb0Wj2FXVDl72BEUFGIucDYp9uw04lDui9qj\r\n5cC2eJImcKhQB9x1MGWKUBrZjCX1uX1Y/quD7XD80ojBAnigo43vJDCz0RSHXZQf\r\nWf/0/HcnhZYFpj2OU+/AF6c=\r\n-----END PRIVATE KEY-----\r\n";
@@ -27,3 +33,154 @@ pub const EVE_PUPLIC_KEY: &str = "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG
 pub const PRIVATE_KEY_2048: &str = "-----BEGIN PRIVATE KEY-----\r\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC4TGikJzuhYXpL\r\nxSe4auBjxub7h7k3vCjkVoEOdG7vFwIaxQdDknKL/jyv5v+PUlr3rrkU/S57fBap\r\n4lOuMAOnUJXQcFFTCcrIjr/iFv/SLvHp7s5AdG6dKoobFacF4enwNLYdY1Nsb6Wy\r\ncVjK/E/uhW+h/+gWdjL3imfLPOzP1vYe5HG6Gkzu+ddd1LnQJsRxoUSODkfcMvSr\r\n9OPcqCkn2t7LSOxF9yGvBPcs7toN3qe5pcnIhkkxxmmAhPngbp5lbWGjtJYmY2Ow\r\n5oD77hc5jhsi98UD4YysBvVoSkXIuXl6w+NbfDKLsBo1IhqxgsCu57LV2aHJ1ls/\r\nRB5jiic5AgMBAAECggEBALg5sPQ+P45PKXeqSc1AELPMdMKEZnI/RUUS74jqfKXF\r\nAxaNU3iJYLVt224eY+H5efNSlbJUb22CmgkRs4JQfqZ2mHs2eySdijY287pmMS0C\r\nPlIQo92sRZIXntv6Je5saHPzzQPNcOvZIvIf+ZlW4/PTMMboTzB80O+/S4fOjA4o\r\n6Tjypw6wvigQyD2GRo66PEHPWMLlNjAxa+7nQp7BXC0UX27y7+cjecDyaCG/pUbX\r\nAdbgNSJSIp6n55zchVsmmrinOkeN9MvcASIgnCROS9al5yrevfLxg3fEwW4H8/3G\r\nfdhYzJ5g386mR6EKDe3gX7/2HoUd5UoTzb4sNhKp9vECgYEA48kf3XOcJC1+vyQo\r\nEWaK7JoGPSyqaGD5WCkRNDsYHukYx//ErNRApHCeV9XrpEKBlp0eRQA0U+z5g0ix\r\nVhx1ZyaN3clFcReXP8C8uTyBMFdQGGWr+QuTg5S/gJjs9aqI8m1SKlpQfTath9bR\r\nscMt4+2TZcBFmRZVqZCLaUlwKHUCgYEAzyBYfLbZVM/5kkVJRqAOXgqqaU+2LG9V\r\n1yRKQR/BYiHmuNwFfTarWENd8mn4SLO5eXTWGHI2R6ANSTy6/CPuoFbg6Q6I/ztJ\r\nrzShuTEWkE7X3/MgJONNhaEospuc4E2Kqzwjo2nicP3P+CXvOHirEYwmPRrIIGHX\r\noFoNfCKpyzUCgYA8wFx+TKI9R+EBC5ygH3A38FBvqmT8l7iI2dMb0hL504NnfACx\r\nc56V/O9OT+CcG5zCVb9H+ej65T4a1J1vcQGi9DZsC404v2j4eOgco1V1ViQnjZ5T\r\nOtIqCtcUbjTsxIHn3l5Gq3XCH34it5mPxpWLr8ZbIe+uB7XrFoEIIK0ILQKBgQDD\r\n9rFhhUnH4WEZj64NQN93ABZMvtr33XpUq4QJa3b2VmbJHXmgBvpD7rDS6om6lzfy\r\n/qSUynIqf/YyBWBPr9tUHf564YKiIEDNoDkmUpgrfjzmKEuQOvIcbOZpXasl2JdK\r\n/QIm2MYh6zE5cQKM5jXLy1JeW5lecdOlZa3+dXk5xQKBgQDgDg5ppiD8DGj2enKA\r\n+onlrvyXmFKT3swMWQouR2VV8r/0Sj9ogvExT6Pwyt16EkmLlrls7GvdGy97iKuZ\r\nAPSD18HuI+9OSjqhRHm5BzNAFGHNRfhCe6locIgaHH601QNLWc/4uwzAZ/s+iPmX\r\nyI2vSaNkQboPCdyJoOECRyNBEA==\r\n-----END PRIVATE KEY-----\r\n";
 #[allow(dead_code, unused)]
 pub const PUPLIC_KEY_2048: &str = "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuExopCc7oWF6S8UnuGrg\r\nY8bm+4e5N7wo5FaBDnRu7xcCGsUHQ5Jyi/48r+b/j1Ja9665FP0ue3wWqeJTrjAD\r\np1CV0HBRUwnKyI6/4hb/0i7x6e7OQHRunSqKGxWnBeHp8DS2HWNTbG+lsnFYyvxP\r\n7oVvof/oFnYy94pnyzzsz9b2HuRxuhpM7vnXXdS50CbEcaFEjg5H3DL0q/Tj3Kgp\r\nJ9rey0jsRfchrwT3LO7aDd6nuaXJyIZJMcZpgIT54G6eZW1ho7SWJmNjsOaA++4X\r\nOY4bIvfFA+GMrAb1aEpFyLl5esPjW3wyi7AaNSIasYLAruey1dmhydZbP0QeY4on\r\nOQIDAQAB\r\n-----END PUBLIC KEY-----\r\n";
+
+pub fn get_hu_profile() -> MachineProfile
+{
+    let profile = MachineProfile {
+        m_mp_code: "Default".to_string(),
+        m_mp_name: "Default".to_string(),
+        m_mp_last_modified: "2022-08-29 13:09:05".to_string(),
+        m_mp_settings: MPSetting {
+            m_public_email: EmailSettings {
+                m_address: "hu@imagine.com".to_string(),
+                m_password: "123456".to_string(),
+                m_income_imap: "".to_string(),
+                m_income_pop3: "".to_string(),
+                m_incoming_mail_server: "".to_string(),
+                m_outgoing_mail_server: "".to_string(),
+                m_outgoing_smtp: "".to_string(),
+                m_fetching_interval_by_minute: "".to_string(),
+                m_pgp_private_key: "-----BEGIN PRIVATE KEY-----\r\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDLHgVeB43L9E1t\r\noJnlZSY6sUFyrInYlm6LHEwhsOjHrpBQQnwj8PobpDV/Ybp4bScBtyqGPm0BNqEd\r\nq5bOlK0eqbR65EFQgZPK6A0J9s9pzxvFNFwuxhUPR1ATdDEw1DfKtV7JWz+MOYjP\r\niKFDZ4A5ojwcfdTnmbui9GaG987tFsbbjYx9ESlRTYkvtjQclN6kzdA04GHnB8t4\r\nUlgRIpLVCshuZRxy8rI6h0X99vag0c86hj3oA18o1SA9W2aoAP6wLMLxs6LBabwc\r\n3BdQFSsgTjxK8EdAhf1xeWTf0ep/hXnk7brHgmD7diC0+twyF26Aj4Gy/QvufZny\r\ndL34gZ8NAgMBAAECggEAL00YduNPdDW6alNCQ5egpX5t/WSM3XF64M6ANEBclVPj\r\nq60v97bAp/s/siByKmVQ9idPsd+LxwKP1rcE8arR/hgLPas2QqdKYbBUiQN/Hebr\r\nUqt05Deg4+P5k+41Hmftbjl6j22+iMtFPv9Ufrv1snZDhWcQU7cLaVF9JuVCvRds\r\nV5b4S8Tk1iR0K2+FyuyRKEyrjtHB3jhVBZvdpNUEoHJotZHdALxFOu/TfG6SGQzn\r\nNP132/9aZV9akWBZ717DxP2pB2k8XPwNfFMKTZtNCz3w6ldvNtlTcWD1O5CkHc8R\r\nACNdb13nHwU/uXfSIq24fzsaoy4nD/Mcz5OPAsf2AQKBgQDVAIjFrCI3GNnEzgMJ\r\nL2ehyw9lxAlMdYBewK0+hgDpuAmaIG/sA+cJpQiZJx2Eu4tySOAylCgDWILmQBWe\r\nTuSkUskMK+ZW2rvaHwhj48Nrmhn6z4RCt92qm3ZAItBC0i13nShJMXAx19fB7Db+\r\n8Cw5QtghDOHhki3jNnA0PiCcTQKBgQD0HqllP3xN/R5q2HZ1ushTadUpzbX2Ao0K\r\nMJF8sqOh162pfacMOeKY3REz9rfsFNyeD6mE2FlBXcLYls2xzxXKyUD9+cvB0QAq\r\nphd9VXru83wlKdQwk6bo4a4XNb7eFVq2cW5UDWBojockmd+dV2Q6KBW/nd+uka6s\r\ndRemcFttwQKBgDyYTlCNy54I/8qxIMP4LG8mqVa2Ej8iHkbWYXKsBI54wKKMH8rw\r\nwUVJIc0QB6G/CMiWWtGIvGlXQMXn7T6ACyOEOZWw13JV/6LpuSVRokJ2MHXdmy6v\r\nx+vFFjrgrIaV7EFfABryaYyEbujIHk0gXjRcA8hDNe9J+qvszLbQBc7xAoGAOaK3\r\nmcj4Xy1grhc3OKqFu3PkOP9xc4i8peg7oTZH/eD/BmI9O1y7TB39fshEOj/eqo7G\r\nFjBCOnWZmCtamx1qZrtHVe9RFQx0Pp2CNDwnTx07dUa/60wg/yCxSpeM3cAq76Iu\r\nSzfxSB5Gd/TAX9SPPE/Ueq4abovEssDeeZRTccECgYEAg5wxn2PDek4gomtucnRv\r\niyQ1oeehcYkaqtH4xV2PSrkkUqPUHb0Wj2FXVDl72BEUFGIucDYp9uw04lDui9qj\r\n5cC2eJImcKhQB9x1MGWKUBrZjCX1uX1Y/quD7XD80ojBAnigo43vJDCz0RSHXZQf\r\nWf/0/HcnhZYFpj2OU+/AF6c=\r\n-----END PRIVATE KEY-----\r\n".to_string(),
+                m_pgp_public_key: "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyx4FXgeNy/RNbaCZ5WUm\r\nOrFBcqyJ2JZuixxMIbDox66QUEJ8I/D6G6Q1f2G6eG0nAbcqhj5tATahHauWzpSt\r\nHqm0euRBUIGTyugNCfbPac8bxTRcLsYVD0dQE3QxMNQ3yrVeyVs/jDmIz4ihQ2eA\r\nOaI8HH3U55m7ovRmhvfO7RbG242MfREpUU2JL7Y0HJTepM3QNOBh5wfLeFJYESKS\r\n1QrIbmUccvKyOodF/fb2oNHPOoY96ANfKNUgPVtmqAD+sCzC8bOiwWm8HNwXUBUr\r\nIE48SvBHQIX9cXlk39Hqf4V55O26x4Jg+3YgtPrcMhdugI+Bsv0L7n2Z8nS9+IGf\r\nDQIDAQAB\r\n-----END PUBLIC KEY-----\r\n".to_string(),
+            },
+            m_private_email: EmailSettings {
+                m_address: "abc@def.gh".to_string(),
+                m_password: "123456".to_string(),
+                m_income_imap: "993".to_string(),
+                m_income_pop3: "995".to_string(),
+                m_incoming_mail_server: "".to_string(),
+                m_outgoing_mail_server: "".to_string(),
+                m_outgoing_smtp: "465".to_string(),
+                m_fetching_interval_by_minute: "5".to_string(),
+                m_pgp_private_key: "-----BEGIN PRIVATE KEY-----\r\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQC64vdsZvUZE8j2\r\nHQUyA38r4WvBXvZGCbayV1fMlJCCfLTyAfx/3hjlpgNQ8Gig60wWhtzp0JpvudJC\r\nRLZdmOa95IxQd83Ccw1uqW9x3So7lXhv38Sh+aPGsiNATIV4D3MrbFK3o2CSia7w\r\nAuGo209fTVBrAkmbG9XCXtX60AlwNol+Zy0fqZK7fZka2VMqt3loP8AeKzM+vYWE\r\nKnUAqv8KQZqS4IDY0BDCymAf/5m1WTm3ztwatVZCHlfZRc/J4NxN/kdlecnfjWQi\r\n7FJT1gcOlHnxo4hPaP/lyXwThbMeL6UrzOSOofLUXeWQFpvBgxhxwI6DJTdQSLBs\r\nMRx3206zAgMBAAECggEBAKPsKLIArMNOQ1r8oW34+zb2BpoaPVG5e3J6ghyDwy1x\r\nTRVpAJz3pkboksgP1vYu7RJlQKglvRB6oR5XPs5iKyIssZZzPxtr50BFhecN4tlY\r\nhcc7MzIP0cOaxKjFddyVUKOp4/QHbdGaysLjBCQkGT6yhfMWkpFmnNxcarwQdfbh\r\nnkQhOCaORcfcpQxwK5vQz/KsF16wH+lz60kBcFEySAeI7TDw0ep3UhOr9Tx8memu\r\nPOrbP4/+iXpWfaTGkZfjVhcPxjob8OURDzv2KcqOoGNpHmL/4vtyrviqlsGbKm7F\r\nZSbqFkG7gTy9QtgOQfi+58agV77uTtiaAWbdK8VIyKECgYEA7UeXWOGWhRqyQ13Y\r\ntLXh28M9DeSgX0s7wwE6AyElDbWapfHyvtMUXwdEyT6aAUz3aa2V6pBVR6hyPM/V\r\nfkyhbydRa8M83CWXqpye+tc6r7Ku/bg5CMjObdaHSHLU+LkX2s9eNI0TeGWZU9K/\r\n3ajNWo8la89P/HGzQlzk6Z2pS/UCgYEAyaGSQ4sN4sJKfBYVQ8jy2Vu1CZIPgp/2\r\nKzK9K9X/yFnnJxqtFOUKJKciSsK/ywGULZek79oCvhizmvExg7+Zdy/ypWaNd/Sz\r\nWYW1Qj/p8JU7W1uJbn+4ZcuqqdslbNfrpgmjTchLroA7XtKDrWjZglzp/GyWRMLK\r\nZhfaxHM/bwcCgYEAzGMSl1kaUuVAEI9SD7dsKeTvPnxlODCR9dOkqPVv+XMpFzBm\r\nLMGdlo2oTsFB30TxCXKg5EAXdXY/kOpluDlCBYEUvYKbdfZbwnbO6rtird14psx9\r\nNHfkePCF734avXSSe8SMHTA4SUka3f13j/PLj+omDcux1n4KL2vdMu6/2dECgYAu\r\n6kJPJv7PIWgVYUoHYK1o99ay6GJlgXTU7lRn6749TvXi+mkFcJmgl6b6AECCKtbg\r\nmOVOzcpPkw3PYomj3yQFQInUBH2sSKqmjN71EEwNp5uNEUp0BJHSVcZbCVu27LKv\r\nCpUN1yoM61dlI9Rxt/DMTXRAQL/iNfTENo63oR1EZwKBgQCwUfswJspvZdh/NWgr\r\nx/3sKxm+zk1GxviwC8w6y3EkNkpGRCcvLHxNxXgcei1Z29xVXB7pW/kHD4GWBNyX\r\n+nPpfXpavPCpZk2WJsBK92UNsD9jd+zWn+ytnKXAwIu/Tzo+siM3v9VNgirxeMs/\r\nOafuz2VNlFPVlH/cOSwJb7DoJw==\r\n-----END PRIVATE KEY-----\r\n".to_string(),
+                m_pgp_public_key: "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuuL3bGb1GRPI9h0FMgN/\r\nK+FrwV72Rgm2sldXzJSQgny08gH8f94Y5aYDUPBooOtMFobc6dCab7nSQkS2XZjm\r\nveSMUHfNwnMNbqlvcd0qO5V4b9/EofmjxrIjQEyFeA9zK2xSt6Ngkomu8ALhqNtP\r\nX01QawJJmxvVwl7V+tAJcDaJfmctH6mSu32ZGtlTKrd5aD/AHiszPr2FhCp1AKr/\r\nCkGakuCA2NAQwspgH/+ZtVk5t87cGrVWQh5X2UXPyeDcTf5HZXnJ341kIuxSU9YH\r\nDpR58aOIT2j/5cl8E4WzHi+lK8zkjqHy1F3lkBabwYMYccCOgyU3UEiwbDEcd9tO\r\nswIDAQAB\r\n-----END PUBLIC KEY-----\r\n".to_string(),
+            },
+            m_machine_alias: "Hu-node".to_string(),
+            m_backer_detail: UnlockDocument {
+                m_unlock_sets: vec![
+                    UnlockSet {
+                        m_signature_type: "Strict".to_string(),
+                        m_signature_ver: "0.0.1".to_string(),
+                        m_signature_sets: vec![
+                            IndividualSignature {
+                                m_signer_id: "0000001".to_string(),
+                                m_signature_key: "02deda35eeb5bceef530573917f6332c794fac354dc6a45c5dc1086c2880ae6173".to_string(),
+                                m_permitted_to_pledge: "N".to_string(),
+                                m_permitted_to_delegate: "N".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                            IndividualSignature {
+                                m_signer_id: "0000002".to_string(),
+                                m_signature_key: "02d2df353fe8e306b0986c774c674b298c56c51e9de4200a142dccde65721282e1".to_string(),
+                                m_permitted_to_pledge: "N".to_string(),
+                                m_permitted_to_delegate: "N".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                        ],
+                        m_merkle_proof: vec![
+                            "r.leave_4".to_string(),
+                            "l.e7720680189ed8851aaa6dac86b75265b5867a52484c2e2afbd8a02c4d6230b8".to_string(),
+                        ],
+                        m_left_hash: "".to_string(),
+                        m_salt: "7784f23b605ba6a4".to_string(),
+                    },
+                    UnlockSet {
+                        m_signature_type: "Strict".to_string(),
+                        m_signature_ver: "0.0.1".to_string(),
+                        m_signature_sets: vec![
+                            IndividualSignature {
+                                m_signer_id: "0000000".to_string(),
+                                m_signature_key: "0343b174ea00715e0b6011ba6198b7223c49e29e1141ed08e2b17b197cbe4c9301".to_string(),
+                                m_permitted_to_pledge: "Y".to_string(),
+                                m_permitted_to_delegate: "Y".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                            IndividualSignature {
+                                m_signer_id: "0000001".to_string(),
+                                m_signature_key: "02deda35eeb5bceef530573917f6332c794fac354dc6a45c5dc1086c2880ae6173".to_string(),
+                                m_permitted_to_pledge: "N".to_string(),
+                                m_permitted_to_delegate: "N".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                        ],
+                        m_merkle_proof: vec![
+                            "r.4bd81f336636a93f9ff6b17182388605ed3580b6f0afce81a8cb127d7182ce8c".to_string(),
+                            "r.88b18ac38e17e322599e0cc304e3b493b25b28b97ae34c4f7dcd2dbf1478ae0a".to_string(),
+                        ],
+                        m_left_hash: "".to_string(),
+                        m_salt: "f51ccac90852581a".to_string(),
+                    },
+                    UnlockSet {
+                        m_signature_type: "Strict".to_string(),
+                        m_signature_ver: "0.0.1".to_string(),
+                        m_signature_sets: vec![
+                            IndividualSignature {
+                                m_signer_id: "0000000".to_string(),
+                                m_signature_key: "0343b174ea00715e0b6011ba6198b7223c49e29e1141ed08e2b17b197cbe4c9301".to_string(),
+                                m_permitted_to_pledge: "Y".to_string(),
+                                m_permitted_to_delegate: "Y".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                            IndividualSignature {
+                                m_signer_id: "0000002".to_string(),
+                                m_signature_key: "02d2df353fe8e306b0986c774c674b298c56c51e9de4200a142dccde65721282e1".to_string(),
+                                m_permitted_to_pledge: "N".to_string(),
+                                m_permitted_to_delegate: "N".to_string(),
+                                m_input_time_lock: 0.0,
+                                m_output_time_lock: 0.0,
+                            },
+                        ],
+                        m_merkle_proof: vec!["r.88b18ac38e17e322599e0cc304e3b493b25b28b97ae34c4f7dcd2dbf1478ae0a".to_string()],
+                        m_left_hash: "6288cf5ad27c2a5e00167b035152e97a8e77759db9a0ddeea074fbd0571e19eb".to_string(),
+                        m_salt: "5b63e243dca37c8c".to_string(),
+                    },
+                ],
+                m_merkle_root: "38a2d19509e4c4cb761a5c5a39d8d4153a0c28dc77ff4c07b34aa42e150de393".to_string(),
+                m_account_address: "im1xqenscfjvscnjdfs89jngce5vd3rwd33vy6kxdtpxvukgwryxscs6xpe6r".to_string(),
+                m_merkle_version: "0.1.0".to_string(),
+                m_private_keys: HashMap::from([
+                    (
+                        "f51ccac90852581a".to_string(),
+                        vec![
+                            "4420f136fc2810907a9670bbab4d26b36ee6a02b759496f86fa0d3aed161a902".to_string(),
+                            "b093b11f9412bb2e0acee606f3e12df6fe693fef3dce63392f3f26636b1a43ce".to_string(),
+                        ]
+                    ),
+                    (
+                        "7784f23b605ba6a4".to_string(),
+                        vec![
+                            "b093b11f9412bb2e0acee606f3e12df6fe693fef3dce63392f3f26636b1a43ce".to_string(),
+                            "f5d31415c8ea9faf21f2742b8db7eec4906c3ce1f9c6b83d895db9e5f835231d".to_string(),
+                        ]
+                    ),
+                    (
+                        "5b63e243dca37c8c".to_string(),
+                        vec![
+                            "4420f136fc2810907a9670bbab4d26b36ee6a02b759496f86fa0d3aed161a902".to_string(),
+                            "f5d31415c8ea9faf21f2742b8db7eec4906c3ce1f9c6b83d895db9e5f835231d".to_string(),
+                        ]
+                    ),
+                ]),
+            },
+            m_language: "eng".to_string(),
+            m_term_of_services: "Y".to_string(),
+            m_already_presented_neighbors: vec![],
+        },
+    };
+    return profile;
+}

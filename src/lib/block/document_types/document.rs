@@ -7,12 +7,13 @@ use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
+use crate::lib::block::document_types::null_document::NullDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
-use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, CMPAIValueT, DocLenT, JSonObject, VVString};
+use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_outputs_tuples, stringify_outputs, TOutput};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_outputs_tuples, stringify_outputs, TInput, TOutput};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct Document
@@ -36,6 +37,10 @@ pub struct Document
     pub m_if_polling_doc: PollingDocument,
     pub m_if_basic_tx_doc: BasicTxDocument,
     pub m_if_coinbase_doc: CoinbaseDocument,
+    pub m_if_null_doc: NullDocument,
+
+    pub m_empty_vec: Vec<String>,
+
 }
 
 impl Document
@@ -61,6 +66,8 @@ impl Document
             m_if_polling_doc: PollingDocument::new(),
             m_if_basic_tx_doc: BasicTxDocument::new(),
             m_if_coinbase_doc: CoinbaseDocument::new(),
+            m_if_null_doc: NullDocument::new(),
+            m_empty_vec: vec![]
         }
     }
 
@@ -391,14 +398,36 @@ impl Document
         //return json!({});
     }
 
-    /*
-    QVector<COutputIndexT> Document::getDPIs() const
+
+    pub fn get_dpis_super(&self) -> Vec<COutputIndexT>
     {
-    cutils::exiter("attribute data_and_process_payment_indexes is n't implement for Base class document(" + self.m_doc_type + ")", 0);
-    return {};
+        panic!("attribute data_and_process_payment_indexes is n't implement for Base class document({})", self.m_doc_type);
+        return vec![];
     }
 
-*/
+    pub fn get_dpis(&self) -> &Vec<COutputIndexT>
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.get_dpis();
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_null_doc.get_dpis();
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to get dpis! {}", self.m_doc_hash);
+    }
+
     //old_name_was getDocHash
     pub fn get_doc_hash(&self) -> String
     {
@@ -483,6 +512,32 @@ impl Document
         {} else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.get_outputs();
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {
+            return self.m_if_null_doc.get_outputs();
+        } else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
+    }
+
+    // old name was getInputs
+    pub fn get_inputs(&self) -> &Vec<TInput>
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.get_inputs();
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_null_doc.get_inputs();
         } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {} else if self.m_doc_type == constants::document_types::BALLOT
         {} else if self.m_doc_type == constants::document_types::POLLING

@@ -4,7 +4,7 @@ use crate::{constants};
 use crate::lib::custom_types::CAddressT;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct UnlockDocument {
     pub m_unlock_sets: Vec<UnlockSet>,
     pub m_merkle_root: String,

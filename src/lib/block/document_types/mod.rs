@@ -6,3 +6,4 @@ pub mod coinbase_document;
 pub mod basic_tx_document;
 pub mod polling_document;
 pub mod iname_document;
+pub mod null_document;
