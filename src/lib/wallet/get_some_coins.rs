@@ -1,30 +1,22 @@
 use std::collections::HashMap;
-use rand::random;
-use serde_json::json;
-use crate::{constants, cutils, dlog, machine};
-use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CMPAISValueT, CMPAIValueT, JSonObject, QVDicT, QVDRecordsT, VString};
-use crate::lib::dag::normal_block::rejected_transactions_handler::search_in_rejected_trx;
-use crate::lib::database::abs_psql::simple_eq_clause;
+use crate::{constants, cutils, dlog};
+use crate::lib::custom_types::{CCoinCodeT, CMPAISValueT, CMPAIValueT, VString};
 use crate::lib::services::society_rules::society_rules::get_transaction_minimum_fee;
-use crate::lib::transactions::basic_transactions::coins::coins_handler::extract_coins_by_addresses;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TInput;
-use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
-use crate::lib::wallet::wallet_address_handler::get_addresses_list;
-use crate::lib::wallet::wallet_signer::search_in_locally_marked_coins;
 
 //old_name_was getSomeCoins
+#[allow(unused, dead_code)]
 pub fn get_some_coins(
     minimum_spendable: CMPAIValueT,
-    selection_method: &str,
-    unlocker_index: u64,
+    _selection_method: &str,
+    _unlocker_index: u64,
     excluded_coins: VString,
     allowed_to_use_rejected_coins_to_test: bool) -> (bool, String, HashMap<CCoinCodeT, TInput>, CMPAISValueT)
 {
-    let mut excluded_coins = excluded_coins;
-    let mut msg: String;
+    let mut _excluded_coins = excluded_coins;
+    let mut _msg: String;
     let mut minimum_spendable = minimum_spendable;
-    let mut selected_coins: HashMap<CCoinCodeT, TInput> = HashMap::new();
+    let selected_coins: HashMap<CCoinCodeT, TInput> = HashMap::new();
     let mut sum_coin_values: CMPAISValueT = 0;
 
     if minimum_spendable == 0

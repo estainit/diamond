@@ -37,7 +37,7 @@ impl DBHandler {
 
 pub fn get_connection() -> Client {
     let db_host: String = application().db_host();
-    let mut db_name: String = application().db_name();
+    let db_name: String = application().db_name();
     let db_user: String = application().db_user();
     let db_pass: String = application().db_pass();
 

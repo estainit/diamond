@@ -177,9 +177,13 @@ pub mod thread_state
 
 pub mod coin_selecting_method
 {
+    #[allow(unused, dead_code)]
     pub const PRECISE: &str = "PRECISE";
+    #[allow(unused, dead_code)]
     pub const BIGGER_FIRST: &str = "BIGGER_FIRST";
+    #[allow(unused, dead_code)]
     pub const SMALLER_FIRST: &str = "SMALLER_FIRST";
+    #[allow(unused, dead_code)]
     pub const RANDOM: &str = "RANDOM";
 }
 

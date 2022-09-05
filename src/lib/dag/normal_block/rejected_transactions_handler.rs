@@ -3,6 +3,7 @@ use crate::lib::database::abs_psql::q_select;
 use crate::lib::database::tables::{C_TRX_REJECTED_TRANSACTIONS, C_TRX_REJECTED_TRANSACTIONS_FIELDS};
 
 //old_name_was searchInRejectedTrx
+#[allow(unused, dead_code)]
 pub fn search_in_rejected_trx(
     clauses: ClausesT,
     mut fields: Vec<&str>,

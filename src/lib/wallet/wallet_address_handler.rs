@@ -91,7 +91,7 @@ pub fn get_addresses_list(
         clauses.push(simple_eq_clause("wa_mp_code", &mp_code));
     }
 
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_MACHINE_WALLET_ADDRESSES,
         fields,
         clauses,
@@ -119,7 +119,7 @@ pub fn get_addresses_list(
         &now_ as &(dyn ToSql + Sync),
     ];
 
-    let (status, tmp_records) = q_custom_query(
+    let (_status, tmp_records) = q_custom_query(
         &complete_query,
         &params,
         false);
@@ -152,7 +152,7 @@ pub fn get_addresses_list(
         &now_ as &(dyn ToSql + Sync),
     ];
 
-    let (status, records) = q_custom_query(
+    let (_status, records) = q_custom_query(
         &complete_query,
         &params,
         false);

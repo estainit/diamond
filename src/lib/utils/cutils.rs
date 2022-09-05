@@ -8,7 +8,9 @@ use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonObject, VString, VVString};
 
-pub fn remove_quotes(input_value: &JSonObject) -> String {
+#[allow(unreachable_code)]
+pub fn remove_quotes(input_value: &JSonObject) -> String
+{
     if input_value.is_null() {
         dlog(
             &format!("JSon Object (to be removed quotes) is null {}", input_value),
@@ -612,9 +614,9 @@ pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
 }
 
 pub fn calc_log(
-    x_value: f64,
-    range: u64,
-    exp: u64) -> (f64, f64, f64, f64)
+    _x_value: f64,
+    _range: u64,
+    _exp: u64) -> (f64, f64, f64, f64)
 {
     return (0.0, 0.0, 0.0, 0.0);
     /*
@@ -647,6 +649,7 @@ pub fn calc_log(
 }
 
 //old_name_was microPAIToPAI6
+#[allow(unused, dead_code)]
 pub fn micro_pai_to_pai_6(int_amount: CMPAISValueT) -> String
 {
     return int_amount.to_string();

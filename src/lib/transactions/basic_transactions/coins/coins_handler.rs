@@ -559,6 +559,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
 
 */
 //old_name_was extractUTXOsBYAddresses
+#[allow(unused, dead_code)]
 pub fn extract_coins_by_addresses(addresses: &VString) -> QVDRecordsT
 {
     if addresses.len() == 0
@@ -580,7 +581,7 @@ pub fn extract_coins_by_addresses(addresses: &VString) -> QVDRecordsT
         0,
         &tmp_clauses);
 
-    let mut complete_query = format!(
+    let complete_query = format!(
         "SELECT ut_coin, ut_o_address, ut_o_value, min(ut_ref_creation_date) AS ref_creation_date \
         FROM {} WHERE {} GROUP BY ut_coin, ut_o_address, ut_o_value \
         ORDER BY min(ut_ref_creation_date), ut_o_address, ut_o_value",

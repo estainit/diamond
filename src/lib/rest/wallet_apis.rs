@@ -10,7 +10,7 @@ use crate::lib::wallet::wallet_coins::get_coins_list;
 pub async fn get_addresses() -> web::Json<QVDRecordsT>
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let (wallet_controlled_accounts, details) = get_addresses_list(
+        let (wallet_controlled_accounts, _details) = get_addresses_list(
             &machine().get_selected_m_profile(),
             Vec::from(C_MACHINE_WALLET_ADDRESSES_FIELDS),
             true);

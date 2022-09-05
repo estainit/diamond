@@ -135,7 +135,7 @@ pub fn get_coins_list(should_refresh_coins: bool) -> QVDRecordsT
 
     let mp_code = machine().get_selected_m_profile();
 
-    let (status, records) = q_select(
+    let (_status, records) = q_select(
         C_MACHINE_WALLET_FUNDS,
         Vec::from(C_MACHINE_WALLET_FUNDS_FIELDS),
         vec![simple_eq_clause("wf_mp_code", &mp_code)],
@@ -166,7 +166,7 @@ pub fn insert_a_coin_in_wallet(
         wf_mp_code = machine().get_selected_m_profile();
     }
 
-    let (status, dbl_chk_records) = q_select(
+    let (_status, dbl_chk_records) = q_select(
         C_MACHINE_WALLET_FUNDS,
         vec!["wf_trx_hash"],
         vec![
@@ -237,6 +237,7 @@ pub fn delete_from_funds(
 }
 
 //old_name_was deleteFromFunds
+#[allow(unused, dead_code)]
 pub fn delete_from_funds_by_trx(
     trx: &BasicTxDocument) -> bool
 {

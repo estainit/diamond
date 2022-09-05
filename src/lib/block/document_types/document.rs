@@ -399,6 +399,7 @@ impl Document
     }
 
 
+    #[allow(unused, dead_code)]
     pub fn get_dpis_super(&self) -> Vec<COutputIndexT>
     {
         panic!("attribute data_and_process_payment_indexes is n't implement for Base class document({})", self.m_doc_type);

@@ -1,4 +1,4 @@
-use crate::{application, cutils, machine};
+use crate::{cutils, machine};
 use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::q_select;
 use crate::lib::database::tables::C_MACHINE_USED_COINS;
@@ -28,32 +28,32 @@ void Wallet::locallyMarkUTXOAsUsed(const BasicTxDocument* trx)
 */
 
 //old_name_was excludeLocallyUsedCoins
-pub fn exclude_locally_used_coins() ->bool
+pub fn exclude_locally_used_coins() -> bool
 {
-  let(status, locally_used_coins) = q_select(
-    C_MACHINE_USED_COINS,
-    vec!["lu_coin"],
-    vec![],
-    vec![],
-  0,
-  false);
+    let (_status, locally_used_coins) = q_select(
+        C_MACHINE_USED_COINS,
+        vec!["lu_coin"],
+        vec![],
+        vec![],
+        0,
+        false);
     let mp_code = machine().get_selected_m_profile();
-  for a_coin in locally_used_coins
-  {
-    let(doc_hash, output_index) =
-        cutils::unpack_coin_code(&a_coin["lu_coin"]);
-    delete_from_funds(
-        &doc_hash,
-        output_index,
-        &mp_code
-    );
-  }
-  return true;
+    for a_coin in locally_used_coins
+    {
+        let (doc_hash, output_index) =
+            cutils::unpack_coin_code(&a_coin["lu_coin"]);
+        delete_from_funds(
+            &doc_hash,
+            output_index,
+            &mp_code,
+        );
+    }
+    return true;
 }
 
 
-
 //old_name_was searchLocallyMarkedUTXOs
+#[allow(unused, dead_code)]
 pub fn search_in_locally_marked_coins(
     clauses: ClausesT,
     fields: Vec<&str>,

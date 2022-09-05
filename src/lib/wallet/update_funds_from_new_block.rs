@@ -142,7 +142,7 @@ pub fn update_funds_from_new_block(
         } else if a_doc.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
         {
             let outputs: &Vec<TOutput> = a_doc.get_outputs();
-            let mut output_index: COutputIndexT = 0;
+            let output_index: COutputIndexT = 0;
             while output_index < outputs.len() as COutputIndexT
             {
                 let an_output = &outputs[output_index as usize];
