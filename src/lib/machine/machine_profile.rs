@@ -120,7 +120,6 @@ pub fn get_profiles_list() -> Vec<JSonObject>
         return vec![];
     }
     let mut out: Vec<JSonObject> = vec![];
-    println!("ffffffff records: {:?}", records);
     for a_profile in &records
     {
         let mut is_selected = false;

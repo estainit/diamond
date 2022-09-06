@@ -8,7 +8,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::i
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 
 //old_name_was createANewBasicAddress
-pub fn create_anew_basic_address<'a>(
+pub fn create_a_new_basic_address<'a>(
     signature_mod: &str,
     signature_version: &'a str) -> (bool, UnlockDocument)
 {
@@ -90,7 +90,7 @@ pub fn create_anew_basic_address<'a>(
                 constants::SecLevel::Info);
         } else {
             dlog(
-                &format!("Curropted strict address created!?"),
+                &format!("Corrupted strict address created!?"),
                 constants::Modules::App,
                 constants::SecLevel::Fatal);
 
@@ -117,11 +117,11 @@ pub fn create_anew_basic_address<'a>(
             if !status
             {
                 dlog(
-                    &format!("Curropted strict address created signature status!? {}", unlock_info.dump()),
+                    &format!("Corrupted strict address created signature status!? {}", unlock_info.dump()),
                     constants::Modules::App,
                     constants::SecLevel::Fatal);
 
-                panic!("Curropted strict address created signature status!? {}", unlock_info.dump());
+                panic!("Corrupted strict address created signature status!? {}", unlock_info.dump());
             }
             let verify_res = ccrypto::ecdsa_verify_signature(
                 &an_unlock_set.m_signature_sets[inx].m_signature_key.to_string(),
@@ -134,7 +134,7 @@ pub fn create_anew_basic_address<'a>(
                     constants::Modules::App,
                     constants::SecLevel::Fatal);
 
-                panic!("Curropted strict address created signature!? {}", unlock_info.dump());
+                panic!("Corrupted strict address created signature!? {}", unlock_info.dump());
             }
         }
     }

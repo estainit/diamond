@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use substring::Substring;
 use crate::{application, CMachine, constants};
 use crate::lib::custom_types::VString;
-use crate::lib::file_handler::file_handler::{file_write, read_exact_file, write_exact_file};
+use crate::lib::file_handler::file_handler::{read_exact_file, write_exact_file};
 
 impl CMachine {
     // func name was parseArgs
@@ -104,7 +104,7 @@ impl CMachine {
             {
                 let now_ = application().now();
                 let (
-                    cycle_stamp,
+                    _cycle_stamp,
                     from_t,
                     _to,
                     _from_hour,

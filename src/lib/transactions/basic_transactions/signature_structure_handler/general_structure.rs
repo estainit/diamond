@@ -1,13 +1,13 @@
 use std::collections::HashMap;
-use rand::Rng;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
-use crate::{application, ccrypto, constants, cutils, dlog, PermutationHandler};
-use crate::cmerkle::{generate_m, get_root_by_a_prove};
+use crate::{ccrypto, constants, cutils, dlog, PermutationHandler};
+use crate::cmerkle::{get_root_by_a_prove};
 use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::create_m_of_n_merkle::create_m_of_n_merkle;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct TInput
@@ -91,7 +91,7 @@ pub fn my_get<'a>(the_map: &'a HashMap<&str, &str>, the_key: &'a str, default_va
 //old_name_was createCompleteUnlockSets
 pub fn create_complete_unlock_sets<'a>(
     individuals_signing_sets: HashMap<String, IndividualSignature>,
-    neccessary_signatures_count: u16,
+    necessary_signatures_count: u16,
     options: &'a HashMap<&str, &str>) -> UnlockDocument
 {
     let signature_type: String = my_get(options, "signature_type", "").to_string();
@@ -108,7 +108,7 @@ pub fn create_complete_unlock_sets<'a>(
     leave_ids.sort();
     let sign_permutations = PermutationHandler::new(
         &leave_ids,
-        neccessary_signatures_count,
+        necessary_signatures_count,
         true,
         &vec![],
         &vec![],
@@ -158,94 +158,6 @@ pub fn create_complete_unlock_sets<'a>(
         custom_salts,
         options,
     );
-}
-
-
-pub fn create_m_of_n_merkle<'a>(
-    unlock_sets: &mut Vec<UnlockSet>,
-    custom_types: HashMap<String, HashMap<String, String>>,
-    custom_salts: HashMap<String, String>,
-    options: &'a HashMap<&str, &str>) -> UnlockDocument
-{
-//  CLog::log("create M Of N Merkle creating unlock_sets" + cutils::dumpIt(unlock_sets), "app", "trace");
-
-    let hash_algorithm: String = my_get(options, "hash_algorithm", "keccak256").to_string();
-    let input_type: String = my_get(options, "input_type", "hashed").to_string();
-
-    let mut hashed_unlocks: Vec<String> = vec![];
-    let mut tmp_unlockers: HashMap<String, &UnlockSet> = HashMap::new();
-    let mut custom_key: String;
-    let mut leave_hash: String;
-    for mut an_unlock_set in unlock_sets
-    {
-        custom_key = cutils::hash16c(&ccrypto::keccak256(&custom_stringify_signature_sets(&an_unlock_set.m_signature_sets)));
-        if custom_types.contains_key(&custom_key)
-        {
-            an_unlock_set.m_signature_type = custom_types[&custom_key]["signature_type"].clone();
-            an_unlock_set.m_signature_ver = custom_types[&custom_key]["signature_version"].clone();
-        } else {
-            an_unlock_set.m_signature_type = constants::signature_types::BASIC.to_string();
-            an_unlock_set.m_signature_ver = "0.0.0".to_string();
-        }
-
-        // adding random salt to obsecure/unpredictable final address
-        // TODO: maybe use crypto secure random generator
-        if custom_salts.contains_key(&custom_key) {
-            an_unlock_set.m_salt = custom_salts[&custom_key].clone();
-        } else {
-            an_unlock_set.m_salt = cutils::hash16c(
-                &ccrypto::keccak256(
-                    &(an_unlock_set.dump()
-                        + &application().now()
-                        + &format!("{}", rand::thread_rng().gen::<u32>())
-                    )
-                )
-            );
-        }
-        leave_hash = calc_unlock_hash(an_unlock_set, &hash_algorithm);
-        hashed_unlocks.push(leave_hash.clone());
-        tmp_unlockers.insert(leave_hash, an_unlock_set);
-    }
-
-    let (merkle_root, m_verifies, m_version, _levels, _leaves) = generate_m(
-        hashed_unlocks,
-        &input_type,
-        &hash_algorithm,
-        &"".to_string());
-    let mut merkle_root = ccrypto::keccak256_dbl(&merkle_root); // because of securiy, MUST use double hash
-
-    // FIXME: m_signature_type is aplyable for each uSet in a m of n shema, wherase for merkle root we can apply only one signature_type.
-    // for now we just use the signature_type of fist uSet.
-    // BTW for now all signature_types in an address are same
-    let first_unlocker: String = tmp_unlockers.keys().map(|k| k.clone()).collect::<Vec<String>>()[0].clone();
-    if tmp_unlockers.get(&first_unlocker).unwrap().m_signature_type == constants::signature_types::MIX23
-    {
-        merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Extra securiy level
-    }
-
-    let mut unlock_document: UnlockDocument = UnlockDocument {
-        m_unlock_sets: vec![],
-        m_merkle_root: merkle_root.clone(),
-        m_account_address: ccrypto::bech32_encode(&merkle_root),
-        m_merkle_version: m_version,
-        m_private_keys: Default::default(),
-    };
-
-    // asign merkle proofs to sign_set itself
-    for key in tmp_unlockers.keys()
-    {
-        let tmp: UnlockSet = UnlockSet {
-            m_signature_type: tmp_unlockers[key].m_signature_type.clone(),
-            m_signature_ver: tmp_unlockers[key].m_signature_ver.clone(),
-            m_signature_sets: tmp_unlockers[key].m_signature_sets.clone(),
-            m_merkle_proof: m_verifies.get(key).unwrap().m_merkle_proof.iter().map(|x| x.clone()).collect::<Vec<String>>(),
-            m_left_hash: m_verifies.get(key).unwrap().m_left_hash.clone(),
-            m_salt: tmp_unlockers[key].m_salt.clone(),
-        };
-
-        unlock_document.m_unlock_sets.push(tmp);
-    }
-    return unlock_document;
 }
 
 //old_name_was calcUnlockHash

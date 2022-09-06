@@ -7,21 +7,10 @@ use crate::{application, constants, dlog, get_value, machine};
 use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::k_v_handler::upsert_kvalue;
+use crate::lib::wallet::get_addresses_list::get_addresses_list;
 use crate::lib::wallet::update_funds_from_new_block::update_funds_from_new_block;
-use crate::lib::wallet::wallet_address_handler::{get_addresses_list};
 
 /*
-
-#include "stable.h"
-
-#include "lib/block_utils.h"
-#include "lib/block/document_types/document.h"
-#include "lib/services/society_rules/society_rules.h"
-#include "lib/block/document_types/basic_tx_document.h"
-#include "lib/dag/normal_block/rejected_transactions_handler.h"
-
-#include "wallet.h"
-
 
 // js name was retrieveSpendableUTXOsAsync
 QVDRecordsT Wallet::retrieveSpendableCoins(StringList w_addresses)

@@ -9,7 +9,7 @@ use crate::lib::utils::dumper;
 
 pub const MERKLE_VERSION: &str = "0.1.0";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct MerkleNodeData {
     pub m_proof_keys: VString,
     pub m_parent: String,
@@ -125,9 +125,9 @@ pub fn generate_m(
         4097..=8192 => 8192,
         _ => panic!("Invalid needed_leaves: {}", needed_leaves)
     };
-    let mut elms_ = elms.iter().map(|x|x.clone()).collect::<Vec<String>>();
+    let mut elms_ = elms.iter().map(|x| x.clone()).collect::<Vec<String>>();
     while inx < needed_leaves as usize {
-        let the_elm:String = "leave_".to_owned() + &(inx + 1).to_string();
+        let the_elm: String = "leave_".to_owned() + &(inx + 1).to_string();
         elms_.push(the_elm.clone());
         inx += 1;
     }
@@ -178,8 +178,11 @@ pub fn do_hash_a_node(node_value: &String, hash_algorithm: &String) -> String {
 }
 
 //old_name_was innerMerkle
-pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: &String, _version: &String)
-                    -> (String, MNodesMapT, usize, usize)
+pub fn inner_merkle(
+    mut elms: Vec<String>,
+    input_type: &String,
+    hash_algorithm: &String,
+    _version: &String) -> (String, MNodesMapT, usize, usize)
 {
     // let mut elms = cutils::clone_vec(elms_);
     if input_type == "string" {
@@ -248,7 +251,7 @@ pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: 
 
                 let mut veri = verifies.get(&l_key.clone()).unwrap().clone_me();
                 veri.push_m_merkle_proof(&("r.".to_owned() + &chunk[1].to_string()));
-                verifies.remove(&l_key);
+                // verifies.remove(&l_key);
                 verifies.insert(l_key.clone(), veri);
             } else {
                 // find alter parent cild
@@ -268,7 +271,7 @@ pub fn inner_merkle(mut elms: Vec<String>, input_type: &String, hash_algorithm: 
                 }
                 // replace changes
                 for (key, new_verify) in tmp_verifies.iter() {
-                    verifies.remove(key);
+                    // verifies.remove(key);
                     verifies.insert(key.clone(), new_verify.clone_me());
                 }
             }
