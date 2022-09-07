@@ -54,7 +54,7 @@ pub struct TOutput
 
 impl TOutput {
     #[allow(unused, dead_code)]
-    pub fn new() -> TOutput {
+    pub fn new() -> Self {
         TOutput {
             m_address: "".to_string(),
             m_amount: 0,

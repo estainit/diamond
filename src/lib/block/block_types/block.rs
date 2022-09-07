@@ -42,7 +42,7 @@ pub struct TransientBlockInfo
 
 impl TransientBlockInfo {
     #[allow(unused, dead_code)]
-    pub fn new() -> TransientBlockInfo {
+    pub fn new() -> Self {
         TransientBlockInfo {
             m_status: false,
             m_block: Block::new(),
@@ -74,7 +74,7 @@ pub struct BlockApprovedDocument
 
 impl BlockApprovedDocument {
     #[allow(unused, dead_code)]
-    pub fn new() -> BlockApprovedDocument {
+    pub fn new() -> Self {
         BlockApprovedDocument {
             m_approved_doc: Document::new(),
             m_approved_doc_hash: "".to_string(),
@@ -111,7 +111,7 @@ pub struct Block
 }
 
 impl Block {
-    pub fn new() -> Block {
+    pub fn new() -> Self {
         Block {
             m_block_net: constants::SOCIETY_NAME.to_string(),
             m_block_descriptions: "".to_string(),

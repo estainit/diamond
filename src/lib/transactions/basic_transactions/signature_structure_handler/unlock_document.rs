@@ -14,7 +14,7 @@ pub struct UnlockDocument {
 }
 
 impl UnlockDocument {
-    pub fn new() -> UnlockDocument {
+    pub fn new() -> Self {
         return UnlockDocument {
             m_unlock_sets: vec![],
             m_merkle_root: "".to_string(),

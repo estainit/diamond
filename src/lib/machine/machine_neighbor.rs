@@ -24,7 +24,7 @@ pub struct NeighborInfo {
 }
 
 impl NeighborInfo {
-    pub fn new() -> NeighborInfo {
+    pub fn new() -> Self {
         NeighborInfo {
             m_name: "".to_string()
         }

@@ -30,7 +30,7 @@ pub struct ProposalDocument
 }
 
 impl ProposalDocument {
-    pub fn new() -> ProposalDocument {
+    pub fn new() -> Self {
         ProposalDocument {
             m_project_hash: "".to_string(),
             m_approval_date: "".to_string(),

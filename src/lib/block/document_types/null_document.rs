@@ -11,7 +11,7 @@ pub struct NullDocument
 }
 
 impl NullDocument {
-    pub fn new() -> NullDocument {
+    pub fn new() -> Self {
         NullDocument {
             m_inputs: vec![],
             m_outputs: vec![],

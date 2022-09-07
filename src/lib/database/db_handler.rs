@@ -17,7 +17,7 @@ pub struct DBHandler {
 }
 
 impl DBHandler {
-    pub fn new() -> DBHandler {
+    pub fn new() -> Self {
         eprintln!("New DBHandler is going to be created.");
 
         let db = DBHandler {

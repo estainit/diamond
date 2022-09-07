@@ -45,7 +45,7 @@ pub struct Document
 
 impl Document
 {
-    pub fn new() -> Document {
+    pub fn new() -> Self {
         Document {
             m_doc_hash: "".to_string(),
             m_doc_type: "".to_string(),

@@ -34,7 +34,7 @@ impl AppParams {
         // eprintln!("dummy_init in AppParams was called.");
     }
 
-    pub fn new() -> AppParams {
+    pub fn new() -> Self {
         eprintln!("New AppParams was create.");
 
         AppParams {

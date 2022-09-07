@@ -15,7 +15,7 @@ pub struct CoinbaseBlock
 }
 
 impl CoinbaseBlock {
-    pub fn new() -> CoinbaseBlock {
+    pub fn new() -> Self {
         CoinbaseBlock {
             m_cycle: "".to_string()
         }

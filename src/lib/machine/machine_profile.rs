@@ -43,7 +43,7 @@ pub struct MachineProfile
 }
 
 impl MachineProfile {
-    pub fn new() -> MachineProfile {
+    pub fn new() -> Self {
         return MachineProfile {
             m_mp_code: "".to_string(),
             m_mp_name: "".to_string(),
@@ -152,7 +152,7 @@ pub struct MPSetting
 }
 
 impl MPSetting {
-    pub fn new() -> MPSetting {
+    pub fn new() -> Self {
         return MPSetting {
             m_public_email: EmailSettings::new(),
             m_private_email: EmailSettings::new(),
@@ -181,7 +181,7 @@ pub struct EmailSettings {
 }
 
 impl EmailSettings {
-    pub fn new() -> EmailSettings {
+    pub fn new() -> Self {
         return EmailSettings {
             m_address: "abc@def.gh".to_string(),
             m_password: "".to_string(),

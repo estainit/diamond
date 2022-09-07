@@ -18,7 +18,7 @@ pub struct CoinbaseDocument {
 }
 
 impl CoinbaseDocument {
-    pub fn new() -> CoinbaseDocument {
+    pub fn new() -> Self {
         CoinbaseDocument {
             m_doc_cycle: "".to_string(),
             m_treasury_from: "".to_string(),

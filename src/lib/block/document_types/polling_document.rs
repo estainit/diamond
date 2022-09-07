@@ -23,7 +23,7 @@ pub struct PollingDocument
 
 impl PollingDocument
 {
-    pub fn new() -> PollingDocument {
+    pub fn new() -> Self {
         PollingDocument {
             m_voting_timeframe: 0.0,
             m_polling_ref: "".to_string(),

@@ -15,7 +15,7 @@ pub struct BasicTxDocument
 }
 
 impl BasicTxDocument {
-    pub fn new() -> BasicTxDocument {
+    pub fn new() -> Self {
         BasicTxDocument {
             m_inputs: vec![],
             m_outputs: vec![],

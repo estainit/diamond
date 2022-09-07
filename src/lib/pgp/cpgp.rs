@@ -22,7 +22,7 @@ pub struct CPGPMessage
 }
 
 impl CPGPMessage {
-    pub fn new() -> CPGPMessage {
+    pub fn new() -> Self {
         CPGPMessage {
             m_decryption_status: false,
             m_pgp_versaion: constants::CURRENT_PGP_VERSION.to_string(),

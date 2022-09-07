@@ -95,7 +95,7 @@ pub trait CMachineThreadGaps {
 
 
 impl CMachine {
-    pub fn new() -> CMachine {
+    pub fn new() -> Self {
         eprintln!("New CMachine was create.");
 
         CMachine {

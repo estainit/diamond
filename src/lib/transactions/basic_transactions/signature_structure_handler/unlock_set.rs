@@ -16,7 +16,7 @@ pub struct UnlockSet
 }
 
 impl UnlockSet {
-    pub fn new() -> UnlockSet {
+    pub fn new() -> Self {
         return UnlockSet {
             m_signature_type: constants::signature_types::BASIC.to_string(),
             m_signature_ver: "0.0.0".to_string(),

@@ -20,7 +20,7 @@ pub struct IndividualSignature
 
 impl IndividualSignature {
     #[allow(unused, dead_code)]
-    pub fn new() -> IndividualSignature {
+    pub fn new() -> Self {
         return IndividualSignature {
             m_signer_id: "".to_string(),
             m_signature_key: "".to_string(),
