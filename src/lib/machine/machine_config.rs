@@ -28,6 +28,10 @@ impl CMachine {
                 {
                     // force launch date
                     args_dic.insert(a_param, constants::YES.to_string());
+                } else if a_param == "fld1"
+                {
+                    // force launch date
+                    args_dic.insert(a_param, constants::YES.to_string());
                 } else if a_param == "verbose"
                 {
                     args_dic.insert(a_param, constants::YES.to_string());
@@ -99,8 +103,9 @@ impl CMachine {
             } else {
                 fld_file = format!("{}/tmp_launch_date.txt", fld_file);
             }
-            if args_dic.contains_key("fld")
-                && args_dic["fld"] == constants::YES.to_string()
+
+            if args_dic.contains_key("fld1")
+                && args_dic["fld1"] == constants::YES.to_string()
             {
                 let now_ = application().now();
                 let (
@@ -109,6 +114,20 @@ impl CMachine {
                     _to,
                     _from_hour,
                     _to_hour) = application().get_prev_coinbase_info(&now_);
+                self.m_launch_date = from_t;
+
+                // save launch date to local file (beside config file)
+                write_exact_file(&fld_file, &self.m_launch_date);
+            } else if args_dic.contains_key("fld")
+                && args_dic["fld"] == constants::YES.to_string()
+            {
+                let now_ = application().now();
+                let (
+                    _cycle_stamp,
+                    from_t,
+                    _to,
+                    _from_hour,
+                    _to_hour) = application().get_coinbase_info(&now_, "");
                 self.m_launch_date = from_t;
 
                 // save launch date to local file (beside config file)
