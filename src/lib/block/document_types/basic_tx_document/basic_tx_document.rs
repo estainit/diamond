@@ -436,7 +436,7 @@ impl BasicTxDocument {
 
 */
     //old_name_was getInputOutputSignables
-    pub fn getInputOutputSignables1(
+    pub fn get_input_output_signables1(
         &self,
         doc: &Document,
         sig_hash: &String,
@@ -450,7 +450,7 @@ impl BasicTxDocument {
         let inputs: VVString = generate_bip69_input_tuples(&inp_dict);
 
         let (outputs, _ordered_tpl_outputs) = generate_bip69_output_tuples(&self.m_outputs);
-        return Self::getInputOutputSignables2(
+        return Self::get_input_output_signables2(
             constants::document_types::BASIC_TX,
             &constants::DEFAULT_DOCUMENT_VERSION.to_string(),
             c_date,
@@ -461,7 +461,7 @@ impl BasicTxDocument {
     }
 
     //old_name_was getInputOutputSignables
-    pub fn getInputOutputSignables2(
+    pub fn get_input_output_signables2(
         doc_type: &str,
         doc_version: &String,
         c_date: &CDateT,
@@ -496,7 +496,7 @@ impl BasicTxDocument {
         document_ref: &CDocHashT,
         c_date: &CDateT) -> (bool, String)
     {
-        let sign_ables: String = BasicTxDocument::getInputOutputSignables2(
+        let sign_ables: String = BasicTxDocument::get_input_output_signables2(
             constants::document_types::BASIC_TX,
             &constants::DEFAULT_DOCUMENT_VERSION.to_string(),
             c_date,
@@ -575,7 +575,7 @@ impl BasicTxDocument {
             return false;
         }
 
-        let mut signables: String = self.getInputOutputSignables1(doc, sig_hash, c_date);
+        let mut signables: String = self.get_input_output_signables1(doc, sig_hash, c_date);
         signables = ccrypto::keccak256_dbl(&signables); // because of securiy, MUST use double hash
         let verify_res: bool = ccrypto::ecdsa_verify_signature(
             public_key,
@@ -752,18 +752,18 @@ impl BasicTxDocument {
                     return (false, msg, 0, 0);
                 }
 
-                if output.m_amount < 0
-                {
-                    msg = format!(
-                        "The transaction has negative output! {} Block({})",
-                        doc.get_doc_identifier(),
-                        cutils::hash8c(block_hash));
-                    dlog(
-                        &msg,
-                        constants::Modules::Sec,
-                        constants::SecLevel::Error);
-                    return (false, msg, 0, 0);
-                }
+                // if output.m_amount < 0
+                // {
+                //     msg = format!(
+                //         "The transaction has negative output! {} Block({})",
+                //         doc.get_doc_identifier(),
+                //         cutils::hash8c(block_hash));
+                //     dlog(
+                //         &msg,
+                //         constants::Modules::Sec,
+                //         constants::SecLevel::Error);
+                //     return (false, msg, 0, 0);
+                // }
 
                 if output.m_amount >= MAX_COINS_AMOUNT
                 {

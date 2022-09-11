@@ -9,6 +9,7 @@ pub struct DocExtInfo {
 }
 
 impl DocExtInfo {
+    #[allow(unused, dead_code)]
     pub fn new() -> Self {
         DocExtInfo {
             m_unlock_set: UnlockSet::new(),

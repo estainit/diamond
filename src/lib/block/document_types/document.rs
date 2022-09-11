@@ -522,6 +522,7 @@ impl Document
         return make_outputs_tuples(&self.get_outputs());
     }
 
+    #[allow(unused, dead_code)]
     pub fn make_inputs_tuples(&self) -> VVString
     {
         return make_inputs_tuples(&self.get_inputs());
@@ -807,6 +808,7 @@ impl Document
     }
 
     //old_name_was calcDocDataAndProcessCost
+    #[allow(unused, dead_code)]
     pub fn calc_doc_data_and_process_cost_supper(
         _stage: &String,
         _c_date: &CDateT,

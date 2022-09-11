@@ -70,12 +70,12 @@ impl BasicTxDocument {
             let mut signature_index: CSigIndexT = 0;
             while signature_index < sign_sets.len() as CSigIndexT
             {
-                let sigInfo: &VString = &an_ext_info.m_signatures[signature_index as usize];
+                let sig_info: &VString = &an_ext_info.m_signatures[signature_index as usize];
                 let (inputs, _outputs) =
                     BasicTxDocument::extract_input_outputs_based_on_sig_hash(
                         &self.m_inputs,
                         &self.m_outputs,
-                        &sigInfo[1]);
+                        &sig_info[1]);
                 vvv = vec![];
                 // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index] = StringList {};
                 for an_inp in inputs

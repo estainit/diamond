@@ -4,7 +4,6 @@ use crate::lib::custom_types::{CMPAISValueT, CMPAIValueT, DocLenT, JSonObject, Q
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_factory::load_block;
-use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, generate_bip69_input_tuples, generate_bip69_output_tuples};
@@ -17,14 +16,13 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
 {
     let msg: String;
     let doc: Document = Document::new();
-    let transaction: BasicTxDocument;
 
     // supportedP4PTrxLength = _.has(args, 'supportedP4PTrxLength') ? (args.supportedP4PTrxLength) : 0;
 
     if (tpl.m_tpl_pre_calculated_dp_cost > 0)
-        && (tpl.m_tpl_max_DP_cost == 0)
+        && (tpl.m_tpl_max_dp_cost == 0)
     {
-        tpl.m_tpl_max_DP_cost = tpl.m_tpl_pre_calculated_dp_cost; // user has some idea about the cost and want to pay exactly the desired price (pre_calculated_DP_cost)
+        tpl.m_tpl_max_dp_cost = tpl.m_tpl_pre_calculated_dp_cost; // user has some idea about the cost and want to pay exactly the desired price (pre_calculated_DP_cost)
     }
 
     if tpl.m_tpl_backers_addresses.len() == 0
@@ -139,13 +137,13 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
 
-    let (afford_status, afford_msg, the_DP_cost) =
+    let (afford_status, afford_msg, the_dp_cost) =
         tpl.can_afford_costs(locally_recalculate_trx_dp_cost);
     if !afford_status
     {
         return (false, afford_msg, doc, 0);
     }
-    tpl.set_dp_cost_amount(the_DP_cost);
+    tpl.set_dp_cost_amount(the_dp_cost);
 
     dlog(
         &format!(
@@ -163,14 +161,14 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         &format!(
             "sum DPCost({} Backer): {} nano PAI",
             tpl.m_tpl_backers_addresses.len(),
-            the_DP_cost * tpl.m_tpl_backers_addresses.len() as CMPAIValueT),
+            the_dp_cost * tpl.m_tpl_backers_addresses.len() as CMPAIValueT),
         constants::Modules::Trx,
         constants::SecLevel::Info);
 
     // TODO: add possibilitiy for user to pay diffrent DPCost to different backers(in case of cloning trx)
     let change_back_amount: CMPAISValueT = (total_inputs_amount
         - total_outputs_amount_except_dp_costs
-        - (the_DP_cost * tpl.m_tpl_backers_addresses.len() as CMPAIValueT)) as CMPAISValueT;
+        - (the_dp_cost * tpl.m_tpl_backers_addresses.len() as CMPAIValueT)) as CMPAISValueT;
     dlog(
         &format!(
             "change back amount ({} PAI) because of DPCosts",
@@ -361,7 +359,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         &now_,
         0);
 
-    if the_DP_cost < trx_dp_cost2
+    if the_dp_cost < trx_dp_cost2
     {
         if document.m_if_basic_tx_doc.get_dpis().len() > 1
         {
@@ -379,5 +377,5 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         //transaction->m_outputs[transaction->getDPIs()[0]]->m_amount = trx_dp_cost2;
     }
 
-    return (true, "".to_string(), document, the_DP_cost);
+    return (true, "".to_string(), document, the_dp_cost);
 }

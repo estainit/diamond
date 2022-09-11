@@ -428,22 +428,22 @@ pub fn safe_stringify_signture_sets(signture_sets: &Vec<IndividualSignature>) ->
 }
 
 //old_name_was safeStringifyUnlockSet
-pub fn safe_stringify_unlock_set(unlockSet: &UnlockSet) -> String
+pub fn safe_stringify_unlock_set(unlock_set: &UnlockSet) -> String
 {
     let mut out: String = "{".to_string();
-    if unlockSet.m_left_hash == "".to_string()
+    if unlock_set.m_left_hash == "".to_string()
     {
         out.push_str("\"lHash\":\"\",");
     } else {
-        out = format!("{}\"lHash\":\"{}\",", out, unlockSet.m_left_hash.clone());
+        out = format!("{}\"lHash\":\"{}\",", out, unlock_set.m_left_hash.clone());
     }
 
-    if unlockSet.m_merkle_proof.len() > 0
+    if unlock_set.m_merkle_proof.len() > 0
     {
         out = format!(
             "{}\"mProof\":{},",
             out,
-            serde_json::to_string(&unlockSet.m_merkle_proof).unwrap());
+            serde_json::to_string(&unlock_set.m_merkle_proof).unwrap());
     } else {
         out = format!(
             "{}\"mProof\":[],",
@@ -452,19 +452,19 @@ pub fn safe_stringify_unlock_set(unlockSet: &UnlockSet) -> String
     out = format!(
         "{}\"salt\":\"{}\",",
         out,
-        unlockSet.m_salt);
+        unlock_set.m_salt);
     out = format!(
         "{}\"sSets\":{},",
         out,
-        safe_stringify_signture_sets(&unlockSet.m_signature_sets));
+        safe_stringify_signture_sets(&unlock_set.m_signature_sets));
     out = format!(
         "{}\"sType\":\"{}\",",
         out,
-        unlockSet.m_signature_type);
+        unlock_set.m_signature_type);
     out = format!(
         "{}\"sVer\":\"{}\"",
         out,
-        unlockSet.m_signature_ver);
+        unlock_set.m_signature_ver);
 
     out.push_str("}");
 

@@ -325,20 +325,20 @@ impl CMachine {
     //old_name_was getMachineServiceInterests
     pub fn get_machine_service_interests(
         &self,
-        dType: &String,
-        _dClass: &String,
-        _dLen: DocLenT,
+        d_type: &String,
+        _d_class: &String,
+        _d_len: DocLenT,
         _extra_length: DocLenT,
-        _supported_P4P_trx_count: u8) -> f64
+        _supported_p4p_trx_count: u8) -> f64
     {
         // TODO: these values must be costumizable for backers
         let services_price_coefficient: HashMap<String, f64> = HashMap::from([
             (constants::document_types::BASIC_TX.to_string(), 1.000),    // the output must be 1 or greater. otherwise other nodes reject the block
             (constants::document_types::FREE_POST.to_string(), 1.0001)]);
 
-        if services_price_coefficient.contains_key(dType)
+        if services_price_coefficient.contains_key(d_type)
         {
-            return services_price_coefficient[dType];
+            return services_price_coefficient[d_type];
         }
 
         // node doesn't support this type of documents so accept it as a base feePerByte

@@ -11,7 +11,7 @@ pub struct BasicTransactionTemplate
     pub m_tpl_inputs: HashMap<CCoinCodeT, TInput>,
     pub m_tpl_outputs: Vec<TOutput>,
 
-    pub m_tpl_max_DP_cost: CMPAIValueT,
+    pub m_tpl_max_dp_cost: CMPAIValueT,
     pub m_tpl_pre_calculated_dp_cost: CMPAIValueT,
 
     pub m_tpl_comment: String,
@@ -47,7 +47,7 @@ impl BasicTransactionTemplate {
         BasicTransactionTemplate {
             m_tpl_inputs: inputs,
             m_tpl_outputs: outputs,
-            m_tpl_max_DP_cost: max_dp_cost,
+            m_tpl_max_dp_cost: max_dp_cost,
             m_tpl_pre_calculated_dp_cost: desired_trx_fee,
             m_tpl_comment: d_comment,
             m_tpl_doc_ref: "".to_string(),
@@ -142,12 +142,12 @@ impl BasicTransactionTemplate {
             }
         }
 
-        if (self.m_tpl_max_DP_cost > 0) && (calculate_dp_cost > self.m_tpl_max_DP_cost)
+        if (self.m_tpl_max_dp_cost > 0) && (calculate_dp_cost > self.m_tpl_max_dp_cost)
         {
             msg = format!(
                 "Transaction locally recalculate trx dp cost({} PAIs) is higher than your max({} PAIs)",
                 cutils::micro_pai_to_pai_6(&(calculate_dp_cost as CMPAISValueT)),
-                cutils::micro_pai_to_pai_6(&(self.m_tpl_max_DP_cost as CMPAISValueT)));
+                cutils::micro_pai_to_pai_6(&(self.m_tpl_max_dp_cost as CMPAISValueT)));
             dlog(
                 &msg,
                 constants::Modules::Trx,

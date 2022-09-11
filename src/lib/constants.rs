@@ -113,6 +113,7 @@ pub mod sig_hashes
     // 'ALL|ANYONECANPAY': 'ALL|ANYONECANPAY',
     // 'NONE|ANYONECANPAY': 'NONE|ANYONECANPAY',
     // 'SINGLE|ANYONECANPAY': 'SINGLE|ANYONECANPAY',
+    #[allow(unused, dead_code)]
     pub const CUSTOM: &str = "CUSTOM"; // TODO: implement it in order to have ability to sign some random inputs & outputs
 }
 
@@ -137,6 +138,7 @@ pub const LEN_PROP_PLACEHOLDER: &str = "0000000";
 #[allow(dead_code, unused)]
 pub const HASH_ZEROS_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
 
+#[allow(unused, dead_code)]
 pub const TRANSACTION_PADDING_LENGTH: DocLenT = 100;
 pub const TRANSACTION_MINIMUM_LENGTH: DocLenT = 375;    // smallest transaction has 375 charachter length
 
@@ -456,8 +458,10 @@ pub mod trx_classes
 {
     pub const SIMPLE_TX: &str = "SimpleTx";
     // simple "m of n" trx
+    #[allow(unused, dead_code)]
     pub const P4P: &str = "P4P";
     // pay for payment
+    #[allow(unused, dead_code)]
     pub const BITCOIN: &str = "Bitcoin"; // Bitcoinish transaction to supporting swap transactions
 }
 

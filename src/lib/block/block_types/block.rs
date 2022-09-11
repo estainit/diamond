@@ -532,6 +532,7 @@ impl Block {
         return true;
     }
 
+    #[allow(unused, dead_code)]
     pub fn get_block_ext_info(&self) ->
     (
         bool/* status */,
