@@ -57,7 +57,7 @@ pub fn get_connection() -> Client {
 //old_name_was initDb
 pub fn maybe_initialize_db() -> (bool, String)
 {
-    if constants::DATABASAE_AGENT == "psql"
+    if constants::DATA_BASAE_AGENT == "psql"
     {
         let is_created: bool = match dbhandler().m_db.query("SELECT * FROM c_blocks limit 1;", &[]) {
             Ok(_rows) => {

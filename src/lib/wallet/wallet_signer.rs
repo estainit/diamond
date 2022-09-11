@@ -111,8 +111,8 @@ pub fn wallet_signer(
     if spendable_amount < (sending_amount + desired_trx_fee)
     {
         message = format!(
-            "Output more than input fund! {}",
-            cutils::sep_num_3((spendable_amount - sending_amount - desired_trx_fee) as i64));
+            "Spending more than input fund! spendable_amount:{}, sending_amount: {} + desired_trx_fee:{}",
+            spendable_amount, sending_amount, desired_trx_fee);
         dlog(
             &message,
             constants::Modules::Trx,
@@ -248,7 +248,7 @@ pub fn locally_mark_coin_as_used(doc: &Document)
     let mut inx: CInputIndexT = 0;
     let now_ = application().now();
     let inputs = doc.get_inputs();
-    let doc_hash=doc.get_doc_hash();
+    let doc_hash = doc.get_doc_hash();
     while inx < inputs.len() as CInputIndexT
     {
         let coin_code: CCoinCodeT = inputs[inx as usize].get_coin_code();

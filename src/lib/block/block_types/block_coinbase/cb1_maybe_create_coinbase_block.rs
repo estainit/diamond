@@ -89,7 +89,7 @@ pub fn calc_potential_micro_pai_per_one_cycle(year_: &String) -> CMPAIValueT
     let year = year.parse::<u16>().unwrap();
     let halving_cycle_number = cutils::c_floor(((year - constants::LAUNCH_YEAR) / constants::HALVING_PERIOD) as f64);
     let one_cycle_max_bili_pais: CMPAIValueT = 2_i32.pow((constants::COIN_ISSUING_INIT_EXPONENT as i64 - halving_cycle_number) as u32) as CMPAIValueT;
-    return one_cycle_max_bili_pais * constants::MONEY_SMALLEST_UNIT;
+    return one_cycle_max_bili_pais * constants::MONEY_MAX_DIVISION;
 }
 
 //old_name_was calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore

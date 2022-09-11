@@ -18,11 +18,11 @@ pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
     let the_range = get_treasure_incomes_date_range(c_date);
 
     let mut complete_query: String = "".to_string();
-    if constants::DATABASAE_AGENT == "psql"
+    if constants::DATA_BASAE_AGENT == "psql"
     {
         complete_query = "SELECT CAST(SUM(tr_value) AS varchar) AS incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
         // complete_query = "SELECT tr_value AS incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between '" + &*the_range.from + "' AND '" + &*the_range.to + "' ";
-    } else if constants::DATABASAE_AGENT == "sqlite"
+    } else if constants::DATA_BASAE_AGENT == "sqlite"
     {
         complete_query = "SELECT SUM(tr_value) incomes_amount FROM ".to_owned() + C_TREASURY + " WHERE tr_creation_date between \"" + &*the_range.from + "\" AND \"" + &*the_range.to + "\" ";
     }

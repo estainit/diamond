@@ -40,7 +40,7 @@ impl Block {
         let dag_backup = application().dag_backup();
         let file_name = application().get_now_sss() + "_" + &*self.m_block_type.clone() + "_" + &*self.m_block_hash.clone() + ".txt";
         let clone_id = application().id();
-        if constants::DO_HARDCOPY_DAG_BACKUP {
+        if constants::DO_HARD_COPY_DAG_BACKUP {
             file_write(
                 dag_backup,
                 file_name,

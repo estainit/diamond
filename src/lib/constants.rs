@@ -49,11 +49,11 @@ pub const COINBASE_MATURATION_CYCLES: u8 = 2;
 #[allow(unused, dead_code)]
 pub const ONE_MILLION: u64 = 1_000_000;
 pub const ONE_BILLION: u64 = 1_000_000_000;
-pub const MONEY_SMALLEST_UNIT: u64 = ONE_BILLION;
+pub const MONEY_MAX_DIVISION: u64 = ONE_BILLION;
 
 pub const CLIENT_VERSION: &str = "0.2.0";
 // can be sqlite or psql
-pub const DATABASAE_AGENT: &str = "psql";
+pub const DATA_BASAE_AGENT: &str = "psql";
 
 #[allow(unused, dead_code)]
 pub const DEFAULT_CONTRIBUTE_LEVEL: u8 = 6;
@@ -61,7 +61,7 @@ pub const DEFAULT_CONTRIBUTE_LEVEL: u8 = 6;
 // at least 4 cycle must be a gap between pay to treasury and dividing to shareholders
 pub const TREASURY_MATURATION_CYCLES: u8 = 4;
 pub const DUMPER_INDENT: &str = "  ";
-pub const DO_HARDCOPY_DAG_BACKUP: bool = true;
+pub const DO_HARD_COPY_DAG_BACKUP: bool = true;
 // it creates a DAG backup in sense of blocks
 
 // it creates a local copy of what your machine will send via email

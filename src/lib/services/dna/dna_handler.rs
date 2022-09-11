@@ -188,11 +188,11 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
         constants::SecLevel::TmpDebug);
 
     let mut query = "".to_string();
-    if constants::DATABASAE_AGENT == "psql"
+    if constants::DATA_BASAE_AGENT == "psql"
     {
         query = "SELECT dn_shareholder, CAST(SUM(dn_shares) AS varchar) AS shares_amount FROM ".to_owned() + C_SHARES;
         query += &*(" WHERE dn_creation_date between '".to_owned() + &min_creation_date + &"' AND '".to_owned() + &max_creation_date + "' GROUP BY dn_shareholder ORDER BY shares_amount DESC");
-    } else if constants::DATABASAE_AGENT == "sqlite"
+    } else if constants::DATA_BASAE_AGENT == "sqlite"
     {
         query = "SELECT dn_shareholder, SUM(dn_shares) sum_ FROM ".to_owned() + C_SHARES;
         query += &*(" WHERE dn_creation_date between \"".to_owned() + &min_creation_date + &"\" AND \"".to_owned() + &max_creation_date + "\" GROUP BY dn_shareholder ORDER BY sum_ DESC");

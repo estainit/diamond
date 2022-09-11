@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use actix_web::{get, post, Responder, web};
 use serde_json::json;
 use crate::{application, constants, dlog, machine};
-use crate::constants::{MONEY_SMALLEST_UNIT};
-use crate::cutils::{controlled_str_to_json, convert_comma_separated_string_to_string_vector, remove_quotes};
+use crate::constants::{MONEY_MAX_DIVISION};
+use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::address::address_handler::create_a_new_address;
-use crate::lib::custom_types::{CMPAIValueT, QV2DicT, QVDRecordsT};
+use crate::lib::custom_types::{CMPAIValueT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::wallet::get_addresses_list::get_addresses_list;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 use crate::lib::wallet::wallet_coins::get_coins_list;
@@ -177,14 +177,20 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
 {
     let api_res = tokio::task::spawn_blocking(move || {
         let (_status, request) = controlled_str_to_json(&post);
-        println!("New POST request to create a post! request {:#?}", request);
+        println!("New POST request to create a post! request {:?}", request);
         let trx_recipient = remove_quotes(&request["txRecepient"]);
         let trx_amount = remove_quotes(&request["txAmount"]).parse::<CMPAIValueT>().unwrap();
-        let trx_fee = remove_quotes(&request["txFee"]).parse::<CMPAIValueT>().unwrap();
+        let trx_fee = (&request["txFee"].as_f64().unwrap() * constants::MONEY_MAX_DIVISION as f64) as CMPAIValueT;
         let trx_change_back_address = remove_quotes(&request["changeBackAddress"]);
-        let selected_coins = remove_quotes(&request["selectedCoins"]);
+        let selected_coins = request["selectedCoins"].as_array().unwrap();
+        println!("selected_coins,1,,,,,{:?}", selected_coins);
+        let selected_coins = selected_coins
+            .iter()
+            .map(|x| remove_quotes(&x))
+            .collect::<VString>();
+        println!("selected_coins,2,,,,,{:?}", selected_coins);
         let d_comment = remove_quotes(&request["dComment"]);
-        if selected_coins == ""
+        if selected_coins.len() == 0
         {
             return json!({
                 "status": false,
@@ -192,9 +198,9 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
                 "info": json!({}),
             });
         }
-        let selected_coins = convert_comma_separated_string_to_string_vector(&selected_coins);
+        // let selected_coins = convert_comma_separated_string_to_string_vector(&selected_coins);
 
-        let msg:String;
+        let msg: String;
         let trx_outputs_bill_amount = "0"; // the amount of output(s). zero means one output for all amount, while 1000000 means each output must be a million mPAI
         // TODO: add some control on input fields
 
@@ -208,8 +214,8 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
 
         let (sign_res, sign_status_msg) = wallet_signer(
             &selected_coins,
-            trx_amount * MONEY_SMALLEST_UNIT,
-            trx_fee * MONEY_SMALLEST_UNIT,
+            trx_amount * MONEY_MAX_DIVISION,
+            trx_fee * MONEY_MAX_DIVISION,
             &trx_recipient,
             &trx_change_back_address,
             bill_size,

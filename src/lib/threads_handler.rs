@@ -48,7 +48,7 @@ pub fn launch_giga_loop(only_lazy_loadings: bool) {
 
             // double checking repayblock importing
             import_double_check();
-            if constants::DATABASAE_AGENT == "sqlite"
+            if constants::DATA_BASAE_AGENT == "sqlite"
             {
                 // // FIXME: remove this lines, when problem of database lock for sqlite solved and we can have real multi thread solution
                 // do_import_coins(application().now());
