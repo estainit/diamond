@@ -50,6 +50,8 @@ fn main() {
     machine().initialize_machine();
     machine().boot_machine();
 
+    println!("Blockchain Genesis date: {}", machine().get_launch_date());
+
     let mut web_server_msg: String = "".to_string();
     if application().should_run_web_server()
     {
