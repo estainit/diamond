@@ -862,8 +862,8 @@ std::tuple<bool, String, PollingDocument*> prepareNewPolling(
   polling_doc.m_doc_ext_info = SignatureStructureHandler::compactUnlockersArray(JSonArray {JSonObject {
     {"uSet", sign_unlock_set},
     {"signatures", cutils::convertStringListToJSonArray(sign_signatures)}}});
-  polling_doc->setDExtHash();
-  polling_doc->setDocLength();
+  polling_doc.set_doc_ext_hash();
+  polling_doc.set_doc_length();
   polling_doc->setDocHash();
 
   CLog::log("prepared polling request: " + polling_doc->safe_stringify_doc(true), "app", "info");
@@ -952,9 +952,9 @@ std::tuple<bool, String> makeReqForAdmPolling(
   adm_polling_doc.m_doc_ext_info = SignatureStructureHandler::compactUnlockersArray(JSonArray {JSonObject {
     {"uSet", sign_unlock_set},
     {"signatures", cutils::convertStringListToJSonArray(sign_signatures)}}});
-  adm_polling_doc->setDExtHash();
+  adm_polling_doc.set_doc_ext_hash();
 
-  adm_polling_doc->setDocLength();
+  adm_polling_docset_doc_length();
   adm_polling_doc->setDocHash();
 
   CLog::log("prepared adm-polling request: " + adm_polling_doc->safe_stringify_doc(true), "app", "info");
@@ -974,8 +974,8 @@ std::tuple<bool, String> makeReqForAdmPolling(
 
   // 3. create trx to pay ReqForRelRes doc cost
   // calculate ballot cost
-  auto[adm_cost_status, adm_dp_cost] = adm_polling_doc->calcDocDataAndProcessCost(
-    constants::STAGES::Creating,
+  auto[adm_cost_status, adm_dp_cost] = adm_polling_doc.calc_doc_data_and_process_cost(
+    constants::stages::Creating,
     application().now());
   if (!adm_cost_status)
   {
@@ -1002,8 +1002,8 @@ std::tuple<bool, String> makeReqForAdmPolling(
     return {false, msg};
   }
   CAddressT change_back_address1 = changeback_res1.msg;
-  std::vector<TOutput> outputs1 {
-    TOutput{change_back_address1, 1, constants::OUTPUT_CHANGEBACK},
+  Vec<TOutput> outputs1 {
+    TOutput{change_back_address1, 1, constants::OUTPUT_CHANGE_BACK},
     TOutput{"TP_ADM_POLLING", adm_dp_cost, constants::OUTPUT_TREASURY}};
 
   auto trx_template1 = BasicTransactionTemplate {
@@ -1013,18 +1013,18 @@ std::tuple<bool, String> makeReqForAdmPolling(
     0,    // pre calculated dDPCost
     "Payed for adm-polling cost",
     adm_polling_doc->get_doc_hash()};
-  auto[tx_status, res_msg1, adm_polling_payer_trx, dp_cost1] = BasicTransactionHandler::makeATransaction(trx_template1);
+  auto[tx_status, res_msg1, adm_polling_payer_trx, dp_cost1] = make_a_transaction(trx_template1);
   if (!tx_status)
     return {false, res_msg1};
 
   CLog::log("Signed trx for adm-polling cost: " + adm_polling_payer_trx->safe_stringify_doc(true), "app", "info");
 
   // mark UTXOs as used in local machine
-  Wallet::locallyMarkUTXOAsUsed(adm_polling_payer_trx);
+  locally_mark_coin_as_used(adm_polling_payer_trx);
 
   // 4. create trx to pay real polling costs
-  auto[polling_cost_status, polling_dp_cost] = polling_doc->calcDocDataAndProcessCost(
-    constants::STAGES::Creating,
+  auto[polling_cost_status, polling_dp_cost] = polling_doc.calc_doc_data_and_process_cost(
+    constants::stages::Creating,
     application().now());
   if (!polling_cost_status)
   {
@@ -1051,8 +1051,8 @@ std::tuple<bool, String> makeReqForAdmPolling(
     return {false, msg};
   }
   CAddressT change_back_address2 = changeback_res2.msg;
-  std::vector<TOutput> outputs2 {
-    TOutput{change_back_address2, 1, constants::OUTPUT_CHANGEBACK},
+  Vec<TOutput> outputs2 {
+    TOutput{change_back_address2, 1, constants::OUTPUT_CHANGE_BACK},
     TOutput{"TP_POLLING", polling_dp_cost, constants::OUTPUT_TREASURY}};
 
   auto trx_template2 = BasicTransactionTemplate {
@@ -1062,24 +1062,24 @@ std::tuple<bool, String> makeReqForAdmPolling(
     0,    // pre calculated dDPCost
     "Payed for polling cost",
     polling_doc->get_doc_hash()};
-  auto[tx_status2, res_msg2, polling_payer_trx, dp_cost2] = BasicTransactionHandler::makeATransaction(trx_template2);
+  auto[tx_status2, res_msg2, polling_payer_trx, dp_cost2] = make_a_transaction(trx_template2);
   if (!tx_status2)
     return {false, res_msg2};
 
   CLog::log("Signed trx for polling cost: " + polling_payer_trx->safe_stringify_doc(true), "app", "info");
 
   // mark UTXOs as used in local machine
-  Wallet::locallyMarkUTXOAsUsed(polling_payer_trx);
+  locally_mark_coin_as_used(polling_payer_trx);
 
 
-  auto[push_res1, push_msg1] = CMachine::pushToBlockBuffer(adm_polling_doc, adm_dp_cost);
+  auto[push_res1, push_msg1] = machine().push_to_block_buffer(adm_polling_doc, adm_dp_cost);
   if (!push_res1)
   {
     msg = "Failed in push to block buffer adm-polling(" + adm_polling_doc.m_doc_comment + ") " + push_msg1;
     CLog::log(msg, "app", "error");
     return {false, msg};
   }
-  auto[push_res2, push_msg2] = CMachine::pushToBlockBuffer(adm_polling_payer_trx, adm_polling_payer_trx->getDocCosts());
+  auto[push_res2, push_msg2] = machine().push_to_block_buffer(adm_polling_payer_trx, adm_polling_payer_trx->getDocCosts());
   if (!push_res2)
   {
     msg = "Failed in push to block buffer trx2 (" + adm_polling_payer_trx->get_doc_hash() + ") " + push_msg2;
@@ -1087,14 +1087,14 @@ std::tuple<bool, String> makeReqForAdmPolling(
     return {false, msg};
   }
 
-  auto[push_res3, push_msg3] = CMachine::pushToBlockBuffer(polling_doc, polling_dp_cost);
+  auto[push_res3, push_msg3] = machine().push_to_block_buffer(polling_doc, polling_dp_cost);
   if (!push_res3)
   {
     msg = "Failed in push to block buffer polling(" + adm_polling_doc.m_doc_comment + ") " + push_msg3;
     CLog::log(msg, "app", "error");
     return {false, msg};
   }
-  auto[push_res4, push_msg4] = CMachine::pushToBlockBuffer(polling_payer_trx, polling_payer_trx->getDocCosts());
+  auto[push_res4, push_msg4] = machine().push_to_block_buffer(polling_payer_trx, polling_payer_trx->getDocCosts());
   if (!push_res4)
   {
     msg = "Failed in push to block buffer trx4 (" + polling_payer_trx->get_doc_hash() + ") " + push_msg4;

@@ -141,7 +141,7 @@ pub fn aes_encrypt(msg: String, key: String) -> (bool, String)
     {
         if a_chunk.len() < 16
         {
-            a_block = aes_encrypt_16(cutils::right_padding_custom(a_chunk, 16, " ".to_string()), &key);
+            a_block = aes_encrypt_16(cutils::padding_right_custom(&a_chunk, 16, " ".to_string()), &key);
         } else {
             a_block = aes_encrypt_16(a_chunk, &key);
         }
@@ -396,7 +396,7 @@ bool ccrypto::isValidBech32(const String &str)
   return bech32::ComenIsValid(str.toStdString());
 }
 
-std::pair<std::string, std::vector<uint8_t> > ccrypto::bech32Decode(const String &str)
+std::pair<std::string, Vec<uint8_t> > ccrypto::bech32Decode(const String &str)
 {
   return bech32::Decode(str.toStdString());
 }

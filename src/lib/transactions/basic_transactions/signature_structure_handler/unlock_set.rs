@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 use crate::lib::constants;
+use crate::lib::custom_types::VString;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::{dump_vec_of_ind_sig, IndividualSignature};
 use crate::lib::utils::dumper::dump_vec_of_str;
 
@@ -10,7 +11,7 @@ pub struct UnlockSet
     pub m_signature_type: String,
     pub m_signature_ver: String ,
     pub m_signature_sets: Vec<IndividualSignature>,
-    pub m_merkle_proof: Vec<String>,
+    pub m_merkle_proof: VString,
     pub m_left_hash: String,
     pub m_salt: String,
 }

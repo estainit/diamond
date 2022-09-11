@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::cmerkle::generate_m;
+use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::{application, cutils};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_coinbase::cb1_maybe_create_coinbase_block::{calc_definite_releasable_micro_pai_per_one_cycle_now_or_before, TmpHolder};
@@ -136,7 +136,7 @@ pub fn generate_coinbase_core(
                     let output_arr: TOutput = TOutput {
                         m_address: tmp_out_dict[&dividend][&a_holder.clone()].holder.clone(),
                         m_amount: tmp_out_dict[&dividend][&a_holder.clone()].dividend.clone(),
-                        m_output_charachter: "".to_string(),
+                        m_output_character: "".to_string(),
                         m_output_index: 0,
                     };
                     outputs.push(output_arr);
@@ -170,7 +170,11 @@ pub fn generate_coinbase_core(
     block.m_if_coinbase_block.m_cycle = cycle.clone();
 
     let (root, _verifies, _merkle_version, _levels, _leaves) =
-        generate_m(vec![doc.m_doc_hash.clone()], &"hashed".to_string(), &"".to_string(), &"".to_string());
+        generate_m(
+            vec![doc.m_doc_hash.clone()],
+                   &"hashed".to_string(),
+                   &"keccak256".to_string(),
+                   &MERKLE_VERSION.to_string());
     block.m_block_documents = vec![doc];
     block.m_block_documents_root_hash = root;
     block.m_block_creation_date = block_creation_date;

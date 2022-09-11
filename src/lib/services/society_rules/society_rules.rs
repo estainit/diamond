@@ -787,7 +787,7 @@ std::tuple<bool, String> SocietyRules::createAPollingFor(
   return {status, msg};
 }
 
-QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
+HashMap<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
   const CAddressT& voter)
 {
   // retrieve machine votes
@@ -838,7 +838,7 @@ QHash<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     false,
     false);
 
-  QHash<uint32_t, QVDicT> final_result {};
+  HashMap<uint32_t, QVDicT> final_result {};
   uint32_t result_number = 0;
   for (QVDicT a_society_polling: res.records)
   {

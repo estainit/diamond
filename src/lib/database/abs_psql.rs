@@ -217,10 +217,10 @@ pub fn clauses_query_generator<'e>(
                 if a_clause_tuple.m_field_multi_values.len() == 0
                 {
                     dlog(
-                        &format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(&clauses)),
+                        &format!("Malformed clauses 'IN/NOT IN': {:#?}", dump_clauses(&clauses)),
                         constants::Modules::Sql,
                         constants::SecLevel::Fatal);
-                    panic!("{}", format!("Maleformed clauses 'IN/NOT IN': {:?}", dump_clauses(&clauses)));
+                    panic!("{}", format!("Malformed clauses 'IN/NOT IN': {:#?}", dump_clauses(&clauses)));
                 }
 
                 let mut tmp_placeholders: Vec<String> = vec![];

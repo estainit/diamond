@@ -136,7 +136,7 @@ impl ProposalDocument {
 
 
     // old name was calcProposalDocumetnCost
-    std::tuple<bool, CMPAIValueT> ProposalDocument::calcDocDataAndProcessCost(
+    std::tuple<bool, CMPAIValueT> calc_doc_data_and_process_cost(
       const String& stage,
       String cDate,
       const uint32_t& extraLength) const
@@ -152,9 +152,9 @@ impl ProposalDocument {
           SocietyRules::getBasePricePerChar(cDate) *
           SocietyRules::getDocExpense(m_doc_type, dLen, m_doc_class, cDate);
 
-      if (stage == constants::STAGES::Creating)
+      if (stage == constants::stages::Creating)
       {
-        the_cost = the_cost * CMachine::getMachineServiceInterests(
+        the_cost = the_cost * machine().get_machine_service_interests(
           m_doc_type,
           m_doc_class,
           dLen);
@@ -290,12 +290,12 @@ impl ProposalDocument {
       return {false, JSonArray {}};
     }
 
-    std::vector<TInput*> ProposalDocument::get_inputs() const
+    Vec<TInput*> ProposalDocument::get_inputs() const
     {
       return {};
     }
 
-    std::vector<TOutput*> ProposalDocument::get_outputs() const
+    Vec<TOutput*> ProposalDocument::get_outputs() const
     {
       return {};
     }
@@ -305,7 +305,7 @@ impl ProposalDocument {
       CoinImportDataContainer* block_inspect_container)
     {
 
-      QHash<CDocHashT, CostPaymentStatus> cost_payment_status {};
+      HashMap<CDocHashT, CostPaymentStatus> cost_payment_status {};
 
       if (block_inspect_container.m_block_alter_treasury_incomes.contains("TP_PROPOSAL"))
       {

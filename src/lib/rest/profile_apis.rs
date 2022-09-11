@@ -22,11 +22,6 @@ pub async fn profiles() -> web::Json<Vec<JSonObject>> {
     web::Json(res)
 }
 
-// #[post("/")]
-// async fn example() -> HttpResponse {
-//     HttpResponse::Ok().finish()
-// }
-
 /// Struct to receive user input.
 #[derive(Serialize, Deserialize)]
 pub struct NewPost {

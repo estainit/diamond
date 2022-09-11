@@ -26,7 +26,7 @@ pub fn get_some_coins(
     dlog(
         &format!(
             "Fetch some inputs equal to {} PAIs to use in a transaction",
-            cutils::micro_pai_to_pai_6(minimum_spendable as CMPAISValueT)),
+            cutils::micro_pai_to_pai_6(&(minimum_spendable as CMPAISValueT))),
         constants::Modules::Trx,
         constants::SecLevel::Info);
 /*

@@ -1,4 +1,4 @@
-use crate::lib::custom_types::{BlockLenT, CMPAISValueT, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CMPAIValueT, DocLenT};
 
 #[allow(dead_code, unused)]
 pub enum Modules {
@@ -26,7 +26,8 @@ pub const SOCIETY_NAME: &str = "im";
 pub const BECH32_ADDRESS_VER: &str = "0";
 pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
-pub const MAX_COIN_VALUE: CMPAISValueT = 9_007_199_254_740_991; // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
+// to be compatible with JS clients: Number.MAX_SAFE_INTEGER
+pub const MAX_COINS_AMOUNT: CMPAIValueT = 9_007_199_254_740_991;
 
 pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
@@ -47,8 +48,8 @@ pub const COINBASE_MATURATION_CYCLES: u8 = 2;
 
 #[allow(unused, dead_code)]
 pub const ONE_MILLION: u64 = 1_000_000;
-#[allow(unused, dead_code)]
 pub const ONE_BILLION: u64 = 1_000_000_000;
+pub const MONEY_SMALLEST_UNIT: u64 = ONE_BILLION;
 
 pub const CLIENT_VERSION: &str = "0.2.0";
 // can be sqlite or psql
@@ -102,18 +103,19 @@ pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 100;
   const uint KEEP_SPENT_COINS_BY_CYCLE = 10;
 
   const uint32_t ONE_MINUTE_BY_MILISECOND = 60000;
-  namespace SIGHASH
-  {
-    pub const ALL = "ALL";
-    pub const NONE = "NONE";
+*/
+pub mod sig_hashes
+{
+    pub const ALL: &str = "ALL";
+    pub const NONE: &str = "NONE";
     // these have conflict with BIP69, that's why we need custom SIGHASH
     // 'SINGLE': 'SINGLE',
     // 'ALL|ANYONECANPAY': 'ALL|ANYONECANPAY',
     // 'NONE|ANYONECANPAY': 'NONE|ANYONECANPAY',
     // 'SINGLE|ANYONECANPAY': 'SINGLE|ANYONECANPAY',
-    pub const CUSTOM = "CUSTOM"; // TODO: implement it in order to have ability to sign some random inputs & outputs
-  };
-*/
+    pub const CUSTOM: &str = "CUSTOM"; // TODO: implement it in order to have ability to sign some random inputs & outputs
+}
+
 pub const MAX_TOLERATED_MISS_BLOCKS: u8 = 5;
 // if machine missed more than this number, does not allowed to issue a coinbase block
 /*
@@ -134,10 +136,8 @@ pub const LEN_PROP_LENGTH: u8 = 7;
 pub const LEN_PROP_PLACEHOLDER: &str = "0000000";
 #[allow(dead_code, unused)]
 pub const HASH_ZEROS_PLACEHOLDER: &str = "0000000000000000000000000000000000000000000000000000000000000000";
-/*
 
-  const uint16_t TRANSACTION_PADDING_LENGTH = 100;
-*/
+pub const TRANSACTION_PADDING_LENGTH: DocLenT = 100;
 pub const TRANSACTION_MINIMUM_LENGTH: DocLenT = 375;    // smallest transaction has 375 charachter length
 
 /**
@@ -203,7 +203,6 @@ pub const ALL: &str = "All";
 pub const DEFAULT: &str = "Default";
 #[allow(unused, dead_code)]
 pub const DEFAULT_BLOCK_VERSION: &str = "0.0.0";
-#[allow(unused, dead_code)]
 pub const DEFAULT_DOCUMENT_VERSION: &str = "0.0.0";
 #[allow(unused, dead_code)]
 pub const DEFAULT_RSA_KEY_LENGTH: usize = 2048;
@@ -253,7 +252,7 @@ pub const TO_BUFFER: &str = "ToBuffer";
 pub const TO_NETWORK: &str = "ToNetwork";
 /*
 
-  const QHash<String, String> STATUS_TO_LABEL {
+  const HashMap<String, String> STATUS_TO_LABEL {
     {"Y", "Yes"},
     {"N", "No"},
     {"O", "Open"},
@@ -451,13 +450,18 @@ pub const DMS_Post = "DMS_Post";           // Demos Post
 pub const WK_CreatePage = "WK_CreatePage";
 pub const WK_EditPage = "WK_EditPage";
 };
+*/
 
-namespace TRX_CLASSES
+pub mod trx_classes
 {
-pub const SimpleTx = "SimpleTx";    // simple "m of n" trx
-pub const P4P = "P4P"; // pay for payment
-pub const Bitcoin = "Bitcoin"; // Bitcoinish transaction to supporting swap transactions
-};
+    pub const SIMPLE_TX: &str = "SimpleTx";
+    // simple "m of n" trx
+    pub const P4P: &str = "P4P";
+    // pay for payment
+    pub const BITCOIN: &str = "Bitcoin"; // Bitcoinish transaction to supporting swap transactions
+}
+
+/*
 
 namespace PLEDGE_CLOSE_CLASESS
 {
@@ -664,13 +668,12 @@ pub const THE_CARD_TYPES: [&str; 15] = [
     card_types::DIRECT_MESSAGE_TO_NEIGHBOR];
 
 
-#[allow(unused, dead_code)]
-pub const OUTPUT_DPCOST: &str = "OUTPUT_DPCOST";
+pub const OUTPUT_DP_COST: &str = "OUTPUT_DP_COST";
 pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
+pub const TEMP_DP_COST_AMOUNT: CMPAIValueT = 999_999_999_999;
 #[allow(unused, dead_code)]
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";
-#[allow(unused, dead_code)]
-pub const OUTPUT_CHANGEBACK: &str = "OUTPUT_CHANGEBACK";
+pub const OUTPUT_CHANGE_BACK: &str = "OUTPUT_CHANGE_BACK";
 
 pub const CURRENT_AES_VERSION: &str = "0.0.0";
 pub const CURRENT_PGP_VERSION: &str = "0.0.0";

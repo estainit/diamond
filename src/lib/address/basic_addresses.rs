@@ -46,6 +46,7 @@ pub fn create_a_new_basic_address<'a>(
             m_permitted_to_pledge: constants::NO.to_string(),
             m_permitted_to_delegate: constants::NO.to_string(),
             m_input_time_lock: 0.0,
+            m_input_time_lock_strickt: 0.0,
             m_output_time_lock: 0.0,
         };
         a_sign_set.m_signer_id = cutils::padding_length_value(i.to_string(), constants::LEN_PROP_LENGTH);

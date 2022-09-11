@@ -163,7 +163,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
 
         if (block_inspect_container.m_must_not_import_trx_outputs.len() > 0)
           std::sort(block_inspect_container.m_must_not_import_trx_outputs.begin(), block_inspect_container.m_must_not_import_trx_outputs.end());
-        std::vector<CDocHashT>::iterator last = std::unique(block_inspect_container.m_must_not_import_trx_outputs.begin(), block_inspect_container.m_must_not_import_trx_outputs.end());
+        Vec<CDocHashT>::iterator last = std::unique(block_inspect_container.m_must_not_import_trx_outputs.begin(), block_inspect_container.m_must_not_import_trx_outputs.end());
         block_inspect_container.m_must_not_import_trx_outputs.erase(last, block_inspect_container.m_must_not_import_trx_outputs.end());
 
         CLog::log("block_inspect_container(" + cutils::hash8c(block->getBlockHash()) + ") block_inspect_container: " + block_inspect_container->dumpMe(), "trx", "trace");

@@ -104,7 +104,7 @@ pub struct Block
     pub m_block_documents_root_hash: String,
     pub m_block_ext_root_hash: String,
     pub m_block_documents: Vec<Document>,
-    pub m_block_ext_info: Vec<Vec<JSonObject>>,
+    pub m_block_ext_info: Vec<Vec<DocExtInfo>>,
     pub m_block_floating_votes: JSonArray, // TODO: to be implemented later
 
     pub m_if_coinbase_block: CoinbaseBlock,
@@ -246,7 +246,7 @@ impl Block {
                 constants::Modules::App,
                 constants::SecLevel::TmpDebug);
         }
-        let mut block_ext_info: Vec<Vec<JSonObject>> = vec![];
+        let mut block_ext_info: Vec<Vec<DocExtInfo>> = vec![];
         for a_doc in &self.m_block_documents {
             block_ext_info.push(a_doc.m_doc_ext_info.clone());
         }
@@ -532,8 +532,11 @@ impl Block {
         return true;
     }
 
-    #[allow(unused, dead_code)]
-    pub fn get_block_ext_info(&self) -> (bool, bool, Vec<JSonObject>)
+    pub fn get_block_ext_info(&self) ->
+    (
+        bool/* status */,
+        bool/* block_has_ext_info */,
+        Vec<DocExtInfo>/* block_ext_info */)
     {
         if self.m_block_ext_info.len() > 0
         {
@@ -557,7 +560,7 @@ impl Block {
 
         */
     //old_name_was getBlockExtInfoByDocIndex
-    pub fn get_block_ext_info_by_doc_index(&self, document_index: usize) -> &Vec<JSonObject>
+    pub fn get_block_ext_info_by_doc_index(&self, document_index: usize) -> &Vec<DocExtInfo>
     {
         return &self.m_block_ext_info[document_index];
     }
@@ -744,7 +747,7 @@ impl Block {
           return "";
         }
 
-        std::vector<Document *> Block::getDocuments() const
+        Vec<Document *> Block::getDocuments() const
         {
           return m_documents;
         }
@@ -893,8 +896,7 @@ pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
         return (false, json!({}));
     }
 
-    let (status, ext_info_exist, block_ext_info) =
-        get_block_ext_info(block_hash);
+    let (status, ext_info_exist, block_ext_info) = get_block_ext_info(block_hash);
     if !status
     {
         return (false, json!({}));
@@ -902,14 +904,20 @@ pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
 
     if ext_info_exist
     {
-        j_block["bExtInfo"] = serde_json::Value::Array(block_ext_info);
+        j_block["bExtInfo"] = json!({
+            "bExtInfo": block_ext_info
+        });
     }
 
     return (true, j_block);
 }
 
 //old_name_was getBlockExtInfo
-pub fn get_block_ext_info(block_hash: &String) -> (bool, bool, Vec<JSonObject>)
+pub fn get_block_ext_info(block_hash: &String) ->
+(
+    bool/* status */,
+    bool/* block_has_ext_info */,
+    Vec<DocExtInfo>/* block_ext_info */)
 {
     let (status, records) = q_select(
         C_BLOCK_EXT_INFO,
@@ -946,7 +954,7 @@ pub fn get_block_ext_info(block_hash: &String) -> (bool, bool, Vec<JSonObject>)
     }
 
     let mut is_valid: bool = true;
-    let block_ext_info: Vec<JSonObject> = match serde_json::from_str(&serialized_block) {
+    let block_ext_info: Vec<DocExtInfo> = match serde_json::from_str(&serialized_block) {
         Ok(r) => r,
         Err(e) => {
             is_valid = false;

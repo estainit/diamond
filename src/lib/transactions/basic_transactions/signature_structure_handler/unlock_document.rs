@@ -10,7 +10,7 @@ pub struct UnlockDocument {
     pub m_merkle_root: String,
     pub m_account_address: CAddressT,
     pub m_merkle_version: String,
-    pub m_private_keys: HashMap<String, Vec<String>>,//QHash<String, StringList>
+    pub m_private_keys: HashMap<String, Vec<String>>,//HashMap<String, StringList>
 }
 
 impl UnlockDocument {

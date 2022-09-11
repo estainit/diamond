@@ -15,6 +15,7 @@ pub struct IndividualSignature
     pub m_permitted_to_delegate: String,
     // pDelegate
     pub m_input_time_lock: TimeByHoursT,
+    pub m_input_time_lock_strickt: TimeByHoursT,
     pub m_output_time_lock: TimeByHoursT,
 }
 
@@ -27,6 +28,7 @@ impl IndividualSignature {
             m_permitted_to_pledge: "".to_string(),
             m_permitted_to_delegate: "".to_string(),
             m_input_time_lock: 0.0,
+            m_input_time_lock_strickt: 0.0,
             m_output_time_lock: 0.0,
         };
     }

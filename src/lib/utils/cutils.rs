@@ -6,7 +6,7 @@ use regex::Regex;
 use serde_json::json;
 use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonObject, VString, VVString};
 
 #[allow(unreachable_code)]
 pub fn remove_quotes(input_value: &JSonObject) -> String
@@ -34,11 +34,11 @@ pub fn remove_quotes(input_value: &JSonObject) -> String
 }
 
 #[allow(unused, dead_code)]
-pub fn right_padding(inp_str: String, length: u8) -> String {
-    return right_padding_custom(inp_str, length, "0".to_string());
+pub fn padding_right(inp_str: &String, length: u8) -> String {
+    return padding_right_custom(inp_str, length, "0".to_string());
 }
 
-pub fn right_padding_custom(inp_str: String, length: u8, placeholder: String) -> String {
+pub fn padding_right_custom(inp_str: &String, length: u8, placeholder: String) -> String {
     let mut str = inp_str.clone();
     if str.len() >= length as usize {
         return str;
@@ -50,11 +50,11 @@ pub fn right_padding_custom(inp_str: String, length: u8, placeholder: String) ->
     return str;
 }
 
-pub fn left_padding(inp_str: String, length: u8) -> String {
-    return left_padding_custom(inp_str, length, "0".to_string());
+pub fn padding_left(inp_str: &String, length: u8) -> String {
+    return padding_left_custom(inp_str, length, "0".to_string());
 }
 
-pub fn left_padding_custom(inp_str: String, length: u8, placeholder: String) -> String {
+pub fn padding_left_custom(inp_str: &String, length: u8, placeholder: String) -> String {
     let mut str = inp_str.clone();
     if str.len() >= length as usize {
         return str;
@@ -369,7 +369,7 @@ pub fn strip_parentheses_as_break_line(mut content: String) -> String
 #[allow(unused, dead_code)]
 pub fn padding_length_value(value: String, needed_len: u8) -> String
 {
-    return left_padding(value.to_string(), needed_len);
+    return padding_left(&value.to_string(), needed_len);
 }
 
 #[allow(unused, dead_code)]
@@ -420,7 +420,7 @@ pub fn sep_num_3(number: i64) -> String
         sign = "-";
     }
 
-    let segments: Vec<String> = chunk_string(&left_padding(str_number, 30), 3);
+    let segments: Vec<String> = chunk_string(&padding_left(&str_number, 30), 3);
 
     str_number = segments.join(",");
     while (str_number.substring(0, 1) == "0") || (str_number.substring(0, 1) == ",")
@@ -542,6 +542,12 @@ pub fn strip_non_hex_chars(s: &String) -> String
     return re.replace(&s.as_str(), "").to_string();
 }
 
+//old_name_was stripOutputAddress
+pub fn strip_output_address(address: &String) -> String
+{
+    return strip_non_hex_chars(address);
+}
+
 //old_name_was isValidDateForamt
 pub fn is_a_valid_date_format(_c_date: &String) -> bool
 {
@@ -649,8 +655,8 @@ pub fn calc_log(
 }
 
 //old_name_was microPAIToPAI6
-#[allow(unused, dead_code)]
-pub fn micro_pai_to_pai_6(int_amount: CMPAISValueT) -> String
+pub fn micro_pai_to_pai_6<T>(int_amount: &T) -> String
+    where T: std::fmt::Display
 {
     return int_amount.to_string();
     // if int_amount == 0

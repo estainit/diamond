@@ -4,7 +4,7 @@ use crate::lib::custom_types::{CAddressT, CBlockHashT, CDateT, CDocHashT, CMPAIS
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_WALLET_FUNDS, C_MACHINE_WALLET_FUNDS_FIELDS};
 use crate::{application, constants, dlog, get_value, machine};
-use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
+use crate::lib::block::document_types::document::Document;
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::k_v_handler::upsert_kvalue;
 use crate::lib::wallet::get_addresses_list::get_addresses_list;
@@ -208,7 +208,7 @@ pub fn delete_from_funds(
     wf_o_index: COutputIndexT,
     wf_mp_code: &String) -> bool
 {
-    q_delete(
+    return q_delete(
         C_MACHINE_WALLET_FUNDS,
         vec![
             simple_eq_clause("wf_mp_code", &wf_mp_code),
@@ -221,24 +221,24 @@ pub fn delete_from_funds(
             },
         ],
         true);
-
-    return true;
 }
 
 //old_name_was deleteFromFunds
-#[allow(unused, dead_code)]
-pub fn delete_from_funds_by_trx(
-    trx: &BasicTxDocument) -> bool
+pub fn delete_from_funds_by_doc(doc: &Document) -> bool
 {
     let mut res: bool = true;
-    let wf_mp_code = machine().get_selected_m_profile();
-    for an_input in trx.get_inputs()
+    let mp_code = machine().get_selected_m_profile();
+
+    if doc.m_doc_type == constants::document_types::BASIC_TX.to_string()
     {
-        res &= delete_from_funds(
-            &an_input.m_transaction_hash,
-            an_input.m_output_index,
-            &wf_mp_code,
-        );
+        for an_input in doc.get_inputs()
+        {
+            res &= delete_from_funds(
+                &an_input.m_transaction_hash,
+                an_input.m_output_index,
+                &mp_code,
+            );
+        }
     }
     return res;
 }

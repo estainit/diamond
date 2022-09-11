@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{application, ccrypto, cutils};
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, JSonObject, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, DocLenT, JSonObject, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
@@ -322,23 +322,30 @@ impl CMachine {
 
 */
 
+    //old_name_was getMachineServiceInterests
+    pub fn get_machine_service_interests(
+        &self,
+        dType: &String,
+        _dClass: &String,
+        _dLen: DocLenT,
+        _extra_length: DocLenT,
+        _supported_P4P_trx_count: u8) -> f64
+    {
+        // TODO: these values must be costumizable for backers
+        let services_price_coefficient: HashMap<String, f64> = HashMap::from([
+            (constants::document_types::BASIC_TX.to_string(), 1.000),    // the output must be 1 or greater. otherwise other nodes reject the block
+            (constants::document_types::FREE_POST.to_string(), 1.0001)]);
+
+        if services_price_coefficient.contains_key(dType)
+        {
+            return services_price_coefficient[dType];
+        }
+
+        // node doesn't support this type of documents so accept it as a base feePerByte
+        return 1.000;
+    }
+
     /*
-
-      static double getMachineServiceInterests(
-        const String& dType,
-        const String& dClass = "",
-        const DocLenT& dLen = 0,
-        const DocLenT& extra_length = 0,
-        const int& supported_P4P_trx_count = 1)
-      {
-          return get().IgetMachineServiceInterests(
-            dType,
-            dClass,
-            dLen,
-            extra_length,
-            supported_P4P_trx_count);
-      }
-
       void IsetShouldLoopThreads(const bool v)
       {
         m_should_loop_threads = v;
@@ -391,7 +398,7 @@ impl CMachine {
         if !status
         { return false; }
 
-        if self.m_profile.m_mp_code=="" || self.m_profile.m_mp_name == ""
+        if self.m_profile.m_mp_code == "" || self.m_profile.m_mp_name == ""
         {
             println!("selffffffff m_mp_code {:?}", &self.m_profile.m_mp_code);
             println!("selffffffff m_mp_name {:?}", &self.m_profile.m_mp_name);

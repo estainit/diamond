@@ -1,6 +1,6 @@
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use crate::{CMachine, constants};
-use crate::cutils::{left_padding};
+use crate::cutils::{padding_left};
 use crate::lib::custom_types::{CDateT, TimeByMinutesT, TimeBySecT};
 
 pub struct AppParams {
@@ -183,7 +183,7 @@ impl AppParams {
 
         let day: Vec<&str> = c_date.split(" ").collect();
         let cycle_number = self.get_coinbase_cycle_number(c_date);
-        return day[0].to_string() + " " + &left_padding(cycle_number, 3);
+        return day[0].to_string() + " " + &padding_left(&cycle_number, 3);
     }
 
     //old_name_was getACycleRange
@@ -502,11 +502,11 @@ impl AppParams {
     {
         let h: TimeByMinutesT = minutes / 60;
         let mut h: String = h.to_string();
-        h = left_padding(h, 2);
+        h = padding_left(&h, 2);
 
         let m: TimeByMinutesT = minutes % 60;
         let mut m: String = m.to_string();
-        m = left_padding(m, 2);
+        m = padding_left(&m, 2);
         // return String::number((minutes / 60) as u8).rightJustified(2, '0') + ':' + String::number(minutes % 60).rightJustified(2, '0');
         return h + ":" + &m;
     }

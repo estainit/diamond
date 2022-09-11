@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, dlog};
-use crate::lib::custom_types::{ClausesT, QVDRecordsT};
+use crate::{constants, dlog, machine};
+use crate::lib::custom_types::{ClausesT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_WALLET_ADDRESSES};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
@@ -162,18 +162,19 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
     return (true, "Inserted new address to machine wallet".to_string());
 }
 
-/*
-
-QVDRecordsT Wallet::getAddressesInfo(
-  const StringList& addresses,
-  const StringList& fields)
+//old_name_was getAddressesInfo
+pub fn get_addresses_info(
+    addresses: VString,
+    fields: Vec<&str>) -> QVDRecordsT
 {
-  String mp_code = CMachine::getSelectedMProfile();
-  auto[status, res] = search_wallet_addresses(addresses, mp_code, fields);
-  if (!status)
-      return {};
-  return res;
+    let mp_code = machine().get_selected_m_profile();
+    let (status, records) = search_wallet_addresses(addresses, mp_code, fields);
+    if !status
+    { return vec![]; }
+    return records;
 }
+
+/*
 
 GenRes Wallet::createANewAddress(
   const String& signature_type,

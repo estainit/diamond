@@ -20,27 +20,26 @@ pub struct TInput
     pub m_amount: CMPAIValueT,
     pub m_private_keys: VString,
     // they are need to sign the coin in order to spend it
-    pub m_unlock_set: JSonObject,
+    pub m_unlock_set: UnlockSet,
 }
 
 impl TInput {
     //old_name_was getCoinCode
-    #[allow(unused, dead_code)]
     pub fn get_coin_code(&self) -> CCoinCodeT
     {
         return cutils::pack_coin_code(&self.m_transaction_hash, self.m_output_index);
     }
 
-    #[allow(unused, dead_code)]
-    pub fn dump(&self) -> String
-    {
-        let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
-        out += &*("\nOwner: ".to_owned() + &self.m_owner.clone());
-        out += &*("\nAmount: ".to_owned() + &self.m_amount.to_string());
-        out += &*("\nUnlockset: ".to_owned() + &cutils::controlled_json_stringify(&self.m_unlock_set));
-        //  out += "\nPrivate keys: " + m_private_keys.join(", ");
-        return out;
-    }
+    // #[allow(unused, dead_code)]
+    // pub fn dump(&self) -> String
+    // {
+    //     let mut out: String = "\nCoin Code: ".to_owned() + &self.m_transaction_hash + ":" + &self.m_output_index.to_string();
+    //     out += &*("\nOwner: ".to_owned() + &self.m_owner.clone());
+    //     out += &*("\nAmount: ".to_owned() + &self.m_amount.to_string());
+    //     out += &*("\nUnlockset: ".to_owned() + &cutils::controlled_json_stringify(&self.m_unlock_set));
+    //     //  out += "\nPrivate keys: " + m_private_keys.join(", ");
+    //     return out;
+    // }
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -48,7 +47,7 @@ pub struct TOutput
 {
     pub m_address: CAddressT,
     pub m_amount: CMPAIValueT,
-    pub m_output_charachter: String,
+    pub m_output_character: String,
     pub m_output_index: COutputIndexT,// = - 1;
 }
 
@@ -58,7 +57,7 @@ impl TOutput {
         TOutput {
             m_address: "".to_string(),
             m_amount: 0,
-            m_output_charachter: constants::OUTPUT_NORMAL.to_string(),
+            m_output_character: constants::OUTPUT_NORMAL.to_string(),
             m_output_index: 0,
         }
     }
@@ -67,7 +66,7 @@ impl TOutput {
     pub fn dump(&self) -> String {
         let mut out: String = "\nTrx output: m_address".to_owned() + &self.m_address;
         out += &*("\nm_amount: ".to_owned() + &self.m_amount.to_string());
-        out += &*("\nm_output_charachter: ".to_owned() + &self.m_output_charachter);
+        out += &*("\nm_output_character: ".to_owned() + &self.m_output_character);
         out += &*("\nm_output_index: ".to_owned() + &self.m_output_index.to_string());
         //  out += "\nPrivate keys: " + m_private_keys.join(", ");
         return out.to_string();
@@ -200,7 +199,7 @@ pub fn calc_unlock_hash(unlock_set: &UnlockSet, hash_algorithm: &str) -> String
 
 UnlockSet convertJsonUSetToStruct(const JSonObject& unlockSet)
 {
-  QVector<IndividualSignature> sSets;
+  Vec<IndividualSignature> sSets;
   for(QJsonValueRef an_s_set: unlockSet.value("sSets").toArray())
   {
     JSonObject an_s_setJ = an_s_set.toObject();
@@ -289,6 +288,18 @@ pub fn make_outputs_tuples(outputs: &Vec<TOutput>) -> VVString
     return outputs_list;
 }
 
+pub fn make_inputs_tuples(inputs: &Vec<TInput>) -> VVString
+{
+    let mut outputs_list: VVString = vec![];
+    for an_input in inputs
+    {
+        outputs_list.push(
+            vec![an_input.m_transaction_hash.clone(), an_input.m_output_index.to_string()]
+        );
+    }
+    return outputs_list;
+}
+
 /*
 
 JSonObject compactUnlocker(const JSonObject& u_set)
@@ -357,64 +368,109 @@ pub fn compact_unlockers_array(doc_ext_info: &JSonObject) -> JSonObject
     return new_doc_ext_info;
 }
 
-/*
-String safeStringifySigntureSets(const JSonArray& signture_sets)
+//old_name_was safeStringifySigntureSets
+pub fn safe_stringify_signture_sets(signture_sets: &Vec<IndividualSignature>) -> String
 {
-  StringList sets_str;
-  for(QJsonValue an_s_set: signture_sets)
-  {
-    JSonObject an_s_setJ = an_s_set.toObject();
+    let mut sets_str: VString = vec![];
+    for an_s_set in signture_sets
+    {
+        let mut a_set: String = "{".to_string();
+        a_set = format!(
+            "{}\"sKey\":\"{}\"",
+            a_set,
+            an_s_set.m_signature_key);
 
-    String a_set = "{";
-    a_set += "\"sKey\":\"" + an_s_setJ.value("sKey").to_string() + "\"";
+        if an_s_set.m_input_time_lock > 0.0
+        {
+            a_set = format!(
+                "{},\"iTLock\":{}",
+                a_set,
+                an_s_set.m_input_time_lock);
+        }
 
-    if (an_s_setJ.keys().contains("iTLock") && (an_s_setJ["iTLock"].toDouble() > 0))
-      a_set += ",\"iTLock\":" + String::number(an_s_setJ.value("iTLock").toDouble());
+        if an_s_set.m_input_time_lock_strickt > 0.0
+        {
+            a_set = format!(
+                "{},\"iTLockSt\":{}",
+                a_set,
+                an_s_set.m_input_time_lock_strickt.to_string());
+        }
 
-    if (an_s_setJ.keys().contains("iTLockSt") && (an_s_setJ["iTLockSt"].toDouble() > 0))
-      a_set += ",\"iTLockSt\":" + String::number(an_s_setJ.value("iTLockSt").toDouble()) ;
+        if an_s_set.m_output_time_lock > 0.0
+        {
+            a_set = format!(
+                "{},\"oTLock\":{}",
+                a_set,
+                an_s_set.m_output_time_lock);
+        }
 
-    if (an_s_setJ.keys().contains("oTLock") && (an_s_setJ["oTLock"].toDouble() > 0))
-      a_set += ",\"oTLock\":" + String::number(an_s_setJ.value("oTLock").toDouble());
+        if an_s_set.m_permitted_to_delegate != "".to_string()
+        {
+            a_set = format!(
+                "{},\"pDelegate\":\"{}\"",
+                a_set,
+                an_s_set.m_permitted_to_delegate);
+        }
 
-    if(an_s_setJ.value("pDelegate").to_string() != "")
-      a_set += ",\"pDelegate\":\"" + an_s_setJ.value("pDelegate").to_string() + "\"";
+        if an_s_set.m_permitted_to_pledge != "".to_string()
+        {
+            a_set = format!(
+                "{},\"pPledge\":\"{}\"",
+                a_set,
+                an_s_set.m_permitted_to_pledge);
+        }
+        a_set.push_str("}");
 
-    if (an_s_setJ.value("pPledge").to_string() != "")
-      a_set += ",\"pPledge\":\"" + an_s_setJ.value("pPledge").to_string() + "\"";
-
-    a_set += "}";
-
-    sets_str.push(a_set);
-  }
-  String out = "[" + sets_str.join(",") + "]";
-  return out;
+        sets_str.push(a_set);
+    }
+    let out: String = format!("[{}]", sets_str.join(","));
+    return out;
 }
 
-String safeStringifyUnlockSet(const JSonObject& unlockSet)
+//old_name_was safeStringifyUnlockSet
+pub fn safe_stringify_unlock_set(unlockSet: &UnlockSet) -> String
 {
-  String out = "{";
-  if (unlockSet.value("lHash").to_string() == "")
-  {
-    out += "\"lHash\":\"\",";
-  }else{
-    out += "\"lHash\":\"" + unlockSet.value("lHash").to_string() + "\",";
-  }
-  if (unlockSet.value("mProof").toArray().len() > 0)
-  {
-    out += "\"mProof\":" + cutils::serializeJson(unlockSet.value("mProof").toArray()) + ",";
-  }else{
-    out += "\"mProof\":[],";
-  }
-  out += "\"salt\":\"" + unlockSet.value("salt").to_string() + "\",";
-  out += "\"sSets\":" + safeStringifySigntureSets(unlockSet.value("sSets").toArray()) + ",";
-  out += "\"sType\":\"" + unlockSet.value("sType").to_string() + "\",";
-  out += "\"sVer\":\"" + unlockSet.value("sVer").to_string() + "\"";
-  out += "}";
-  return out;
+    let mut out: String = "{".to_string();
+    if unlockSet.m_left_hash == "".to_string()
+    {
+        out.push_str("\"lHash\":\"\",");
+    } else {
+        out = format!("{}\"lHash\":\"{}\",", out, unlockSet.m_left_hash.clone());
+    }
+
+    if unlockSet.m_merkle_proof.len() > 0
+    {
+        out = format!(
+            "{}\"mProof\":{},",
+            out,
+            serde_json::to_string(&unlockSet.m_merkle_proof).unwrap());
+    } else {
+        out = format!(
+            "{}\"mProof\":[],",
+            out);
+    }
+    out = format!(
+        "{}\"salt\":\"{}\",",
+        out,
+        unlockSet.m_salt);
+    out = format!(
+        "{}\"sSets\":{},",
+        out,
+        safe_stringify_signture_sets(&unlockSet.m_signature_sets));
+    out = format!(
+        "{}\"sType\":\"{}\",",
+        out,
+        unlockSet.m_signature_type);
+    out = format!(
+        "{}\"sVer\":\"{}\"",
+        out,
+        unlockSet.m_signature_ver);
+
+    out.push_str("}");
+
+    return out;
 }
 
-*/
 
 //old_name_was validateSigStruct
 pub fn validate_sig_struct(

@@ -1,11 +1,15 @@
 use std::collections::HashMap;
-use actix_web::{get, web};
-use crate::{application, constants, machine};
+use actix_web::{get, post, Responder, web};
+use serde_json::json;
+use crate::{application, constants, dlog, machine};
+use crate::constants::{MONEY_SMALLEST_UNIT};
+use crate::cutils::{controlled_str_to_json, convert_comma_separated_string_to_string_vector, remove_quotes};
 use crate::lib::address::address_handler::create_a_new_address;
-use crate::lib::custom_types::{QV2DicT, QVDRecordsT};
+use crate::lib::custom_types::{CMPAIValueT, QV2DicT, QVDRecordsT};
 use crate::lib::wallet::get_addresses_list::get_addresses_list;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
 use crate::lib::wallet::wallet_coins::get_coins_list;
+use crate::lib::wallet::wallet_signer::wallet_signer;
 
 
 #[get("/getAddresses")]
@@ -47,7 +51,16 @@ pub async fn get_addresses() -> web::Json<QV2DicT>
 pub async fn get_coins() -> web::Json<QVDRecordsT>
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        get_coins_list(false)
+        let coins = get_coins_list(false);
+        let mut new_coins: QVDRecordsT = vec![];
+        for mut a_coin in coins
+        {
+            a_coin.insert(
+                "coin_code".to_string(),
+                format!("{}:{}", a_coin["wf_trx_hash"], a_coin["wf_o_index"]));
+            new_coins.push(a_coin);
+        }
+        new_coins
     }).await.expect("Failed in retrieve fresh leaves!");
     web::Json(api_res)
 }
@@ -57,8 +70,16 @@ pub async fn refresh_w_coins() -> web::Json<QVDRecordsT>
 {
     let api_res = tokio::task::spawn_blocking(|| {
         let coins = get_coins_list(true);
-        println!("coinssss: {:?}", coins);
-        coins
+        let mut new_coins: QVDRecordsT = vec![];
+        for mut a_coin in coins
+        {
+            a_coin.insert(
+                "coin_code".to_string(),
+                format!("{}:{}", a_coin["wf_trx_hash"], a_coin["wf_o_index"]));
+            new_coins.push(a_coin);
+        }
+        println!("coinssss: {:?}", new_coins);
+        new_coins
     }).await.expect("Failed in retrieve fresh leaves!");
     web::Json(api_res)
 }
@@ -150,3 +171,72 @@ pub async fn create_basic_3of5_address() -> web::Json<(bool, String)>
     web::Json(api_res)
 }
 
+
+#[post("/signTrxAndPushToBuffer")]
+pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
+{
+    let api_res = tokio::task::spawn_blocking(move || {
+        let (_status, request) = controlled_str_to_json(&post);
+        println!("New POST request to create a post! request {:#?}", request);
+        let trx_recipient = remove_quotes(&request["txRecepient"]);
+        let trx_amount = remove_quotes(&request["txAmount"]).parse::<CMPAIValueT>().unwrap();
+        let trx_fee = remove_quotes(&request["txFee"]).parse::<CMPAIValueT>().unwrap();
+        let trx_change_back_address = remove_quotes(&request["changeBackAddress"]);
+        let selected_coins = remove_quotes(&request["selectedCoins"]);
+        let d_comment = remove_quotes(&request["dComment"]);
+        if selected_coins == ""
+        {
+            return json!({
+                "status": false,
+                "message": "No coin selected to be spent".to_string(),
+                "info": json!({}),
+            });
+        }
+        let selected_coins = convert_comma_separated_string_to_string_vector(&selected_coins);
+
+        let msg:String;
+        let trx_outputs_bill_amount = "0"; // the amount of output(s). zero means one output for all amount, while 1000000 means each output must be a million mPAI
+        // TODO: add some control on input fields
+
+        let bill_size: CMPAIValueT;
+        if trx_outputs_bill_amount == "0"
+        {
+            bill_size = 0;
+        } else {
+            bill_size = trx_outputs_bill_amount.to_string().parse::<CMPAIValueT>().unwrap();
+        }
+
+        let (sign_res, sign_status_msg) = wallet_signer(
+            &selected_coins,
+            trx_amount * MONEY_SMALLEST_UNIT,
+            trx_fee * MONEY_SMALLEST_UNIT,
+            &trx_recipient,
+            &trx_change_back_address,
+            bill_size,
+            d_comment,
+        );
+        if !sign_res
+        {
+            msg = format!(
+                "Failed in transaction sign, {} ",
+                sign_status_msg);
+            dlog(
+                &msg,
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return json!({
+                "status": false,
+                "message": "Transaction was signed and sent to machine buffer".to_string(),
+                "info": json!({}),
+            });
+        }
+
+        let api_res = json!({
+            "status": true,
+            "message": format!("Failed in transaction sign, {} ", sign_status_msg),
+            "info": json!({}),
+        });
+        api_res
+    }).await.expect("sign transaction panicked");
+    web::Json(api_res)
+}

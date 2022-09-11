@@ -89,7 +89,7 @@ pub fn calc_potential_micro_pai_per_one_cycle(year_: &String) -> CMPAIValueT
     let year = year.parse::<u16>().unwrap();
     let halving_cycle_number = cutils::c_floor(((year - constants::LAUNCH_YEAR) / constants::HALVING_PERIOD) as f64);
     let one_cycle_max_bili_pais: CMPAIValueT = 2_i32.pow((constants::COIN_ISSUING_INIT_EXPONENT as i64 - halving_cycle_number) as u32) as CMPAIValueT;
-    return one_cycle_max_bili_pais * constants::ONE_BILLION;
+    return one_cycle_max_bili_pais * constants::MONEY_SMALLEST_UNIT;
 }
 
 //old_name_was calcDefiniteReleaseableMicroPaiPerOneCycleNowOrBefore
@@ -170,7 +170,7 @@ if (c_date == "")
 c_date = application().now();
 
 CMPAIValueT total_incomes = 0;
-std::vector<MonthCoinsReport> monthly_incomes {};
+Vec<MonthCoinsReport> monthly_incomes {};
 CMPAIValueT one_cycle_income, income_per_month;
 CDateT due;
 CDateT prevDue = c_date;
@@ -286,7 +286,7 @@ pub fn does_dag_has_more_confidence_cb() -> bool
     }
     already_recorded_ancestors = cutils::array_unique(&already_recorded_ancestors);
     dlog(
-        &format!("already Recorded Confidents from({}) {:?}", current_cycle_range_from, already_recorded_confidents),
+        &format!("already Recorded Confidence from({}) {:#?}", current_cycle_range_from, already_recorded_confidents),
         constants::Modules::CB,
         constants::SecLevel::Info);
     dlog(

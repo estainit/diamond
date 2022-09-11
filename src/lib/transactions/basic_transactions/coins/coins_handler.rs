@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::thread;
 use postgres::types::ToSql;
 use crate::lib::constants;
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CMPAISValueT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT, VString};
 use crate::lib::dlog::dlog;
 use crate::{application, cutils, machine};
 use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
@@ -210,45 +210,34 @@ QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
   return out;
 }
 
-QVDRecordsT UTXOHandler::searchInSpendableCoins(
-  const ClausesT& clauses,
-  const StringList& fields,
-  const OrderT& order,
-  const uint64_t limit)
-{
-  String complete_query = "SELECT DISTINCT (ut_coin) ut_coin ";
-  StringList complete_fields {"ut_coin"};
-
-  if (fields.len() > 0)
-  {
-    complete_query += "," + fields.join(", ");
-    for(String a_field: fields)
-      complete_fields.push(a_field);
-  }
-
-  complete_query += " FROM  " + C_TRX_COINS + " ";
-
-  QueryElements qElms = DbModel::pre_query_generator(clauses, order);
-  complete_query += qElms.m_clauses;
-
-  if (limit > 0 )
-    complete_query += " LIMIT " + String::number(limit);
-
-  QueryRes res = DbModel::customQuery(
-    "db_comen_spendable_coins",
-    complete_query,
-    complete_fields,
-    0,
-    qElms.m_values,
-    false,
-    false
-  );
-
-  return res.records;
-}
-
-
 */
+
+//old_name_was searchInSpendableCoins
+pub fn search_in_spendable_coins(
+    clauses: &ClausesT,
+    _order: &OrderT,
+    limit: LimitT) -> QVDRecordsT
+{
+    let (clauses_, values_) = clauses_query_generator(
+        0,
+        clauses);
+    let mut complete_query = format!(
+        "SELECT DISTINCT (ut_coin) ut_coin, ut_ref_creation_date, ut_o_address, ut_o_value FROM {} WHERE {}  ",
+        C_TRX_COINS,
+        clauses_);
+    if limit > 0
+    {
+        complete_query = format!("{} LIMIT {}", limit, complete_query);
+    }
+
+    let (_status, records) = q_custom_query(
+        &complete_query,
+        &values_,
+        false,
+    );
+
+    return records;
+}
 
 // * @param {*} args function clons entire entries are visible_by given block(ancestors)
 // * to new entries which are visible_by new-block
@@ -283,7 +272,7 @@ pub fn inherit_ancestors_visbility(
             &a_coin["ut_coin"].to_string(),
             new_block_hash,
             &a_coin["ut_o_address"].to_string(),
-            a_coin["ut_o_value"].parse::<CMPAISValueT>().unwrap(),
+            a_coin["ut_o_value"].parse::<CMPAIValueT>().unwrap(),
             &a_coin["ut_ref_creation_date"].to_string());
     }
 }
@@ -295,7 +284,7 @@ pub fn add_new_coin(
     the_coin: &CCoinCodeT,
     visible_by: &CBlockHashT,
     address: &CAddressT,
-    coin_value: CMPAISValueT,
+    coin_value: CMPAIValueT,
     coin_creation_date: &CDateT) -> bool
 {
     if !cutils::is_valid_hash(&visible_by)
@@ -307,7 +296,7 @@ pub fn add_new_coin(
         return false;
     }
 
-    if (coin_value < 0) || (coin_value > constants::MAX_COIN_VALUE)
+    if coin_value > constants::MAX_COINS_AMOUNT
     {
         dlog(
             &format!("Invalid coin value to insert! {}", coin_value),
@@ -347,13 +336,13 @@ pub fn add_new_coin(
         return true;
     }
 
-
+    let coin_value_i64= coin_value as i64;
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("ut_creation_date", &creation_date as &(dyn ToSql + Sync)),
         ("ut_coin", &the_coin as &(dyn ToSql + Sync)),
         ("ut_visible_by", &visible_by as &(dyn ToSql + Sync)),
         ("ut_o_address", &address as &(dyn ToSql + Sync)),
-        ("ut_o_value", &coin_value as &(dyn ToSql + Sync)),
+        ("ut_o_value", &coin_value_i64 as &(dyn ToSql + Sync)),
         ("ut_ref_creation_date", &coin_creation_date as &(dyn ToSql + Sync)),
     ]);
 
@@ -514,7 +503,7 @@ bool UTXOHandler::removeUsedCoinsByBlock(const Block* block)
   CLog::log("remove spent UXTOs of Block(" + cutils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
   for (Document* doc: block->getDocuments())
     for (TInput* input: doc->get_inputs())
-      removeCoin(input->getCoinCode());
+      removeCoin(input.get_coin_code());
   return true;
 }
 
@@ -619,9 +608,9 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
     false);
 
   QV2DicT visibility = {};
-  QHash<CBlockHashT, std::vector<String> > coins_list = {};
-  QHash<CBlockHashT, std::vector<String> > owners_list = {};
-  QHash<CCoinCodeT, CMPAIValueT> map_coins_to_value = {};
+  HashMap<CBlockHashT, Vec<String> > coins_list = {};
+  HashMap<CBlockHashT, Vec<String> > owners_list = {};
+  HashMap<CCoinCodeT, CMPAIValueT> map_coins_to_value = {};
 
   for (QVDicT a_row: utxos.records)
   {

@@ -495,9 +495,9 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
 /*
 
 // need to be fixed because of array response of get BlockHashByDocHash
-std::vector<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoinCodeT& the_coin)
+Vec<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoinCodeT& the_coin)
 {
-  std::vector<CCoin> results {};
+  Vec<CCoin> results {};
   CLog::log("retrieve Blocks In which the coin: (" + the_coin + ") is created", "app", "trace");
 
   auto[doc_hash, output_index_] = cutils::unpackCoinCode(the_coin);
@@ -534,7 +534,7 @@ std::vector<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoin
         {
           CCoinCodeT tmp_coin = cutils::packCoinCode(doc->get_doc_hash(), output_index);
           if (tmp_coin == the_coin)
-            results.emplace_back(CCoin(
+            results.push(CCoin(
               the_coin,
               doc->get_outputs()[output_index].m_address,
               doc->get_outputs()[output_index].m_amount,
@@ -613,7 +613,7 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
     {{"b_coins_imported", constants::NO},
     {"b_type", StringList{constants::BLOCK_TYPES::Normal, "IN"}}});
   CMPAIValueT sum = 0;
-  QHash<CDocHashT, int64_t> maybe_dbl_spends = {};
+  HashMap<CDocHashT, int64_t> maybe_dbl_spends = {};
   StringList processed_outputs {};
 
   for (QVDicT wBlock: wBlocks)
@@ -698,13 +698,13 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
     outputs_by_block,
     waited_coinbases_to_be_spendable};
  */
-std::tuple<CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT, QHash<CBlockHashT, CMPAIValueT>, CMPAIValueT> DAG::getCBBlocksStat()
+std::tuple<CMPAIValueT, HashMap<CBlockHashT, CMPAIValueT>, CMPAIValueT, HashMap<CBlockHashT, CMPAIValueT>, CMPAIValueT> DAG::getCBBlocksStat()
 {
   CMPAIValueT total_minted_coins = 0;
-  QHash<CBlockHashT, CMPAIValueT> outputs_by_block {};
+  HashMap<CBlockHashT, CMPAIValueT> outputs_by_block {};
 
   CMPAIValueT floorish_micro_PAIs = 0;    //missedMicroPAIs
-  QHash<CBlockHashT, CMPAIValueT> burned_by_block {}; //missedMicroPAIsBlocks
+  HashMap<CBlockHashT, CMPAIValueT> burned_by_block {}; //missedMicroPAIsBlocks
 
   CMPAIValueT waited_coinbases_to_be_spendable = 0;
   StringList considered_cycles {};

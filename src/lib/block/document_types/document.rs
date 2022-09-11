@@ -5,17 +5,18 @@ use serde::{Serialize, Deserialize};
 use crate::{application, constants, cutils, dlog};
 use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::document_types::basic_tx_document::BasicTxDocument;
+use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
+use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::null_document::NullDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
-use crate::lib::custom_types::{CBlockHashT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, VVString};
+use crate::lib::custom_types::{CBlockHashT, CDateT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_outputs_tuples, stringify_outputs, TInput, TOutput};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_inputs_tuples, make_outputs_tuples, stringify_outputs, TInput, TOutput};
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Document
 {
     pub m_doc_hash: String,
@@ -30,7 +31,7 @@ pub struct Document
     pub m_doc_creation_date: String,
     pub m_block_creation_date: String,
     pub m_doc_ext_hash: String,
-    pub m_doc_ext_info: Vec<JSonObject>,
+    pub m_doc_ext_info: Vec<DocExtInfo>,
     pub m_doc_length: DocLenT,
 
     pub m_if_proposal_doc: ProposalDocument,
@@ -67,13 +68,13 @@ impl Document
             m_if_basic_tx_doc: BasicTxDocument::new(),
             m_if_coinbase_doc: CoinbaseDocument::new(),
             m_if_null_doc: NullDocument::new(),
-            m_empty_vec: vec![]
+            m_empty_vec: vec![],
         }
     }
 
     //old_name_was getDocExtInfo
     #[allow(unused, dead_code)]
-    pub fn get_doc_ext_info(&self) -> &Vec<JSonObject>
+    pub fn get_doc_ext_info(&self) -> &Vec<DocExtInfo>
     {
         return &self.m_doc_ext_info;
     }
@@ -377,7 +378,9 @@ impl Document
         }
 
         if ext_info_in_document {
-            document["dExtInfo"] = self.m_doc_ext_info.clone().into();
+            document["dExtInfo"] = json!({
+            "dExtInfo": self.m_doc_ext_info
+        });
             // document["dExtInfo"] = serde_json::to_string(&self.m_doc_ext_info).unwrap().into();
         }
 
@@ -434,15 +437,31 @@ impl Document
     {
         return self.m_doc_hash.clone();
     }
+
+    pub fn get_doc_type(&self) -> String
+    {
+        return self.m_doc_type.clone();
+    }
+
+    pub fn get_doc_class(&self) -> String
+    {
+        return self.m_doc_class.clone();
+    }
+
+    pub fn get_doc_ref(&self) -> String
+    {
+        return self.m_doc_ref.clone();
+    }
+
     /*
 
 
-    std::vector<TInput*> Document::get_inputs() const
+    Vec<TInput*> Document::get_inputs() const
     {
     return {};
     }
 
-    std::vector<TOutput*> Document::get_outputs() const
+    Vec<TOutput*> Document::get_outputs() const
     {
     return {};
     }
@@ -489,7 +508,7 @@ impl Document
         {}
 
 
-        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
+        panic!("Invalid document type to calculate its hash! {}", self.get_doc_identifier());
     }
 
     // old name was stringifyOutputs
@@ -501,6 +520,11 @@ impl Document
     pub fn make_outputs_tuples(&self) -> VVString
     {
         return make_outputs_tuples(&self.get_outputs());
+    }
+
+    pub fn make_inputs_tuples(&self) -> VVString
+    {
+        return make_inputs_tuples(&self.get_inputs());
     }
 
     // old name was getOutputs
@@ -526,7 +550,7 @@ impl Document
         {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
         {}
 
-        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
+        panic!("Invalid document type to outputs! {}", self.get_doc_identifier());
     }
 
     // old name was getInputs
@@ -550,7 +574,36 @@ impl Document
         {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
         {}
 
-        panic!("Invalid document type to calculate its hash! {}", self.m_doc_hash);
+        panic!("Invalid document type to get inputs! {}", self.get_doc_identifier());
+    }
+
+    pub fn validate_signatures(
+        &self,
+        used_coins_dict: &QV2DicT,
+        exclude_coins: &VString,
+        block_hash: &CBlockHashT) -> bool
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.validate_signatures(
+                self,
+                used_coins_dict,
+                exclude_coins,
+                block_hash);
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {} else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to validate_ signatures! {}", self.get_doc_identifier());
     }
 
 
@@ -561,23 +614,27 @@ impl Document
     m_doc_hash = calcDocHash();
     }
 
-    void Document::setDocLength()
-    {
-    m_doc_length = calc_doc_length();
-    }
-
-    void Document::setDExtHash()
-    {
-    m_doc_ext_hash = calcDocExtInfoHash();
-    }
-
-
     */
+
+    // old name was setDExtHash
+    pub fn set_doc_ext_hash(&mut self)
+    {
+        self.m_doc_ext_hash = self.calc_doc_ext_info_hash();
+    }
+
+    // old name was setDocLength
+    pub fn set_doc_length(&mut self)
+    {
+        self.m_doc_length = self.calc_doc_length();
+    }
 
     // old name was calcDocExtInfoHash
     pub fn calc_doc_ext_info_hash(&self) -> String
     {
-        if self.m_doc_type == constants::document_types::COINBASE
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.calc_doc_ext_info_hash(self);
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.calc_doc_ext_info_hash(self);
         }
@@ -749,6 +806,36 @@ impl Document
         panic!("Invalid doc type in 'apply doc first impact' {}", self.m_doc_type);
     }
 
+    //old_name_was calcDocDataAndProcessCost
+    pub fn calc_doc_data_and_process_cost_supper(
+        _stage: &String,
+        _c_date: &CDateT,
+        _extra_length: DocLenT) -> (bool, CMPAIValueT)
+    {
+        panic!("Base document has no method to calc dp cost!");
+    }
+
+    pub fn calc_doc_data_and_process_cost(
+        &self,
+        stage: &str,
+        c_date: &CDateT,
+        extra_length: DocLenT) -> (bool, CMPAIValueT)
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.calc_doc_data_and_process_cost(
+                self,
+                stage,
+                c_date,
+                extra_length);
+        } else if self.m_doc_type == constants::document_types::COINBASE
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else {}
+
+        panic!("Invalid doc type in 'calc dp cost doc' {}", self.m_doc_type);
+    }
+
+
     /*
         //JSonObject Document::exportJson() const
         //{
@@ -756,38 +843,28 @@ impl Document
         //  return r;
         //}
 
-        std::tuple<bool, CMPAIValueT> Document::calcDocDataAndProcessCost(
-        const String& stage,
-        String cDate,
-        const uint32_t& extraLength) const
-        {
-        Q_UNUSED(stage);
-        Q_UNUSED(cDate);
-        Q_UNUSED(extraLength);
-        return {false, 0};
-        }
 
-        String Document::getDocToBeSignedHash() const
-        {
-        // by default documents have no part to signing
-        return "";
-        }
+    String Document::getDocToBeSignedHash() const
+    {
+    // by default documents have no part to signing
+    return "";
+}
 
-        String Document::getDocSignMsg() const
-        {
-        return "";
-        }
+String Document::getDocSignMsg() const
+{
+return "";
+}
 
 
-        GenRes Document::applyDocImpact2()
-        {
-        return
-        {
-        false
-        };
-        }
+GenRes Document::applyDocImpact2()
+{
+return
+{
+false
+};
+}
 
-        */
+*/
 
     //old_name_was mapDocToBlock
     pub fn map_doc_to_block(&self,
@@ -954,7 +1031,7 @@ pub fn set_document_outputs(obj: &Vec<JSonObject>) -> Vec<TOutput>
         let o: TOutput = TOutput {
             m_address: remove_quotes(&an_output[0]),
             m_amount: remove_quotes(&an_output[1]).parse::<CMPAIValueT>().unwrap(),
-            m_output_charachter: "".to_string(),
+            m_output_character: "".to_string(),
             m_output_index: 0,
         };
         // new TOutput({oo[0].to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});

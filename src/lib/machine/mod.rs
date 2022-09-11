@@ -3,6 +3,7 @@ pub mod app_params_path;
 
 pub mod machine_accounts_balance;
 pub mod machine_backup;
+pub mod machine_block_buffer;
 pub mod machine_config;
 pub mod machine_seed_neighbors;
 pub mod machine_contracts;

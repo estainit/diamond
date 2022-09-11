@@ -77,7 +77,7 @@ String INameRegDocument::safe_stringify_doc(const bool ext_info_in_document) con
 }
 
 // js name was calcCostDINameRegReq
-std::tuple<bool, CMPAIValueT> INameRegDocument::calcDocDataAndProcessCost(
+std::tuple<bool, CMPAIValueT> calc_doc_data_and_process_cost(
   const String& stage,
   String cDate,
   const uint32_t& extraLength) const
@@ -96,9 +96,9 @@ std::tuple<bool, CMPAIValueT> INameRegDocument::calcDocDataAndProcessCost(
   CMPAIValueT pure_cost = INameHandler::getPureINameRegCost(m_iname_string);
   the_cost += pure_cost;
 
-  if (stage == constants::STAGES::Creating)
+  if (stage == constants::stages::Creating)
   {
-    the_cost = the_cost * CMachine::getMachineServiceInterests(
+    the_cost = the_cost * machine().get_machine_service_interests(
       m_doc_type,
       m_doc_class,
       dLen);
@@ -213,7 +213,7 @@ String INameRegDocument::calcDocExtInfoHash() const
 {
   String hashables = "{";
   hashables += "\"signatures\":" + cutils::serializeJson(m_doc_ext_info[0].toObject().value("signatures").toArray()) + ",";
-  hashables += "\"uSet\":" + SignatureStructureHandler::safeStringifyUnlockSet(m_doc_ext_info[0].toObject().value("uSet").toObject()) + "}";
+  hashables += "\"uSet\":" + safe_stringify_unlock_set(m_doc_ext_info[0].toObject().value("uSet").toObject()) + "}";
   String hash = ccrypto::keccak256(hashables);
   CLog::log("Reg iName Ext Root Hash Hashables Doc(" + m_doc_hash + ") hashables: " + hashables + "\nRegenrated hash: " + hash, "app", "trace");
   return hash;
@@ -224,7 +224,7 @@ void INameRegDocument::importCostsToTreasury(
   CoinImportDataContainer* block_inspect_container)
 {
 
-  QHash<CDocHashT, CostPaymentStatus> cost_payment_status {};
+  HashMap<CDocHashT, CostPaymentStatus> cost_payment_status {};
 
   // handle iName register costs
 

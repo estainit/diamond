@@ -78,6 +78,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "N".to_string(),
                                 m_permitted_to_delegate: "N".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                             IndividualSignature {
@@ -86,6 +87,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "N".to_string(),
                                 m_permitted_to_delegate: "N".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                         ],
@@ -106,6 +108,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "Y".to_string(),
                                 m_permitted_to_delegate: "Y".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                             IndividualSignature {
@@ -114,6 +117,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "N".to_string(),
                                 m_permitted_to_delegate: "N".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                         ],
@@ -134,6 +138,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "Y".to_string(),
                                 m_permitted_to_delegate: "Y".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                             IndividualSignature {
@@ -142,6 +147,7 @@ pub fn get_hu_profile() -> MachineProfile
                                 m_permitted_to_pledge: "N".to_string(),
                                 m_permitted_to_delegate: "N".to_string(),
                                 m_input_time_lock: 0.0,
+                                m_input_time_lock_strickt: 0.0,
                                 m_output_time_lock: 0.0,
                             },
                         ],

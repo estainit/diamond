@@ -3,7 +3,7 @@
 #include <vector>
 #include "init_sqlite.h"
 
-std::vector<std::string> psql_init_query_delete = {
+Vec<std::string> psql_init_query_delete = {
     "DROP TABLE IF EXISTS c_kvalue;",
     "DROP TABLE IF EXISTS c_machine_profiles;",
     "DROP TABLE IF EXISTS c_machine_neighbors;",

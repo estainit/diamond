@@ -22,13 +22,13 @@ pub type CBlockHashT = String;
 pub type CDocHashT = String;
 pub type CAddressT = String;
 pub type CDocIndexT = i32;
+pub type CInputIndexT = u16;
+pub type CSigIndexT = u16;
 /*
 typedef String  CDocHashT;
 
 // customizing document index maximum number
-pub type CInputIndexT = u16;
 
-pub type CSigIndexT = u16;
 
 
 pub type BlockAncestorsCountT = u16;
@@ -49,21 +49,21 @@ pub type DoubleDicT = HashMap<String, f64>;
 /*
 pub type floatDicT = HashMap<String, f64>       floatDicT; // custom dictionary
 pub type UI16DicT = HashMap<String, CDocIndexT>  UI16DicT; // custom dictionary
-pub type QHash<String, uint32_t>    UI32DicT; // custom dictionary
-pub type QHash<String, uint64_t>    UI64DicT; // custom dictionary
+pub type HashMap<String, uint32_t>    UI32DicT; // custom dictionary
+pub type HashMap<String, uint64_t>    UI64DicT; // custom dictionary
 */
 pub type QSDicT = HashMap<String, String>;
 // pub type QUDicT = HashMap<String, QUnion>;
 // custom dictionary
 /*
-pub type QHash<String, StringList> QSLDicT; // custom dictionary
-pub type QHash<String, QSDicT>      QS2DicT; // custom dictionary
+pub type HashMap<String, StringList> QSLDicT; // custom dictionary
+pub type HashMap<String, QSDicT>      QS2DicT; // custom dictionary
 */
 // pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
 // custom dictionary
 /*
-pub type QHash<String, JSonObject> QJODicT; // custom dictionary
-pub type QHash<String, JSonArray>  QJADicT; // custom dictionary
+pub type HashMap<String, JSonObject> QJODicT; // custom dictionary
+pub type HashMap<String, JSonArray>  QJADicT; // custom dictionary
 */
 pub type QVDicT = HashMap<String, String>;
 pub type QV2DicT = HashMap<String, QVDicT>      ;
@@ -72,10 +72,10 @@ pub type JSonObject = Value;
 pub type JSonArray = Value;
 //Vec<QVDicT>;
 /*
-pub type QVector<QSDicT>        QSDRecordsT;
-pub type QVector<QV2DicT>       QV2DRecordsT;
-pub type QVector<JSonObject>   JORecordsT;
-pub type QVector<JSonArray>    JARecordsT;
+pub type Vec<QSDicT>        QSDRecordsT;
+pub type Vec<QV2DicT>       QV2DRecordsT;
+pub type Vec<JSonObject>   JORecordsT;
+pub type Vec<JSonArray>    JARecordsT;
 */
 pub type ClausesT<'l> = Vec<ModelClause<'l>>;
 pub type OrderT<'l> = Vec<&'l OrderModifier<'l>>;
@@ -83,12 +83,12 @@ pub type LimitT = u32;
 
 /*
 
-pub type QHash<String, QVDRecordsT> GRecordsT; // Groupped records
-pub type QHash<String, GRecordsT> G2RecordsT; // Groupped Groupped records
+pub type HashMap<String, QVDRecordsT> GRecordsT; // Groupped records
+pub type HashMap<String, GRecordsT> G2RecordsT; // Groupped Groupped records
 
 */
 /*
-pub type QVector<Coin> CoinsT;
+pub type Vec<Coin> CoinsT;
 typedef String  CCoinCodeT;
 typedef uint64_t CMPAIValueT;  // (+) micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
 typedef int64_t CMPAISValueT;  // (+-)micro PAI is the smallest unit of accounting for system coins, but normally we use PAI
@@ -121,32 +121,32 @@ pub type TimeByHoursT = f64;  // time by hours
 /*
 typedef uint64_t TimeByMinutesT;
 typedef uint64_t TimeBySecT;
-typedef QHash<String, float>       floatDicT; // custom dictionary
-typedef QHash<String, CDocIndexT>  UI16DicT; // custom dictionary
-typedef QHash<String, uint32_t>    UI32DicT; // custom dictionary
-typedef QHash<String, uint64_t>    UI64DicT; // custom dictionary
-typedef QHash<String, String>     QSDicT; // custom dictionary
-typedef QHash<String, StringList> QSLDicT; // custom dictionary
-typedef QHash<String, QSDicT>      QS2DicT; // custom dictionary
-typedef QHash<String, QVariant>    QVDicT; // custom dictionary
-typedef QHash<String, JSonObject> QJODicT; // custom dictionary
-typedef QHash<String, JSonArray>  QJADicT; // custom dictionary
-typedef QHash<String, QVDicT>      QV2DicT;
+typedef HashMap<String, float>       floatDicT; // custom dictionary
+typedef HashMap<String, CDocIndexT>  UI16DicT; // custom dictionary
+typedef HashMap<String, uint32_t>    UI32DicT; // custom dictionary
+typedef HashMap<String, uint64_t>    UI64DicT; // custom dictionary
+typedef HashMap<String, String>     QSDicT; // custom dictionary
+typedef HashMap<String, StringList> QSLDicT; // custom dictionary
+typedef HashMap<String, QSDicT>      QS2DicT; // custom dictionary
+typedef HashMap<String, QVariant>    QVDicT; // custom dictionary
+typedef HashMap<String, JSonObject> QJODicT; // custom dictionary
+typedef HashMap<String, JSonArray>  QJADicT; // custom dictionary
+typedef HashMap<String, QVDicT>      QV2DicT;
 
-typedef QVector<QVDicT>        QVDRecordsT;
-typedef QVector<QSDicT>        QSDRecordsT;
-typedef QVector<QV2DicT>       QV2DRecordsT;
-typedef QVector<JSonObject>   JORecordsT;
-typedef QVector<JSonArray>    JARecordsT;
-typedef QVector<ModelClause>   ClausesT;
-typedef QVector<OrderModifier> OrderT;
+typedef Vec<QVDicT>        QVDRecordsT;
+typedef Vec<QSDicT>        QSDRecordsT;
+typedef Vec<QV2DicT>       QV2DRecordsT;
+typedef Vec<JSonObject>   JORecordsT;
+typedef Vec<JSonArray>    JARecordsT;
+typedef Vec<ModelClause>   ClausesT;
+typedef Vec<OrderModifier> OrderT;
 
-typedef QHash<String, QVDRecordsT> GRecordsT; // Groupped records
-typedef QHash<String, GRecordsT> G2RecordsT; // Groupped Groupped records
+typedef HashMap<String, QVDRecordsT> GRecordsT; // Groupped records
+typedef HashMap<String, GRecordsT> G2RecordsT; // Groupped Groupped records
 
-typedef QHash<String, MerkleNodeData> MNodesMapT;
+typedef HashMap<String, MerkleNodeData> MNodesMapT;
 
-typedef QVector<Coin> CoinsT;
+typedef Vec<Coin> CoinsT;
 
  */
 

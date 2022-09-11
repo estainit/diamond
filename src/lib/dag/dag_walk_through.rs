@@ -213,7 +213,7 @@ std::tuple<bool, QVDRecordsT, double> DAG::getAllDescendents(
   DNASharePercentT validity_percentage = 0.0;
   if (retrieve_validity_percentage)
   {
-    QHash<String, QHash<String, double> > backerOnDateSharePercentage {};
+    HashMap<String, HashMap<String, double> > backerOnDateSharePercentage {};
     for (QVDicT aBlock: block_records)
     {
       if (validity_percentage > 100.0)
@@ -349,9 +349,9 @@ std::tuple<bool, StringList> DAG::controllDAGHealth()
   bool final_stat = true;
 
   StringList all_block_hashes = {};
-  QHash<CBlockHashT, TmpBlock> blocks_info = {};
-  QHash<CBlockHashT, StringList> ancestors_by_block = {};
-  QHash<CBlockHashT, StringList> descendents_by_block = {};
+  HashMap<CBlockHashT, TmpBlock> blocks_info = {};
+  HashMap<CBlockHashT, StringList> ancestors_by_block = {};
+  HashMap<CBlockHashT, StringList> descendents_by_block = {};
 
   QVDRecordsT blocks = searchInDAG(
     {},

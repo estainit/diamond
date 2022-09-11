@@ -105,7 +105,7 @@ pub fn search_parsing_q(
 //old_name_was removePrerequisites
 pub fn remove_prerequisites(block_hash: &String)
 {
-    let q = format!("SELECT pq_type, pq_code, pq_prerequisites FROM {} WHERE pq_prerequisites LIKE %{}%",
+    let q = format!("SELECT pq_type, pq_code, pq_prerequisites FROM {} WHERE pq_prerequisites LIKE '%{}%'",
                     C_PARSING_Q, block_hash);
 
     let (_status, records) = q_custom_query(
