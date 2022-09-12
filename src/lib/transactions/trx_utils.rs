@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::padding_length_value;
+use crate::lib::custom_types::{COutputIndexT, VString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{TInput, TOutput};
 
 //old_name_was normalizeInputs
@@ -40,7 +41,7 @@ pub fn normalize_outputs(outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
     for an_output in outputs
     {
         if !ccrypto::is_valid_bech32(&an_output.m_address) &&
-            !constants::TREASURY_PAYMENTS.contains(&&*an_output.m_address)
+            !constants::TREASURY_PAYMENTS.contains(&an_output.m_address.as_str())
 
         {
             dlog(
@@ -82,64 +83,57 @@ pub fn normalize_outputs(outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
     }
 }
 
-/*
-std::tuple<bool, JSonArray> TrxUtils::normalize_outputsJ(
-  const JSonArray& outputs,
-  const bool& sortIt)
+//old_name_was normalizeOutputsJ
+pub fn normalize_rp_outputs(
+    outputs: &Vec<TOutput>,
+    should_sort: bool) -> (bool, Vec<TOutput>)
 {
-  // BIP69
-  JARecordsT normalized_outputs = {};
-  for (auto an_output_: outputs)
-  {
-
-    // entry control
-    JSonArray an_output = an_output_.toArray();
-    if (an_output.len() != 2)
+    // BIP69
+    let mut normalized_outputs: Vec<TOutput> = vec![];
+    for an_output in outputs
     {
-      CLog::log("invalid trx output " + cutils::dumpIt(an_output), "trx", "error");
-      return {false, {}};
+        // address control
+        if !constants::TREASURY_PAYMENTS.contains(&an_output.m_address.as_str()) &&
+            !ccrypto::is_valid_bech32(&an_output.m_address)
+        {
+            dlog(
+                &format!("invalid trx output {:#?}", an_output),
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return (false, vec![]);
+        }
+
+        // value controll
+        // TODO: implement some control like no-floatingpoint-part etc ...
+
+        normalized_outputs.push(an_output.clone());
     }
 
-    // address control
-    if (!constants::TREASURY_PAYMENTS.contains(an_output[0].to_string()) &&
-        !ccrypto::isValidBech32(an_output[0].to_string()))
+    let mut final_outputs: Vec<TOutput> = vec![];
+
+    if should_sort && (normalized_outputs.len() > 1)
     {
-      CLog::log("invalid trx output " + cutils::dumpIt(an_output), "trx", "error");
-      return {false, {}};
+        let mut dict: HashMap<String, TOutput> = HashMap::new();
+        let mut inx: COutputIndexT = 0;
+        while inx < normalized_outputs.len() as COutputIndexT
+        {
+            let an_output: &TOutput = &normalized_outputs[inx as usize];
+            let key: String = vec![
+                an_output.m_address.clone(),
+                cutils::padding_left(&an_output.m_amount.to_string(), 20),
+                cutils::padding_left(&inx.to_string(), 5)].join(",");
+            dict.insert(key, an_output.clone());
+            inx += 1;
+        }
+
+
+        let mut keys: VString = dict.keys().cloned().collect::<VString>();
+        keys.sort();
+        for key in keys
+        {
+            final_outputs.push(dict[&key].clone());
+        }
     }
 
-    // value controll
-    // TODO: implement some control like no-floatingpoint-part etc ...
-
-    normalized_outputs.push(an_output);
-
-  }
-
-  JSonArray final_outputs {};
-
-  if (sortIt && (normalized_outputs.len() > 1))
-  {
-    QJADicT dict {};
-    for (COutputIndexT inx = 0; inx < normalized_outputs.len(); inx++)
-    {
-      JSonArray an_output = normalized_outputs[inx];
-      String key = StringList {
-        an_output[0].to_string(),
-        String::number(an_output[1].toDouble()).rightJustified(20, '0'),
-        String::number(inx).rightJustified(5, '0')}.join(",");
-      dict[key] = an_output;
-    }
-
-
-    StringList keys = dict.keys();
-    keys.sort();
-    for (String key: keys)
-      final_outputs.push(dict[key]);
-  }
-
-  return {true, final_outputs};
+    return (true, final_outputs);
 }
-
-
-
-*/

@@ -205,7 +205,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
         }
 
         // find all descendent of current block(if exist)
-        auto[status_, wBlocksDescendents, validityPercentage_] = DAG::getAllDescendents(block->getBlockHash());
+        auto[status_, wBlocksDescendents, validityPercentage_] = get_all_descendants(block->getBlockHash());
         Q_UNUSED(status_);
         Q_UNUSED(validityPercentage_);
 
@@ -379,10 +379,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
 
 
         // update utxo_imported
-        DAG::set_coins_import_status(block->getBlockHash(), constants::YES);
-
-        if (!CMachine::is_in_sync_process())
-          CGUI::signalUpdateBlocks();
+         set_coins_import_status(block->getBlockHash(), constants::YES);
 
       }
 

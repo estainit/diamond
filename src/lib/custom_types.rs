@@ -66,7 +66,7 @@ pub type HashMap<String, JSonObject> QJODicT; // custom dictionary
 pub type HashMap<String, JSonArray>  QJADicT; // custom dictionary
 */
 pub type QVDicT = HashMap<String, String>;
-pub type QV2DicT = HashMap<String, QVDicT>      ;
+pub type QV2DicT = HashMap<String, QVDicT>;
 pub type QVDRecordsT = Vec<HashMap<String, String>>;
 pub type JSonObject = Value;
 pub type JSonArray = Value;
@@ -81,12 +81,12 @@ pub type ClausesT<'l> = Vec<ModelClause<'l>>;
 pub type OrderT<'l> = Vec<&'l OrderModifier<'l>>;
 pub type LimitT = u32;
 
-/*
+// Grouped records
+pub type GRecordsT = HashMap<String, QVDRecordsT>;
+// Grouped Grouped records
+#[allow(unused, dead_code)]
+pub type G2RecordsT = HashMap<String, GRecordsT>;
 
-pub type HashMap<String, QVDRecordsT> GRecordsT; // Groupped records
-pub type HashMap<String, GRecordsT> G2RecordsT; // Groupped Groupped records
-
-*/
 /*
 pub type Vec<Coin> CoinsT;
 typedef String  CCoinCodeT;
@@ -106,7 +106,9 @@ pub type COutputIndexT = i32;
 typedef uint16_t DPIIndexT;
 pub type DPIIndexT = u16;
 */
+//old_name_was DNASharePercentT
 pub type SharesPercentT = f64;
+//old_name_was DNAShareCountT
 pub type SharesCountT = f64;
 
 #[allow(dead_code, unused)]

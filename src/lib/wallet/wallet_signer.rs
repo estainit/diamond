@@ -324,7 +324,7 @@ std::tuple<bool, String, StringList, QJsonObject> Wallet::signByAnAddress(
   QVDRecordsT addresses_details = Wallet::getAddressesInfo({signer_address});
   if (addresses_details.len() != 1)
   {
-    msg = "The address " + cutils::shortBech16(signer_address) + " is not controlled by current wallet/profile!";
+    msg = "The address " + cutils::short_bech16(signer_address) + " is not controlled by current wallet/profile!";
     CLog::log(msg, "app", "error");
     return {false, msg, {}, {}};
   }

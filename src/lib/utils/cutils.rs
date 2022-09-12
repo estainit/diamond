@@ -403,7 +403,6 @@ pub fn hash64c(s: &String) -> String
     s.substring(0, 64).to_string()
 }
 
-#[allow(unused, dead_code)]
 pub fn short_bech16(s: &String) -> String
 {
     return s.substring(0, 5).to_string() + &s.substring(48, s.len()).to_string();
@@ -513,6 +512,20 @@ pub fn array_unique(inp_arr: &Vec<String>) -> Vec<String>
         }
     }
     out_arr
+}
+
+//old_name_was removeEmptyElements
+pub fn remove_empty_elements(elms: &VString) -> VString
+{
+    let mut out: VString = vec![];
+    for elm in elms
+    {
+        if elm != ""
+        {
+            out.push(elm.clone());
+        }
+    }
+    out
 }
 
 //old_name_was packCoinCode

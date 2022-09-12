@@ -1,9 +1,20 @@
 use std::thread;
+use postgres::types::ToSql;
 
 use crate::lib::constants;
-use crate::{application, machine};
-use crate::lib::custom_types::{CDateT};
+use crate::{application, cutils, machine};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::block::block_types::block_repayback::repayback_block::create_repayment_block;
+use crate::lib::block::document_types::rp_docdocument::{calc_repayment_details, RepaymentDocument};
+use crate::lib::block_utils::unwrap_safed_content_for_db;
+use crate::lib::custom_types::{CCoinCodeT, CDateT, COutputIndexT, GRecordsT};
+use crate::lib::dag::dag::{search_in_dag, set_coins_import_status};
+use crate::lib::dag::dag_walk_through::get_all_descendants;
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
 use crate::lib::dlog::dlog;
+use crate::lib::services::contracts::pledge::general_pledge_handler::get_pledged_accounts;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::add_new_coin;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
 
 //func old name was loopImportCoinbaseUTXOs
 #[allow(unused, dead_code)]
@@ -64,97 +75,135 @@ pub fn import_minted_coins(c_date: &CDateT)
     // find coinbase block with 2 cycle age old, and insert the outputs as a matured&  spendable outputs to table trx_coins
     let max_creation_date = application().get_cb_coins_date_range(&c_date).to;
     dlog(&format!("Extract maturated coinbase coins created before({})", max_creation_date.clone()), constants::Modules::Trx, constants::SecLevel::TmpDebug);
-    /*
-      QVDRecordsT coinbases = DAG::searchInDAG(
-          {{"b_type", constants::block_types::COINBASE},
-           {"b_coins_imported", constants::NO},
-           {"b_creation_date", maxCreationDate, "<="}},
-          {"b_hash", "b_body"},
-          {{"b_creation_date", "ASC"}});
+    let coinbases = search_in_dag(
+        vec![
+            simple_eq_clause("b_type", &constants::block_types::COINBASE.to_string()),
+            simple_eq_clause("b_coins_imported", &constants::NO.to_string()),
+            ModelClause {
+                m_field_name: "b_creation_date",
+                m_field_single_str_value: &max_creation_date as &(dyn ToSql + Sync),
+                m_clause_operand: "<=",
+                m_field_multi_values: vec![],
+            },
+        ],
+        vec!["b_hash", "b_body"],
+        vec![
+            &OrderModifier { m_field: "b_creation_date", m_order: "ASC" },
+        ],
+        0,
+        false);
 
-      GRecordsT pledged_accounts_info = GeneralPledgeHandler::getPledgedAccounts(
-          c_date,
-          true);
-      //  CLog::log("pledged Accounts Info: " + cutils::dumpIt(pledged_accounts_info), "app", "trace");
+    let pledged_accounts_info: GRecordsT = get_pledged_accounts(
+        c_date,
+        true);
+    dlog(
+        &format!("pledged Accounts Info: {:#?}", pledged_accounts_info),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-      for (QVDicT a_coinbase_record : coinbases)
-      {
-        // start transactional block of coinbase UTXO importing: FIXME: implement it ASAP
-        auto unwrapRes = BlockUtils::unwrapSafeContentForDB(a_coinbase_record.value("b_body").to_string());
-        if (!unwrapRes.status)
+
+    for a_coinbase_record in &coinbases
+    {
+        // start transactional block of coinbase coins importing: FIXME: implement it ASAP
+        let (status, _sf_ver, content) = unwrap_safed_content_for_db(&a_coinbase_record["b_body"]);
+        if !status
         {
-          CLog::log("maleformed recorded Coinbase unwrapping block(" + a_coinbase_record.value("b_hash").to_string() + ")!", "app", "fatal");
-          cutils::exiter("maleformed recorded Coinbase block(" + a_coinbase_record.value("b_hash").to_string() + ")!", 76);
+            let msg: String = format!(
+                "Malformed recorded Coinbase unwrapping block({})!",
+                a_coinbase_record["b_hash"]);
+            dlog(
+                &msg,
+                constants::Modules::App,
+                constants::SecLevel::Fatal);
+            panic!("{}", msg);
         }
-        JSonObject block = cutils::parseToJsonObj(unwrapRes.content); // do not need safe open check
-        if (block.keys().len() == 0)
+
+        let (status, block) = Block::from_str(&content); // do not need safe open check
+        if !status
         {
-          CLog::log("maleformed recorded Coinbase to json block(" + a_coinbase_record.value("b_hash").to_string() + ")!", "app", "fatal");
-          cutils::exiter("maleformed recorded Coinbase block(" + a_coinbase_record.value("b_hash").to_string() + ")!", 76);
+            let msg: String = format!(
+                "Malformed recorded Coinbase to block({})!",
+                a_coinbase_record["b_hash"]);
+            dlog(
+                &msg,
+                constants::Modules::App,
+                constants::SecLevel::Fatal);
+            panic!("{}", msg);
         }
 
-        // since we examinate Coinbases from 2 cycle past, then we must be sure the entire precedents has visibility of these coins
-        auto [status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(block.value("bHash").to_string());
-        Q_UNUSED(status);
-        Q_UNUSED(validity_percentage);
-        CLog::log("visibleBys after exclude floating signature blocks(CoinBases): " + cutils::dumpIt(descendent_blocks), "trx", "trace");
+        // since we examine Coinbase's from 2 cycle past,
+        // then we must be sure the entire precedents has visibility of these coins
+        let (_status, descendent_blocks, _validity_percentage) =
+            get_all_descendants(&block.get_block_hash(), false);
+        dlog(
+            &format!("visibleBys after exclude floating signature blocks(CoinBases): {:?}", descendent_blocks),
+            constants::Modules::Trx,
+            constants::SecLevel::TmpDebug);
 
-        JORecordsT repayment_docs{};
+        let mut repayment_docs: Vec<RepaymentDocument> = vec![];
         // clog.app.info(`block.docs[0].outputs ${block.docs[0].outputs}`);
-        auto the_only_doc = block.value("docs").toArray()[0].toObject();
-        auto outputs = the_only_doc.value("outputs").toArray();
-        for (COutputIndexT output_index = 0; output_index < outputs.len(); output_index++)
+        let the_only_doc = &block.m_block_documents[0];
+        let outputs = &the_only_doc.m_if_coinbase_doc.m_outputs;
+
+        let mut output_index: COutputIndexT = 0;
+        while output_index < outputs.len() as COutputIndexT
         {
-          JSonArray an_output = outputs[output_index].toArray();
-          String the_coin = cutils::packCoinCode(the_only_doc.value("dHash").to_string(), output_index);
+            let an_output: &TOutput = &outputs[output_index as usize];
+            let the_coin: CCoinCodeT = cutils::pack_coin_code(&the_only_doc.get_doc_hash(), output_index);
 
-          /**
-           * if the account is pledged, so entire account incomes must be transferres to repayback transaction and
-           * from that, cutting repayments and at the end if still remains some coins, return back to shareholder's account
-           */
-          if (pledged_accounts_info.keys().contains(an_output[0].to_string()))
-          {
-            JSonObject a_repayback_doc = RepaymentDocument::calcRepaymentDetails(
-                the_only_doc.value("dHash").to_string(),
-                output_index,
-                static_cast<CMPAIValueT>(an_output[1].toDouble()),
-                pledged_accounts_info,
-                an_output[0].to_string());
-
-            CLog::log("Repayment Doc: " + cutils::serializeJson(a_repayback_doc), "trx", "trace");
-            repayment_docs.push(a_repayback_doc);
-          }
-          else
-          {
-            for (QVDicT a_block_record : descendent_blocks)
+            // * if the account is pledged, so entire account incomes must be transferres to repayback transaction and
+            // * from that, cutting repayments and at the end if still remains some coins, return back to shareholder's account
+            if pledged_accounts_info.contains_key(&an_output.m_address)
             {
-              CLog::log("Importing Coinbase block Coins Block(" + cutils::hash8c(block.value("bHash").to_string()) + ")", "trx", "info");
-              UTXOHandler::add_new_coin(
-                  a_block_record.value("b_creation_date").to_string(),
-                  the_coin,
-                  a_block_record.value("b_hash").to_string(),
-                  an_output[0].to_string(),           // address
-                  an_output[1].toDouble(),           // coin_value
-                  block.value("bCDate").to_string()); // refCreationDate:
+                let a_repayback_doc: RepaymentDocument = calc_repayment_details(
+                    &the_only_doc.get_doc_hash(),
+                    output_index,
+                    an_output.m_amount,
+                    &pledged_accounts_info,
+                    &an_output.m_address);
+
+                dlog(
+                    &format!("Repayment Doc: {:?}", a_repayback_doc),
+                    constants::Modules::Trx,
+                    constants::SecLevel::TmpDebug);
+
+                repayment_docs.push(a_repayback_doc);
+            } else {
+                for a_block_record in &descendent_blocks
+                {
+                    dlog(
+                        &format!(
+                            "Importing Coinbase block Coins {}",
+                            block.get_block_identifier()),
+                        constants::Modules::Trx,
+                        constants::SecLevel::Info);
+
+                    add_new_coin(
+                        &a_block_record["b_creation_date"],
+                        &the_coin,
+                        &a_block_record["b_hash"],
+                        &an_output.m_address,           // address
+                        an_output.m_amount,           // coin_value
+                        &block.get_creation_date()); // refCreationDate:
+                }
             }
-          }
+            output_index += 1;
         }
 
         // if there is some cutting from income, create a new block(RpBlock) and record
-        if (repayment_docs.len() > 0)
+        if repayment_docs.len() > 0
         {
-          RepaybackBlock::createRepaymentBlock(
-              block,
-              repayment_docs,
-              descendent_blocks);
+            create_repayment_block(
+                &block,
+                &repayment_docs,
+                &descendent_blocks);
         }
 
         // update coins are imported
-        DAG::set_coins_import_status(block.value("bHash").to_string(), constants::YES);
+        set_coins_import_status(&block.get_block_hash(), &constants::YES.to_string());
 
-        // end of transactional block of coinbase UTXO importing: FIXME: implement it ASAP
-      }
-     */
+        // end of transactional block of coinbase coins importing: FIXME: implement it ASAP
+    }
 }
 
 

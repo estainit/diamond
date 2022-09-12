@@ -3,10 +3,11 @@ use postgres::types::ToSql;
 use crate::{CMachine, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_factory::{load_block_by_db_record};
-use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT, VString};
-use crate::lib::dag::dag::search_in_dag;
+use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT, SharesPercentT, VString};
+use crate::lib::dag::dag::{exclude_floating_blocks, search_in_dag};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier};
 use crate::lib::database::tables::C_BLOCKS_FIELDS;
+use crate::lib::services::dna::dna_handler::get_an_address_shares;
 
 
 //returns latest block which is already recorded in DAG
@@ -110,144 +111,212 @@ pub fn get_ancestors(
     return get_ancestors(&out, level - 1);
 }
 
-/*
 
-/**
- *
- * @param {*} block_hash
- * returns the first generation descentents of a given block, by finding all blocks in DAG which have the given block as a ancestor
- */
-StringList DAG::findDescendetsBlockByAncestors(const CBlockHashT& block_hash)
+// * returns the first generation descentents of a given block, by finding all blocks in DAG which have the given block as a ancestor
+//old_name_was findDescendetsBlockByAncestors
+pub fn find_descendants_block_by_ancestors(block_hash: &CBlockHashT) -> VString
 {
-//  CLog::log("find DescendetsBlockByAncestors lokking for desc of block(" + cutils::hash8c(block_hash) + ")", "app", "trace");
-  QVDRecordsT res = searchInDAG(
-    {{"b_ancestors", "%" + block_hash + "%", "LIKE"}},
-    {"b_hash"},
-    {},
-    0,
-    false,
-    false);
-  if (res.len() == 0)
-    return {};
+    dlog(
+        &format!(
+            "find Descendets Block By Ancestors looking for desc of block({})",
+            cutils::hash8c(block_hash)),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  StringList out = {};
-  for(auto a_res: res)
-    out.push(a_res["b_hash"].to_string());
-  return out;
+    let like_clause: String = format!("%{}%", block_hash);
+    let records = search_in_dag(
+        vec![
+            ModelClause {
+                m_field_name: "b_ancestors",
+                m_field_single_str_value: &like_clause as &(dyn ToSql + Sync),
+                m_clause_operand: "LIKE",
+                m_field_multi_values: vec![],
+            }],
+        vec!["b_hash"],
+        vec![],
+        0,
+        false);
+    if records.len() == 0
+    { return vec![]; }
+
+    let mut out: VString = vec![];
+    for a_res in records
+    {
+        out.push(a_res["b_hash"].clone());
+    }
+    return out;
 }
 
-StringList DAG::getDescendents(
-  StringList block_hashes,
-  int level)
+//old_name_was getDescendents
+pub fn get_descendants(
+    block_hashes: &VString,
+    level: i32) -> VString
 {
-  if (block_hashes.len()== 0)
-    return {};
+    if block_hashes.len() == 0
+    { return vec![]; }
 
-  CLog::log("get Descendents of blocks: " + block_hashes.join(", "), "app", "trace");
-  // 1. retrieve descendent blocks from DAG by descendents property
-  // 2. if step one hasn's answer tries to find descendents by ancestors link of blocks
+    dlog(
+        &format!(
+            "Get descendants of blocks: {}", block_hashes.join(", ")),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  // 1. retrieve descendent blocks from DAG by descendents property
-  QVDRecordsT block_records = searchInDAG(
-    {{"b_hash", block_hashes, "IN"}},
-    {"b_hash", "b_descendants"});
-  if (block_records.len()== 0)
-  {
-    // TODO: the block(s) is valid and does not exist in local. or
-    // invalid block invoked, maybe some penal for sender!
-    CLog::log("The blocks looking descendents does not exist in local! blocks: " + block_hashes.join(", "), "app", "trace");
-    return {};
-  }
-  StringList descendents {};
-  for (QVDicT a_block_record: block_records)
-  {
-    bool descendent_was_found = false;
-    if (a_block_record["b_descendants"].to_string() != "")
-    {
-      StringList desc = cutils::removeEmptyElements(a_block_record["b_descendants"].to_string().split(","));
-      if (desc.len() > 0)
-      {
-        descendent_was_found = true;
-        descendents = cutils::arrayAdd(descendents, desc);
-      }
+    // 1. retrieve descendant blocks from DAG by descendants property
+    // 2. if step one hash's answer tries to find descendants by ancestors link of blocks
+
+    // 1. retrieve descendant blocks from DAG by descendants property
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in block_hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
     }
-    if (!descendent_was_found)
+    let block_records = search_in_dag(
+        vec![c1],
+        vec!["b_hash", "b_descendants"],
+        vec![],
+        0,
+        false);
+    if block_records.len() == 0
     {
-      StringList desc = findDescendetsBlockByAncestors(a_block_record["b_hash"].to_string());
-      descendents = cutils::arrayAdd(descendents, desc);
+        // TODO: the block(s) is valid and does not exist in local. or
+        // invalid block invoked, maybe some penal for sender!
+        dlog(
+            &format!(
+                "The blocks looking descendants does not exist in local! blocks: {}", block_hashes.join(", ")),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+        return vec![];
     }
-  };
-  descendents = cutils::arrayUnique(descendents);
 
-  if (level == 1)
-    return cutils::removeEmptyElements(descendents);
+    let mut descendents: VString = vec![];
+    for a_block_record in &block_records
+    {
+        let mut descendent_was_found: bool = false;
+        if a_block_record["b_descendants"] != ""
+        {
+            let desc: VString = cutils::remove_empty_elements(
+                &a_block_record["b_descendants"]
+                    .split(",")
+                    .collect::<Vec<&str>>()
+                    .iter()
+                    .map(|&x| x.to_string())
+                    .collect::<Vec<String>>());
+            if desc.len() > 0
+            {
+                descendent_was_found = true;
+                descendents = cutils::array_add(&descendents, &desc);
+            }
+        }
 
-  return getDescendents(descendents, level - 1);
+        if !descendent_was_found
+        {
+            let desc = find_descendants_block_by_ancestors(&a_block_record["b_hash"]);
+            descendents = cutils::array_add(&descendents, &desc);
+        }
+    };
+    descendents = cutils::array_unique(&descendents);
+
+    if level == 1
+    {
+        return cutils::remove_empty_elements(&descendents);
+    }
+
+    return get_descendants(&descendents, level - 1);
 }
 
-/**
-*
-* @param {*} block_hash
-* returns all descendents of block(include the block also)
-*/
-std::tuple<bool, QVDRecordsT, double> DAG::getAllDescendents(
-  const CBlockHashT& block_hash,
-  const bool& retrieve_validity_percentage)
+// * returns all descendents of block(include the block also)
+//old_name_was getAllDescendents
+pub fn get_all_descendants(
+    block_hash: &CBlockHashT,
+    retrieve_validity_percentage: bool) -> (bool, QVDRecordsT, f64)
 {
-  StringList decends {block_hash};
-  StringList previous_descendents = decends;
-  int i = 0;
-  CLog::log("The Block previous_descendents " + String::number(i++) + " " + previous_descendents.join(", "), "trx", "trace");
-  while (decends.len() > 0)
-  {
-    decends = getDescendents(decends, 1);
-    previous_descendents = cutils::arrayUnique(cutils::arrayAdd(previous_descendents, decends));
-    CLog::log("The Blocks previous_descendents " + String::number(i++) + ": " + previous_descendents.join(", "), "trx", "trace");
-  }
-  // exclude floating signature blocks
-  StringList fields = {"b_hash", "b_cycle", "b_creation_date"};
-  if (retrieve_validity_percentage)
-    fields.push("b_backer");
+    let mut decends: VString = vec![block_hash.to_string()];
+    let mut previous_descendents = decends.clone();
+    let mut i = 0i32;
+    i += 1;
+    dlog(
+        &format!(
+            "The Block previous-descendants {}. {}",
+            i, previous_descendents.join(", ")),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
-  QVDRecordsT block_records = excludeFloatingBlocks(previous_descendents, fields);
-  DNASharePercentT validity_percentage = 0.0;
-  if (retrieve_validity_percentage)
-  {
-    HashMap<String, HashMap<String, double> > backerOnDateSharePercentage {};
-    for (QVDicT aBlock: block_records)
+    while decends.len() > 0
     {
-      if (validity_percentage > 100.0)
-        break;
-
-      String the_backer = aBlock["b_backer"].to_string();
-      if (!backerOnDateSharePercentage.keys().contains(the_backer))
-        backerOnDateSharePercentage[the_backer] = {};
-
-      String b_creation_date = aBlock["b_creation_date"].to_string();
-      if (!backerOnDateSharePercentage[the_backer].keys().contains(b_creation_date))
-      {
-        auto [shares_, percentage] = DNAHandler::getAnAddressShares(the_backer, b_creation_date);
-        Q_UNUSED(shares_);
-        backerOnDateSharePercentage[the_backer][b_creation_date] = percentage;
-        validity_percentage += percentage;
-      } else {
-        validity_percentage += backerOnDateSharePercentage[the_backer][b_creation_date];
-      }
-      CLog::log(
-        "backer/Date/percentage, validity_percentage \nthe_backer: " +  the_backer +
-        " \nb_creation_date: " +  b_creation_date +
-        " \nbackerOnDateSharePercentage: " +  format!(backerOnDateSharePercentage[the_backer][b_creation_date]) +
-        " \nvalidity_percentage: " +  format!(validity_percentage) , "app", "trace");
+        i += 1;
+        decends = get_descendants(&decends, 1);
+        previous_descendents = cutils::array_unique(
+            &cutils::array_add(&previous_descendents, &decends));
+        dlog(
+            &format!(
+                "The Blocks previous descendents {}: {}",
+                i, previous_descendents.join(", ")),
+            constants::Modules::Trx,
+            constants::SecLevel::TmpDebug);
     }
-  }
+    // exclude floating signature blocks
+    let mut fields: Vec<&str> = vec!["b_hash", "b_cycle", "b_creation_date"];
+    if retrieve_validity_percentage
+    {
+        fields.push("b_backer");
+    }
 
-  CLog::log("The descendents after exclude floating signature blocks: " + cutils::dumpIt(block_records), "trx", "trace");
-  if (validity_percentage > 100)
-    validity_percentage = 100.0;
-  return {true, block_records, validity_percentage};
+    let block_records = exclude_floating_blocks(&previous_descendents, fields);
+    let mut validity_percentage: SharesPercentT = 0.0;
+    if retrieve_validity_percentage
+    {
+        let mut backer_on_date_share_percentage: HashMap<String, HashMap<String, f64>> = HashMap::new();
+        for a_block in &block_records
+        {
+            if validity_percentage > 100.0
+            { break; }
+
+            let the_backer = &a_block["b_backer"];
+            if !backer_on_date_share_percentage.contains_key(the_backer)
+            {
+                backer_on_date_share_percentage.insert(the_backer.clone(), HashMap::new());
+            }
+
+            let b_creation_date = &a_block["b_creation_date"];
+            if !backer_on_date_share_percentage[the_backer].contains_key(b_creation_date)
+            {
+                let (_shares, percentage) =
+                    get_an_address_shares(the_backer, b_creation_date);
+                let mut tmp = backer_on_date_share_percentage[the_backer].clone();
+                tmp.insert(b_creation_date.clone(), percentage);
+                backer_on_date_share_percentage.insert(the_backer.clone(), tmp);
+                validity_percentage += percentage;
+            } else {
+                validity_percentage += backer_on_date_share_percentage[the_backer][b_creation_date];
+            }
+            dlog(
+                &format!(
+                    "backer/Date/percentage, validity_percentage \n the_backer: {} \n b_creation_date: {} \
+                    \n backerOnDateSharePercentage: {} \nvalidity_percentage: {}",
+                    the_backer,
+                    b_creation_date,
+                    backer_on_date_share_percentage[the_backer][b_creation_date],
+                    validity_percentage),
+                constants::Modules::App,
+                constants::SecLevel::TmpDebug);
+        }
+    }
+
+    dlog(
+        &format!("The descendants after exclude floating signature blocks: {:?}", block_records),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    if validity_percentage > 100.0
+    { validity_percentage = 100.0; }
+
+    return (true, block_records, validity_percentage);
 }
-
-*/
 
 pub fn refresh_cached_blocks() -> bool
 {
@@ -300,7 +369,7 @@ pub fn refresh_cached_blocks() -> bool
     return true;
 }
 
-#[allow(unused,dead_code)]
+#[allow(unused, dead_code)]
 pub fn update_cached_blocks(
     machine: &mut CMachine,
     b_type: &String,

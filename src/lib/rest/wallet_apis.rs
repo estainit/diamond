@@ -239,7 +239,7 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
 
         let api_res = json!({
             "status": true,
-            "message": format!("Failed in transaction sign, {} ", sign_status_msg),
+            "message": format!("Transaction signed, {} ", sign_status_msg),
             "info": json!({}),
         });
         api_res

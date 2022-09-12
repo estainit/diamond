@@ -20,7 +20,7 @@ pub struct Shareholder {
   CAddressT m_shareholder = "";
   uint64_t m_help_hours = 0;
   uint64_t m_help_level = 0;
-  DNAShareCountT m_shares = 0;
+  SharesCountT m_shares = 0;
   uint64_t m_votes_yes = 0;
   uint64_t m_votes_abstain = 0;
   uint64_t m_votes_no = 0;
@@ -53,9 +53,9 @@ pub fn insert_a_share(doc: &Document) -> (bool, String)
     let dn_help_hours = doc.m_if_proposal_doc.m_help_hours;
     let dn_help_level = doc.m_if_proposal_doc.m_help_level;
     let dn_shares = doc.m_if_proposal_doc.m_shares;
-    let dn_votes_y= doc.m_if_proposal_doc.m_votes_yes;
-    let dn_votes_a= doc.m_if_proposal_doc.m_votes_abstain;
-    let dn_votes_n= doc.m_if_proposal_doc.m_votes_no;
+    let dn_votes_y = doc.m_if_proposal_doc.m_votes_yes;
+    let dn_votes_a = doc.m_if_proposal_doc.m_votes_abstain;
+    let dn_votes_n = doc.m_if_proposal_doc.m_votes_no;
 
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("dn_doc_hash", &doc.m_doc_hash as &(dyn ToSql + Sync)),
@@ -239,28 +239,24 @@ pub fn get_shares_info(c_date: &CDateT) -> (SharesCountT, HashMap<String, Shares
     return (sum_shares, share_amount_per_holder, holders_order_by_shares);
 }
 
-/*
-std::tuple<DNAShareCountT, DNASharePercentT> DNAHandler::getAnAddressShares(
-  const CAddressT& address,
-  CDateT cDate)
+//old_name_was getAnAddressShares
+pub fn get_an_address_shares(
+    address: &CAddressT,
+    c_date: &CDateT) -> (SharesCountT, SharesPercentT)
 {
-  if(cDate == "")
-    cDate = application().now();
-
-  auto[sum_shares, share_amount_per_holder, tmp_] = getSharesInfo(cDate);
-  Q_UNUSED(tmp_);
-  DNAShareCountT shares = 0.0;
-  double percentage = 0.0;
-  if (share_amount_per_holder.keys().contains(address))
-  {
-    shares = share_amount_per_holder[address];
-    percentage = ((shares * 100) / sum_shares);
-  }
-  percentage = cutils::iFloorFloat(percentage);
-  return {shares, percentage};
+    let (sum_shares, share_amount_per_holder, _shareholders) =
+        get_shares_info(&c_date);
+    let mut shares: SharesCountT = 0.0;
+    let mut percentage: f64 = 0.0;
+    if share_amount_per_holder.contains_key(address)
+    {
+        shares = share_amount_per_holder[address];
+        percentage = (shares * 100.0f64) / sum_shares;
+    }
+    percentage = cutils::i_floor_float(percentage);
+    return (shares, percentage);
 }
 
-*/
 //old_name_was getMachineShares
 pub fn get_machine_shares(c_date: &CDateT) -> (String, SharesCountT, SharesPercentT)
 {

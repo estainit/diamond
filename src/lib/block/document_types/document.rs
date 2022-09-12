@@ -11,6 +11,7 @@ use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::null_document::NullDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
+use crate::lib::block::document_types::rp_docdocument::RepaymentDocument;
 use crate::lib::custom_types::{CBlockHashT, CDateT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
@@ -34,10 +35,11 @@ pub struct Document
     pub m_doc_ext_info: Vec<DocExtInfo>,
     pub m_doc_length: DocLenT,
 
-    pub m_if_proposal_doc: ProposalDocument,
-    pub m_if_polling_doc: PollingDocument,
     pub m_if_basic_tx_doc: BasicTxDocument,
     pub m_if_coinbase_doc: CoinbaseDocument,
+    pub m_if_repayment_doc: RepaymentDocument,
+    pub m_if_proposal_doc: ProposalDocument,
+    pub m_if_polling_doc: PollingDocument,
     pub m_if_null_doc: NullDocument,
 
     pub m_empty_vec: Vec<String>,
@@ -69,6 +71,7 @@ impl Document
             m_if_coinbase_doc: CoinbaseDocument::new(),
             m_if_null_doc: NullDocument::new(),
             m_empty_vec: vec![],
+            m_if_repayment_doc: RepaymentDocument::new()
         }
     }
 
@@ -875,6 +878,7 @@ false
     {
         return map_doc_to_block(&self.m_doc_hash, block_hash, doc_index);
     }
+
     /*
 
     bool Document::trxHasInput(const String& document_type)

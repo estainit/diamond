@@ -277,9 +277,8 @@ impl AppParams {
         return dt.format("%Y-%m-%d %H:%M:%S").to_string();
     }
 
-
     //old_name_was minutesAfter
-    pub fn minutes_after(&self, forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT) -> String
+    pub fn minutes_after(&self, forward_in_time_by_minutes: TimeByMinutesT, c_date: &CDateT) -> CDateT
     {
         let mut since_epoch: i64;
         if c_date == "" {
@@ -294,6 +293,21 @@ impl AppParams {
         return dt.format("%Y-%m-%d %H:%M:%S").to_string();
     }
 
+    //old_name_was secondsAfter
+    pub fn seconds_after(&self, forward_in_time_by_seconds: TimeBySecT, c_date: &CDateT) -> CDateT
+    {
+        let mut since_epoch: i64;
+        if c_date == ""
+        {
+            since_epoch = Utc::now().timestamp();
+        } else {
+            let dt = self.make_date_from_str(&c_date);
+            since_epoch = dt.timestamp();
+        }
+        since_epoch += forward_in_time_by_seconds as i64;
+        let dt = Utc.timestamp(since_epoch, 0);
+        return dt.format("%Y-%m-%d %H:%M:%S").to_string();
+    }
 
     //old_name_was getCoinbaseCycleNumber
     #[allow(dead_code, unused)]
@@ -543,8 +557,7 @@ impl AppParams {
                 from_hour.clone(),
                 to_hour.clone()
             );
-        }
-        else if cycle_stamp_inp != ""
+        } else if cycle_stamp_inp != ""
         {
             let the_range = self.get_coinbase_range_by_cycle_stamp(cycle_stamp_inp);
             let from_hour: Vec<&str> = the_range.from.split(" ").collect();

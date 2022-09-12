@@ -134,6 +134,15 @@ pub const C_MACHINE_USED_COINS: &str = "c_machine_used_coins";
 #[allow(dead_code, unused)]
 pub const C_MACHINE_USED_COINS_FIELDS: [&str; 4] = ["lu_mp_code", "lu_coin", "lu_spend_loc", "lu_insert_date"];
 
+#[allow(dead_code, unused)]
+pub const C_PLEDGED_ACCOUNTS: &str = "c_pledged_accounts";
+#[allow(dead_code, unused)]
+pub const C_PLEDGED_ACCOUNTS_FIELDS: [&str; 18] = ["pgd_hash", "pgd_type", "pgd_class", "pgd_version", "pgd_pledger_sign_date", "pgd_pledgee_sign_date", "pgd_arbiter_sign_date", "pgd_activate_date", "pgd_close_date", "pgd_pledger", "pgd_pledgee", "pgd_arbiter", "pgd_principal", "pgd_annual_interest", "pgd_repayment_offset", "pgd_repayment_amount", "pgd_repayment_schedule", "pgd_status"];
+
+#[allow(dead_code, unused)]
+pub const C_MACHINE_DRAFT_PLEDGES: &str = "c_machine_draft_pledges";
+#[allow(dead_code, unused)]
+pub const C_MACHINE_DRAFT_PLEDGES_FIELDS: [&str; 12] = ["dpl_id", "dpl_mp_code", "dpl_type", "dpl_class", "dpl_version", "dpl_comment", "dpl_pledger", "dpl_pledgee", "dpl_arbiter", "dpl_doc_ref", "dpl_body", "dpl_req_date"];
 
 
 

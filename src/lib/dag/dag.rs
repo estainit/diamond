@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, constants, dlog};
+use crate::{application, constants, cutils, dlog};
 use crate::cutils::{array_add, array_unique};
-use crate::lib::custom_types::{CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT};
+use crate::lib::custom_types::{CBlockHashT, CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::C_BLOCKS;
 
@@ -366,38 +366,75 @@ QSDRecordsT DAG::analyzeDAGHealth(const bool shouldUpdateDescendants)
   return leaves;
 }
 
-
-QVDRecordsT DAG::excludeFloatingBlocks(
-  const StringList& block_hashes,
-  const StringList& fields)
+*/
+//old_name_was excludeFloatingBlocks
+pub fn exclude_floating_blocks(
+    block_hashes: &VString,
+    fields: Vec<&str>) -> QVDRecordsT
 {
-  // exclude floating signature blocks
-  if (block_hashes.len()== 0)
-    return {};
+    // exclude floating signature blocks
+    if block_hashes.len() == 0
+    { return vec![]; }
 
-  QVDRecordsT block_records = searchInDAG(
-    {{"b_hash", block_hashes, "IN"},
-    {"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}, "NOT IN"}},
-    fields);
-  return block_records;
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in block_hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+    let mut c2 = ModelClause {
+        m_field_name: "b_type",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "NOT IN",
+        m_field_multi_values: vec![],
+    };
+    let excluded_block_types = vec![constants::block_types::FLOATING_SIGNATURE, constants::block_types::FLOATING_VOTE];
+    for a_hash in &excluded_block_types {
+        c2.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+    let block_records = search_in_dag(
+        vec![
+            c1,
+            c2,
+        ],
+        fields,
+        vec![],
+        0,
+        false);
+    return block_records;
 }
 
 // old name was updateUtxoImported
-void DAG::set_coins_import_status(
-  const String& block_hash,
-  const String& status)
+pub fn set_coins_import_status(
+    block_hash: &CBlockHashT,
+    status: &String)
 {
-  CLog::log("update Utxo is Imported Block(" + cutils::hash8c(block_hash) + ") to imported(" + status + ")", "trx", "info");
-  DbModel::update(
-    stbl_blocks,
-    {{"b_coins_imported", status}},
-    {{"b_hash", block_hash}});
+    dlog(
+        &format!(
+            "Update the coin is imported. Block({}) to imported({})",
+            cutils::hash8c(block_hash),
+            status),
+        constants::Modules::Trx,
+        constants::SecLevel::Info);
 
-  // update also cached blocks
-  CMachine::cachedBlocks("update", {QVDicT{{"b_hash", block_hash}}}, status);
+    let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("b_coins_imported", &status as &(dyn ToSql + Sync))
+    ]);
+    q_update(
+        C_BLOCKS,
+        &update_values,
+        vec![simple_eq_clause("b_hash", block_hash)],
+        false);
 
+    // update also cached blocks
+    // CMachine::cachedBlocks("update", {QVDicT{{"b_hash", block_hash}}}, status);
 }
 
+/*
 bool DAG::isDAGUptodated(String c_date)
 {
   if (c_date == "")

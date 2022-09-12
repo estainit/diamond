@@ -8,12 +8,6 @@ use crate::{application, cutils, machine};
 use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_TRX_COINS;
 
-/*
-
-pub static C_TRX_COINS: &str = "c_trx_coins";
-pub static C_TRX_COINS_fields: Vec<&str> = vec!["ut_id", "ut_creation_date", "ut_coin", "ut_o_address", "ut_o_value", "ut_visible_by", "ut_ref_creation_date"];
- */
-
 //old_name_was loopCoinCleaner
 #[allow(unused, dead_code)]
 pub fn loop_coin_cleaner(c_date: &CDateT)
@@ -109,11 +103,11 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       CLog::log("Invalid block hash as to_be_deleted_blcok code! " + to_be_deleted_blcok, "sec", "fatal");
       return false;
     }
-    StringList block_hashes = DAG::getDescendents(StringList{to_be_deleted_blcok});  // first generation of descendents
-    block_hashes = cutils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // second generation
-    block_hashes = cutils::arrayAdd(block_hashes, DAG::getDescendents(block_hashes));  // third generation
+    StringList block_hashes = get_descendants(StringList{to_be_deleted_blcok});  // first generation of descendents
+    block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // second generation
+    block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // third generation
     block_hashes = cutils::arrayUnique(block_hashes);
-    QVDRecordsT descendent_blocks = DAG::excludeFloatingBlocks(block_hashes); // exclude floating blocks
+    QVDRecordsT descendent_blocks = exclude_floating_blocks(block_hashes); // exclude floating blocks
     CLog::log("visible_bys after exclude floating signature blocks: " + cutils::dumpIt(descendent_blocks), "trx", "trace");
 
     // avoid duplicate constraint error

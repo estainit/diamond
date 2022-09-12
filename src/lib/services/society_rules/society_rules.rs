@@ -380,27 +380,27 @@ double SocietyRules::getSingleFloatValue(
 }
 
 //  -  -  -  shares parameters settings
-DNASharePercentT SocietyRules::getMinShareToAllowedIssueFVote(cDate: &CDateT)
+SharesPercentT SocietyRules::getMinShareToAllowedIssueFVote(cDate: &CDateT)
 {
   return getSingleFloatValue(polling_types::RFRfMinFVote, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedVoting(cDate: &CDateT)
+SharesPercentT SocietyRules::getMinShareToAllowedVoting(cDate: &CDateT)
 {
   return getSingleFloatValue(polling_types::RFRfMinS2V, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedSignCoinbase(cDate: &CDateT)
+SharesPercentT SocietyRules::getMinShareToAllowedSignCoinbase(cDate: &CDateT)
 {
   return getSingleFloatValue(polling_types::RFRfMinFSign, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedWiki(cDate: &CDateT)
+SharesPercentT SocietyRules::getMinShareToAllowedWiki(cDate: &CDateT)
 {
   return getSingleFloatValue(polling_types::RFRfMinS2Wk, cDate);
 }
 
-DNASharePercentT SocietyRules::getMinShareToAllowedDemos(cDate: &CDateT)
+SharesPercentT SocietyRules::getMinShareToAllowedDemos(cDate: &CDateT)
 {
   return getSingleFloatValue(polling_types::RFRfMinS2DA, cDate);
 }

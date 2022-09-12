@@ -1,3 +1,29 @@
+use std::collections::HashMap;
+use serde::{Serialize, Deserialize};
+use crate::{application, constants, cutils, dlog, machine};
+use crate::cmerkle::{generate_m, MERKLE_VERSION};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::block::document_types::document::Document;
+use crate::lib::block::document_types::rp_docdocument::RepaymentDocument;
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDocHashT, CDocIndexT, COutputIndexT, QVDRecordsT, VString};
+use crate::lib::dag::dag::set_coins_import_status;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::add_new_coin;
+use crate::lib::transactions::trx_utils::{normalize_rp_outputs};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RepaybackBlock {
+    pub m_block_cycle: String,
+}
+
+impl RepaybackBlock
+{
+    pub fn new() -> Self {
+        Self {
+            m_block_cycle: "".to_string()
+        }
+    }
+}
+
 /*
 RepaybackBlock::RepaybackBlock(const JSonObject& obj)
 {
@@ -18,7 +44,7 @@ bool RepaybackBlock::set_by_json_obj(const JSonObject& obj)
 {
   Block::set_by_json_obj(obj);
 
-//  m_rp_documents = obj.value("docs").toArray();
+//  m_rp_documents = obj["docs"].toArray();
 
   return true;
 }
@@ -67,20 +93,20 @@ String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 {
 // alphabetical order
 //  String hashables = "{";
-//  hashables += "\"ancestors\":[" + cutils::convertJSonArrayToStringVector(Jblock.value("ancestors").toArray()).join(",") + "],";
-//  hashables += "\"bLen\":\"" + cutils::padding_length_value(Jblock.value("bLen").toDouble()) + "\",";
-//  hashables += "\"bType\":\"" + Jblock.value("bType").to_string() + "\",";
-//  hashables += "\"bVer\":\"" + Jblock.value("dVer").to_string() + "\",";
-//  hashables += "\"creation Date\":\"" + Jblock.value("creation Date").to_string() + "\",";
+//  hashables += "\"ancestors\":[" + cutils::convertJSonArrayToStringVector(Jblock["ancestors"].toArray()).join(",") + "],";
+//  hashables += "\"bLen\":\"" + cutils::padding_length_value(Jblock["bLen"].toDouble()) + "\",";
+//  hashables += "\"bType\":\"" + Jblock["bType"].to_string() + "\",";
+//  hashables += "\"bVer\":\"" + Jblock["dVer"].to_string() + "\",";
+//  hashables += "\"creation Date\":\"" + Jblock["creation ]ate").to_string() + "\",";
 //  StringList docs {};
-//  for (QJsonValueRef a_doc: Jblock.value("docs").toArray())
+//  for (QJsonValueRef a_doc: Jblock["docs"].toArray())
 //  {
 //    String a_doc_str = RepaymentDocument::get_doc_hashable_string(a_doc.toObject());
 //    docs.push(a_doc_str);
 //  }
 //  hashables += "\"docs\":[" + docs.join(",") + "],";
-//  hashables += "\"bDocsRootHash\":\"" + Jblock.value("bDocsRootHash").to_string() + "\",";
-//  hashables += "\"net\":\"" + Jblock.value("bNet").to_string() + "\",";
+//  hashables += "\"bDocsRootHash\":\"" + Jblock["bDocsRootHash"].to_string() + "\",";
+//  hashables += "\"net\":\"" + Jblock["bNet"].to_string() + "\",";
 
 //  return hashables;
   return "";
@@ -142,7 +168,7 @@ JSonObject RepaybackBlock::getRepayBlockTpl()
     {"bType", constants::BLOCK_TYPES::RpBlock},
     {"bCycle", ""},
     {"bLen", constants::LEN_PROP_PLACEHOLDER},
-    {"bHash", constants::HASH_PROP_PLACEHOLDER},
+    {"bHash", constants::HASH_ZEROS_PLACEHOLDER.to_string()},
     {"ancestors", {}},
     {"bCDate", ""},
     {"bDocsRootHash", ""}, // the hash root of merkle tree of transaction}s
@@ -175,104 +201,126 @@ String RepaybackBlock::safe_stringify_block(const bool ext_info_in_document) con
 
 // this method be called regularly by import Coinbased  coins in order to cut repaybacke immideately after importing minted coins
 
-void RepaybackBlock::createRepaymentBlock(
-  const JSonObject& related_coinbase_block,
-  const JORecordsT& repayment_docs,
-  const QVDRecordsT& descendent_blocks)
-{
-  RepaybackBlock* tmp_repay_block = new RepaybackBlock();
-  tmp_repay_block.m_block_hash = constants::HASH_PROP_PLACEHOLDER;
-  tmp_repay_block.m_ancestors = StringList {related_coinbase_block.value("bHash").to_string()};
-  tmp_repay_block.m_block_type = constants::BLOCK_TYPES::RpBlock;
-  tmp_repay_block.m_cycle = related_coinbase_block.value("bCycle").to_string();
-  tmp_repay_block.m_block_creation_date = (application().cycle() == 1) ? cutils::minutesAfter(1, related_coinbase_block.value("bCDate").to_string()) : cutils::secondsAfter(1, related_coinbase_block.value("bCDate").to_string());
-
-  HashMap<CDocHashT, RepaymentDocument*> map_doc_hash_to_doc {};
-  for (JSonObject a_repay: repayment_docs)
-  {
-    RepaymentDocument* a_doc = new RepaymentDocument();
-    a_doc.m_doc_type = constants::DOC_TYPES::RpDoc;
-    a_doc.m_doc_class = constants::DOC_TYPES::RpDoc;
-    a_doc.m_doc_version = "0.0.0";
-    a_doc.m_doc_cycle = related_coinbase_block.value("dCycle").to_string();
-    TInput* input = new TInput {
-      a_repay.value("input").toArray()[0].to_string(),
-      static_cast<COutputIndexT>(a_repay.value("input").toArray()[1].toInt())};
-    a_doc.m_inputs = {input};
-
-    a_doc.m_outputs = {};
-    auto[status, normalized_outputs] = TrxUtils::normalize_outputsJ(a_repay.value("outputs").toArray());
-    Q_UNUSED(status);
-    for (auto an_output: normalized_outputs)
-    {
-      TOutput* output = new TOutput {an_output.toArray()[0].to_string(), static_cast<CMPAIValueT>(an_output.toArray()[1].toDouble())};
-      a_doc.m_outputs.push(output);
-    }
-
-    CDocHashT doc_hash = a_doc->calcDocHash();
-    a_doc.m_doc_hash = doc_hash;
-    map_doc_hash_to_doc[doc_hash] = a_doc;
-  }
-
-  StringList doc_hashes = map_doc_hash_to_doc.keys();
-  doc_hashes.sort(); // in order to provide unique blockHash for entire network
-  for (CDocHashT a_hash: doc_hashes)
-    tmp_repay_block.m_rp_documents.push(map_doc_hash_to_doc[a_hash]);
-
-  auto[root, verifies, version, levels, leaves] = CMerkle::generate(doc_hashes);
-  Q_UNUSED(verifies);
-  Q_UNUSED(version);
-  Q_UNUSED(levels);
-  Q_UNUSED(leaves);
-  tmp_repay_block.m_documents_root_hash = root;
-  tmp_repay_block.m_block_length = tmp_repay_block->safe_stringify_block(false).len();
-  CBlockHashT block_hash = tmp_repay_block->calcBlockHash();
-  tmp_repay_block->setBlockHash(block_hash);
-  tmp_repay_block.m_block_backer = CMachine::getBackerAddress();
-  CLog::log("the Repayment Jblock(" + cutils::hash8c(block_hash) + ") is created: " + tmp_repay_block->safe_stringify_block(false), "trx", "trace");
-
-  tmp_repay_block->addBlockToDAG();
-
-  // immediately update imported of related coinbase block
-  DAG::set_coins_import_status(related_coinbase_block.value("bHash").to_string(), constants::YES);
-  tmp_repay_block->postAddBlockToDAG();
-
-
-
-  // immediately add newly created coins
-  for (CDocIndexT doc_inx = 0; doc_inx < tmp_repay_block.m_rp_documents.len(); doc_inx++)
-  {
-    auto a_doc = tmp_repay_block.m_rp_documents[doc_inx];
-
-    // connect documents and blocks/ maybe it is not necessay at all
-    a_doc->mapDocToBlock(tmp_repay_block.m_block_hash, doc_inx);
-
-    for (COutputIndexT out_inx = 0; out_inx < a_doc.m_outputs.len(); out_inx++)
-    {
-      auto an_output = a_doc.m_outputs[out_inx];
-      String coin = cutils::packCoinCode(a_doc.m_doc_hash, out_inx);
-      // immediately import newly created  coins and make it visible for all decendent blocks
-      for (QVDicT a_block_record: descendent_blocks)
-      {
-        CLog::log("insert new coin(because of Repayment) the coin(" + coin + ")", "trx", "info");
-        UTXOHandler::add_new_coin(
-          a_block_record.value("b_creation_date").to_string(),
-          coin,
-          a_block_record.value("b_hash").to_string(),  //visibleBy
-          an_output.m_address,  //address
-          an_output.m_amount, // coin value
-          tmp_repay_block.m_block_creation_date); // refCreationDate
-
-      }
-    }
-  }
-  DAG::set_coins_import_status(tmp_repay_block.m_block_hash, constants::YES);
-
-  delete tmp_repay_block;
-}
 */
 
+//old_name_was createRepaymentBlock
+pub fn create_repayment_block(
+    related_coinbase_block: &Block,
+    repayment_docs: &Vec<RepaymentDocument>,
+    descendent_blocks: &QVDRecordsT)
+{
+    let mut tmp_repay_block = Block::new();
+    tmp_repay_block.m_block_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
+    tmp_repay_block.m_block_ancestors = vec![related_coinbase_block.get_block_hash().clone()];
+    tmp_repay_block.m_block_type = constants::block_types::REPAYMENT_BLOCK.to_string();
+    tmp_repay_block.m_if_repayback_block.m_block_cycle = related_coinbase_block.m_if_repayback_block.m_block_cycle.clone();
+    if application().cycle_length() == 1
+    {
+        tmp_repay_block.m_block_creation_date = application().minutes_after(
+            1,
+            &related_coinbase_block.get_creation_date());
+    } else {
+        tmp_repay_block.m_block_creation_date = application().seconds_after(
+            1,
+            &related_coinbase_block.get_creation_date());
+    }
 
+    let mut map_doc_hash_to_doc: HashMap<CDocHashT, Document> = HashMap::new();
+    for a_repay in repayment_docs
+    {
+        let mut a_doc: Document = Document::new();
+        a_doc.m_doc_type = constants::document_types::REPAYMENT_DOCUMENT.to_string();
+        a_doc.m_doc_class = constants::document_types::REPAYMENT_DOCUMENT.to_string();
+        a_doc.m_doc_version = "0.0.0".to_string();
+        a_doc.m_if_repayment_doc.m_doc_cycle = related_coinbase_block.m_if_coinbase_block.m_cycle.clone();
+        a_doc.m_if_repayment_doc.m_input = a_repay.m_input.clone();
+
+        a_doc.m_if_repayment_doc.m_outputs = vec![];
+        let (_status, normalized_outputs) = normalize_rp_outputs(&a_repay.m_outputs, true);
+        for an_output in normalized_outputs
+        {
+            a_doc.m_if_repayment_doc.m_outputs.push(an_output);
+        }
+
+        let doc_hash: CDocHashT = a_doc.calc_doc_hash();
+        a_doc.m_doc_hash = doc_hash.clone();
+        map_doc_hash_to_doc.insert(doc_hash, a_doc);
+    }
+
+    let mut doc_hashes: VString = map_doc_hash_to_doc
+        .keys()
+        .cloned()
+        .collect::<VString>();
+    doc_hashes.sort(); // in order to provide unique blockHash for entire network
+    for a_hash in &doc_hashes
+    {
+        tmp_repay_block.m_block_documents.push(map_doc_hash_to_doc[a_hash].clone());
+    }
+
+    let (root, _verifies, _version, _levels, _leaves) = generate_m(
+        doc_hashes,
+        &"hashed".to_string(),
+        &"keccak256".to_string(),
+        &MERKLE_VERSION.to_string());
+
+    tmp_repay_block.m_block_documents_root_hash = root;
+    tmp_repay_block.m_block_length = tmp_repay_block.safe_stringify_block(false).len();
+    let block_hash: CBlockHashT = tmp_repay_block.calc_block_hash();
+    tmp_repay_block.set_block_hash(&block_hash);
+    tmp_repay_block.m_block_backer = machine().get_backer_address();
+    dlog(
+        &format!("The repayment {} is created: {}" ,
+    tmp_repay_block.get_block_identifier(),
+    tmp_repay_block.safe_stringify_block(false)),
+        constants::Modules::Trx,
+        constants::SecLevel::Error);
+
+
+    tmp_repay_block.add_block_to_dag();
+
+    // immediately update imported of related coinbase block
+    set_coins_import_status(&related_coinbase_block.get_block_hash(), &constants::YES.to_string());
+    tmp_repay_block.post_add_block_to_dag();
+
+
+    // immediately add newly created coins
+    let mut doc_inx: CDocIndexT = 0;
+    while doc_inx < tmp_repay_block.m_block_documents.len() as CDocIndexT
+    {
+        let a_doc: &Document = &tmp_repay_block.m_block_documents[doc_inx as usize];
+
+        // connect documents and blocks/ maybe it is not necessay at all
+        a_doc.map_doc_to_block(&tmp_repay_block.m_block_hash, doc_inx);
+
+        let mut out_inx: COutputIndexT = 0;
+        while out_inx < a_doc.m_if_repayment_doc.m_outputs.len() as COutputIndexT
+        {
+            let an_output = &a_doc.m_if_repayment_doc.m_outputs[out_inx as usize];
+            let coin: CCoinCodeT = cutils::pack_coin_code(&a_doc.m_doc_hash, out_inx);
+            // immediately import newly created  coins and make it visible for all decendent blocks
+            for a_block_record in descendent_blocks
+            {
+                dlog(
+                    &format!("insert new coin(because of Repayment) the coin({})", coin),
+                    constants::Modules::Trx,
+                    constants::SecLevel::Info);
+                add_new_coin(
+                    &a_block_record["b_creation_date"],
+                    &coin,
+                    &a_block_record["b_hash"],  //visibleBy
+                    &an_output.m_address,  //address
+                    an_output.m_amount, // coin value
+                    &tmp_repay_block.m_block_creation_date); // refCreationDate
+            }
+            out_inx += 1;
+        }
+        doc_inx += 1;
+    }
+
+    set_coins_import_status(&tmp_repay_block.m_block_hash, &constants::YES.to_string());
+
+    drop(tmp_repay_block);
+}
 
 //old_name_was importDoubleCheck
 pub fn import_double_check()
@@ -286,41 +334,41 @@ pub fn import_double_check()
         CLog::log("not_imported repay back block! " + cutils::dumpIt(not_imported), "sql", "warning");
         for(QVDicT a_repay_block: not_imported)
         {
-          auto[status, descendent_blocks, validity_percentage] = DAG::getAllDescendents(a_repay_block.value("b_hash").to_string());
+          auto[status, descendent_blocks, validity_percentage] = get_all_descendants(a_repay_block["b_hash"].to_string());
           Q_UNUSED(status);
           Q_UNUSED(validity_percentage);
-          JSonObject Jblock = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block.value("b_body").to_string()).content);    // do not need safe open check
+          JSonObject Jblock = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block["b_body"].to_string()).content);    // do not need safe open check
 
           // add missed repayback coins
-          JSonArray documents = Jblock.value("docs").toArray();
+          JSonArray documents = Jblock["docs"].toArray();
           for (CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(documents.len()); doc_inx++)
           {
             auto a_doc = documents[doc_inx].toObject();
 
             // connect documents and blocks/ maybe it is not necessay at all
-            Document::mapDocToBlock(a_doc.value("dHash").to_string(), Jblock.value("bHash").to_string(), doc_inx);
+            Document::mapDocToBlock(a_doc["dHash"].to_string(), Jblock["bHash"].to_string(), doc_inx);
 
-            JSonArray outputs = a_doc.value("outputs").toArray();
+            JSonArray outputs = a_doc["outputs"].toArray();
             for (COutputIndexT out_inx = 0; out_inx < outputs.len(); out_inx++)
             {
               JSonArray an_output = outputs[out_inx].toArray();
-              String coin = cutils::packCoinCode(a_doc.value("dHash").to_string(), out_inx);
+              String coin = cutils::packCoinCode(a_doc["dHash"].to_string(), out_inx);
               // immediately import newly created  coins and make it visible for all decendent blocks
               for (QVDicT a_block_record: descendent_blocks)
               {
                 CLog::log("insert new coin(because of 'MISSED!' Repayment) the coin(" + coin + ")", "trx", "info");
                 UTXOHandler::add_new_coin(
-                  a_block_record.value("b_creation_date").to_string(),
+                  a_block_record["b_creation_date"].to_string(),
                   coin,
-                  a_block_record.value("b_hash").to_string(),  //visibleBy
+                  a_block_record["b_hash"].to_string(),  //visibleBy
                   an_output[0].to_string(),  //address
                   static_cast<CMPAIValueT>(an_output[1].toDouble()), // coin value
-                  Jblock.value("bCDate").to_string()); // refCreationDate
+                  Jblock["bCDate"].to_string()); // refCreationDate
 
               }
             }
           }
-          DAG::set_coins_import_status(a_repay_block.value("b_hash").to_string(), constants::YES);
+           set_coins_import_status(a_repay_block["b_hash"].to_string(), constants::YES);
         }
       }
     */

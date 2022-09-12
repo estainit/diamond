@@ -9,7 +9,7 @@ use crate::cmerkle::{get_root_by_a_prove};
 use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::create_m_of_n_merkle::create_m_of_n_merkle;
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TInput
 {
     pub m_transaction_hash: CDocHashT,
@@ -24,6 +24,17 @@ pub struct TInput
 }
 
 impl TInput {
+    pub fn new() -> Self
+    {
+        Self {
+            m_transaction_hash: "".to_string(),
+            m_output_index: 0,
+            m_owner: "".to_string(),
+            m_amount: 0,
+            m_private_keys: vec![],
+            m_unlock_set: UnlockSet::new(),
+        }
+    }
     //old_name_was getCoinCode
     pub fn get_coin_code(&self) -> CCoinCodeT
     {

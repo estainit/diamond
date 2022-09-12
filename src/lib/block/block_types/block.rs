@@ -6,6 +6,7 @@ use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash};
+use crate::lib::block::block_types::block_repayback::repayback_block::RepaybackBlock;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::document_factory::load_document;
@@ -84,7 +85,7 @@ impl BlockApprovedDocument {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Block
 {
     pub m_block_net: String,
@@ -108,6 +109,7 @@ pub struct Block
     pub m_block_floating_votes: JSonArray, // TODO: to be implemented later
 
     pub m_if_coinbase_block: CoinbaseBlock,
+    pub m_if_repayback_block: RepaybackBlock,
 }
 
 impl Block {
@@ -134,6 +136,7 @@ impl Block {
             m_block_floating_votes: json!([]),
 
             m_if_coinbase_block: CoinbaseBlock::new(),
+            m_if_repayback_block: RepaybackBlock::new()
         }
     }
 
@@ -460,6 +463,11 @@ impl Block {
         return true;
     }
 
+
+    pub fn get_creation_date(&self) -> String
+    {
+        return self.m_block_creation_date.clone();
+    }
 
     pub fn get_block_hash(&self) -> String
     {
@@ -843,6 +851,27 @@ impl Block {
         }
 
 */
+
+    pub fn from_str(content: &String) -> (bool, Block)
+    {
+        let mut status = true;
+        let block: Block = match serde_json::from_str(&content)
+        {
+            Ok(r) => r,
+            Err(e) => {
+                status = false;
+                dlog(
+                    &format!(
+                        "Failed in deserializing block {} {}",
+                        e, content
+                    ),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
+                Block::new()
+            }
+        };
+        (status, block)
+    }
 }
 
 //old_name_was regenerateBlock

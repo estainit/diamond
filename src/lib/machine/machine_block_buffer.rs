@@ -136,15 +136,15 @@ impl CMachine {
 
       // write file on hard output/send email
       String block_str = block->safeStringifyBlock(false);
-      CLog::log("About to sending a normal block to network(" + CUtils::hash8c(block->getBlockHash())+ "): " + block_str);
+      CLog::log("About to sending a normal block to network(" + cutils::hash8c(block->getBlockHash())+ "): " + block_str);
 
       bool push_res = SendingQHandler::pushIntoSendingQ(
         block->m_block_type,
         block->getBlockHash(),
         block_str,
-        "Broadcasting the created normal block(" + CUtils::hash8c(block->getBlockHash()) + ") " + CUtils::getNow());
+        "Broadcasting the created normal block(" + cutils::hash8c(block->getBlockHash()) + ") " + cutils::getNow());
 
-      String msg = "Normal block generated & pushed to sending Q. push res(" + CUtils::dumpIt(push_res) + ") block(" + CUtils::hash8c(block->getBlockHash()) + ") " + CUtils::getNow();
+      String msg = "Normal block generated & pushed to sending Q. push res(" + cutils::dumpIt(push_res) + ") block(" + cutils::hash8c(block->getBlockHash()) + ") " + cutils::getNow();
       CLog::log(msg);
 
       // remove from buffer
@@ -192,27 +192,27 @@ impl CMachine {
       StringList supported_P4P {};// extracting P4P (if exist)
       for (QVDicT serializedTrx: buffered_trxs)
       {
-        QJsonObject Jtrx = CUtils::parseToJsonObj(serializedTrx.value("bd_payload").toString());
+        QJsonObject Jtrx = cutils::parseToJsonObj(serializedTrx.value("bd_payload").to_string());
         Document* trx = DocumentFactory::create(Jtrx);
         Block* tmp_block = new Block(QJsonObject {
-          {"bCDate", CUtils::getNow()},
+          {"bCDate", cutils::getNow()},
           {"bType", "futureBlockTrx"},
           {"bHash", "futureHashTrx"}});
         auto[status, msg] = dynamic_cast<BasicTxDocument*>(trx)->customValidateDoc(tmp_block);
         if (!status)
         {
-          msg = "error in validate Doc. transaction(" + CUtils::hash8c(trx->getDocHash()) +") block(" + CUtils::hash8c(block->getBlockHash()) +")!";
+          msg = "error in validate Doc. transaction(" + cutils::hash8c(trx->getDocHash()) +") block(" + cutils::hash8c(block->getBlockHash()) +")!";
           CLog::log(msg, "trx", "error");
           return {false, false, msg};
         }
 
         if (trx->m_doc_class == CConsts::TRX_CLASSES::P4P)
-          supported_P4P.append(trx->m_doc_ref);
+          supported_P4P.push(trx->m_doc_ref);
 
         for (auto an_output: trx->getOutputs())
           transient_block_info.m_block_total_output += an_output->m_amount;
 
-        block->m_documents.push_back(trx);
+        block->m_documents.push(trx);
       }
 
       CMPAIValueT block_total_dp_cost = 0;
@@ -222,7 +222,7 @@ impl CMachine {
         CMPAISValueT DPCost = 0;
         if (supported_P4P.contains(trx->getDocHash()))
         {
-          CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) +") trx(" + CUtils::hash8c(trx->getDocHash()) + ") is supported by p4p trx, so this trx must not pay trx-fee", "trx", "info");
+          CLog::log("Block(" + cutils::hash8c(block->getBlockHash()) +") trx(" + cutils::hash8c(trx->getDocHash()) + ") is supported by p4p trx, so this trx must not pay trx-fee", "trx", "info");
 
         } else {
           // find the backer output
@@ -234,24 +234,24 @@ impl CMachine {
 
           if (DPCost == 0)
           {
-            msg = "can not create block, because at least one trx hasn't backer fee! transaction(" + CUtils::hash8c(trx->getDocHash()) + ") in Block(" + CUtils::hash8c(block->getBlockHash()) +")";
+            msg = "can not create block, because at least one trx hasn't backer fee! transaction(" + cutils::hash8c(trx->getDocHash()) + ") in Block(" + cutils::hash8c(block->getBlockHash()) +")";
             CLog::log(msg, "trx", "error");
             return {false, false, msg};
           }
         }
 
         block_total_dp_cost += DPCost;
-        transient_block_info.m_block_documents_hashes.append(trx->getDocHash());
-        transient_block_info.m_block_ext_infos_hashes.append(trx->m_doc_ext_hash);
-        //block->m_block_ext_info.push_back(trx.value("dExtInfo"));
+        transient_block_info.m_block_documents_hashes.push(trx->getDocHash());
+        transient_block_info.m_block_ext_infos_hashes.push(trx->m_doc_ext_hash);
+        //block->m_block_ext_info.push(trx.value("dExtInfo"));
       }
 
       // create treasury payment
       CMPAISValueT block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
-      CMPAISValueT backer_net_fee = CUtils::CFloor((block_total_dp_cost * CConsts::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
+      CMPAISValueT backer_net_fee = cutils::CFloor((block_total_dp_cost * CConsts::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
       if (backer_net_fee < 0)
       {
-        msg = "The block can not cover broadcasting costs! \nblock Total DPCost(" + CUtils::microPAIToPAI6(block_total_dp_cost) + "\nbacker Net Fee(" + CUtils::microPAIToPAI6(backer_net_fee) + ")";
+        msg = "The block can not cover broadcasting costs! \nblock Total DPCost(" + cutils::microPAIToPAI6(block_total_dp_cost) + "\nbacker Net Fee(" + cutils::microPAIToPAI6(backer_net_fee) + ")";
         CLog::log(msg, "trx", "error");
         return {false, false, msg};
       }
@@ -270,9 +270,9 @@ impl CMachine {
       transient_block_info.m_block_documents_hashes.push_front(DPCostTrx->getDocHash());
 
       std::vector<Document *> tmp_documents {};
-      tmp_documents.push_back(DPCostTrx);
+      tmp_documents.push(DPCostTrx);
       for (auto a_doc: block->m_documents)
-        tmp_documents.push_back(a_doc);
+        tmp_documents.push(a_doc);
       block->m_documents = tmp_documents;
 
       // block->m_block_ext_info.push_front(QJsonArray{});   // althougt it is empty but must be exits, in order to having right index in block ext Infos array
@@ -318,17 +318,17 @@ impl CMachine {
         // add some controll to be sure about it.
         // now it is not the case until reaching buffer  total saize bigger than a single block(almost 10 Mega Byte)
 
-        QJsonObject a_js_doc = CUtils::parseToJsonObj(serialized_doc.value("bd_payload").toString());
+        QJsonObject a_js_doc = cutils::parseToJsonObj(serialized_doc.value("bd_payload").to_string());
         Document* a_document = DocumentFactory::create(a_js_doc);
 
-        if (!CUtils::isValidVersionNumber(a_document->m_doc_version))
+        if (!cutils::isValidVersionNumber(a_document->m_doc_version))
         {
-          msg = "invalid dVer for in retrieve And Group Buffered Documents doc(" + CUtils::hash8c(a_document->m_doc_hash) + ")";
+          msg = "invalid dVer for in retrieve And Group Buffered Documents doc(" + cutils::hash8c(a_document->m_doc_hash) + ")";
           CLog::log(msg, "app", "error");
           return {false, false, msg};
         }
 
-        if (!CUtils::isValidDateForamt(a_document->m_doc_creation_date))
+        if (!cutils::isValidDateForamt(a_document->m_doc_creation_date))
         {
          msg = "Invalide date format block-creationDate(" + block->m_block_creation_date + ")!";
          CLog::log(msg, "app", "error");
@@ -342,7 +342,7 @@ impl CMachine {
          return {false, false, msg};
         }
 
-        if (a_document->m_doc_creation_date > CUtils::getNow())
+        if (a_document->m_doc_creation_date > cutils::getNow())
         {
          msg = "Creating new block, documents is created in future(" + a_document->m_doc_creation_date + ")!";
          CLog::log(msg, "app", "error");
@@ -359,7 +359,7 @@ impl CMachine {
       if (!transient_block_info.m_groupped_documents.keys().contains(a_document->m_doc_type))
         transient_block_info.m_groupped_documents[a_document->m_doc_type] = std::vector<Document*> {};
 
-      transient_block_info.m_groupped_documents[a_document->m_doc_type].push_back(a_document);
+      transient_block_info.m_groupped_documents[a_document->m_doc_type].push(a_document);
 
         if (a_document->m_doc_ref != "")
         {
@@ -379,7 +379,7 @@ impl CMachine {
 
       if (transient_block_info.m_map_trx_ref_to_trx_hash.keys().len() != transient_block_info.m_map_trx_hash_to_trx_ref.keys().len())
       {
-        msg = "Creating new block, create: transaction count and ref count are different! map trx ref to trx hash: " + CUtils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash) + " map trx hash to trx ref: " + CUtils::dumpIt(transient_block_info.m_map_trx_hash_to_trx_ref);
+        msg = "Creating new block, create: transaction count and ref count are different! map trx ref to trx hash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash) + " map trx hash to trx ref: " + cutils::dumpIt(transient_block_info.m_map_trx_hash_to_trx_ref);
         CLog::log(msg, "app", "error");
         return {false, false, msg};
       }
@@ -388,15 +388,15 @@ impl CMachine {
       {
         if (!transient_block_info.m_transactions_dict.keys().contains(transient_block_info.m_map_trx_ref_to_trx_hash[a_reference]))
         {
-          msg = "Creating new block, missed some3 transaction to support referenced documents. transactions dict: " + CUtils::dumpIt(transient_block_info.m_transactions_dict) + " map trx ref to trx hash: " + CUtils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash);
+          msg = "Creating new block, missed some3 transaction to support referenced documents. transactions dict: " + cutils::dumpIt(transient_block_info.m_transactions_dict) + " map trx ref to trx hash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash);
           CLog::log(msg, "app", "error");
           return {false, false, msg};
         }
       }
 
-      if (CUtils::arrayDiff(transient_block_info.m_map_trx_hash_to_trx_ref.keys(), transient_block_info.m_transactions_dict.keys()).len() != 0)
+      if (cutils::arrayDiff(transient_block_info.m_map_trx_hash_to_trx_ref.keys(), transient_block_info.m_transactions_dict.keys()).len() != 0)
       {
-        msg = "Creating new block, missed some2 transaction to support referenced documents. transactions dict: " + CUtils::dumpIt(transient_block_info.m_transactions_dict) + " map trx ref to trx hash: " + CUtils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash);
+        msg = "Creating new block, missed some2 transaction to support referenced documents. transactions dict: " + cutils::dumpIt(transient_block_info.m_transactions_dict) + " map trx ref to trx hash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash);
         CLog::log(msg, "app", "error");
         return {false, false, msg};
       }
@@ -411,7 +411,7 @@ impl CMachine {
       {
         if (!transient_block_info.m_doc_by_hash.keys().contains(a_reference))
         {
-          msg = "Creating new block, missed referenced document, which is supported by trx.ref(" + CUtils::hash8c(a_reference) + ")";
+          msg = "Creating new block, missed referenced document, which is supported by trx.ref(" + cutils::hash8c(a_reference) + ")";
           CLog::log(msg, "app", "error");
           return {false, false, msg};
         }

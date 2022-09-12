@@ -53,7 +53,7 @@ bool FloatingSignatureBlock::validateFSBlock() const
   String msg;
   // control shares/confidence
   CLog::log("validate FSBlock block Creation Date(" + m_block_creation_date + ") backer(" + m_block_backer  + ") ");
-  auto[shares_, issuer_shares_percentage] = DNAHandler::getAnAddressShares(m_block_backer, m_block_creation_date);
+  auto[shares_, issuer_shares_percentage] = get_an_address_shares(m_block_backer, m_block_creation_date);
   Q_UNUSED(shares_);
   if (m_block_confidence != issuer_shares_percentage)
   {
