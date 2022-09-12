@@ -3,7 +3,6 @@ use serde_json::json;
 use crate::lib::custom_types::{CMPAISValueT, CMPAIValueT, DocLenT, JSonObject, QV2DicT, QVDicT};
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_factory::load_block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, generate_bip69_input_tuples, generate_bip69_output_tuples};
@@ -228,7 +227,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     document.set_doc_ext_hash();
 
     let now_ = application().now();
-    let (status, tmp_block) = load_block(&json!({
+    let (status, tmp_block) = Block::load_block(&json!({
         "bCDate": now_,
         "bType": "future_block",
         "bHash": "future_hash"}));

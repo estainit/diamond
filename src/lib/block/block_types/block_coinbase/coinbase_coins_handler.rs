@@ -118,7 +118,7 @@ pub fn import_minted_coins(c_date: &CDateT)
             panic!("{}", msg);
         }
 
-        let (status, block) = Block::from_str(&content); // do not need safe open check
+        let (status, block) = Block::load_block_by_serialized_content(&content); // do not need safe open check
         if !status
         {
             let msg: String = format!(

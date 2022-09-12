@@ -852,26 +852,6 @@ impl Block {
 
 */
 
-    pub fn from_str(content: &String) -> (bool, Block)
-    {
-        let mut status = true;
-        let block: Block = match serde_json::from_str(&content)
-        {
-            Ok(r) => r,
-            Err(e) => {
-                status = false;
-                dlog(
-                    &format!(
-                        "Failed in deserializing block {} {}",
-                        e, content
-                    ),
-                    constants::Modules::App,
-                    constants::SecLevel::Error);
-                Block::new()
-            }
-        };
-        (status, block)
-    }
 }
 
 //old_name_was regenerateBlock

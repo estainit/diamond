@@ -1,5 +1,5 @@
 use crate::{application, constants, cutils, dlog};
-use crate::lib::block::block_types::block_factory::load_block;
+use crate::lib::block::block_types::block::Block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::QVDicT;
 use crate::lib::messaging_protocol::dag_message_handler::handle_block_invoke_request;
@@ -134,7 +134,7 @@ pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
         constants::block_types::POW].contains(&pq_type.as_str())
     {
         json_payload["local_receive_date"] = receive_date.clone().into();
-        let (status, block) = load_block(&json_payload);
+        let (status, block) = Block::load_block(&json_payload);
 
         if !status
         {

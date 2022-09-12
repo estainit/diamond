@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{CMachine, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::block_types::block_factory::{load_block_by_db_record};
 use crate::lib::custom_types::{CBlockHashT, CDateT, QVDRecordsT, SharesPercentT, VString};
 use crate::lib::dag::dag::{exclude_floating_blocks, search_in_dag};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier};
@@ -31,7 +30,7 @@ pub fn get_latest_block_record() -> (bool, Block)
         return (false, b);
     }
 
-    return load_block_by_db_record(&last_recorded_block[0]);
+    return Block::load_block_by_db_record(&last_recorded_block[0]);
 }
 
 /*

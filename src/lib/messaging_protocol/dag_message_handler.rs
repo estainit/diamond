@@ -3,8 +3,7 @@ use postgres::types::ToSql;
 use serde_json::{json, Value};
 use crate::{application, ccrypto, constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
-use crate::lib::block::block_types::block::regenerate_block;
-use crate::lib::block::block_types::block_factory::load_block;
+use crate::lib::block::block_types::block::{Block, regenerate_block};
 use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
@@ -545,7 +544,7 @@ pub fn handle_block_invoke_request(
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
-    let (status, block) = load_block(&regenerated_json_block);
+    let (status, block) = Block::load_block(&regenerated_json_block);
     if !status
     {
         error_message = format!("Invoked block regeneration load failed! Block({})", short_hash);

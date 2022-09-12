@@ -1,6 +1,6 @@
 use crate::{application, constants, cutils, dlog, machine};
+use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_coinbase::coinbase_coins_handler::calc_coinbased_output_maturation_date;
-use crate::lib::block::block_types::block_factory::load_block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::{CMPAISValueT, COutputIndexT, QVDicT, VString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
@@ -27,7 +27,7 @@ pub fn update_funds_from_new_block(
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
 
-    let (_status, block) = load_block(&j_block);
+    let (_status, block) = Block::load_block(&j_block);
     dlog(
         &format!(
             "Update wallet funds for Block {}",
