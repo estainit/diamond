@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
-use crate::lib::custom_types::VVString;
+use serde_json::json;
+use crate::lib::custom_types::{JSonObject, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -16,4 +17,15 @@ impl DocExtInfo {
             m_signatures: vec![],
         }
     }
+
+    pub fn export_to_json(&self) -> JSonObject
+    {
+        let out = json!({
+           "uSet": self.m_unlock_set.export_to_json(),
+           "signatures": self.m_signatures,
+        });
+        return out;
+    }
+
+
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, VString, VVString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_inputs_tuples, make_outputs_tuples, TInput, TOutput};
 
 #[derive(Debug)]
@@ -281,7 +281,7 @@ impl BasicTransactionTemplate {
             return true;
         }
 
-        // creat a new output
+        // create a new output
         if self.m_tpl_change_back_address == ""
         {
             self.m_tpl_change_back_address = machine().get_backer_address();
@@ -342,6 +342,15 @@ impl BasicTransactionTemplate {
         */
 }
 
+pub fn export_doc_ext_to_json(ext_infos: &Vec<DocExtInfo>) -> Vec<JSonObject>
+{
+    let mut out: Vec<JSonObject> = vec![];
+    for an_ext in ext_infos
+    {
+        out.push(an_ext.export_to_json());
+    }
+    out
+}
 
 //old_name_was generateInputTuples
 pub fn generate_bip69_input_tuples(tpl_inputs: &HashMap<CCoinCodeT, TInput>) -> VVString

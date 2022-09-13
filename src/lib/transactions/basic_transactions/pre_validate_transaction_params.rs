@@ -48,7 +48,7 @@ pub fn pre_validate_transaction_params(
     let mut total_outputs_amount_except_dp_costs: CMPAIValueT = 0;
     for an_out in &tpl.m_tpl_outputs
     {
-        if vec![constants::OUTPUT_CHANGE_BACK.to_string(), constants::OUTPUT_DP_COST.to_string()]
+        if !vec![constants::OUTPUT_CHANGE_BACK.to_string(), constants::OUTPUT_DP_COST.to_string()]
             .contains(&an_out.m_output_character)
         {
             total_outputs_amount_except_dp_costs += an_out.m_amount;

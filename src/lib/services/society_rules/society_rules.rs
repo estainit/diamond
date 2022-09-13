@@ -143,7 +143,8 @@ pub fn get_single_integer_value(
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
-    return val.parse::<CMPAIValueT>().unwrap();
+    let val_f64 =  val.parse::<f64>().unwrap();
+    return val_f64 as CMPAIValueT;
 }
 
 //old_name_was getBasicTxDPCost

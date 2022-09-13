@@ -18,7 +18,7 @@ use crate::lib::wallet::wallet_coins::{delete_from_funds, delete_from_funds_by_d
 
 //old_name_was walletSigner
 pub fn wallet_signer(
-    coins: &VString,
+    candidated_coins: &VString,
     sending_amount: CMPAIValueT,
     desired_trx_fee: CMPAIValueT,
     recipient: &CAddressT,
@@ -30,7 +30,7 @@ pub fn wallet_signer(
 
     let unlocker_index = 0; // if client didn't mention, chose the first unlock struct FIXME =0
 
-    if coins.len() == 0
+    if candidated_coins.len() == 0
     {
         message = "No coin selected to spend!".to_string();
         dlog(
@@ -76,18 +76,22 @@ pub fn wallet_signer(
         m_clause_operand: "IN",
         m_field_multi_values: vec![],
     };
-    for a_coin in coins {
+    for a_coin in candidated_coins {
         c1.m_field_multi_values.push(a_coin as &(dyn ToSql + Sync));
     }
-    let coins_records = search_in_spendable_coins(
+    let spendable_coins = search_in_spendable_coins(
         &vec![c1],
         &vec![],
         0);
+    dlog(
+        &format!("spendable coins: {:?}", spendable_coins),
+        constants::Modules::Trx,
+        constants::SecLevel::Info);
 
     let mut envolved_spending_addresses: VString = vec![];
     let mut spendable_amount: CMPAIValueT = 0;
     let mut inputs: HashMap<CCoinCodeT, TInput> = HashMap::new();
-    for a_coin in &coins_records
+    for a_coin in &spendable_coins
     {
         let coin_owner: CAddressT = a_coin["ut_o_address"].to_string();
         let coin_value: CMPAIValueT = a_coin["ut_o_value"].parse::<CMPAIValueT>().unwrap();
@@ -161,12 +165,16 @@ pub fn wallet_signer(
         // });
     }
 
-
-    let addresses_records = get_addresses_info(
+    let wallet_controlled_addresses = get_addresses_info(
         envolved_spending_addresses,
-        vec!["wa_address"]);
+        vec!["wa_address", "wa_detail"]);
+    dlog(
+        &format!("wallet controlled addresses records: {:#?}", wallet_controlled_addresses),
+        constants::Modules::Trx,
+        constants::SecLevel::Info);
+
     let mut addresses_dict: QV2DicT = HashMap::new();
-    for an_address in addresses_records
+    for an_address in wallet_controlled_addresses
     {
         addresses_dict.insert(an_address["wa_address"].to_string(), an_address);
     }
@@ -175,7 +183,21 @@ pub fn wallet_signer(
     for a_coin in &inputs.keys().cloned().collect::<VString>()
     {
         let mut an_input: TInput = inputs[a_coin].clone();
-        let address_details: UnlockDocument = serde_json::from_str(&addresses_dict[&an_input.m_owner]["wa_detail"]).unwrap();
+
+        if !addresses_dict.contains_key(&an_input.m_owner)
+        {
+            message = format!(
+                "The input coin is not controlled by your wallet! coin: {:#?}",
+                an_input);
+            dlog(
+                &message,
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return (false, message);
+        }
+
+        let address_details: UnlockDocument = serde_json::from_str(
+            &addresses_dict[&an_input.m_owner]["wa_detail"]).unwrap();
         an_input.m_unlock_set = address_details.m_unlock_sets[unlocker_index].clone();
         let salt = &an_input.m_unlock_set.m_salt;
         // let private_keys: VString = address_details.m_private_keys[salt];

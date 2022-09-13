@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 use crate::lib::constants;
-use crate::lib::custom_types::TimeByHoursT;
+use crate::lib::custom_types::{JSonObject, TimeByHoursT};
 
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -31,6 +32,19 @@ impl IndividualSignature {
             m_input_time_lock_strickt: 0.0,
             m_output_time_lock: 0.0,
         };
+    }
+
+    pub fn export_to_json(&self) -> JSonObject
+    {
+        let out = json!({
+           "sKey": self.m_signature_key,
+           "pDelegate": self.m_permitted_to_pledge,
+           "pPledge": self.m_permitted_to_pledge,
+           "iTLock": self.m_input_time_lock,
+           "iTLockSt": self.m_input_time_lock_strickt,
+           "oTLock": self.m_output_time_lock,
+        });
+        return out;
     }
 
     #[allow(unused, dead_code)]

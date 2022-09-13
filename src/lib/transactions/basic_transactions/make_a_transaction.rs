@@ -5,7 +5,7 @@ use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_factory::load_document;
-use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, generate_bip69_input_tuples, generate_bip69_output_tuples};
+use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, export_doc_ext_to_json, generate_bip69_input_tuples, generate_bip69_output_tuples};
 use crate::lib::transactions::basic_transactions::pre_validate_transaction_params::pre_validate_transaction_params;
 
 // * @return {status, err_msg, transaction, transaction_dp_cost}
@@ -55,6 +55,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     // pre-signing in order to estimate actual outcome transaction length
     tpl.sign_and_create_doc_ext_info();
 
+    let ext_info = export_doc_ext_to_json(&tpl.m_tpl_doc_ext_info);
     let input_tuples = generate_bip69_input_tuples(&tpl.m_tpl_inputs);
     let (output_tuples, ordered_tpl_outputs) = generate_bip69_output_tuples(&tpl.m_tpl_outputs);
     tpl.m_tpl_outputs = ordered_tpl_outputs;
@@ -70,7 +71,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         "dCDate": tpl.m_tpl_creation_date,
         "inputs": input_tuples,
         "outputs": output_tuples,
-        "dExtInfo": tpl.m_tpl_doc_ext_info,
+        "dExtInfo": ext_info,
         "dExtHash": constants::HASH_ZEROS_PLACEHOLDER});
     dlog(
         &format!("trx_json in pre-transaction: {:#?}", &trx_json),
@@ -164,7 +165,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         constants::Modules::Trx,
         constants::SecLevel::Info);
 
-    // TODO: add possibilitiy for user to pay diffrent DPCost to different backers(in case of cloning trx)
+    // TODO: add possibility for user to pay different DPCost to different backers(in case of cloning trx)
     let change_back_amount: CMPAISValueT = (total_inputs_amount
         - total_outputs_amount_except_dp_costs
         - (the_dp_cost * tpl.m_tpl_backers_addresses.len() as CMPAIValueT)) as CMPAISValueT;
@@ -225,16 +226,21 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     document.set_doc_ext_hash();
     document.set_doc_length();
     document.set_doc_ext_hash();
+    document.set_doc_hash();
 
     let now_ = application().now();
-    let (status, tmp_block) = Block::load_block(&json!({
-        "bCDate": now_,
-        "bType": "future_block",
-        "bHash": "future_hash"}));
-    if !status
+    let mut tmp_block: Block = Block::new();
+    tmp_block.m_block_creation_date = now_;
+    tmp_block.m_block_type = constants::block_types::NORMAL.to_string();
+    tmp_block.m_block_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
+    tmp_block.m_block_documents = vec![document.clone()];
+
+    let (final_validate, msg_) = document.full_validate(&tmp_block);
+    if !final_validate
     {
         msg = format!(
-            "Failed in load block by js info, {} ",
+            "Failed in transaction full Validate, {} {}",
+            msg_,
             tmp_block.safe_stringify_block(true));
         dlog(
             &msg,
@@ -242,20 +248,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
             constants::SecLevel::Error);
         return (false, msg, doc, 0);
     }
-    let (final_validate, msg_) = document.full_validate(&tmp_block);
     drop(tmp_block);
-    if !final_validate
-    {
-        msg = format!(
-            "Failed in transaction full Validate, {} {}",
-            msg_,
-            document.safe_stringify_doc(true));
-        dlog(
-            &msg,
-            constants::Modules::Trx,
-            constants::SecLevel::Error);
-        return (false, msg, doc, 0);
-    }
 
     // double-check outputs
     for an_out in document.get_outputs()
@@ -281,7 +274,8 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         used_coins_dict.insert(coin_code.clone(), vv);
     }
 
-    let signature_validate_res = document.validate_signatures(
+    let signature_validate_res = document.m_if_basic_tx_doc.validate_tx_signatures(
+        &document,
         &used_coins_dict,
         &vec![],
         &constants::HASH_ZEROS_PLACEHOLDER.to_string());

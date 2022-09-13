@@ -127,7 +127,7 @@ impl CoinbaseDocument {
     }
 
     // old name was hasSignable
-    pub fn has_signable(&self, _doc: &Document) -> bool
+    pub fn has_sign_ables(&self, _doc: &Document) -> bool
     {
         return false;
     }

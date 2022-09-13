@@ -674,7 +674,7 @@ pub const THE_CARD_TYPES: [&str; 15] = [
 
 pub const OUTPUT_DP_COST: &str = "OUTPUT_DP_COST";
 pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
-pub const TEMP_DP_COST_AMOUNT: CMPAIValueT = 999_999_999_999;
+pub const TEMP_DP_COST_AMOUNT: CMPAIValueT = 1_111_111_111;
 #[allow(unused, dead_code)]
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";
 pub const OUTPUT_CHANGE_BACK: &str = "OUTPUT_CHANGE_BACK";

@@ -1,12 +1,11 @@
 use std::collections::HashMap;
-use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::IndividualSignature;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::{ccrypto, constants, cutils, dlog, PermutationHandler};
 use crate::cmerkle::{get_root_by_a_prove};
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDocHashT, CMPAIValueT, COutputIndexT, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::create_m_of_n_merkle::create_m_of_n_merkle;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -311,73 +310,75 @@ pub fn make_inputs_tuples(inputs: &Vec<TInput>) -> VVString
     return outputs_list;
 }
 
-/*
+// //old_name_was compactUnlocker
+// pub fn compact_unlocker(u_set: &JSonObject) -> JSonObject
+// {
+//      let optional_attributes_string:Vec<&str> = vec!["pPledge", "pDelegate"];
+//      let optional_attributes_int:Vec<&str> = vec!["iTLockSt", "iTLock", "oTLock"];
+//
+//      let mut new_sign_sets:Vec<JSonObject> = vec![];
+//     /*
+//
+//      for  a_sign_set_ in  u_set["sSets"].as_array().unwrap()
+//      {
+//        let a_sign_set = a_sign_set_;
+//        let a_sign_set_keys = a_sign_set.keys();
+//        JSonObject a_new_sign_set {
+//          {"sKey", a_sign_set["sKey"]}
+//        };
+//
+//        for (String a_key: optional_attributes_string)
+//          if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != ""))
+//            a_new_sign_set[a_key] = a_sign_set[a_key];
+//
+//        for (String a_key: optional_attributes_int)
+//          if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != 0))
+//            a_new_sign_set[a_key] = a_sign_set[a_key];
+//
+//        new_sign_sets.push(a_new_sign_set);
+//      }
+//
+//
+//      JSonObject new_u_set {
+//        {"lHash", u_set["lHash"]},
+//        {"mProof", u_set["mProof"]},
+//        {"sSets", new_sign_sets},
+//        {"sType", u_set["sType"]},
+//        {"sVer", u_set["sVer"]},
+//        {"salt", u_set["salt"]}};
+//
+//    */
+//     return new_u_set;
+// }
 
-JSonObject compactUnlocker(const JSonObject& u_set)
-{
-  StringList optional_attributes_string = {"pPledge", "pDelegate"};
-  StringList optional_attributes_int = {"iTLockSt", "iTLock", "oTLock"};
 
-  JSonArray new_sign_sets {};
-
-  for (auto a_sign_set_: u_set["sSets"].toArray())
-  {
-    JSonObject a_sign_set = a_sign_set_.toObject();
-    StringList a_sign_set_keys = a_sign_set.keys();
-    JSonObject a_new_sign_set {
-      {"sKey", a_sign_set["sKey"]}
-    };
-
-    for (String a_key: optional_attributes_string)
-      if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != ""))
-        a_new_sign_set[a_key] = a_sign_set[a_key];
-
-    for (String a_key: optional_attributes_int)
-      if (a_sign_set_keys.contains(a_key) && (a_sign_set[a_key] != 0))
-        a_new_sign_set[a_key] = a_sign_set[a_key];
-
-    new_sign_sets.push(a_new_sign_set);
-  }
-  JSonObject new_u_set {
-    {"lHash", u_set["lHash"]},
-    {"mProof", u_set["mProof"]},
-    {"sSets", new_sign_sets},
-    {"sType", u_set["sType"]},
-    {"sVer", u_set["sVer"]},
-    {"salt", u_set["salt"]}};
-
-  return new_u_set;
-}
-
-*/
-
-//old_name_was compactUnlockersArray
-pub fn compact_unlockers_array(doc_ext_info: &JSonObject) -> JSonObject
-{
-    let new_doc_ext_info: JSonObject = json!({});
-    for an_ext in doc_ext_info.as_array().unwrap()
-    {
-        println!("compacting an_ext: {:?}", an_ext);
-        /*
-        JSonObject unlock_doc = an_ext.toObject();
-        JSonObject new_unlock_doc {};
-        for (String a_key: unlock_doc.keys())
-        {
-          if (a_key == "uSet")
-          {
-            JSonObject u_set = unlock_doc["uSet"].toObject();
-            JSonObject new_u_set = compactUnlocker(u_set);
-            new_unlock_doc[a_key] = new_u_set;
-          }else{
-            new_unlock_doc[a_key] = unlock_doc[a_key];
-          }
-        }
-        new_doc_ext_info.push(new_unlock_doc);
-         */
-    }
-
-    return new_doc_ext_info;
-}
+// //old_name_was compactUnlockersArray
+// pub fn compact_unlockers_array(doc_ext_info: &JSonObject) -> JSonObject
+// {
+//     println!("compacting doc_ext_info: {:?}", doc_ext_info);
+//     let new_doc_ext_info: JSonObject = json!({});
+//     for an_ext in doc_ext_info.as_array().unwrap()
+//     {
+//         /*
+//         JSonObject unlock_doc = an_ext.toObject();
+//         JSonObject new_unlock_doc {};
+//         for (String a_key: unlock_doc.keys())
+//         {
+//           if (a_key == "uSet")
+//           {
+//             JSonObject u_set = unlock_doc["uSet"].toObject();
+//             JSonObject new_u_set = compact_unlocker(u_set);
+//             new_unlock_doc[a_key] = new_u_set;
+//           }else{
+//             new_unlock_doc[a_key] = unlock_doc[a_key];
+//           }
+//         }
+//         new_doc_ext_info.push(new_unlock_doc);
+//          */
+//     }
+//
+//     return new_doc_ext_info;
+// }
 
 //old_name_was safeStringifySigntureSets
 pub fn safe_stringify_signture_sets(signture_sets: &Vec<IndividualSignature>) -> String

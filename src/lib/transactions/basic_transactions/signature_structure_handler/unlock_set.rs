@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 
 use crate::lib::constants;
-use crate::lib::custom_types::VString;
+use crate::lib::custom_types::{JSonObject, VString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::individual_signature::{dump_vec_of_ind_sig, IndividualSignature};
 use crate::lib::utils::dumper::dump_vec_of_str;
 
@@ -9,7 +10,7 @@ use crate::lib::utils::dumper::dump_vec_of_str;
 pub struct UnlockSet
 {
     pub m_signature_type: String,
-    pub m_signature_ver: String ,
+    pub m_signature_ver: String,
     pub m_signature_sets: Vec<IndividualSignature>,
     pub m_merkle_proof: VString,
     pub m_left_hash: String,
@@ -28,6 +29,24 @@ impl UnlockSet {
         };
     }
 
+    pub fn export_to_json(&self) -> JSonObject
+    {
+        let mut signature_sets: Vec<JSonObject> = vec![];
+        for a_sig in &self.m_signature_sets
+        {
+            signature_sets.push(a_sig.export_to_json());
+        }
+        let out = json!({
+           "sType": self.m_signature_type,
+           "sVer": self.m_signature_ver,
+           "sSets": signature_sets,
+           "mProof": self.m_merkle_proof,
+           "lHash": self.m_left_hash,
+           "salt": self.m_salt,
+        });
+        return out;
+    }
+
     pub fn dump(&self) -> String {
         let prefix_tabs = "\t ";
         let mut out_str = constants::NL.to_owned() + &prefix_tabs + "Signature: " + &self.m_signature_type + "(" + &self.m_signature_ver + ")";
@@ -40,22 +59,6 @@ impl UnlockSet {
 
 /*
 
-JSonObject UnlockSet::exportToJson()
-{
-  JSonArray signature_sets{};
-  for (IndividualSignature aSig: m_signature_sets)
-  {
-    signature_sets.push(aSig.exportJson());
-  }
-  return JSonObject {
-    {"sType", m_signature_type},
-    {"sVer", m_signature_ver},
-    {"mProof", cutils::convertStringListToJSonArray(m_merkle_proof)},
-    {"sSets", signature_sets},
-    {"lHash", m_left_hash},
-    {"salt", m_salt}
-  };
-}
 
 void UnlockSet::importJson(const JSonObject& obj)
 {

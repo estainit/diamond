@@ -4,11 +4,12 @@ use substring::Substring;
 use crate::{ccrypto, constants, cutils, dlog, machine};
 use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::constants::MAX_COINS_AMOUNT;
+use crate::cutils::{remove_quotes};
 use crate::lib::block::document_types::document::{Document, set_document_outputs};
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CMPAIValueT, COutputIndexT, DocLenT, JSonArray, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::services::society_rules::society_rules::{get_base_price_per_char, get_doc_expense};
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{generate_bip69_input_tuples, generate_bip69_output_tuples};
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{compact_unlockers_array, safe_stringify_unlock_set, stringify_inputs, stringify_outputs, TInput, TOutput};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{safe_stringify_unlock_set, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
 
@@ -54,7 +55,6 @@ impl BasicTxDocument {
     }
 
     //old_name_was safeStringifyDoc
-    #[allow(unused, dead_code)]
     pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
     {
         let document: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);
@@ -197,11 +197,11 @@ impl BasicTxDocument {
     {
         let mut document: JSonObject = doc.export_doc_to_json_super(ext_info_in_document);
 
-        // impacting uSets
-        if ext_info_in_document
-        {
-            document["dExtInfo"] = compact_unlockers_array(&document["dExtInfo"]);
-        }
+        // // impacting uSets
+        // if ext_info_in_document
+        // {
+        //     document["dExtInfo"] = compact_unlockers_array(&document["dExtInfo"]);
+        // }
 
         if self.m_data_and_process_payment_indexes.len() > 0
         {
@@ -350,9 +350,15 @@ impl BasicTxDocument {
         // JSonArray inputs = obj.toArray();
         for an_input in obj.as_array().unwrap() {
             // JSonArray io = an_input.toArray();
+            println!("ffffff 55: {}", an_input);
+            let input_dtl = an_input.as_array().unwrap();
+            println!("ffffff 56: {:?}", input_dtl);
+            println!("ffffff output_index 1: {:?}", &input_dtl[1]);
+            let output_index = remove_quotes(&input_dtl[1]);
+            println!("ffffff output_index 2: {}", output_index);
             let inp_entry: TInput = TInput {
-                m_transaction_hash: an_input[0].to_string(),
-                m_output_index: an_input[1].as_u64().unwrap() as i32,
+                m_transaction_hash: remove_quotes(&input_dtl[0]),
+                m_output_index: remove_quotes(&input_dtl[1]).parse::<COutputIndexT>().unwrap(),
                 m_owner: "".to_string(),
                 m_amount: 0,
                 m_private_keys: vec![],
@@ -435,6 +441,12 @@ impl BasicTxDocument {
         }
 
 */
+    // old name was hasSignable
+    pub fn has_sign_ables(&self, _doc: &Document) -> bool
+    {
+        return true;
+    }
+
     //old_name_was getInputOutputSignables
     pub fn get_input_output_signables1(
         &self,
@@ -538,52 +550,6 @@ impl BasicTxDocument {
         return (true, signature_hex);
     }
 
-    // old name was verifyInputOutputsSignature
-    pub fn verify_input_outputs_signature(
-        &self,
-        doc: &Document,
-        public_key: &String,
-        signature: &String,
-        sig_hash: &String,
-        c_date: &CDateT,
-    ) -> bool
-    {
-        if public_key == ""
-        {
-            dlog(
-                &format!("Missed public_key!"),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            return false;
-        }
-
-        if signature == ""
-        {
-            dlog(
-                &format!("Missed signature!"),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            return false;
-        }
-
-        if sig_hash == ""
-        {
-            dlog(
-                &format!("Missed sig hash!"),
-                constants::Modules::App,
-                constants::SecLevel::Error);
-            return false;
-        }
-
-        let mut signables: String = self.get_input_output_signables1(doc, sig_hash, c_date);
-        signables = ccrypto::keccak256_dbl(&signables); // because of securiy, MUST use double hash
-        let verify_res: bool = ccrypto::ecdsa_verify_signature(
-            public_key,
-            &signables.substring(0, constants::SIGN_MSG_LENGTH as usize).to_string(),
-            signature);
-        return verify_res;
-    }
-
     // old name was canHaveTimeLockedInput
     pub fn can_have_time_locked_inputs(&self) -> bool
     {
@@ -595,33 +561,31 @@ impl BasicTxDocument {
         // );
     }
 
-
     /*
+        std::tuple<Vec<TInput*>, Vec<TOutput*> > extract_input_outputs_based_on_sig_hash(String sig_hash)
+        {
+        if (sig_hash == constants::SIGHASH::ALL)
+        return {m_inputs, m_outputs};
 
-            std::tuple<Vec<TInput*>, Vec<TOutput*> > extract_input_outputs_based_on_sig_hash(String sig_hash)
-            {
-            if (sig_hash == constants::SIGHASH::ALL)
-            return {m_inputs, m_outputs};
+        if (sig_hash == constants::SIGHASH::NONE)
+        return {m_inputs, {}};
 
-            if (sig_hash == constants::SIGHASH::NONE)
-            return {m_inputs, {}};
+        return {m_inputs, m_outputs};
+        }
 
-            return {m_inputs, m_outputs};
-            }
-
-            std::tuple<Vec<TInput*>, Vec<TOutput*> >extract_input_outputs_based_on_sig_hash(
-            Vec<TInput*> inputs,
-            Vec<TOutput*> outputs,
-            String sig_hash)
-            {
-            if (sig_hash == constants::SIGHASH::ALL) {
-            // change nothing
-            } else if (sig_hash == constants::SIGHASH::NONE) {
-            outputs = {};
-            }
-            return { inputs, outputs };
-            }
-*/
+        std::tuple<Vec<TInput*>, Vec<TOutput*> >extract_input_outputs_based_on_sig_hash(
+        Vec<TInput*> inputs,
+        Vec<TOutput*> outputs,
+        String sig_hash)
+        {
+        if (sig_hash == constants::SIGHASH::ALL) {
+        // change nothing
+        } else if (sig_hash == constants::SIGHASH::NONE) {
+        outputs = {};
+        }
+        return { inputs, outputs };
+        }
+    */
 
     // old name was validateGeneralRulsForTransaction
     pub fn validate_general_rules_for_transaction(&self, doc: &Document) -> bool

@@ -190,7 +190,7 @@ pub fn import_minted_coins(c_date: &CDateT)
             output_index += 1;
         }
 
-        // if there is some cutting from income, create a new block(RpBlock) and record
+        // if there is some cutting from income, create a new block(RpBlock) and record in DAG
         if repayment_docs.len() > 0
         {
             create_repayment_block(
@@ -206,8 +206,7 @@ pub fn import_minted_coins(c_date: &CDateT)
     }
 }
 
-
-// TODO some uintteasts need
+// TODO some uint tests need
 //  every coinbased incomes will be spendable after 2 cycle and right after starting 3rd cycle
 
 //old_name_was calcCoinbasedOutputMaturationDate
@@ -218,4 +217,3 @@ pub fn calc_coinbased_output_maturation_date(c_date: &CDateT) -> CDateT {
         c_date);
     return application().get_coinbase_range(&mature_date).from;
 }
-

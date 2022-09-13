@@ -1,17 +1,43 @@
 use std::collections::HashMap;
-use crate::{constants, cutils, dlog};
+use substring::Substring;
+use crate::{ccrypto, constants, cutils, dlog};
+use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CInputIndexT, CSigIndexT, QV2DicT, VString};
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, CSigIndexT, QV2DicT, QVDicT, VString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::validate_sig_struct;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
 
 impl BasicTxDocument {
+    // old name was veridfyDocSignature
+    pub fn verify_doc_signature(
+        &self,
+        doc: &Document,
+        block: &Block,
+    ) -> bool
+    {
+        let mut used_coins_dict: QV2DicT = HashMap::new();
+        for an_inp in &self.m_inputs
+        {
+            let vv: QVDicT = HashMap::from([
+                ("ut_o_address".to_string(), an_inp.m_owner.clone()),
+                ("ut_o_value".to_string(), an_inp.m_amount.to_string())]);
+            used_coins_dict.insert(an_inp.get_coin_code(), vv);
+        }
+
+        return self.validate_tx_signatures(
+            doc,
+            &used_coins_dict,
+            &vec![],
+            &block.get_block_hash(),
+        );
+    }
+
     // js name was trxSignatureValidator
-// old name was validateSignatures
-    pub fn validate_signatures(
+    // old name was validateSignatures
+    pub fn validate_tx_signatures(
         &self,
         doc: &Document,
         used_coins_dict: &QV2DicT,
@@ -51,7 +77,7 @@ impl BasicTxDocument {
             if !is_valid_unlocker
             {
                 msg = format!(
-                    "Invalid block, because of invalid unlock struture! Block({}) transaction({}) input-index({:?}) unlock structure: {:#?}",
+                    "Invalid block, because of invalid unlock structure! Block({}) transaction({}) input-index({:?}) unlock structure: {:#?}",
                     cutils::hash8c(block_hash),
                     doc.get_doc_identifier(),
                     input_index,
@@ -143,7 +169,7 @@ impl BasicTxDocument {
                     //  let iTLock = iutils.convertBigIntToJSInt(aSignSet.iTLock);
                     //  for (aRefLoc of the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index])
                     //  {
-                    //      let inputCreationDate = used_coins_dict[aRefLoc].utRefCreationDate;
+                    //      let inputCreationDate = used_coins_dict["coin_code"].utRefCreationDate;
                     //      let inputRedeemDate = utils.minutesAfter(iTLock, inputCreationDate);
 
                     //      msg = `info::: inputTimeLock compareTime(${c_date}) block(${utils.hash6c(block.blockHash)}) trx(${utils.hash6c(trx.hash)}) `;
@@ -172,5 +198,51 @@ impl BasicTxDocument {
             constants::SecLevel::TmpDebug);
 
         return true;
+    }
+
+    // old name was verifyInputOutputsSignature
+    pub fn verify_input_outputs_signature(
+        &self,
+        doc: &Document,
+        public_key: &String,
+        signature: &String,
+        sig_hash: &String,
+        c_date: &CDateT,
+    ) -> bool
+    {
+        if public_key == ""
+        {
+            dlog(
+                &format!("Missed public_key!"),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+
+        if signature == ""
+        {
+            dlog(
+                &format!("Missed signature!"),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+
+        if sig_hash == ""
+        {
+            dlog(
+                &format!("Missed sig hash!"),
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return false;
+        }
+
+        let mut signables: String = self.get_input_output_signables1(doc, sig_hash, c_date);
+        signables = ccrypto::keccak256_dbl(&signables); // because of securiy, MUST use double hash
+        let verify_res: bool = ccrypto::ecdsa_verify_signature(
+            public_key,
+            &signables.substring(0, constants::SIGN_MSG_LENGTH as usize).to_string(),
+            signature);
+        return verify_res;
     }
 }

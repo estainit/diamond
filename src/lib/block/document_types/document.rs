@@ -71,7 +71,7 @@ impl Document
             m_if_coinbase_doc: CoinbaseDocument::new(),
             m_if_null_doc: NullDocument::new(),
             m_empty_vec: vec![],
-            m_if_repayment_doc: RepaymentDocument::new()
+            m_if_repayment_doc: RepaymentDocument::new(),
         }
     }
 
@@ -146,7 +146,7 @@ impl Document
 
         if !obj["dExtInfo"].is_null()
         {
-            println!("iiii i i i i i iiiii: {}", obj["dExtInfo"]);
+            println!("dExtInfo i i i i i iiiii: {}", obj["dExtInfo"]);
             //self.m_doc_ext_info = remove_quotes(&obj[");
         }
 
@@ -581,45 +581,6 @@ impl Document
         panic!("Invalid document type to get inputs! {}", self.get_doc_identifier());
     }
 
-    pub fn validate_signatures(
-        &self,
-        used_coins_dict: &QV2DicT,
-        exclude_coins: &VString,
-        block_hash: &CBlockHashT) -> bool
-    {
-        if self.m_doc_type == constants::document_types::BASIC_TX
-        {
-            return self.m_if_basic_tx_doc.validate_signatures(
-                self,
-                used_coins_dict,
-                exclude_coins,
-                block_hash);
-        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
-        {} else if self.m_doc_type == constants::document_types::COINBASE
-        {} else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
-        {} else if self.m_doc_type == constants::document_types::BALLOT
-        {} else if self.m_doc_type == constants::document_types::POLLING
-        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
-        {} else if self.m_doc_type == constants::document_types::PROPOSAL
-        {} else if self.m_doc_type == constants::document_types::PLEDGE
-        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
-        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
-        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
-        {}
-
-        panic!("Invalid document type to validate_ signatures! {}", self.get_doc_identifier());
-    }
-
-
-    /*
-
-    void Document::setDocHash()
-    {
-    m_doc_hash = calcDocHash();
-    }
-
-    */
-
     // old name was setDExtHash
     pub fn set_doc_ext_hash(&mut self)
     {
@@ -645,12 +606,21 @@ impl Document
         panic!("Invalid document for calc hash {}", self.get_doc_identifier());
     }
 
-    // old name was hasSignable
-    pub fn has_signable(&self) -> bool
+    //old name was setDocHash()
+    pub fn set_doc_hash(&mut self)
     {
-        if self.m_doc_type == constants::document_types::COINBASE
+        self.m_doc_hash = self.calc_doc_hash();
+    }
+
+    // old name was hasSignable
+    pub fn has_sign_ables(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
         {
-            return self.m_if_coinbase_doc.has_signable(self);
+            return self.m_if_basic_tx_doc.has_sign_ables(self);
+        } else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.has_sign_ables(self);
         }
 
         // by default documents have no part to signing
@@ -658,9 +628,12 @@ impl Document
     }
 
     // old name was veridfyDocSignature
-    pub fn veridfy_doc_signature(&self) -> bool
+    pub fn verify_doc_signature(&self, block: &Block) -> bool
     {
-        if self.m_doc_type == constants::document_types::COINBASE
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.verify_doc_signature(self, block);
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.verify_doc_signature(self);
         }
@@ -695,8 +668,8 @@ impl Document
         let err_msg: String;
 
         // doc length control
-        let doc_lenght: DocLenT = self.safe_stringify_doc(true).len();
-        if doc_lenght < 1
+        let doc_length: DocLenT = self.safe_stringify_doc(true).len();
+        if doc_length < 1
         {
             err_msg = format!(
                 "Doc length can not be zero or negative! {} {} doc class({})",
@@ -708,7 +681,7 @@ impl Document
             return (false, err_msg);
         }
 
-        if doc_lenght > constants::MAX_DOC_LENGTH_BY_CHAR
+        if doc_length > constants::MAX_DOC_LENGTH_BY_CHAR
         {
             err_msg = format!(
                 "Doc length excced! {} {} doc class({})",
@@ -720,7 +693,7 @@ impl Document
             return (false, err_msg);
         }
 
-        if (self.m_doc_length != 0) && (doc_lenght > self.m_doc_length)
+        if (self.m_doc_length != 0) && (doc_length > self.m_doc_length)
         {
             err_msg = format!(
                 "Doc real length is longer than stated length! {} {} + doc class({})",
@@ -745,7 +718,7 @@ impl Document
             return (false, err_msg);
         }
 
-        // controll doc ext hash
+        // control doc ext hash
         if self.m_doc_ext_hash != self.calc_doc_ext_info_hash()
         {
             err_msg = format!(
@@ -758,10 +731,10 @@ impl Document
             return (false, err_msg);
         }
 
-        // controll document signatures (if exist)
-        if self.has_signable()
+        // control document signatures (if exist)
+        if self.has_sign_ables()
         {
-            if !self.veridfy_doc_signature()
+            if !self.verify_doc_signature(block)
             {
                 err_msg = format!(
                     "Failed in verify doc signature {} {} ",
