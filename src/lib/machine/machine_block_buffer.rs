@@ -1,9 +1,10 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, CMachine, constants, dlog};
+use crate::lib::block::block_types::block::{Block, TransientBlockInfo};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT};
-use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
+use crate::lib::database::abs_psql::{q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_MACHINE_BLOCK_BUFFER;
 
 impl CMachine {
@@ -285,16 +286,19 @@ impl CMachine {
       };
     }
 
-    /**
-     * @brief CMachine::retrieveAndGroupBufferedDocuments
-     * @param block
-     * @param transient_block_info
-     * @return {status, should clera buffer, err_msg}
-     */
-    std::tuple<bool, bool, String> CMachine::retrieveAndGroupBufferedDocuments(
-      Block* block,
-      TransientBlockInfo& transient_block_info)
+*/
+
+    // old name was retrieveAndGroupBufferedDocuments
+    #[allow(unused, dead_code)]
+    pub fn retrieve_and_group_buffered_documents(
+        _block: &Block,
+        _transient_block_info: &TransientBlockInfo)
+        -> (bool/* status */, bool/* should clear buffer */, String/* err_msg */)
+
     {
+        return (false, false, "".to_string());
+
+        /*
       String msg;
 
       QVDRecordsT buffered_docs = search_buffered_docs(
@@ -420,17 +424,17 @@ impl CMachine {
       CLog::log("Transient block info: " + transient_block_info.dumpMe(), "app", "trace");
 
       return {true, true, "Successfully grouped"};
+        */
     }
 
-
-    bool CMachine::removeFromBuffer(const ClausesT& clauses)
+    // old name was removeFromBuffer
+    pub fn remove_from_buffer(&self, clauses: ClausesT) -> bool
     {
-      DbModel::dDelete(
-        stb_machine_block_buffer,
-        clauses);
+        q_delete(
+            C_MACHINE_BLOCK_BUFFER,
+            clauses,
+            false);
 
-      return true;
+        return true;
     }
-
-    */
 }
