@@ -56,7 +56,7 @@ pub type QSDicT = HashMap<String, String>;
 // pub type QUDicT = HashMap<String, QUnion>;
 // custom dictionary
 /*
-pub type HashMap<String, StringList> QSLDicT; // custom dictionary
+pub type HashMap<String, VString> QSLDicT; // custom dictionary
 pub type HashMap<String, QSDicT>      QS2DicT; // custom dictionary
 */
 // pub type QVariant = String    ; // FIXME: implement different QVariant (something like union)!
@@ -128,7 +128,7 @@ typedef HashMap<String, CDocIndexT>  UI16DicT; // custom dictionary
 typedef HashMap<String, uint32_t>    UI32DicT; // custom dictionary
 typedef HashMap<String, uint64_t>    UI64DicT; // custom dictionary
 typedef HashMap<String, String>     QSDicT; // custom dictionary
-typedef HashMap<String, StringList> QSLDicT; // custom dictionary
+typedef HashMap<String, VString> QSLDicT; // custom dictionary
 typedef HashMap<String, QSDicT>      QS2DicT; // custom dictionary
 typedef HashMap<String, QVariant>    QVDicT; // custom dictionary
 typedef HashMap<String, JSonObject> QJODicT; // custom dictionary

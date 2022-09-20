@@ -58,14 +58,14 @@ pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<Stri
  * @param hashes_type
  * @return {block_hashes, map_doc_to_block}
  */
-std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
-  const StringList& doc_hashes,
+std::tuple<VString, GRecordsT> DAG::getBlockHashesByDocHashes(
+  const VString& doc_hashes,
   const String& hashes_type)
 {
   ClausesT clauses {};
   if (hashes_type == constants::SHORT)
   {
-    StringList tmp{};
+    VString tmp{};
     for(String a_hash: doc_hashes)
       tmp.push(a_hash + "%");
     clauses.push({"dbm_doc_hash", tmp, "LIKE:OR"});
@@ -77,7 +77,7 @@ std::tuple<StringList, GRecordsT> DAG::getBlockHashesByDocHashes(
     stbl_docs_blocks_map,
     {"dbm_block_hash", "dbm_doc_hash", "dbm_doc_index"},
     clauses);
-  StringList block_hashes{};
+  VString block_hashes{};
   GRecordsT map_doc_to_block{};
   for (QVDicT element: res.records)
   {
@@ -124,7 +124,7 @@ pub fn search_in_dag(
 
 /*
 std::tuple<QVDRecordsT, GRecordsT> DAG::getWBlocksByDocHash(
-  const StringList& doc_hashes,
+  const VString& doc_hashes,
   const String& hashes_type)
 {
   auto[block_hashes, map_doc_to_block] = getBlockHashesByDocHashes(doc_hashes, hashes_type);
@@ -200,9 +200,9 @@ std::tuple<bool, JSonObject, CDocIndexT, MerkleNodeData, JSonArray> DAG::retriev
 * @param {*} coins
 * finding the blocks in which were created given coins
 */
-QV2DicT DAG::getCoinsGenerationInfoViaSQL(const StringList& coins)
+QV2DicT DAG::getCoinsGenerationInfoViaSQL(const VString& coins)
 {
-  StringList docsHashes {};
+  VString docsHashes {};
   for(String a_coin: coins)
   {
     auto[doc_hash_, output_index_] = cutils::unpackCoinCode(a_coin);
@@ -255,9 +255,9 @@ QV2DicT DAG::getCoinsGenerationInfoViaSQL(const StringList& coins)
 }
 
 void DAG::recursive_backwardInTime(
-  const StringList& block_hashes,
+  const VString& block_hashes,
   const String& date,
-  StringList& ancestors)
+  VString& ancestors)
 {
   // console.log(`::::::::::: recursive_backwardInTime args: ${utils.stringify(args)}`);
   if (block_hashes.len()== 0)
@@ -271,7 +271,7 @@ void DAG::recursive_backwardInTime(
   if (res.len()== 0)
     return;
 
-  StringList out {};
+  VString out {};
   for (QVDicT aRes: res)
     out = cutils::arrayAdd(out, aRes["b_ancestors"].to_string().split(","));
 
@@ -290,8 +290,8 @@ void DAG::recursive_backwardInTime(
  * @param {*} args
  * returns all ancestors of given block(s), which are youngre than a certain age (byMinutes or cycle)
  */
-StringList DAG::returnAncestorsYoungerThan(
-  const StringList& block_hashes,
+VString DAG::returnAncestorsYoungerThan(
+  const VString& block_hashes,
   const String& byDate,
   const int32_t& byMinutes,
   const int32_t& cycle)
@@ -312,7 +312,7 @@ StringList DAG::returnAncestorsYoungerThan(
     date_ = cutils::minutes_before(cutils::get_cycle_by_minutes() * cycle);
   }
 
-  StringList ancestors;
+  VString ancestors;
   recursive_backwardInTime(
     block_hashes,
     date_,
@@ -341,7 +341,7 @@ QSDRecordsT DAG::analyzeDAGHealth(const bool shouldUpdateDescendants)
       {"b_type", wBlock["b_type"].to_string()},
       {"b_creation_date", wBlock["b_creation_date"].to_string()}};
 
-    StringList ancestors = wBlock["b_ancestors"].to_string().split(",");
+    VString ancestors = wBlock["b_ancestors"].to_string().split(",");
     for (String dadHash: ancestors)
     {
       childByDad[cutils::hash8c(dadHash)] = cutils::hash8c(wBlock["b_hash"].to_string());
@@ -349,7 +349,7 @@ QSDRecordsT DAG::analyzeDAGHealth(const bool shouldUpdateDescendants)
   };
   // console.log(blocksInfo);
   QSDRecordsT leaves {};
-  StringList tmp {};
+  VString tmp {};
   for (String hash: blocksInfo.keys())
   {
     if (!childByDad.keys().contains(hash))
@@ -485,7 +485,7 @@ pub fn do_prerequisites_remover() -> bool
       for (QVDicT a_cpack: queued_packets)
       {
         // control if already recorded in DAG
-        StringList pre = cutils::unpackCommaSeperated(a_cpack["pq_prerequisites"].to_string());
+        VString pre = cutils::unpackCommaSeperated(a_cpack["pq_prerequisites"].to_string());
         ClausesT clauses = {{"b_hash", pre, "IN"}};
         // if (machine.is_in_sync_process())
         //     query.push(['b_coins_imported', 'Y'])    // to avoid removing prerequisities, before importing UTXOs
@@ -596,11 +596,11 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_coins_imported", constants::NO},
     {"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}, "NOT IN"},
-    {"b_type", StringList{constants::block_types::COINBASE}, "IN"}});
+    {"b_type", VString{constants::block_types::COINBASE}, "IN"}});
 
   CMPAIValueT sum = 0;
   QVDRecordsT processed_outputs {};
-  StringList calculated_coinbase {};
+  VString calculated_coinbase {};
   for (QVDicT wBlock: wBlocks)
   {
     JSonObject block = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock["b_body"].to_string()).content);
@@ -644,14 +644,14 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
   return {sum, processed_outputs, coinbase_value};
 }
 
-std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
+std::tuple<CMPAIValueT, VString, String> DAG::getNotImportedNormalBlock()
 {
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_coins_imported", constants::NO},
-    {"b_type", StringList{constants::BLOCK_TYPES::Normal, "IN"}}});
+    {"b_type", VString{constants::BLOCK_TYPES::Normal, "IN"}}});
   CMPAIValueT sum = 0;
   HashMap<CDocHashT, int64_t> maybe_dbl_spends = {};
-  StringList processed_outputs {};
+  VString processed_outputs {};
 
   for (QVDicT wBlock: wBlocks)
   {
@@ -660,7 +660,7 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
     for (auto doc_: block["docs"].toArray())
     {
       auto doc = doc_.toObject();
-      if (!StringList{constants::document_types::BASIC_TX}.contains(doc["dType"].to_string()))
+      if (!VString{constants::document_types::BASIC_TX}.contains(doc["dType"].to_string()))
         continue;
 
       // since DPCostPay docs alredy are in transactions , so we do not calculate it 2 times
@@ -686,7 +686,7 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
           // cutting DPCosts to prevent double counting
           if (doc["dPIs"].toArray().contains(output_inx))
           {
-            processed_outputs.push(StringList {
+            processed_outputs.push(VString {
               block["bCDate"].to_string().split(" ")[1],
               cutils::hash6c(doc["dHash"].to_string()),
               "DPCost",
@@ -695,14 +695,14 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
           } else {
             if (constants::TREASURY_PAYMENTS.contains(output[0].to_string()))
             {
-              processed_outputs.push(StringList {
+              processed_outputs.push(VString {
                 block["bCDate"].to_string().split(" ")[1],
                 cutils::hash6c(doc["dHash"].to_string()),
                 cutils::short_bech16(output[0].to_string()),
                 cutils::microPAIToPAI6(output[1].toDouble())});
 
             } else {
-                processed_outputs.push(StringList {
+                processed_outputs.push(VString {
                   block["bCDate"].to_string().split(" ")[1],
                   cutils::hash6c(doc["dHash"].to_string()),
                   cutils::short_bech16(output[0].to_string()),
@@ -717,7 +717,7 @@ std::tuple<CMPAIValueT, StringList, String> DAG::getNotImportedNormalBlock()
     }
   }
 
-  StringList dbl_spends {};
+  VString dbl_spends {};
   for (CDocHashT ref: maybe_dbl_spends.keys())
     if (maybe_dbl_spends[ref] > 1)
       dbl_spends.push(cutils::shortCoinRef(ref) + "->" + String::number(maybe_dbl_spends[ref]));
@@ -744,7 +744,7 @@ std::tuple<CMPAIValueT, HashMap<CBlockHashT, CMPAIValueT>, CMPAIValueT, HashMap<
   HashMap<CBlockHashT, CMPAIValueT> burned_by_block {}; //missedMicroPAIsBlocks
 
   CMPAIValueT waited_coinbases_to_be_spendable = 0;
-  StringList considered_cycles {};
+  VString considered_cycles {};
 
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_type", constants::block_types::COINBASE}},

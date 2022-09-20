@@ -289,7 +289,7 @@ std::tuple<bool, String> INameRegDocument::signINameRegReq()
     return {false, "The owner address " + m_iname_owner + " is not controlled by wallet"};
 
   JSonObject addrDtl = cutils::parseToJsonObj(addresses_details[0].value("wa_detail").to_string());
-  StringList signatures {};
+  VString signatures {};
   JSonObject dExtInfo {};
 
 

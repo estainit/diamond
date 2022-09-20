@@ -47,12 +47,12 @@ pub fn do_coin_clean(_c_date: &CDateT)
     let _minimum_date: CDateT = application().now();
     // JSonObject leaves = LeavesHandler::getLeaveBlocks();
     /*
-  StringList leaves_hashes = leaves.keys();
+  VString leaves_hashes = leaves.keys();
   for (CBlockHashT a_key: leaves_hashes)
     if (minimum_date > leaves[a_key].toObject()["bCDate"].to_string())
       minimum_date = leaves[a_key].toObject()["bCDate"].to_string();
 
-  StringList ancestors = get_ancestors(leaves_hashes, 8);
+  VString ancestors = get_ancestors(leaves_hashes, 8);
   if (ancestors.len()> 0)
   {
     // to be sure the visibility creation date is 2 cycles older than block creation date
@@ -68,7 +68,7 @@ pub fn do_coin_clean(_c_date: &CDateT)
       {
         CBlockHashT block_hash = row["b_hash"].to_string();
         CLog::log("removing coins which are visible_by " + block_hash, "app", "trace");
-        removeVisibleOutputsByBlocks(StringList{block_hash}, false);
+        removeVisibleOutputsByBlocks(VString{block_hash}, false);
       }
     }
   }
@@ -103,7 +103,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       CLog::log("Invalid block hash as to_be_deleted_blcok code! " + to_be_deleted_blcok, "sec", "fatal");
       return false;
     }
-    StringList block_hashes = get_descendants(StringList{to_be_deleted_blcok});  // first generation of descendents
+    VString block_hashes = get_descendants(VString{to_be_deleted_blcok});  // first generation of descendents
     block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // second generation
     block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // third generation
     block_hashes = cutils::arrayUnique(block_hashes);
@@ -119,7 +119,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       0,
       false,
       false);
-    StringList candid_coins = {};
+    VString candid_coins = {};
     for(QVDicT a_coin: candid_res.records)
       candid_coins.push(a_coin["ut_coin"].to_string());
 
@@ -135,16 +135,16 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
         false,
         false);
 
-      StringList existed_coins {};
+      VString existed_coins {};
       for(QVDicT elm: existed_res.records)
         existed_coins.push(elm["ut_coin"].to_string());
 
-      StringList updateables = cutils::arrayDiff(candid_coins, existed_coins);
+      VString updateables = cutils::arrayDiff(candid_coins, existed_coins);
       if (updateables.len() > 0)
       {
         // TODO: improve it
         auto updateable_chunks = cutils::chunkStringList(updateables, 100);
-        for (StringList a_chunk: updateable_chunks)
+        for (VString a_chunk: updateable_chunks)
         {
           DbModel::update(
             C_TRX_COINS,
@@ -175,8 +175,8 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
 
 
 ClausesT UTXOHandler::prepareUTXOQuery(
-  const StringList& coins,
-  const StringList& visible_by)
+  const VString& coins,
+  const VString& visible_by)
 {
   ClausesT clauses = {};
 
@@ -190,7 +190,7 @@ ClausesT UTXOHandler::prepareUTXOQuery(
 }
 
 QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
-  const StringList& coins)
+  const VString& coins)
 {
   QVDRecordsT out {};
   auto[status, cachedSpendableCoins] = CMachine::cached_spendable_coins();
@@ -390,10 +390,10 @@ pub fn add_new_coin(
  * @param {*} hashes
  * Only used for mitigate table load
  */
-bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, const bool do_control)
+bool UTXOHandler::removeVisibleOutputsByBlocks(const VString& block_hashes, const bool do_control)
 {
-  StringList unremoveable_blocks = {};
-  StringList unremoveable_coins = {};
+  VString unremoveable_blocks = {};
+  VString unremoveable_coins = {};
 
   for (CBlockHashT a_block: block_hashes)
   {
@@ -452,7 +452,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const StringList& block_hashes, c
           continue;
 
         // retrieve whole ancestors of the utxo
-        StringList all_ancestors_of_a_younger_block = DAG::returnAncestorsYoungerThan(
+        VString all_ancestors_of_a_younger_block = DAG::returnAncestorsYoungerThan(
           {a_visibility["ut_visible_by"].to_string()},
           a_coin["ut_creation_date"].to_string());
 
@@ -557,7 +557,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
       utxos_dict[the_coin] = QVDicT {
         {"refLocCreationDate", a_coin["ut_ref_creation_date"].to_string()},
         {"outValue", a_coin["ut_o_value"].toDouble()},
-        {"visibleBy", StringList{}}};
+        {"visibleBy", VString{}}};
 
       utxos.push(QVDicT {
         {"refLoc", the_coin},
@@ -659,7 +659,7 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
   }
 
   // prepare block info
-  StringList blocks_hashes = coins_list.keys();
+  VString blocks_hashes = coins_list.keys();
   QV2DicT blocks_dict = {};
   if (blocks_hashes.len() > 0)
   {
@@ -714,7 +714,7 @@ QVDRecordsT UTXOHandler::generateCoinsVisibilityReport()
       {"coins_value", String::number(coins_value)}};
   }
   QVDRecordsT out = {};
-  StringList keys = visibility.keys();
+  VString keys = visibility.keys();
   keys.sort();
   for(String key: keys)
     out.push(visibility[key]);

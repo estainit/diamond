@@ -10,7 +10,7 @@ pub struct UnlockDocument {
     pub m_merkle_root: String,
     pub m_account_address: CAddressT,
     pub m_merkle_version: String,
-    pub m_private_keys: HashMap<String, Vec<String>>,//HashMap<String, StringList>
+    pub m_private_keys: HashMap<String, Vec<String>>,//HashMap<String, VString>
 }
 
 impl UnlockDocument {
@@ -67,7 +67,7 @@ void UnlockDocument::importJson(const JSonObject &obj)
   JSonObject private_keys = obj.value("the_private_keys").toObject();
   for (String a_salt: private_keys.keys())
   {
-    StringList priv_keys{};
+    VString priv_keys{};
     for (QJsonValueRef a_ky: private_keys[a_salt].toArray())
     {
       priv_keys.push(a_ky.to_string());

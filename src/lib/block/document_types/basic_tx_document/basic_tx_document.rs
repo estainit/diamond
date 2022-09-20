@@ -582,7 +582,7 @@ impl BasicTxDocument {
         // // TODO: implement input time lock (both flexible and strict input timelock) ASAP
         // return (
         // (self.m_doc_type == constants::document_types::BASIC_TX) &&
-        // StringList{constants::TRX_CLASSES::SimpleTx, constants::TRX_CLASSES::P4P}.contains(m_doc_class)
+        // VString{constants::TRX_CLASSES::SimpleTx, constants::TRX_CLASSES::P4P}.contains(m_doc_class)
         // );
     }
 

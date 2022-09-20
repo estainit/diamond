@@ -738,7 +738,7 @@ void maybeUpdateOpenPollingsStat()
 
 QVDRecordsT searchInPollingProfiles(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT order,
   const uint64_t limit)
 {
@@ -753,7 +753,7 @@ QVDRecordsT searchInPollingProfiles(
 
 QVDRecordsT searchInPollings(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT order,
   const uint64_t limit)
 {
@@ -900,7 +900,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
     {"pTimeframe", voting_timeframe},
   };
 
-  if (StringList{POLLING_TYPES::RFRfPLedgePrice,
+  if (VString{POLLING_TYPES::RFRfPLedgePrice,
   POLLING_TYPES::RFRfPollingPrice,
   POLLING_TYPES::RFRfTxBPrice,
   POLLING_TYPES::RFRfClPLedgePrice,
@@ -915,7 +915,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   {
     polling_values["pFee"] = the_value;
 
-  } else if (StringList{POLLING_TYPES::RFRfMinS2Wk,
+  } else if (VString{POLLING_TYPES::RFRfMinS2Wk,
     POLLING_TYPES::RFRfMinS2DA,
     POLLING_TYPES::RFRfMinS2V,
     POLLING_TYPES::RFRfMinFSign,

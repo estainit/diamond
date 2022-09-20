@@ -43,7 +43,7 @@ pub fn convert_ver_to_val(version: String) -> i64 {
 
 bool VersionHandler::isValid(const String& version)
 {
-  StringList v_seg = version.split(".");
+  VString v_seg = version.split(".");
   Vec<int> version_segments;
   for (auto a_seg: v_seg)
   {

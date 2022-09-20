@@ -157,7 +157,7 @@ pub fn push_to_parsing_q(
             uplinkBlock = message["ancestors"].toArray()[0].to_string();    // FVote blocks always have ONLY one ancestor for which Fvote is voting
             String
             currentWNVTBIA = KVHandler::getValue("SusBlockWNVTBIA");
-            StringList
+            VString
             currentWNVTBIA_arr = {};
             if (currentWNVTBIA == "")
             {

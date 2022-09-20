@@ -288,18 +288,18 @@ impl Block {
       return "";
     }
 
-    StringList Block::getDocumentsHashes(const JSonObject& block)
+    VString Block::getDocumentsHashes(const JSonObject& block)
     {
-      StringList hashes {};
+      VString hashes {};
       JSonArray documents = block["docs"].toArray();
       for (auto a_doc: documents)
         hashes.push(a_doc.toObject()["dHash"].to_string());
       return hashes;
     }
 
-    StringList Block::getDocumentsHashes() const
+    VString Block::getDocumentsHashes() const
     {
-      StringList hashes {};
+      VString hashes {};
       for (Document* a_doc: m_documents)
         hashes.push(a_doc.m_doc_hash);
       return hashes;
@@ -667,8 +667,8 @@ impl Block {
             }
           }
 
-          StringList payedRefs1 = transient_block_info.m_map_trx_ref_to_trx_hash.keys();
-          StringList payedRefs2;
+          VString payedRefs1 = transient_block_info.m_map_trx_ref_to_trx_hash.keys();
+          VString payedRefs2;
           for(String key: transient_block_info.m_map_trx_hash_to_trx_ref.keys())
             payedRefs2.push(transient_block_info.m_map_trx_hash_to_trx_ref[key]);
 
@@ -728,7 +728,7 @@ impl Block {
             return transient_block_info;
           }
 
-          StringList doc_types = transient_block_info.m_groupped_documents.keys();
+          VString doc_types = transient_block_info.m_groupped_documents.keys();
           doc_types.sort();
           for(String a_type: doc_types)
             CLog::log("block(" + cutils::hash8c(m_block_hash) + ") has " + String::number(transient_block_info.m_groupped_documents[a_type].len()) + " Document(s) of type(" + a_type + ") ", "app", "trace");
@@ -766,7 +766,7 @@ impl Block {
         //  QueryRes bExtInfo = DbModel::select(
         //    "db_comen_blocks",
         //    C_BLOCK_EXT_INFO,
-        //    StringList {"x_block_hash", "x_detail"},     // fields
+        //    VString {"x_block_hash", "x_detail"},     // fields
         //    {ModelClause("x_block_hash", block_hash)},
         //    {},
         //    1   // limit

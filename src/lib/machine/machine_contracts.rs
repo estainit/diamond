@@ -3,7 +3,7 @@
 
 QJsonArray CMachine::searchInMyOnchainContracts(
     const ClausesT& clauses,
-    const StringList& fields,
+    const VString& fields,
     const OrderT order,
     const uint64_t limit)
 {

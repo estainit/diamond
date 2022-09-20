@@ -222,7 +222,7 @@ const String& type,
 const String& ver)
 {
 
-if (StringList {
+if (VString {
   constants::ProposalLoanRequest,
   constants::FullDAGDownloadRequest,
   constants::pleaseRemoveMeFromYourNeighbors}.contains(type))

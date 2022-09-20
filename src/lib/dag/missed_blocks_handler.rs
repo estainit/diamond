@@ -229,8 +229,8 @@ pub fn refresh_missed_block() -> bool
         {},
         {"pq_code", "pq_prerequisites"});
 
-      StringList prerequisites = {};
-      StringList existed_in_queue = {};
+      VString prerequisites = {};
+      VString existed_in_queue = {};
       for(QVDicT a_record: records)
       {
         existed_in_queue.push(a_record["pq_code"].to_string());

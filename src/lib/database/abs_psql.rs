@@ -96,7 +96,7 @@ ModelClause::ModelClause(const String& field_name, const QVariant& field_value)
   m_field_single_str_value = field_value;
 }
 
-ModelClause::ModelClause(const String& field_name, const StringList& field_values, const String& clause_operand)
+ModelClause::ModelClause(const String& field_name, const VString& field_values, const String& clause_operand)
 {
   m_field_name = field_name;
   m_field_single_str_value = "";
@@ -458,7 +458,7 @@ pub fn q_custom_query(
             records.push(a_row);
 
             QMap < String, QVariant > sqlIterator(query->boundValues());
-    //    StringList bound_list_for_log;
+    //    VString bound_list_for_log;
     //    for (auto i = sqlIterator.begin(); i != sqlIterator.end(); ++i)
     //      bound_list_for_log.push(i.key().toUtf8() + ": " + i.value().to_string().toUtf8());
         }

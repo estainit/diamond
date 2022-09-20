@@ -98,7 +98,7 @@ String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 //  hashables += "\"bType\":\"" + Jblock["bType"].to_string() + "\",";
 //  hashables += "\"bVer\":\"" + Jblock["dVer"].to_string() + "\",";
 //  hashables += "\"creation Date\":\"" + Jblock["creation ]ate").to_string() + "\",";
-//  StringList docs {};
+//  VString docs {};
 //  for (QJsonValueRef a_doc: Jblock["docs"].toArray())
 //  {
 //    String a_doc_str = RepaymentDocument::get_doc_hashable_string(a_doc.toObject());
@@ -122,7 +122,7 @@ String RepaybackBlock::getBlockHashableString() const
   hashables += "\"bLen\":\"0_0_0_0\",";
   hashables += "\"bType\":\"" + m_block_type + "\",";
   hashables += "\"bCDate\":\"" + m_block_creation_date + "\",";
-  StringList docs {};
+  VString docs {};
   for (RepaymentDocument* a_doc: m_rp_documents)
   {
     String a_doc_str = RepaymentDocument::getDocHashableString2(a_doc);

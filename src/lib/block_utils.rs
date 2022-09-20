@@ -136,7 +136,7 @@ pub fn unwrap_safed_content_for_db(wrapped: &String) -> (bool, String, String)
 
 /*
 
-const StringList to_string_fields = {
+const VString to_string_fields = {
 "b_hash", "b_type", "b_cycle", "b_ext_root_hash", "b_docs_root_hash", "b_creation_date",
 "b_receive_date", "b_confirm_date", "b_backer", "b_coins_imported",
 
@@ -204,7 +204,7 @@ const StringList to_string_fields = {
 
 };
 
-const StringList to_int_fields = {
+const VString to_int_fields = {
 "b_trxs_count", "b_docs_count", "b_ancestors_count",
 
 "pr_help_hours", "pr_help_level", "pr_voting_timeframe",
@@ -226,7 +226,7 @@ const StringList to_int_fields = {
 
 };
 
-const StringList to_double_fields = {
+const VString to_double_fields = {
 "b_confidence",
 
 "pgd_principal", "pgd_annual_interest",
@@ -243,11 +243,11 @@ const StringList to_double_fields = {
 
 };
 
-const StringList to_comma_splited_string_fields = {
+const VString to_comma_splited_string_fields = {
 "b_ancestors", "b_descendants",
 };
 
-const StringList to_wrap_unwrap_fields = {
+const VString to_wrap_unwrap_fields = {
 "b_body", "b_signals",
 
 "ap_attrs",
@@ -256,7 +256,7 @@ const StringList to_wrap_unwrap_fields = {
 
 };
 
-const StringList to_serialize_unserilize_fields = {
+const VString to_serialize_unserilize_fields = {
 "b_body", "b_signals",
 
 "ap_attrs",
@@ -265,7 +265,7 @@ const StringList to_serialize_unserilize_fields = {
 
 };
 
-const StringList to_string_to_double_fields = {
+const VString to_string_to_double_fields = {
 "arh_value"
 };
 
@@ -273,7 +273,7 @@ const StringList to_string_to_double_fields = {
 QVDicT BlockUtils::convertToQVDicT(const JSonObject& record)
 {
 QVDicT out {};
-StringList keys = record.keys();
+VString keys = record.keys();
 
 for (String a_key: cutils::arrayIntersection(keys, to_string_fields))
 out[a_key] = record[a_key).t]_string();
@@ -323,7 +323,7 @@ return out;
 JSonObject BlockUtils::convertToJSonObject(const QVDicT& record)
 {
 JSonObject out {};
-StringList keys = record.keys();
+VString keys = record.keys();
 
 for (String a_key: cutils::arrayIntersection(keys, to_string_fields))
 out[a_key] = record[a_key).t]_string();
@@ -390,9 +390,9 @@ return out;
 }
 
 
-StringList BlockUtils::normalizeAncestors(StringList ancestors)
+VString BlockUtils::normalizeAncestors(VString ancestors)
 {
-StringList normalized_ancestors {};
+VString normalized_ancestors {};
 ancestors = cutils::arrayUnique(ancestors);
 ancestors.sort();
 for (String an_ancestor: ancestors)
@@ -408,7 +408,7 @@ MerkleNodeData BlockUtils::getDocumentMerkleProof(
 const JSonObject& block,
 const CDocHashT& docHash)
 {
-StringList docHashes {};
+VString docHashes {};
 for(auto a_doc: block["docs"].toArray())
 docHashes.push(a_doc.toObject()["dHash"].to_string());
 auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate(docHashes);

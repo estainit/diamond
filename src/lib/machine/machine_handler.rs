@@ -114,19 +114,19 @@ impl CMachine {
 
             /*
           const static String stb_machine_block_buffer;
-          const static StringList stb_machine_block_buffer_fields;
+          const static VString stb_machine_block_buffer_fields;
 
           static const String stbl_machine_onchain_contracts;
-          static const StringList stbl_machine_onchain_contracts_fields;
+          static const VString stbl_machine_onchain_contracts_fields;
 
           Config* m_global_configs {};
           */
             m_recorded_blocks_in_db: 0, // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             /*
-              StringList m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
+              VString m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
             QVDRecordsT m_cache_spendable_coins = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             QVDRecordsT m_dag_cached_blocks; // TODO: optimize it ASAP
-            StringList m_dag_cached_block_hashes = {}; // TODO: optimize it ASAP
+            VString m_dag_cached_block_hashes = {}; // TODO: optimize it ASAP
 
             MachineProfile m_profile;
 
@@ -874,7 +874,7 @@ impl CMachine {
          * @param unlock_index
          * @return {status, signer address, unlock set, signatures}
          */
-        std::tuple<bool, String, UnlockSet, StringList> CMachine::signByMachineKey(
+        std::tuple<bool, String, UnlockSet, VString> CMachine::signByMachineKey(
           const String& sign_message,
           const CSigIndexT& unlock_index)
         {
@@ -932,7 +932,7 @@ impl CMachine {
 
       DbHandler::closeConnections(); //TODO: use delete &DbHandler::get();
 
-      m_cache_coins_visibility = StringList {};
+      m_cache_coins_visibility = VString {};
 
       CLog::log("Gracefully shouted down");
     }

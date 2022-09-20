@@ -62,39 +62,39 @@ pub fn read_dag_bundle_if_exist(clone_id: i8) -> (bool, String)
 
 /*
 
-StringList FileBufferHandler::listHardDiskInbox()
+VString FileBufferHandler::listHardDiskInbox()
 {
   String inbox = CMachine::getInboxPath();
 
   CLog::log("reading inbox(" + inbox + ")", "app", "trace");
 
   QDir directory(inbox);
-  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+  VString files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
 
     if (files.len() == 0)
     return {};
 
-  StringList outs {};
+  VString outs {};
   for(auto a_file: files)
     outs.push(files[0]);
 
   return outs;
 }
 
-StringList FileBufferHandler::listHardDiskOutbox()
+VString FileBufferHandler::listHardDiskOutbox()
 {
   String outbox = CMachine::getOutboxPath();
 
   CLog::log("reading outbox(" + outbox + ")", "app", "trace");
 
   QDir directory(outbox);
-  StringList files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
+  VString files = directory.entryList({"*.txt"}, QDir::Files);  //FIXME: maybe read files ordered by reverse modify date!
 
   // the live system never delet outbox, instead can delete outbox after parsing
   if (files.len() == 0)
     return {};
 
-  StringList outs {};
+  VString outs {};
   for(auto a_file: files)
     outs.push(files[0]);
 

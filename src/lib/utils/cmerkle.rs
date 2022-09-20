@@ -329,12 +329,12 @@ pub fn get_root_by_a_prove(
 }
 
 /*
-std::tuple<String, MNodesMapT, String, int, int> generate(StringList elms, String inputType = "hashed", String hash_algorithm = "keccak256", String version = MERKLE_VERSION);
+std::tuple<String, MNodesMapT, String, int, int> generate(VString elms, String inputType = "hashed", String hash_algorithm = "keccak256", String version = MERKLE_VERSION);
 
 String do_hash_a_node(const String & node_value, const String & hash_algorithm = "keccak256");
 
 std::tuple<String, MNodesMapT, int, int> innerMerkle(
-StringList elms,
+VString elms,
 String inputType = "hashed",
 String hashAlgorithm = "keccak256",
 String version = MERKLE_VERSION);

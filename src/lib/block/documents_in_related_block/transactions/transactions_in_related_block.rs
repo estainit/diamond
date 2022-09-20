@@ -10,11 +10,11 @@ public:
   bool m_status = false;
   String m_msg = "";
 
-  StringList m_supported_P4P {};
-  StringList m_block_used_coins {};
+  VString m_supported_P4P {};
+  VString m_block_used_coins {};
   QSDicT m_map_coin_to_spender_doc {};
   QV2DicT m_used_coins_dict {};
-  StringList m_block_not_matured_coins {};
+  VString m_block_not_matured_coins {};
 };
 
 class TransactionsInRelatedBlock
@@ -33,9 +33,9 @@ public:
   static std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> considerInvalidCoins(
     const String& blockHash,
     const String& blockCreationDate,
-    const StringList& block_used_coins,
+    const VString& block_used_coins,
     QV2DicT used_coins_dict,
-    StringList maybe_invalid_coins,
+    VString maybe_invalid_coins,
     const QSDicT& map_coin_to_spender_doc);
 
   static std::tuple<bool, bool, String> appendTransactions(
@@ -53,10 +53,10 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
   const Block *block)
 {
   String msg = "";
-  StringList supported_P4P = {};
-  StringList trx_uniqueness = {};
-  StringList inputs_doc_hashes = {};
-  StringList block_used_coins = {};
+  VString supported_P4P = {};
+  VString trx_uniqueness = {};
+  VString inputs_doc_hashes = {};
+  VString block_used_coins = {};
   QSDicT map_coin_to_spender_doc = {};
 
   BlockOverview block_overview = {};
@@ -136,7 +136,7 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
   // it has 3 keys/values (ut_coin, ut_o_address, ut_o_value)
   QV2DicT used_coins_dict = {};
   // all inputs must be maturated, maturated means it passed at least 12 hours of creeating the outputs and now they are presented in table trx_utxos adn are spendable
-  StringList spendable_coins = {};
+  VString spendable_coins = {};
   if (block_used_coins.size() > 0)
   {
     // check if the coins exist in UTXOs?
@@ -170,7 +170,7 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
   CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + String::number(spendable_coins.size()) + " maturated Inputs: " + spendable_coins.join(", "), "trx", "trace");
 
   // all inputs which are not in spendable coins, potentialy can be invalid
-  StringList block_not_matured_coins = CUtils::arrayDiff(block_used_coins, spendable_coins);
+  VString block_not_matured_coins = CUtils::arrayDiff(block_used_coins, spendable_coins);
   if (block_not_matured_coins.size() > 0)
     CLog::log("Missed matured coins in table trx_utxo at " + CUtils::getNowSSS() + " block(" + block->getBlockHash() + ")  missed(" + block_not_matured_coins.join(", ") + ") inputs! probably is cloned transaction", "sec", "error");
 
@@ -186,9 +186,9 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
 std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedBlock::considerInvalidCoins(
   const String& blockHash,
   const String& blockCreationDate,
-  const StringList& block_used_coins,
+  const VString& block_used_coins,
   QV2DicT used_coins_dict,
-  StringList maybe_invalid_coins,
+  VString maybe_invalid_coins,
   const QSDicT& map_coin_to_spender_doc)
 {
 
@@ -260,8 +260,8 @@ std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedB
 
 
   // all spent_loc must exist in invalid_coins_dict
-  StringList tmp1 = invalid_coins_dict.keys();
-  StringList tmp2 = coinsInSpentTable->m_coins_dict.keys();
+  VString tmp1 = invalid_coins_dict.keys();
+  VString tmp2 = coinsInSpentTable->m_coins_dict.keys();
   if ((tmp1.size() != tmp2.size()) ||
     (CUtils::arrayDiff(tmp1, tmp2).size() > 0) ||
     (CUtils::arrayDiff(tmp2, tmp1).size()> 0))
@@ -322,7 +322,7 @@ std::tuple<bool, bool, String, SpendCoinsList*> TransactionsInRelatedBlock::vali
   if (!block_overview.m_status)
     return {false, false, block_overview.m_msg, nullptr};
 
-  StringList maybe_invalid_coins = block_overview.m_block_not_matured_coins;
+  VString maybe_invalid_coins = block_overview.m_block_not_matured_coins;
 
   CMPAIValueT sum_remotes = 0;
   CMPAIValueT treasury_incomes, backer_incomes = 0;
@@ -359,7 +359,7 @@ std::tuple<bool, bool, String, SpendCoinsList*> TransactionsInRelatedBlock::vali
       // so we do not need to controll trx fee, because it is already payed
 
     }
-    else if (StringList {constants::DOC_TYPES::DPCostPay}.contains(a_doc->m_doc_type))
+    else if (VString {constants::DOC_TYPES::DPCostPay}.contains(a_doc->m_doc_type))
     {
       // this kind of documents do not need to have trx-fee
 

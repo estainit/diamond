@@ -91,7 +91,7 @@ String NormalBlock::calcBlockHash() const
 std::tuple<bool, String> NormalBlock::calcBlockExtRootHash() const
 {
   // for POW blocks the block has only one document and the dExtHash of doc and bExtHash of block are equal
-  StringList doc_ext_hashes = {};
+  VString doc_ext_hashes = {};
   for(Document* a_doc: m_documents)
     doc_ext_hashes.append(a_doc->m_doc_ext_hash);
   auto[documentsExtRootHash, final_verifies, version, levels, leaves] = CMerkle::generate(doc_ext_hashes);
@@ -143,12 +143,12 @@ std::tuple<bool, bool, String, SpendCoinsList*> NormalBlock::validateNormalBlock
 //       grpdRes.shouldPurgeMessage = true;
   }
 
-  StringList dTyps = transient_block_info.m_groupped_documents.keys();
+  VString dTyps = transient_block_info.m_groupped_documents.keys();
   dTyps.sort();
   CLog::log("Block(" +CUtils::hash6c(m_block_hash) + ") docs types(" + CUtils::dumpIt(dTyps), "app", "info");
 
   // control if each trx is referenced to only one Document?
-  StringList tmpTrxs;
+  VString tmpTrxs;
   for(String  key: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
     tmpTrxs.append(transient_block_info.m_map_trx_ref_to_trx_hash[key]);
 

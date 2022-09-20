@@ -276,7 +276,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
           if (block_inspect_container.m_must_not_import_trx_outputs.len() > 0)
           {
             // cut fees because of rejected transactions or ...
-            StringList tmp = {};
+            VString tmp = {};
             for (auto elm: block_inspect_container.m_must_not_import_trx_outputs)
               tmp.push(cutils::hash8c(elm));
             title += " - rejected TRXs(" + tmp.join(", ") + ") = sum(" + cutils::microPAIToPAI6(block_inspect_container.m_to_cut_from_treasury_fee) + ") ";

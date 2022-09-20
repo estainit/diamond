@@ -48,7 +48,7 @@ pub fn log_signals(_block:&Block)
 /*
 QVDRecordsT NodeSignalsHandler::searchInSignals(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT& order,
   const int& limit)
 {

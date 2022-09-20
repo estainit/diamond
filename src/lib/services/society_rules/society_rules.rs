@@ -475,7 +475,7 @@ bool SocietyRules::treatPollingWon(
     0,
     2).from;
 
-  if (StringList {"RFRfMinS2V", "RFRfMinFSign", "RFRfMinFVote"}.contains(admPolling["apr_subject"].to_string()))
+  if (VString {"RFRfMinS2V", "RFRfMinFSign", "RFRfMinFVote"}.contains(admPolling["apr_subject"].to_string()))
   {
     logRefineDetail(
       admPollingHash,
@@ -483,7 +483,7 @@ bool SocietyRules::treatPollingWon(
       the_values["pShare"].toDouble(), //.share,
       arh_apply_date);
 
-  } else if (StringList {
+  } else if (VString {
     "RFRfBasePrice",
     "RFRfTxBPrice",
     "RFRfBlockFixCost",
@@ -582,7 +582,7 @@ bool SocietyRules::removeAdmPolling(const CDocHashT& doc_hash)
 
 QVDRecordsT SocietyRules::searchInAdmPollings(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT& order,
   const int limit)
 {
@@ -598,7 +598,7 @@ QVDRecordsT SocietyRules::searchInAdmPollings(
 
 QVDRecordsT SocietyRules::searchInAdmRefineHistory(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT& order,
   const int limit)
 {

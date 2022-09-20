@@ -61,14 +61,14 @@ bool DAGMessageHandler::invokeDescendents(
       {"pq_type", "pq_code", "pq_payload"});
 
     // invoke network for block probably descendents
-    StringList existed_descendents_in_parsingQ = {};
+    VString existed_descendents_in_parsingQ = {};
     if (likeHashRes.len() > 0)
     {
       for (QVDicT wBlock: likeHashRes)
       {
         JSonObject jBlock = cutils::parseToJsonObj(wBlock["pq_payload"].to_string());
         // if the existed block in parsing q is descendent of block
-        StringList tmp = {};
+        VString tmp = {};
         for(QJsonValueRef an_anc: jBlock["ancestors"].toArray())
           tmp.push(an_anc.to_string());
         if (tmp.contains(block_hash))
@@ -149,13 +149,13 @@ bool DAGMessageHandler::doInvokeDescendents(
 * @param {*} level
 */
 bool DAGMessageHandler::blockInvokingNeeds(
-  StringList block_hashes,
+  VString block_hashes,
   uint level)
 {
 
 
-  StringList next_level_block_hashes = {};
-  StringList missed_blocks = {};
+  VString next_level_block_hashes = {};
+  VString missed_blocks = {};
   for (uint l = 0; l < level; l++)
   {
     // exists in DAG?
@@ -165,10 +165,10 @@ bool DAGMessageHandler::blockInvokingNeeds(
     if (existedInDAG.len() == block_hashes.len())
       continue; // all blocks are already recorded in local graph
 
-    StringList tmp;
+    VString tmp;
     for(QVDicT a_row: existedInDAG)
       tmp.push(a_row["b_hash"].to_string());
-    StringList array_diff = cutils::arrayDiff(block_hashes, tmp);
+    VString array_diff = cutils::arrayDiff(block_hashes, tmp);
 
     // control if block exist in parsing_q
     for (auto looking_hash: array_diff)
@@ -182,12 +182,12 @@ bool DAGMessageHandler::blockInvokingNeeds(
         missed_blocks.push(looking_hash);
       } else {
 //        let ancestors = existsInParsingQ.map(x => JSON.parse(x.pqPayload).ancestors);
-        QList<StringList> ancestors;
+        QList<VString> ancestors;
         for(auto x: existsInParsingQ)
         {
           JSonObject payloadJs = cutils::parseToJsonObj(x["pq_payload"].to_string());
           JSonArray ancsJS = payloadJs["ancestors"].toArray();
-          StringList ancestors;
+          VString ancestors;
           for(auto y: ancsJS)
             ancestors.push(y.to_string());
         }

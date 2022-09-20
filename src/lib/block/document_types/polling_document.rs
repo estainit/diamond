@@ -291,7 +291,7 @@ impl PollingDocument
           }
 
           CDocHashT supporter_trx = block_inspect_container.m_map_U_trx_ref_to_trx_hash[polling_hash];
-          StringList rejected_transactions =block_inspect_container.m_rejected_transactions.keys();
+          VString rejected_transactions =block_inspect_container.m_rejected_transactions.keys();
           if (rejected_transactions.contains(supporter_trx) || rejected_transactions.contains(a_treasury_entry.m_trx_hash))
           {
             doc_cost_is_payed = false;

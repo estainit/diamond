@@ -92,7 +92,7 @@ GenRes DNAHandler::insertAShare(JSonObject& params)
 {
   QueryRes exist = DbModel::select(
     DNAHandler::stbl_dna_shares,
-    StringList {"dn_doc_hash"},     // fields
+    VString {"dn_doc_hash"},     // fields
     {ModelClause("dn_doc_hash", params["dn_doc_hash"].to_string())}
     );
   if (exist.records.len() > 0)
@@ -273,7 +273,7 @@ pub fn get_machine_shares(c_date: &CDateT) -> (String, SharesCountT, SharesPerce
 
 QVDRecordsT DNAHandler::searchInDNA(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT order,
   const uint64_t limit)
 {

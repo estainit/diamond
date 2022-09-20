@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{application, CMachine, constants, dlog};
 use crate::lib::block::block_types::block::{Block, TransientBlockInfo};
 use crate::lib::block::document_types::document::Document;
-use crate::lib::custom_types::{ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT};
+use crate::lib::custom_types::{CDateT, ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT};
 use crate::lib::database::abs_psql::{q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_MACHINE_BLOCK_BUFFER;
 
@@ -95,17 +95,19 @@ impl CMachine {
             false);
         return records;
     }
-    /*
 
-
-    std::tuple<bool, String> CMachine::broadcastBlock(
-      const String& cost_pay_mode,
-      const String& create_date_type)
+    // old name was broadcastBlock
+    pub fn broadcast_block(
+        &self,
+       cost_pay_mode:&String,
+       create_date_type:&String)->(bool, String)
     {
-      Block* block;
-      bool should_reset_block_buffer;
-      CDateT cheating_creation_date = "";
-      StringList cheating_ancestors = {};
+        return (false, "FAILED!".to_string());
+        /*
+      let mut block:Block;
+      let should_reset_block_buffer:bool;
+      let cheating_creation_date: CDateT = "".to_string();
+      VString cheating_ancestors = {};
       if (create_date_type == "cheat")
       {
         cheating_creation_date = KVHandler::getValue("cheating_creation_date");
@@ -158,133 +160,138 @@ impl CMachine {
         delete block;
 
       return {true, msg};
+
+         */
     }
 
-    /**
-     * @brief CMachine::fetchBufferedTransactions
-     * @param block
-     * @return {creating block status, should empty buffer, msg}
-     */
-    std::tuple<bool, bool, String> CMachine::fetchBufferedTransactions(
-      Block* block,
-      TransientBlockInfo& transient_block_info)
+    /*
+
+
+/**
+ * @brief CMachine::fetchBufferedTransactions
+ * @param block
+ * @return {creating block status, should empty buffer, msg}
+ */
+std::tuple<bool, bool, String> CMachine::fetchBufferedTransactions(
+  Block* block,
+  TransientBlockInfo& transient_block_info)
+{
+  String msg;
+
+  QVDRecordsT buffered_trxs = search_buffered_docs(
+    {{"bd_doc_type", constants::DOC_TYPES::BasicTx}},
+    stb_machine_block_buffer_fields,
+    {{"bd_dp_cost", "DESC"},
+    {"bd_doc_class", "ASC"},
+    {"bd_insert_date", "ASC"}});
+
+  // TODO: currently naivly the query select most payer transaction first.
+  // the algorythm must be enhanced. specially to deal with block size, and beeing sure
+  // if prerequsities doc(e.g payer transaction and referenced doscument & somtimes documents) are all placed in same block!
+
+  CLog::log("The NORMAL block will contain " + String::number(buffered_trxs.len()) + " transactions");
+
+  if (buffered_trxs.len() == 0 )
+    return {
+      false,
+      false,
+      "There is no transaction to append to block!"};
+
+  VString supported_P4P {};// extracting P4P (if exist)
+  for (QVDicT serializedTrx: buffered_trxs)
+  {
+    QJsonObject Jtrx = cutils::parseToJsonObj(serializedTrx.value("bd_payload").to_string());
+    Document* trx = DocumentFactory::create(Jtrx);
+    Block* tmp_block = new Block(QJsonObject {
+      {"bCDate", cutils::getNow()},
+      {"bType", "futureBlockTrx"},
+      {"bHash", "futureHashTrx"}});
+    auto[status, msg] = dynamic_cast<BasicTxDocument*>(trx)->customValidateDoc(tmp_block);
+    if (!status)
     {
-      String msg;
+      msg = "error in validate Doc. transaction(" + cutils::hash8c(trx->getDocHash()) +") block(" + cutils::hash8c(block->getBlockHash()) +")!";
+      CLog::log(msg, "trx", "error");
+      return {false, false, msg};
+    }
 
-      QVDRecordsT buffered_trxs = search_buffered_docs(
-        {{"bd_doc_type", constants::DOC_TYPES::BasicTx}},
-        stb_machine_block_buffer_fields,
-        {{"bd_dp_cost", "DESC"},
-        {"bd_doc_class", "ASC"},
-        {"bd_insert_date", "ASC"}});
+    if (trx->m_doc_class == constants::TRX_CLASSES::P4P)
+      supported_P4P.push(trx->m_doc_ref);
 
-      // TODO: currently naivly the query select most payer transaction first.
-      // the algorythm must be enhanced. specially to deal with block size, and beeing sure
-      // if prerequsities doc(e.g payer transaction and referenced doscument & somtimes documents) are all placed in same block!
+    for (auto an_output: trx->getOutputs())
+      transient_block_info.m_block_total_output += an_output->m_amount;
 
-      CLog::log("The NORMAL block will contain " + String::number(buffered_trxs.len()) + " transactions");
+    block->m_documents.push(trx);
+  }
 
-      if (buffered_trxs.len() == 0 )
-        return {
-          false,
-          false,
-          "There is no transaction to append to block!"};
+  CMPAIValueT block_total_dp_cost = 0;
+  for (auto trx: block->m_documents)
+  {
+    // collect backer fees
+    CMPAISValueT DPCost = 0;
+    if (supported_P4P.contains(trx->getDocHash()))
+    {
+      CLog::log("Block(" + cutils::hash8c(block->getBlockHash()) +") trx(" + cutils::hash8c(trx->getDocHash()) + ") is supported by p4p trx, so this trx must not pay trx-fee", "trx", "info");
 
-      StringList supported_P4P {};// extracting P4P (if exist)
-      for (QVDicT serializedTrx: buffered_trxs)
+    } else {
+      // find the backer output
+      // check if trx is clone, in which client pays for more than one backer in a transaction
+      // in order to ensure more backers put trx in DAG
+      for (auto aDPIndex: trx->getDPIs())
+        if (trx->getOutputs()[aDPIndex]->m_address == block->m_block_backer)
+          DPCost = trx->getOutputs()[aDPIndex]->m_amount;
+
+      if (DPCost == 0)
       {
-        QJsonObject Jtrx = cutils::parseToJsonObj(serializedTrx.value("bd_payload").to_string());
-        Document* trx = DocumentFactory::create(Jtrx);
-        Block* tmp_block = new Block(QJsonObject {
-          {"bCDate", cutils::getNow()},
-          {"bType", "futureBlockTrx"},
-          {"bHash", "futureHashTrx"}});
-        auto[status, msg] = dynamic_cast<BasicTxDocument*>(trx)->customValidateDoc(tmp_block);
-        if (!status)
-        {
-          msg = "error in validate Doc. transaction(" + cutils::hash8c(trx->getDocHash()) +") block(" + cutils::hash8c(block->getBlockHash()) +")!";
-          CLog::log(msg, "trx", "error");
-          return {false, false, msg};
-        }
-
-        if (trx->m_doc_class == constants::TRX_CLASSES::P4P)
-          supported_P4P.push(trx->m_doc_ref);
-
-        for (auto an_output: trx->getOutputs())
-          transient_block_info.m_block_total_output += an_output->m_amount;
-
-        block->m_documents.push(trx);
-      }
-
-      CMPAIValueT block_total_dp_cost = 0;
-      for (auto trx: block->m_documents)
-      {
-        // collect backer fees
-        CMPAISValueT DPCost = 0;
-        if (supported_P4P.contains(trx->getDocHash()))
-        {
-          CLog::log("Block(" + cutils::hash8c(block->getBlockHash()) +") trx(" + cutils::hash8c(trx->getDocHash()) + ") is supported by p4p trx, so this trx must not pay trx-fee", "trx", "info");
-
-        } else {
-          // find the backer output
-          // check if trx is clone, in which client pays for more than one backer in a transaction
-          // in order to ensure more backers put trx in DAG
-          for (auto aDPIndex: trx->getDPIs())
-            if (trx->getOutputs()[aDPIndex]->m_address == block->m_block_backer)
-              DPCost = trx->getOutputs()[aDPIndex]->m_amount;
-
-          if (DPCost == 0)
-          {
-            msg = "can not create block, because at least one trx hasn't backer fee! transaction(" + cutils::hash8c(trx->getDocHash()) + ") in Block(" + cutils::hash8c(block->getBlockHash()) +")";
-            CLog::log(msg, "trx", "error");
-            return {false, false, msg};
-          }
-        }
-
-        block_total_dp_cost += DPCost;
-        transient_block_info.m_block_documents_hashes.push(trx->getDocHash());
-        transient_block_info.m_block_ext_infos_hashes.push(trx->m_doc_ext_hash);
-        //block->m_block_ext_info.push(trx.value("dExtInfo"));
-      }
-
-      // create treasury payment
-      CMPAISValueT block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
-      CMPAISValueT backer_net_fee = cutils::CFloor((block_total_dp_cost * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
-      if (backer_net_fee < 0)
-      {
-        msg = "The block can not cover broadcasting costs! \nblock Total DPCost(" + cutils::microPAIToPAI6(block_total_dp_cost) + "\nbacker Net Fee(" + cutils::microPAIToPAI6(backer_net_fee) + ")";
+        msg = "can not create block, because at least one trx hasn't backer fee! transaction(" + cutils::hash8c(trx->getDocHash()) + ") in Block(" + cutils::hash8c(block->getBlockHash()) +")";
         CLog::log(msg, "trx", "error");
         return {false, false, msg};
       }
-
-      CMPAISValueT treasury = block_total_dp_cost - backer_net_fee;
-      QJsonArray Joutputs {
-        {QJsonArray {"TP_DP", QVariant::fromValue(treasury).toDouble()}},
-        {QJsonArray {CMachine::getBackerAddress(), QVariant::fromValue(backer_net_fee).toDouble()}}
-      };
-      Document* DPCostTrx = DocumentFactory::create(QJsonObject {
-        {"dType", constants::DOC_TYPES::DPCostPay},
-        {"dCDate", block->m_block_creation_date},
-        {"outputs", Joutputs}});
-      DPCostTrx->setDocHash();
-
-      transient_block_info.m_block_documents_hashes.push_front(DPCostTrx->getDocHash());
-
-      std::vector<Document *> tmp_documents {};
-      tmp_documents.push(DPCostTrx);
-      for (auto a_doc: block->m_documents)
-        tmp_documents.push(a_doc);
-      block->m_documents = tmp_documents;
-
-      // block->m_block_ext_info.push_front(QJsonArray{});   // althougt it is empty but must be exits, in order to having right index in block ext Infos array
-      // transient_block_info.m_block_ext_infos_hashes.push_front("-");   // althougt it is empty but must be exits, in order to having right index in block ext Infos array
-
-      return {
-        true,
-        true,
-        "Sucessfully appended transactions to block"
-      };
     }
+
+    block_total_dp_cost += DPCost;
+    transient_block_info.m_block_documents_hashes.push(trx->getDocHash());
+    transient_block_info.m_block_ext_infos_hashes.push(trx->m_doc_ext_hash);
+    //block->m_block_ext_info.push(trx.value("dExtInfo"));
+  }
+
+  // create treasury payment
+  CMPAISValueT block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
+  CMPAISValueT backer_net_fee = cutils::CFloor((block_total_dp_cost * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
+  if (backer_net_fee < 0)
+  {
+    msg = "The block can not cover broadcasting costs! \nblock Total DPCost(" + cutils::microPAIToPAI6(block_total_dp_cost) + "\nbacker Net Fee(" + cutils::microPAIToPAI6(backer_net_fee) + ")";
+    CLog::log(msg, "trx", "error");
+    return {false, false, msg};
+  }
+
+  CMPAISValueT treasury = block_total_dp_cost - backer_net_fee;
+  QJsonArray Joutputs {
+    {QJsonArray {"TP_DP", QVariant::fromValue(treasury).toDouble()}},
+    {QJsonArray {CMachine::getBackerAddress(), QVariant::fromValue(backer_net_fee).toDouble()}}
+  };
+  Document* DPCostTrx = DocumentFactory::create(QJsonObject {
+    {"dType", constants::DOC_TYPES::DPCostPay},
+    {"dCDate", block->m_block_creation_date},
+    {"outputs", Joutputs}});
+  DPCostTrx->setDocHash();
+
+  transient_block_info.m_block_documents_hashes.push_front(DPCostTrx->getDocHash());
+
+  std::vector<Document *> tmp_documents {};
+  tmp_documents.push(DPCostTrx);
+  for (auto a_doc: block->m_documents)
+    tmp_documents.push(a_doc);
+  block->m_documents = tmp_documents;
+
+  // block->m_block_ext_info.push_front(QJsonArray{});   // althougt it is empty but must be exits, in order to having right index in block ext Infos array
+  // transient_block_info.m_block_ext_infos_hashes.push_front("-");   // althougt it is empty but must be exits, in order to having right index in block ext Infos array
+
+  return {
+    true,
+    true,
+    "Sucessfully appended transactions to block"
+  };
+}
 
 */
 

@@ -6,7 +6,7 @@
  * @return {creating block status, should empty buffer, msg}
  */
 std::tuple<bool, Block*, bool, String> NormalBlcokHandler::createANormalBlock(
-  StringList ancestors,
+  VString ancestors,
   CDateT creation_date,
   const bool allowed_to_double_spend) // test purpose
 {
@@ -33,7 +33,7 @@ std::tuple<bool, Block*, bool, String> NormalBlcokHandler::createANormalBlock(
   block->m_signals = NodeSignalsHandler::getMachineSignals();
   block->m_documents = {};
   block->m_block_ext_root_hash = "";  // bExtHash
-  StringList externalInfoHashes {};
+  VString externalInfoHashes {};
   block->m_block_ext_info = QJsonArray {};
 
   block->m_block_backer = CMachine::getBackerAddress();
@@ -55,7 +55,7 @@ std::tuple<bool, Block*, bool, String> NormalBlcokHandler::createANormalBlock(
 
 
   // control if each trx is referenced to only one Document?
-  StringList tmpTrxs {};
+  VString tmpTrxs {};
   for(CDocHashT a_trx_ref: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
     tmpTrxs.append(transient_block_info.m_map_trx_ref_to_trx_hash[a_trx_ref]);
   if (tmpTrxs.size()!= CUtils::arrayUnique(tmpTrxs).size())

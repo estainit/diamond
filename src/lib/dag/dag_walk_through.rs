@@ -342,8 +342,8 @@ pub fn refresh_cached_blocks() -> bool
         }
          */
     } else {
-//    StringList ten_latest_block_hashes = {};
-//    StringList ten_latest_block_dates = {};
+//    VString ten_latest_block_hashes = {};
+//    VString ten_latest_block_dates = {};
 //    int start_elm_inx = CMachine::cachedBlocks().len() - 10;
 //    for (int i = start_elm_inx; i < CMachine::cachedBlocks().len(); i++)
 //    {
@@ -406,28 +406,28 @@ pub fn get_cached_blocks_hashes() -> Vec<String>
 struct TmpBlock
 {
   CBlockHashT hash = "";
-  StringList ancestors = {};
-  StringList descendents = {};
+  VString ancestors = {};
+  VString descendents = {};
   CDateT creation_date = "";
 };
 
-std::tuple<bool, StringList> DAG::controllDAGHealth()
+std::tuple<bool, VString> DAG::controllDAGHealth()
 {
-  StringList error_messages = {};
+  VString error_messages = {};
   bool final_stat = true;
 
-  StringList all_block_hashes = {};
+  VString all_block_hashes = {};
   HashMap<CBlockHashT, TmpBlock> blocks_info = {};
-  HashMap<CBlockHashT, StringList> ancestors_by_block = {};
-  HashMap<CBlockHashT, StringList> descendents_by_block = {};
+  HashMap<CBlockHashT, VString> ancestors_by_block = {};
+  HashMap<CBlockHashT, VString> descendents_by_block = {};
 
   QVDRecordsT blocks = searchInDAG(
     {},
     {"b_hash", "b_ancestors", "b_descendants", "b_creation_date"});
-  StringList the_ancestors;
-  StringList the_descendents;
-  StringList blocks_with_no_ancestors;
-  StringList blocks_with_no_descendents;
+  VString the_ancestors;
+  VString the_descendents;
+  VString blocks_with_no_ancestors;
+  VString blocks_with_no_descendents;
   TmpBlock block;
   for(QVDicT item: blocks)
   {
@@ -459,15 +459,15 @@ std::tuple<bool, StringList> DAG::controllDAGHealth()
 
 
   // controll backward moving
-  StringList exit_in_backward_moving = {};
-  StringList blocks_to_be_considered = blocks_with_no_descendents;
+  VString exit_in_backward_moving = {};
+  VString blocks_to_be_considered = blocks_with_no_descendents;
   int counter = 0;
-  StringList visited_blocks = {};
+  VString visited_blocks = {};
   while ((counter < blocks_info.keys().len()/* in worst case it is not a DAG but a link-list*/) && (blocks_to_be_considered.len() > 0))
   {
     counter++;
 
-    StringList new_ancestors = {};
+    VString new_ancestors = {};
     for (CBlockHashT a_hash: blocks_to_be_considered)
     {
       visited_blocks.push(a_hash);
@@ -475,7 +475,7 @@ std::tuple<bool, StringList> DAG::controllDAGHealth()
     }
     blocks_to_be_considered = cutils::arrayUnique(new_ancestors);
   }
-  StringList missed_blocks = cutils::arrayDiff(blocks_info.keys(), visited_blocks);
+  VString missed_blocks = cutils::arrayDiff(blocks_info.keys(), visited_blocks);
   if (missed_blocks.len() > 0)
   {
     error_messages.push("Some blocks weren't visible in backward moving!" + missed_blocks.join(","));
@@ -486,16 +486,16 @@ std::tuple<bool, StringList> DAG::controllDAGHealth()
   QVDRecordsT genesis = searchInDAG(
     {{"b_type", constants::BLOCK_TYPES::Genesis}},
     {"b_hash", "b_ancestors", "b_descendants", "b_creation_date"});
-  StringList exit_in_forward_moving = {};
-  blocks_to_be_considered = StringList {genesis[0]["b_hash"].to_string()};
+  VString exit_in_forward_moving = {};
+  blocks_to_be_considered = VString {genesis[0]["b_hash"].to_string()};
   counter = 0;
-  visited_blocks = StringList {};
+  visited_blocks = VString {};
 
   while ((counter < blocks_info.keys().len()/* in worst case it is not a DAG but a link-list*/) && (blocks_to_be_considered.len() > 0))
   {
     counter++;
 
-    StringList new_descendents = {};
+    VString new_descendents = {};
     for (CBlockHashT a_hash: blocks_to_be_considered)
     {
       visited_blocks.push(a_hash);

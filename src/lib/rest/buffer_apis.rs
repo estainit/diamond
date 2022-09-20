@@ -40,7 +40,6 @@ pub async fn get_buffered_docs() -> impl Responder
     web::Json(api_res)
 }
 
-
 #[post("/delBuffDoc")]
 pub async fn delete_buffered_doc(post: String) -> impl Responder
 {
@@ -59,11 +58,27 @@ pub async fn delete_buffered_doc(post: String) -> impl Responder
 
         let res = json!({
             "status": true,
-            "message": format!("Requested document was deleted, {} ", 22),
+            "message": format!("Requested document was deleted, {} ", bd_id),
             "info": json!({}),
         });
         res
     }).await.expect("sign transaction panicked");
+    web::Json(api_res)
+}
+
+#[get("/broadcastBlock")]
+pub async fn broadcast_the_block() -> impl Responder
+{
+    let api_res = tokio::task::spawn_blocking(|| {
+        let(status, msg) = machine().broadcast_block(&"".to_string(), &"".to_string());
+
+        let res = json!({
+                "status": true,
+                "message": format!("Block was broadcast. {}", 88),
+                "info": json!({}),
+            });
+        res
+    }).await.expect("Failed in create Basic 1/1 address!");
     web::Json(api_res)
 }
 

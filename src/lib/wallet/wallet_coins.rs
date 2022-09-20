@@ -13,9 +13,9 @@ use crate::lib::wallet::update_funds_from_new_block::update_funds_from_new_block
 /*
 
 // js name was retrieveSpendableUTXOsAsync
-QVDRecordsT Wallet::retrieveSpendableCoins(StringList w_addresses)
+QVDRecordsT Wallet::retrieveSpendableCoins(VString w_addresses)
 {
-  StringList wallet_ddresses {};
+  VString wallet_ddresses {};
 
   if (w_addresses.len() == 0)
   {

@@ -908,7 +908,7 @@ false
 
     bool Document::trxHasInput(const String& document_type)
     {
-    return StringList {
+    return VString {
     constants::document_types::BASIC_TX,
     constants::DOC_TYPES::RpDoc
     }.contains(document_type);
@@ -921,7 +921,7 @@ false
 
     bool Document::trxHasNotInput(const String& document_type)
     {
-    return StringList {
+    return VString {
     constants::document_types::COINBASE,
     constants::DOC_TYPES::DPCostPay,
     constants::DOC_TYPES::RlDoc
@@ -937,7 +937,7 @@ false
     {
     // Note: the iConsts.DOC_TYPES.Coinbase  and iConsts.DOC_TYPES.DPCostPay altough are transactions, but have special tretmnent
     // Note: the iConsts.DOC_TYPES.RpDoc altough is a transaction, but since is created directly by node and based on validated coinbase info, so does not need validate
-    return StringList{constants::document_types::BASIC_TX}.contains(dType);
+    return VString{constants::document_types::BASIC_TX}.contains(dType);
     }
 
     bool Document::isBasicTransaction()
@@ -947,7 +947,7 @@ false
 
     bool Document::isDPCostPayment(const String& dType)
     {
-    return StringList{constants::DOC_TYPES::DPCostPay}.contains(dType);
+    return VString{constants::DOC_TYPES::DPCostPay}.contains(dType);
     }
 
     bool Document::isDPCostPayment()
@@ -957,7 +957,7 @@ false
 
     bool Document::canBeACostPayerDoc(const String& dType)
     {
-    return StringList{constants::document_types::BASIC_TX}.contains(dType);
+    return VString{constants::document_types::BASIC_TX}.contains(dType);
     }
 
     /**
@@ -968,7 +968,7 @@ false
     */
     bool Document::isNoNeedCostPayerDoc(const String& dType)
     {
-    return (StringList {
+    return (VString {
     constants::document_types::BASIC_TX,
     constants::DOC_TYPES::DPCostPay,
     constants::DOC_TYPES::RpDoc,
@@ -985,7 +985,7 @@ false
     // old name was trxHasOutput
     bool Document::docHasOutput(const String& document_type)
     {
-    return StringList {
+    return VString {
     constants::document_types::COINBASE,
     constants::document_types::BASIC_TX,
     constants::DOC_TYPES::RpDoc,
@@ -1006,7 +1006,7 @@ false
 
     QVDRecordsT Document::searchInDocBlockMap(
     const ClausesT& clauses,
-    const StringList fields,
+    const VString fields,
     const OrderT order,
     const uint64_t limit)
     {

@@ -258,7 +258,7 @@ pub fn stringify_inputs(inputs: &Vec<TInput>) -> String
 
 String stringify_outputs(const JSonArray outputs)
 {
-  StringList outputs_list = {};
+  VString outputs_list = {};
   for(auto an_input: outputs)
     outputs_list.push("[\"" + an_input[0].to_string() + "\"," + String::number(an_input[1].toDouble()) + "]");
   String outputs_string = "[" + outputs_list.join(",") + "]";

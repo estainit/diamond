@@ -138,7 +138,7 @@ impl BasicTxDocument {
                         &self.m_outputs,
                         &sig_info[1]);
                 vvv = vec![];
-                // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index] = StringList {};
+                // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index] = VString {};
                 for an_inp in inputs
                 {
                     // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index]

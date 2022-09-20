@@ -88,7 +88,7 @@ pub fn get_pledged_accounts(
 /*
 QVDRecordsT GeneralPledgeHandler::searchInPledgedAccounts(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT& order,
   const int& limit)
 {
@@ -104,7 +104,7 @@ QVDRecordsT GeneralPledgeHandler::searchInPledgedAccounts(
 
 QVDRecordsT GeneralPledgeHandler::searchInDraftPledges(
   const ClausesT& clauses,
-  const StringList& fields,
+  const VString& fields,
   const OrderT& order,
   const int& limit)
 {
@@ -508,7 +508,7 @@ bool GeneralPledgeHandler::pledgerSignsPledge(PledgeDocument* pledge_document)
   }
 
   QJsonObject addrDtl = cutils::parseToJsonObj(pledgerAddInfo[0]["wa_detail"].to_string());
-  StringList signatures {};
+  VString signatures {};
   QJsonObject dExtInfo {};
   for (auto an_unlock_set_: addrDtl["uSets"].toArray())
   {
@@ -831,7 +831,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsPledge(PledgeDocument
   }
 
   QJsonObject addrDtl = cutils::parseToJsonObj(pledgeeAddInfo[0]["wa_detail"].to_string());
-  StringList signatures {};
+  VString signatures {};
   QJsonObject dExtInfo = pledge->m_doc_ext_info[0].toObject();
   for (auto an_unlock_set_: addrDtl["uSets"].toArray())
   {

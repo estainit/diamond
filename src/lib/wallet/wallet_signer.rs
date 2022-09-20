@@ -354,7 +354,7 @@ pub fn search_in_locally_marked_coins(
 }
 
 /*
-std::tuple<bool, String, StringList, QJsonObject> Wallet::signByAnAddress(
+std::tuple<bool, String, VString, QJsonObject> Wallet::signByAnAddress(
   const CAddressT& signer_address,
   const String& sign_message,
   CSigIndexT unlocker_index)
@@ -370,7 +370,7 @@ std::tuple<bool, String, StringList, QJsonObject> Wallet::signByAnAddress(
   }
 
   QJsonObject addrDtl = cutils::parseToJsonObj(addresses_details[0]["wa_detail"].to_string());
-  StringList signatures {};
+  VString signatures {};
   QJsonObject dExtInfo {};
   QJsonObject unlock_set = addrDtl["uSets"].toArray()[unlocker_index].toObject();
   JSonArray sSets = unlock_set["sSets"].toArray();
