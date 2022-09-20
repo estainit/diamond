@@ -5,8 +5,9 @@ use crate::{ccrypto, constants, cutils, dlog, machine};
 use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::constants::MAX_COINS_AMOUNT;
 use crate::cutils::{remove_quotes};
+use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::{Document, set_document_outputs};
-use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CMPAIValueT, COutputIndexT, DocLenT, JSonArray, JSonObject, QV2DicT, VString, VVString};
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, DocLenT, JSonArray, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::services::society_rules::society_rules::{get_base_price_per_char, get_doc_expense};
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{generate_bip69_input_tuples, generate_bip69_output_tuples};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{safe_stringify_unlock_set, stringify_inputs, stringify_outputs, TInput, TOutput};
@@ -54,28 +55,23 @@ impl BasicTxDocument {
         return true;
     }
 
-    //old_name_was safeStringifyDoc
-    pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
-    {
-        let document: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);
-
-//  // recaluculate block final length
-//  document["dLen"] = constants::LEN_PROP_PLACEHOLDER;
-//  document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).len());
-
-        let res: String = cutils::controlled_json_stringify(&document);
-        dlog(
-            &format!("3 safe Sringify Doc({}): {}/{} length: {} serialized document: {}",
-                     cutils::hash8c(&doc.m_doc_hash),
-                     doc.m_doc_type,
-                     doc.m_doc_class,
-                     cutils::sep_num_3(res.len() as i64),
-                     res),
-            constants::Modules::App,
-            constants::SecLevel::TmpDebug);
-
-        return res;
-    }
+    // //old_name_was safeStringifyDoc
+    // pub fn safe_stringify_doc(&self, doc: &Document, ext_info_in_document: bool) -> String
+    // {
+    //     let document: JSonObject = self.export_doc_to_json(doc, ext_info_in_document);
+    //     let res: String = cutils::controlled_json_stringify(&document);
+    //     dlog(
+    //         &format!("3 safe Stringify Doc({}): {}/{} length: {} the serialized document: {}",
+    //                  cutils::hash8c(&doc.m_doc_hash),
+    //                  doc.m_doc_type,
+    //                  doc.m_doc_class,
+    //                  cutils::sep_num_3(res.len() as i64),
+    //                  res),
+    //         constants::Modules::App,
+    //         constants::SecLevel::TmpDebug);
+    //
+    //     return res;
+    // }
 
     pub fn calc_doc_ext_info_hash(&self, doc: &Document) -> String
     {
@@ -118,7 +114,15 @@ impl BasicTxDocument {
         extra_length: DocLenT) -> (bool, CMPAIValueT)
     {
         let mut doc_len: DocLenT = doc.m_doc_length;
-
+        if stage == constants::stages::CREATING
+        {
+            dlog(
+                &format!(
+                    "calc-doc-data-and-process-cost, doc-len: {}, calc-doc-length: {}",
+                    doc_len, doc.calc_doc_length()),
+                constants::Modules::App,
+                constants::SecLevel::TmpDebug);
+        }
         // if stage == constants::stages::CREATING
         // {
         //     doc_len += extra_length + constants::TRANSACTION_PADDING_LENGTH;
@@ -163,6 +167,21 @@ impl BasicTxDocument {
                     doc_len,
                     &doc.m_doc_class.as_str(),
                     c_date)) as CMPAIValueT;
+
+        if stage == constants::stages::CREATING
+        {
+            dlog(
+                &format!(
+                    "get-base-price-per-char: {}, get-doc-expense: {}",
+                    get_base_price_per_char(c_date),
+                    get_doc_expense(
+                        &doc.m_doc_type.as_str(),
+                        doc_len,
+                        &doc.m_doc_class.as_str(),
+                        c_date)),
+                constants::Modules::App,
+                constants::SecLevel::TmpDebug);
+        }
 
         if stage == constants::stages::CREATING
         {
@@ -211,28 +230,34 @@ impl BasicTxDocument {
         return document;
     }
 
+
+    // pub fn exportInputsToJson(&self) ->(bool, Vec<JSonObject>)
+    // {
+    // let mut inputs:Vec<JSonObject>=vec![];
+    // for an_input in  self.m_inputs
+    // {
+    //     inputs.push(JSonArray {
+    //         an_input.m_transaction_hash,
+    //         an_input.m_output_index,
+    //     });
+    //
+    // }
+    //     return {true, inputs};
+    // }
+
+
     /*
+        std::tuple<bool, JSonArray> BasicTxDocument::exportOutputsToJson() const
+        {
+        JSonArray outputs {};
+        for (TOutput* an_output: m_outputs)
+        outputs.push(JSonArray{
+          an_output.m_address,
+          QVariant::fromValue(an_output.m_amount).toDouble()});
+        return {true, outputs};
+        }
+    */
 
-    std::tuple<bool, JSonArray> BasicTxDocument::exportInputsToJson() const
-    {
-    JSonArray inputs {};
-    for (TInput* an_input: m_inputs)
-    inputs.push(JSonArray{
-      an_input.m_transaction_hash,
-      an_input.m_output_index});
-    return {true, inputs};
-    }
-
-    std::tuple<bool, JSonArray> BasicTxDocument::exportOutputsToJson() const
-    {
-    JSonArray outputs {};
-    for (TOutput* an_output: m_outputs)
-    outputs.push(JSonArray{
-      an_output.m_address,
-      QVariant::fromValue(an_output.m_amount).toDouble()});
-    return {true, outputs};
-    }
-*/
     pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
         let doc_hashables: String = format!(
@@ -543,7 +568,7 @@ impl BasicTxDocument {
         }
         dlog(
             &format!(
-                "The transaction has been signed. signature({}) hash({}) sign_ables: {}",
+                "YYY-The transaction has been signed. signature({}) sign-ables-hash({}) sign-ables-clear: {}",
                 signature_hex, the_hash, sign_ables),
             constants::Modules::Trx,
             constants::SecLevel::TmpDebug);
@@ -628,13 +653,13 @@ impl BasicTxDocument {
                 let a_coin_code: CCoinCodeT = an_input.get_coin_code();
                 if used_coins_dict.contains_key(&a_coin_code)
                 {
-                    if used_coins_dict[&a_coin_code]["ut_o_value"].parse::<CMPAIValueT>().unwrap()
+                    if used_coins_dict[&a_coin_code]["coin_value"].parse::<CMPAIValueT>().unwrap()
                         >= MAX_COINS_AMOUNT
                     {
                         msg = format!(
                             "The transaction has input bigger than MAX_SAFE_INTEGER! {} Block({})  value: {}",
                             doc.get_doc_identifier(), cutils::hash8c(block_hash),
-                            cutils::micro_pai_to_pai_6(&used_coins_dict[&a_coin_code]["ut_o_value"]));
+                            cutils::nano_pai_to_pai(used_coins_dict[&a_coin_code]["coin_value"].parse::<CMPAISValueT>().unwrap()));
                         dlog(
                             &msg,
                             constants::Modules::Sec,
@@ -642,7 +667,7 @@ impl BasicTxDocument {
 
                         return (false, msg, 0, 0);
                     }
-                    total_inputs_amounts += used_coins_dict[&a_coin_code]["ut_o_value"]
+                    total_inputs_amounts += used_coins_dict[&a_coin_code]["coin_value"]
                         .parse::<CMPAIValueT>()
                         .unwrap();
                 } else {
@@ -659,7 +684,7 @@ impl BasicTxDocument {
                                 "The transaction has inv-input bigger than MAX_SAFE_INTEGER! {} Block({})  value: {}",
                                 doc.get_doc_identifier(),
                                 cutils::hash8c(block_hash),
-                                cutils::micro_pai_to_pai_6(&invalid_coins_dict[&a_coin_code]["coinGenOutputValue"]));
+                                cutils::nano_pai_to_pai(invalid_coins_dict[&a_coin_code]["coinGenOutputValue"].parse::<CMPAISValueT>().unwrap()));
                             dlog(
                                 &msg,
                                 constants::Modules::Sec,
@@ -751,40 +776,6 @@ impl BasicTxDocument {
 
 
     /*
-                GenRes BasicTxDocument::customValidateDoc(const Block* block) const
-                {
-                String msg;
-                if (m_doc_class == constants::TRX_CLASSES::P4P)
-                {
-                if (!constants::SUPPORTS_P4P_TRANSACTION)
-                {
-                  msg = "Network! still doen't support P4P transactions!";
-                  CLog::log(msg, "trx", "error");
-                  return {false, msg};
-                }
-                }
-
-                for (auto an_output: m_outputs)
-                {
-                if (an_output.m_amount == 0)
-                {
-                  msg = "creating block, the transaction has zero output! trx(" + cutils::hash8c(get_doc_hash()) + ")  ";
-                  CLog::log(msg, "trx", "error");
-                  return {false, msg};
-                }
-
-                if (an_output.m_amount < 0)
-                {
-                  msg = "creating block, the transaction has negative output! trx(" + cutils::hash8c(get_doc_hash()) + ")  ";
-                  CLog::log(msg, "trx", "error");
-                  return {false, msg};
-                }
-
-                }
-
-                return {true, ""};
-                }
-
                 CMPAISValueT BasicTxDocument::getDocCosts() const
                 {
                 CMPAISValueT costs = 0;
@@ -847,5 +838,38 @@ impl BasicTxDocument {
         //     inputs = [args.inputs[args.selectedIndex]];
         //     outputs = [args.outputs[args.selectedIndex]];
         //     break;
+    }
+
+    // old name was customValidateDoc
+    pub fn custom_validate_doc(&self, doc: &Document, _block: &Block) -> (bool, String)
+    {
+        let msg: String;
+        if doc.m_doc_class == constants::trx_classes::P4P
+        {
+            if !constants::SUPPORTS_P4P_TRANSACTION
+            {
+                msg = "Network! still doen't support P4P transactions!".to_string();
+                dlog(
+                    &msg,
+                    constants::Modules::Sec,
+                    constants::SecLevel::Fatal);
+                return (false, msg);
+            }
+        }
+
+        for an_output in &self.m_outputs
+        {
+            if an_output.m_amount == 0
+            {
+                msg = format!("creating block, the transaction has zero output! {}", doc.get_doc_identifier());
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, msg);
+            }
+        }
+
+        return (true, "custom validate trx done".to_string());
     }
 }

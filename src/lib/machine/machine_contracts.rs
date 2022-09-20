@@ -35,7 +35,7 @@ QJsonArray CMachine::searchInMyOnchainContracts(
 
     bool is_it_mine = false;
     QJsonArray actions {};
-    if (a_contract.value("lc_type").to_string() == CConsts::DOC_TYPES::Pledge)
+    if (a_contract.value("lc_type").to_string() == constants::DOC_TYPES::Pledge)
     {
       auto the_pledge = DocumentFactory::create(contract_body);
       auto[signer_status, signer_type, by_type] = GeneralPledgeHandler::recognizeSignerTypeInfo(the_pledge);
@@ -44,8 +44,8 @@ QJsonArray CMachine::searchInMyOnchainContracts(
         is_it_mine = true;
         actions.push(QJsonObject {
           {"actTitle", "Unpledge By Pledgee"},
-          {"actCode", CConsts::PLEDGE_CONCLUDER_TYPES::ByPledgee},
-          {"actSubjType", CConsts::DOC_TYPES::Pledge},
+          {"actCode", constants::PLEDGE_CONCLUDER_TYPES::ByPledgee},
+          {"actSubjType", constants::DOC_TYPES::Pledge},
           {"actSubjCode", a_contract.value("lc_id").toDouble()}});
       }
 
@@ -53,8 +53,8 @@ QJsonArray CMachine::searchInMyOnchainContracts(
         is_it_mine = true;
         actions.push(QJsonObject {
           {"actTitle", "Unpledge By Arbiter"},
-          {"actCode", CConsts::PLEDGE_CONCLUDER_TYPES::ByArbiter},
-          {"actSubjType", CConsts::DOC_TYPES::Pledge},
+          {"actCode", constants::PLEDGE_CONCLUDER_TYPES::ByArbiter},
+          {"actSubjType", constants::DOC_TYPES::Pledge},
           {"actSubjCode", a_contract.value("lc_id").toDouble()}});
       }
 
@@ -62,8 +62,8 @@ QJsonArray CMachine::searchInMyOnchainContracts(
           is_it_mine = true;
           actions.push(QJsonObject {
             {"actTitle", "Unpledge By Pledger"},
-            {"actCode", CConsts::PLEDGE_CONCLUDER_TYPES::ByPledger},
-            {"actSubjType", CConsts::DOC_TYPES::Pledge},
+            {"actCode", constants::PLEDGE_CONCLUDER_TYPES::ByPledger},
+            {"actSubjType", constants::DOC_TYPES::Pledge},
             {"actSubjCode", a_contract.value("lc_id").toDouble()}});
 
         }
@@ -78,8 +78,8 @@ QJsonArray CMachine::searchInMyOnchainContracts(
       {
         QVDicT pledge = pledges[0];
         bool is_active = false;
-        if ((pledge.value("pgd_status").to_string() == CConsts::OPEN && pledge.value("pgd_activate_date").to_string() < max_date) ||
-            (pledge.value("pgd_status").to_string() == CConsts::CLOSE && pledge.value("pgd_close_date").to_string() > max_date))
+        if ((pledge.value("pgd_status").to_string() == constants::OPEN && pledge.value("pgd_activate_date").to_string() < max_date) ||
+            (pledge.value("pgd_status").to_string() == constants::CLOSE && pledge.value("pgd_close_date").to_string() > max_date))
           is_active = true;
 
         String status;

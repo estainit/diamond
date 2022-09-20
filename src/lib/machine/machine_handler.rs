@@ -539,7 +539,7 @@ impl CMachine {
         let (status, unlock_doc) = create_a_new_address(
             constants::signature_types::STRICT,
             "2/3",
-            "0.0.1");
+            constants::CURRENT_SIGNATURE_VERSION);
         if !status
         {
             return (false, "Couldn't creat ECDSA key pairs (for public channel)".to_string());

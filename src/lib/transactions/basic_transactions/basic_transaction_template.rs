@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use serde_json::Value;
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
@@ -11,7 +12,7 @@ pub struct BasicTransactionTemplate
     pub m_tpl_inputs: HashMap<CCoinCodeT, TInput>,
     pub m_tpl_outputs: Vec<TOutput>,
 
-    pub m_tpl_max_dp_cost: CMPAIValueT,
+    pub m_tpl_fee_calc_method: String,
     pub m_tpl_pre_calculated_dp_cost: CMPAIValueT,
 
     pub m_tpl_comment: String,
@@ -39,15 +40,15 @@ impl BasicTransactionTemplate {
     pub fn new(
         inputs: HashMap<CCoinCodeT, TInput>,
         outputs: Vec<TOutput>,
-        max_dp_cost: CMPAIValueT,
+        fee_calc_method: &String,
         desired_trx_fee: CMPAIValueT,
         d_comment: String,
     ) -> Self {
         let creation_date = application().now();
-        BasicTransactionTemplate {
+        Self {
             m_tpl_inputs: inputs,
             m_tpl_outputs: outputs,
-            m_tpl_max_dp_cost: max_dp_cost,
+            m_tpl_fee_calc_method: fee_calc_method.clone(),
             m_tpl_pre_calculated_dp_cost: desired_trx_fee,
             m_tpl_comment: d_comment,
             m_tpl_doc_ref: "".to_string(),
@@ -130,8 +131,8 @@ impl BasicTransactionTemplate {
             {
                 msg = format!(
                     "Transaction calculated cost({} PAIs) is higher than your desire({} PAIs)",
-                    cutils::micro_pai_to_pai_6(&(calculate_dp_cost as CMPAISValueT)),
-                    cutils::micro_pai_to_pai_6(&(self.m_tpl_pre_calculated_dp_cost as CMPAISValueT)));
+                    cutils::nano_pai_to_pai(calculate_dp_cost as CMPAISValueT),
+                    cutils::nano_pai_to_pai(self.m_tpl_pre_calculated_dp_cost as CMPAISValueT));
                 dlog(
                     &msg,
                     constants::Modules::Trx,
@@ -142,12 +143,13 @@ impl BasicTransactionTemplate {
             }
         }
 
-        if (self.m_tpl_max_dp_cost > 0) && (calculate_dp_cost > self.m_tpl_max_dp_cost)
+        if (self.m_tpl_fee_calc_method == constants::transaction_fee_calculate_methods::EXACT_FEE)
+            && (calculate_dp_cost > self.m_tpl_pre_calculated_dp_cost)
         {
             msg = format!(
                 "Transaction locally recalculate trx dp cost({} PAIs) is higher than your max({} PAIs)",
-                cutils::micro_pai_to_pai_6(&(calculate_dp_cost as CMPAISValueT)),
-                cutils::micro_pai_to_pai_6(&(self.m_tpl_max_dp_cost as CMPAISValueT)));
+                cutils::nano_pai_to_pai(calculate_dp_cost as CMPAISValueT),
+                cutils::nano_pai_to_pai(self.m_tpl_pre_calculated_dp_cost as CMPAISValueT));
             dlog(
                 &msg,
                 constants::Modules::Trx,
@@ -192,9 +194,10 @@ impl BasicTransactionTemplate {
     //old_name_was signAndCreateDExtInfo
     pub fn sign_and_create_doc_ext_info(&mut self) -> bool
     {
-        // let mut dExtInfo: Vec<DocExtInfo> = vec![];
+        self.m_tpl_doc_ext_info = vec![];
         let input_tuples = generate_bip69_input_tuples(&self.m_tpl_inputs);
         let (output_tuples, ordered_tpl_outputs) = generate_bip69_output_tuples(&self.m_tpl_outputs);
+        println!("llllll output_tuples: {:?}", output_tuples);
         self.m_tpl_outputs = ordered_tpl_outputs;
         for a_coin in &self.get_input_coins_codes()
         {
@@ -219,15 +222,7 @@ impl BasicTransactionTemplate {
                 m_signatures: signatures,
             };
             self.m_tpl_doc_ext_info.push(d_ext);
-            //         QJsonObject {
-            //         {
-            //             "uSet",
-            //             m_tpl_inputs[a_coin].m_unlock_set,
-            //         },
-            //         { "signatures", signatures }
-            // });
         }
-        // self.m_tpl_doc_ext_info = dExtInfo;
 
         return true;
     }
@@ -297,57 +292,33 @@ impl BasicTransactionTemplate {
 
         return true;
     }
-
-    /*
-        String BasicTransactionTemplate::dumpMe()
-        {
-          String out = "\n";
-          for (auto an_input: m_tpl_inputs)
-            out += "\n" + an_input.dumpMe();
-
-          out += "\nOutputs: ";
-          for (auto an_output: m_tpl_outputs)
-            out += "\n" + an_output.m_address + "(" + an_output.m_output_character + " / " + String::number(an_output.m_output_index) + ") \t " + cutils::microPAIToPAI6(an_output.m_amount);
-
-          out += "\nmax DP cost: " + cutils::microPAIToPAI6(m_tpl_max_DP_cost);
-          out += "\nPre calculated cost: " + cutils::microPAIToPAI6(m_tpl_pre_calculated_dp_cost);
-
-          out += "\nComment: " + m_tpl_comment;
-          out += "\ndoc ref: " + m_tpl_doc_ref;
-
-          out += "\nchange back outputindex: " + String::number(m_tpl_change_back_output_index);
-          out += "\nChange back address: " + m_tpl_change_back_address;
-
-          out += "\nBackers addresses: " + m_tpl_backers_addresses.join(", ");
-          out += "\nSig hash: " + m_tpl_sig_hash;
-          out += "\nCreation date: " + m_tpl_creation_date;
-          out += "\nDoc type: " + m_tpl_doc_type;
-          out += "\nDoc class: " + m_tpl_doc_class;
-          out += "\nDoc Version: " + m_tpl_doc_ver;
-          out += "\nDo Unequal: " + cutils::dumpIt(m_tpl_do_unequal);
-          out += "\n";
-
-          return out;
-        }
-
-
-
-
-
-        //  -  -  -  Basic transaction handler part
-        BasicTransactionHandler::BasicTransactionHandler()
-        {
-
-        }
-        */
 }
 
-pub fn export_doc_ext_to_json(ext_infos: &Vec<DocExtInfo>) -> Vec<JSonObject>
+pub fn export_doc_ext_to_json(ext_info: &Vec<DocExtInfo>) -> Vec<JSonObject>
 {
     let mut out: Vec<JSonObject> = vec![];
-    for an_ext in ext_infos
+    for an_ext in ext_info
     {
         out.push(an_ext.export_to_json());
+    }
+    out
+}
+
+pub fn convert_json_to_doc_ext(ext_info: &Vec<Value>) -> Vec<DocExtInfo>
+{
+    let mut out: Vec<DocExtInfo> = vec![];
+    for an_ext in ext_info
+    {
+        let (status, d_ext) = DocExtInfo::load_from_json(&an_ext);
+        if !status
+        {
+            dlog(
+                &format!("Failed in DocExtInfo::load-from-json: {}", an_ext),
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return vec![];
+        }
+        out.push(d_ext);
     }
     out
 }
@@ -379,26 +350,6 @@ pub fn generate_bip69_output_tuples(tpl_outputs: &Vec<TOutput>) -> (VVString, Ve
     {
         return (vec![], vec![]);
     }
-
-    // let mut indexes: Vec<COutputIndexT> = vec![];
-    // for an_out in &tpl_outputs
-    // {
-    //     indexes.push(an_out.m_output_index);
-    // }
-    //
-    // indexes.sort();
-    //
-    // let mut ordered_outputs: Vec<TOutput> = vec![];
-    // for an_index in indexes
-    // {
-    //     for an_out in &tpl_outputs
-    //     {
-    //         if an_out.m_output_index == an_index
-    //         {
-    //             ordered_outputs.push(an_out.clone());
-    //         }
-    //     }
-    // }
     return (make_outputs_tuples(&tpl_outputs), tpl_outputs);
 }
 
@@ -434,8 +385,7 @@ pub fn set_output_indexes(tpl_outputs: &Vec<TOutput>) -> (bool, Vec<TOutput>)
     {
         let mut tmp_out = dict[a_key].clone();
         tmp_out.m_output_index = real_output_inx;
-        dict.insert(a_key.clone(), tmp_out);
-        normalized_outputs.push(dict[a_key].clone());
+        normalized_outputs.push(tmp_out);
         real_output_inx += 1;
     }
 

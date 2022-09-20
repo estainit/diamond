@@ -138,12 +138,6 @@ impl CoinbaseDocument {
         return true;
     }
 
-    // old name was customValidateDoc
-    pub fn custom_validate_doc(&self, _doc: &Document, _block: &Block) -> (bool, String)
-    {
-        return (true, "".to_string());
-    }
-
     //old_name_was exportDocToJson
     pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject
     {

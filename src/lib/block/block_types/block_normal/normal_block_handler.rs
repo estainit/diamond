@@ -5,12 +5,12 @@
  * @param creation_date
  * @return {creating block status, should empty buffer, msg}
  */
-std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
-  QStringList ancestors,
+std::tuple<bool, Block*, bool, String> NormalBlcokHandler::createANormalBlock(
+  StringList ancestors,
   CDateT creation_date,
   const bool allowed_to_double_spend) // test purpose
 {
-  QString msg;
+  String msg;
   bool should_reset_block_buffer = true;
   CLog::log("create ANormalBlock create A NormalBlock create A NormalBlock");
 
@@ -21,19 +21,19 @@ std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
   {
     msg = "Machine hasn't fresh leaves, so it can not broadcas new block(Normal block)";
     CLog::log(msg, "app", "warning");
-    DAGMessageHandler::setMaybeAskForLatestBlocksFlag(CConsts::YES);
+    DAGMessageHandler::setMaybeAskForLatestBlocksFlag(constants::YES);
     return {false, nullptr, false, msg};
   }
 
   Block* block = BlockFactory::create(QJsonObject{
-    {"bType", CConsts::BLOCK_TYPES::Normal},
-    {"net", CConsts::SOCIETY_NAME}});
+    {"bType", constants::BLOCK_TYPES::Normal},
+    {"net", constants::SOCIETY_NAME}});
 
   block->m_block_creation_date = creation_date;
   block->m_signals = NodeSignalsHandler::getMachineSignals();
   block->m_documents = {};
   block->m_block_ext_root_hash = "";  // bExtHash
-  QStringList externalInfoHashes {};
+  StringList externalInfoHashes {};
   block->m_block_ext_info = QJsonArray {};
 
   block->m_block_backer = CMachine::getBackerAddress();
@@ -55,7 +55,7 @@ std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
 
 
   // control if each trx is referenced to only one Document?
-  QStringList tmpTrxs {};
+  StringList tmpTrxs {};
   for(CDocHashT a_trx_ref: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
     tmpTrxs.append(transient_block_info.m_map_trx_ref_to_trx_hash[a_trx_ref]);
   if (tmpTrxs.size()!= CUtils::arrayUnique(tmpTrxs).size())
@@ -219,7 +219,7 @@ std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
 
 
 
-  CLog::log("Creating the NORMAL block which has " + QString::number(transient_block_info.m_block_documents_hashes.size()) + " document(s)");
+  CLog::log("Creating the NORMAL block which has " + String::number(transient_block_info.m_block_documents_hashes.size()) + " document(s)");
 
   auto[doc_status, doc_root_hash] = block->calcDocumentsRootHash();
   if (!doc_status)
@@ -256,7 +256,7 @@ std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
   block->calcAndSetBlockLength();
   block->setBlockHash(block->calcBlockHash());
 
-  TransientBlockInfo transient_block_info2 = block->groupDocsOfBlock(CConsts::STAGES::Creating);
+  TransientBlockInfo transient_block_info2 = block->groupDocsOfBlock(constants::STAGES::Creating);
   if (!transient_block_info2.m_status)
     return {false, block, false, "Failed in group Docs Of Block"};
 
@@ -266,7 +266,7 @@ std::tuple<bool, Block*, bool, QString> NormalBlcokHandler::createANormalBlock(
   if (!allowed_to_double_spend)
   {
 
-    auto[status, is_sus_block, validate_msg, double_spends] = TransactionsInRelatedBlock::validateTransactions(block, CConsts::STAGES::Creating);
+    auto[status, is_sus_block, validate_msg, double_spends] = TransactionsInRelatedBlock::validateTransactions(block, constants::STAGES::Creating);
     Q_UNUSED(is_sus_block);
     Q_UNUSED(double_spends);
     if (!status)

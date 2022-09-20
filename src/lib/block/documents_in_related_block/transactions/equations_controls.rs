@@ -5,7 +5,7 @@ bool EquationsControls::validateEquation(
   const QV2DicT& used_coins_dict,
   const QV2DicT& invalid_coins_dict)
 {
-  QString msg;
+  String msg;
   bool validate_res;
 
   // transaction details check
@@ -54,7 +54,7 @@ bool EquationsControls::validateEquation(
           CCoinCodeT a_coin_code = input->getCoinCode();
           if (used_coins_dict.keys().contains(a_coin_code))
           {
-            if (used_coins_dict[a_coin_code].value("ut_o_value").toDouble() >= MAX_COIN_VALUE)
+            if (used_coins_dict[a_coin_code].value("coin_value").toDouble() >= MAX_COIN_VALUE)
             {
               msg = "The transaction has input bigger than MAX_SAFE_INTEGER! trx(" + doc->m_doc_type + " / " + CUtils::hash8c(doc->m_doc_hash) + ") Block(" + CUtils::hash8c(block->getBlockHash()) + ")  value: " + CUtils::microPAIToPAI6(used_coins_dict[a_coin_code].value("ut_o_value").toDouble());
               CLog::log(msg, "sec", "error");

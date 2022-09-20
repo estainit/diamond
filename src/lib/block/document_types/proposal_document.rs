@@ -121,7 +121,7 @@ impl ProposalDocument {
             cutils::controlled_json_stringify(&j_doc).len().to_string(),
             constants::LEN_PROP_LENGTH).into();
         dlog(
-            &format!("do safe Sringify Doc({}): {} / {} length: {} serialized document: {}",
+            &format!("do safe Stringify Doc({}): {} / {} length: {} serialized document: {}",
                      cutils::hash8c(&doc.m_doc_hash),
                      &doc.m_doc_type,
                      &doc.m_doc_class,

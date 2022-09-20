@@ -12,7 +12,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::c
 pub struct TInput
 {
     pub m_transaction_hash: CDocHashT,
-    // the reffered transaction hash
+    // the referred transaction hash
     pub m_output_index: COutputIndexT,
 
     pub m_owner: CAddressT,
@@ -242,14 +242,6 @@ UnlockSet convertJsonUSetToStruct(const JSonObject& unlockSet)
   return out;
 }
 
-String stringify_inputs(const JSonArray inputs)
-{
-  StringList inputs_list = {};
-  for(auto an_input: inputs)
-    inputs_list.push("[\"" + an_input[0].to_string() + "\"," + String::number(an_input[1].toDouble()) + "]");
-  String inputs_string = "[" + inputs_list.join(",") + "]";
-  return inputs_string;
-}
 */
 pub fn stringify_inputs(inputs: &Vec<TInput>) -> String
 {
@@ -494,6 +486,10 @@ pub fn validate_sig_struct(
         &format!("validate Sig Struct: {}", unlock_set.dump()),
         constants::Modules::App,
         constants::SecLevel::Debug);
+    dlog(
+        &format!("validate Sig Struct: {:#?}", unlock_set),
+        constants::Modules::App,
+        constants::SecLevel::Debug);
 
     let hash_algorithm: String = my_get(options, "hash_algorithm", "keccak256").to_string();
     let input_type: String = my_get(options, "input_type", "hashed").to_string();
@@ -518,22 +514,22 @@ pub fn validate_sig_struct(
     let mut merkle_root = get_root_by_a_prove(
         &leave_hash,
         merkle_proof,
-        &unlock_set.m_left_hash.to_string(),
+        &unlock_set.m_left_hash,
         &input_type,
         &hash_algorithm);
     merkle_root = ccrypto::keccak256_dbl(&merkle_root);  // because of securiy, MUST use double hash
 
-    if (vec![constants::HU_SHARE_ADDRESS, constants::HU_INAME_OWNER_ADDRESS].contains(&address)) &&
-        (unlock_set.m_signature_type == constants::signature_types::MIX23) {
-        merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Mixed extra securiy level
-    }
+    // if (vec![constants::HU_SHARE_ADDRESS, constants::HU_INAME_OWNER_ADDRESS].contains(&address)) &&
+    //     (unlock_set.m_signature_type == constants::signature_types::MIX23) {
+    //     merkle_root = ccrypto::sha256_dbl(&merkle_root);  // Mixed extra securiy level
+    // }
 
     let bech32 = ccrypto::bech32_encode(&merkle_root);
+
     if address == bech32
     {
         return true;
     }
-
 
     if do_permutation == constants::NO
     {

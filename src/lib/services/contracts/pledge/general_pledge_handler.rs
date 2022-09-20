@@ -179,7 +179,7 @@ std::tuple<bool, uint32_t, String> GeneralPledgeHandler::validatePledgerSignedRe
       CLog::log(msg, "sec", "error");
       return {false, 0, msg};
     }
-    if (pledger_unlock_set["sSets"].toArray()[sign_inx].toObject()["pPledge"].to_string() == CConsts::YES)
+    if (pledger_unlock_set["sSets"].toArray()[sign_inx].toObject()["pPledge"].to_string() == constants::YES)
         permited_to_pledge = true;
   }
   if (!permited_to_pledge)
@@ -269,7 +269,7 @@ bool GeneralPledgeHandler::reOpenPledgeBecauseOfPaymentsFail(const CDocHashT& pl
   // change pledge status in table i_pledged_accounts
   DbModel::update(
     stbl_pledged_accounts,
-    {{ "pgd_status", CConsts::OPEN},
+    {{ "pgd_status", constants::OPEN},
     {"pgd_close_date", ""}},
     {{"pgd_hash", pledge_hash}});
 
@@ -309,17 +309,17 @@ std::tuple<bool, String, String> GeneralPledgeHandler::recognizeSignerTypeInfo(
 
   if (addDict.keys().contains(pledge->m_pledgee_address))
   {
-    by_type = CConsts::PLEDGE_CONCLUDER_TYPES::ByPledgee;
+    by_type = constants::PLEDGE_CONCLUDER_TYPES::ByPledgee;
     signer_type = "pledgee";
 
   } else if (addDict.keys().contains(pledge->m_arbiter_address))
   {
-    by_type = CConsts::PLEDGE_CONCLUDER_TYPES::ByArbiter;
+    by_type = constants::PLEDGE_CONCLUDER_TYPES::ByArbiter;
     signer_type = "arbiter";
 
   } else if (addDict.keys().contains(pledge->m_pledger_address))
   {
-    by_type = CConsts::PLEDGE_CONCLUDER_TYPES::ByPledger;
+    by_type = constants::PLEDGE_CONCLUDER_TYPES::ByPledger;
     signer_type = "pledger";
   }
 
@@ -367,7 +367,7 @@ bool GeneralPledgeHandler::insertAPledge(
     {"pgd_repayment_offset", QVariant::fromValue(pledge->m_redeem_repayment_offset)},
     {"pgd_repayment_amount", QVariant::fromValue(pledge->m_redeem_repayment_amount)},
     {"pgd_repayment_schedule", QVariant::fromValue(pledge->m_redeem_repayment_schedule)},
-    {"pgd_status", CConsts::OPEN} // by default by inserting a pledge is initialy open and active
+    {"pgd_status", constants::OPEN} // by default by inserting a pledge is initialy open and active
   };
   CLog::log("Inserting new onchain pledge(" + cutils::hash8c(pledge->getDocHash()) + ") values:" + cutils::dumpIt(values), "app", "trace");
   DbModel::insert(
@@ -454,7 +454,7 @@ bool GeneralPledgeHandler::doApplyClosingPledge(
 
   DbModel::update(
     stbl_pledged_accounts,
-    {{"pgd_status", CConsts::CLOSE},
+    {{"pgd_status", constants::CLOSE},
     {"pgd_close_date", realCloseDate}},
     {{"pgd_hash", pledge->getDocHash()}});
 
@@ -515,14 +515,14 @@ bool GeneralPledgeHandler::pledgerSignsPledge(PledgeDocument* pledge_document)
     // if already signed exit
     if (signatures.len() > 0)
       continue;
-    String pPledge = CConsts::NO;
+    String pPledge = constants::NO;
     QJsonObject an_unlock_set = an_unlock_set_.toObject();
     QJsonArray sSets = an_unlock_set["sSets"].toArray();
     for (auto aSign: sSets)
-      if (aSign.toObject()["pPledge"].to_string() == CConsts::YES)
-        pPledge = CConsts::YES;
+      if (aSign.toObject()["pPledge"].to_string() == constants::YES)
+        pPledge = constants::YES;
 
-    if (pPledge == CConsts::YES)
+    if (pPledge == constants::YES)
     {
       pledge_document->m_doc_ext_info = QJsonArray{QJsonObject {{"pledgerUSet", an_unlock_set}}};
       String sign_message = pledge_document->getSignMsgAsPledger(); //{ pledge: pledge_document, dExtInfo: pledge_document.dExtInfo });
@@ -588,7 +588,7 @@ std::tuple<bool, PledgeDocument*> GeneralPledgeHandler::doPledgeAddress(
     return {false, nullptr};
   }
 
-  if ((document_class == CConsts::PLEDGE_CLASSES::PledgeP) && (proposal_ref == ""))
+  if ((document_class == constants::PLEDGE_CLASSES::PledgeP) && (proposal_ref == ""))
   {
     msg = "The proposal_ref ${proposal_ref} is invalid!";
     CLog::log(msg, "app", "error");
@@ -733,7 +733,7 @@ bool GeneralPledgeHandler::createAndRecordPPTBundle(
   CDocHashT hash = CCrypto::keccak256(bundle_str);
   bundle["hash"] = hash;
   return TmpContentsHandler::insertTmpContent(
-    CConsts::BundlePPT,
+    constants::BundlePPT,
     "Basic",
     hash,
     BlockUtils::wrapSafeContentForDB(bundle_str).content);
@@ -770,7 +770,7 @@ std::tuple<bool, bool> GeneralPledgeHandler::handleReceivedProposalLoanRequest(
   auto[status_pledger_sign, repayments_number, validate_res_msg] = validatePledgerSignedRequest(
     proposal,
     pledge,
-    CConsts::STAGES::Validating,
+    constants::STAGES::Validating,
     cutils::getNow());
   if (!status_pledger_sign)
   {
@@ -791,11 +791,11 @@ std::tuple<bool, bool> GeneralPledgeHandler::handleReceivedProposalLoanRequest(
   delete pledge;
 
   bool res = TmpContentsHandler::insertTmpContent(
-    CConsts::receivedPLR,
-    CConsts::receivedPLR,
+    constants::receivedPLR,
+    constants::receivedPLR,
     content_hash,
     payload_to_record_str,
-    CConsts::NEW,
+    constants::NEW,
     receive_date);
 
   return {res, true};
@@ -888,7 +888,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   auto[status_pledger_sign, repayments_number, validate_res_msg] = validatePledgerSignedRequest(
     proposal,
     pledge,
-    CConsts::STAGES::Creating,
+    constants::STAGES::Creating,
     cutils::getNow());
   if (!status_pledger_sign)
       return {false, "Invalid pledger signature! " + validate_res_msg};
@@ -903,7 +903,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   pledge->setDocLength();
 
   auto[cost_status, pledge_dp_cost] = pledge->calcDocDataAndProcessCost(
-    CConsts::STAGES::Creating,
+    constants::STAGES::Creating,
     cutils::getNow());
   if (!cost_status)
   {
@@ -915,7 +915,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   // create a transaction for payment
   auto changeback_res = Wallet::getAnOutputAddress(
     true,
-    CConsts::SIGNATURE_TYPES::Basic,
+    constants::SIGNATURE_TYPES::Basic,
     "1/1");
   if (!changeback_res.status)
   {
@@ -926,12 +926,12 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   CAddressT change_back_address = changeback_res.msg;
 
   std::vector<TOutput> outputs1 {
-    TOutput{change_back_address, 1, CConsts::OUTPUT_CHANGEBACK},
-    TOutput{"TP_PROPOSAL", pledge->m_redeem_principal, CConsts::OUTPUT_TREASURY}};
+    TOutput{change_back_address, 1, constants::OUTPUT_CHANGEBACK},
+    TOutput{"TP_PROPOSAL", pledge->m_redeem_principal, constants::OUTPUT_TREASURY}};
 
   auto[coins_status1, coins_msg1, spendable_coins1, spendable_amount1] = Wallet::getSomeCoins(
     cutils::CFloor(pledge->m_redeem_principal * 1.3),  // an small portion bigger to support DPCosts
-    CConsts::COIN_SELECTING_METHOD::PRECISE);
+    constants::COIN_SELECTING_METHOD::PRECISE);
   for(auto a_coin: spendable_coins1)
     CLog::log("Spendables 1: " + a_coin.dumpMe(), "app", "info");
 
@@ -966,7 +966,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
 
   pledge->setDExtHash();
 
-  if (pledge->m_doc_length != pledge->safeStringifyDoc().length())
+  if (pledge->m_doc_length != pledge->safeStringifyDoc().len())
   {
     msg = "Worng pldge contract length(${utils.stringify(pledge).length})calculation: ${utils.stringify(pledge)}";
     CLog::log(msg, "app", "error");
@@ -989,12 +989,12 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
 
   // pay for pledge doc too
   std::vector<TOutput> outputs2 {
-    TOutput{change_back_address, 1, CConsts::OUTPUT_CHANGEBACK},
-    TOutput{"TP_PLEDGE", pledge_dp_cost, CConsts::OUTPUT_TREASURY}};
+    TOutput{change_back_address, 1, constants::OUTPUT_CHANGEBACK},
+    TOutput{"TP_PLEDGE", pledge_dp_cost, constants::OUTPUT_TREASURY}};
 
   auto[coins_status2, coins_msg2, spendable_coins2, spendable_amount2] = Wallet::getSomeCoins(
     cutils::CFloor(pledge_dp_cost * 2), // an small portion bigger to support DPCosts
-    CConsts::COIN_SELECTING_METHOD::PRECISE,
+    constants::COIN_SELECTING_METHOD::PRECISE,
     0,
     spendable_coins1.keys());  // avoid double spending inputs
   for(auto a_coin: spendable_coins2)

@@ -86,8 +86,8 @@ QJsonObject RepaymentDocument::getRepayDocTpl()
 {
   return QJsonObject {
     {"dHash", "0000000000000000000000000000000000000000000000000000000000000000"},
-    {"dType", CConsts::DOC_TYPES::RpDoc},
-    {"dClass", CConsts::DOC_TYPES::RpDoc},
+    {"dType", constants::DOC_TYPES::RpDoc},
+    {"dClass", constants::DOC_TYPES::RpDoc},
     {"dVer", "0.0.0"},
     {"cycle", ""}, // 'yyyy-mm-dd am' / 'yyyy-mm-dd pm'
     {"inputs", QJsonArray{}},
@@ -265,7 +265,7 @@ String RepaymentDocument::safeStringifyDoc(const bool ext_info_in_document) cons
   QJsonObject Jdoc = exportDocToJson(ext_info_in_document);
 
 
-  CLog::log("12 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(Jdoc).length()) + " serialized document: " + cutils::serializeJson(Jdoc), "app", "trace");
+  CLog::log("12 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(Jdoc).len()) + " serialized document: " + cutils::serializeJson(Jdoc), "app", "trace");
 
   return cutils::serializeJson(Jdoc);
 }

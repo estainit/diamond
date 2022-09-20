@@ -206,6 +206,39 @@ QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
 
 */
 
+pub fn extract_coins_owner(candidate_coins: &Vec<CCoinCodeT>) -> HashMap<CCoinCodeT, CAddressT>
+{
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "ut_coin",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_coin in candidate_coins {
+        c1.m_field_multi_values.push(a_coin as &(dyn ToSql + Sync));
+    }
+    let coins_info = search_in_spendable_coins(
+        &vec![c1],
+        &vec![],
+        0);
+    dlog(
+        &format!("selected coins info: {:?}", coins_info),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
+    let mut out: HashMap<CCoinCodeT, CAddressT> = HashMap::new();
+    for a_coin in &coins_info
+    {
+        out.insert(a_coin["ut_coin"].clone(), a_coin["ut_o_address"].clone());
+    }
+    dlog(
+        &format!("selected coins owner by coin code: {:?}", out),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+    out
+}
+
 //old_name_was searchInSpendableCoins
 pub fn search_in_spendable_coins(
     clauses: &ClausesT,
@@ -330,7 +363,7 @@ pub fn add_new_coin(
         return true;
     }
 
-    let coin_value_i64= coin_value as i64;
+    let coin_value_i64 = coin_value as i64;
     let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
         ("ut_creation_date", &creation_date as &(dyn ToSql + Sync)),
         ("ut_coin", &the_coin as &(dyn ToSql + Sync)),

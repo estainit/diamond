@@ -6,7 +6,7 @@ use regex::Regex;
 use serde_json::json;
 use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonObject, VString, VVString};
 
 #[allow(unreachable_code)]
 pub fn remove_quotes(input_value: &JSonObject) -> String
@@ -169,13 +169,13 @@ pub fn convert_float_to_string(num: f64, precision: u8) -> String {
 
 
 //old_name_was chunkString
-pub fn chunk_string(str: &String, chunck_size: u16) -> Vec<String> {
+pub fn chunk_string(str: &String, chunk_size: u16) -> Vec<String> {
     let mut out: Vec<String> = vec![];
     let mut i = 0;
     while i < str.len() {
-        let s: String = str.substring(i, i + chunck_size as usize).to_string();
+        let s: String = str.substring(i, i + chunk_size as usize).to_string();
         out.push(s);
-        i = i + chunck_size as usize;
+        i = i + chunk_size as usize;
     }
     return out;
 }
@@ -555,10 +555,16 @@ pub fn strip_non_hex_chars(s: &String) -> String
     return re.replace(&s.as_str(), "").to_string();
 }
 
+pub fn strip_non_alphabet_and_numbers(s: &String) -> String
+{
+    let re = Regex::new(r"[^0-9a-zA-Z]").unwrap();
+    return re.replace(&s.as_str(), "").to_string();
+}
+
 //old_name_was stripOutputAddress
 pub fn strip_output_address(address: &String) -> String
 {
-    return strip_non_hex_chars(address);
+    return strip_non_alphabet_and_numbers(address);
 }
 
 //old_name_was isValidDateForamt
@@ -632,68 +638,108 @@ pub fn controlled_str_to_json(serialized: &String) -> (bool, JSonObject)
     };
 }
 
+
 pub fn calc_log(
-    _x_value: f64,
-    _range: u64,
-    _exp: u64) -> (f64, f64, f64, f64)
+    x_value: i64,
+    range: i64,
+    exp: u32) -> (i64, f64, f64, f64)
 {
-    return (0.0, 0.0, 0.0, 0.0);
-    /*
-    let powed = range.pow(exp as u32) as f64;
-    let hundredPercent = powed.log(0.0);
-    let yValue: f64;
-    if x_value >= range as f64
+    let powered = range.pow(exp as u32) as f64;
+    let hundred_percent = powered.ln();
+
+    let y_value: f64;
+    if x_value >= range
     {
-        yValue = 0.0;
+        y_value = 0.0;
     } else {
-        let powed = (range as f64 - x_value).pow( exp);
-        yValue = powed.log(0.0);
+        let powered = (range - x_value).pow(exp) as f64;
+        y_value = powered.ln();
     }
-    let gain = i_floor_float((yValue * 100.0) / hundredPercent);
+    let gain = i_floor_float((y_value * 100.0) / hundred_percent);
 
 //  if ((gain == Number.POSITIVE_INFINITY || gain == Number.NEGATIVE_INFINITY))
 //  {gain = Number.MAX_VALUE;}
 
-    let revGain = 1.0 / gain;
-//  if ((revGain == Number.POSITIVE_INFINITY || revGain == Number.NEGATIVE_INFINITY))
-//  {revGain = Number.MAX_VALUE;}
+    let rev_gain = 100.0 - gain;
+//  if ((rev_gain == Number.POSITIVE_INFINITY || rev_gain == Number.NEGATIVE_INFINITY))
+//  {rev_gain = Number.MAX_VALUE;}
 
-    return (
-        x_value,
-        yValue,
-        gain,
-        revGain);
-
-     */
+    (x_value, y_value, gain, rev_gain)
 }
 
 //old_name_was microPAIToPAI6
-pub fn micro_pai_to_pai_6<T>(int_amount: &T) -> String
-    where T: std::fmt::Display
+pub fn nano_pai_to_pai(int_amount: CMPAISValueT) -> String
 {
-    return int_amount.to_string();
-    // if int_amount == 0
-    // { return "0.0".to_string(); }
-    //
-    // let mut str_number = int_amount.to_string();
-    // let mut sign = "";
-    // if str_number.substring(0, 1).to_string() == "-")
-    // {
-    //     str_number = str_number.substring(1, str_number.len()-1).to_string();
-    //     sign = "-";
-    // }
-    //
-    // if ((0 < int_amount) && (int_amount < 1_000_000)) ||
-    // ((-1_000_000 < int_amount) && (int_amount < 0))
-    // { return sign + "0." + left_padding(str_number, 6) }
-    //
-    // let PAIs = str_number.substring(0, str_number.length() - 6).to_string().rightJustified(18, '0');
-    // StringList segments = chunkString(PAIs, 3);
-    // PAIs = segments.join(",");
-    // while (StringList{"0", ","}.contains(PAIs.midRef(0, 1).to_string()))
-    // PAIs = PAIs.midRef(1).to_string();
-    // if (PAIs.length() == 0)
-    // PAIs = "0";
-    // str_number = PAIs + "." + str_number.midRef(str_number.length() - 6, 6).to_string();
-    // return sign + str_number;
+    if int_amount == 0
+    { return "0.0".to_string(); }
+
+    let mut str_number = int_amount.to_string();
+    let mut sign = "";
+    if str_number.substring(0, 1).to_string() == "-"
+    {
+        str_number = str_number.substring(1, str_number.len() - 1).to_string();
+        sign = "-";
+    }
+
+    let max_nano: CMPAISValueT = constants::ONE_BILLION as CMPAISValueT;
+    if ((0 < int_amount) && (int_amount < max_nano)) ||
+        (((-1 * max_nano) < int_amount) && (int_amount < 0))
+    { return format!("{}0.{}", sign, padding_left(&str_number, 9)); }
+
+    let ppp = str_number.substring(0, str_number.len() - 9).to_string();
+    let mut pai_s = padding_left(&ppp, 27);
+    let segments: VString = chunk_string(&pai_s, 3);
+    pai_s = segments.join(",");
+    while ["0", ","].contains(&pai_s.substring(0, 1))
+    {
+        pai_s = pai_s.substring(1, pai_s.len() - 1).to_string();
+    }
+    if pai_s.len() == 0
+    {
+        pai_s = "0".to_string();
+    }
+    let str_number = format!(
+        "{}.{}",
+        pai_s,
+        str_number.substring(str_number.len() - 9, str_number.len()));
+    return format!("{}{}", sign, str_number);
 }
+
+// pub fn ZZnano_pai_to_pai<'n, T>(int_amount: &'n T) -> String
+//     where T: std::fmt::Display + std::cmp::PartialEq + std::cmp::PartialOrd<&'n T>
+// {
+//     let zero: T = 0 as T;
+//     if *int_amount == zero
+//     { return "0.0".to_string(); }
+//
+//     let mut str_number = int_amount.to_string();
+//     let mut sign = "";
+//     if str_number.substring(0, 1).to_string() == "-"
+//     {
+//         str_number = str_number.substring(1, str_number.len() - 1).to_string();
+//         sign = "-";
+//     }
+//
+//     let max_nano: T = constants::ONE_BILLION as T;
+//     if ((zero < int_amount) && (int_amount < max_nano)) ||
+//         (((-1 * max_nano) < int_amount) && (int_amount < zero))
+//     { return sign + "0." + padding_left(&str_number, 9); }
+//
+//     let ppp = str_number.substring(0, str_number.len() - 9).to_string();
+//     let mut PAIs = padding_left(&ppp, 27);
+//     let mut segments: VString = chunk_string(&PAIs, 3);
+//     PAIs = segments.join(",");
+//     while ["0", ","].contains(&PAIs.substring(0, 1))
+//     {
+//         PAIs = PAIs.substring(1, PAIs.len() - 1).to_string();
+//     }
+//     if PAIs.len() == 0
+//     {
+//         PAIs = "0".to_string();
+//     }
+//     let str_number = format!(
+//         "{}.{}",
+//         PAIs,
+//         str_number.substring(str_number.len() - 9, str_number.len()));
+//     return sign + str_number;
+// }

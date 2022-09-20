@@ -13,22 +13,21 @@ use crate::lib::transactions::basic_transactions::pre_validate_transaction_param
 pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
                                    -> (bool, String, Document, CMPAIValueT)
 {
-    let msg: String;
+    let mut msg: String;
     let doc: Document = Document::new();
 
     // supportedP4PTrxLength = _.has(args, 'supportedP4PTrxLength') ? (args.supportedP4PTrxLength) : 0;
-
-    if (tpl.m_tpl_pre_calculated_dp_cost > 0)
-        && (tpl.m_tpl_max_dp_cost == 0)
-    {
-        tpl.m_tpl_max_dp_cost = tpl.m_tpl_pre_calculated_dp_cost; // user has some idea about the cost and want to pay exactly the desired price (pre_calculated_DP_cost)
-    }
 
     if tpl.m_tpl_backers_addresses.len() == 0
     {
         let backer_address = machine().get_backer_address();
         tpl.m_tpl_backers_addresses.push(backer_address);  // in case of clone, a transaction can have more than one backer
     }
+
+    dlog(
+        &format!("Make a transaction, input params: {:#?}", &tpl),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
     // adding DP Costs payment outputs
     let mut tmp_outputs = tpl.m_tpl_outputs.clone();
@@ -38,7 +37,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     }
     tpl.m_tpl_outputs = tmp_outputs;
     dlog(
-        &format!("Make a transaction, input params: {:#?}", &tpl),
+        &format!("Make a transaction, outputs: {:#?}", &tpl.m_tpl_outputs),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
 
@@ -74,7 +73,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         "dExtInfo": ext_info,
         "dExtHash": constants::HASH_ZEROS_PLACEHOLDER});
     dlog(
-        &format!("trx_json in pre-transaction: {:#?}", &trx_json),
+        &format!("trx_json in pre-transaction: {:#}", &trx_json),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
     let (status, mut document) = load_document(&trx_json, &Block::new(), -1);
@@ -87,9 +86,9 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         return (false, pre_validate_res_msg, doc, 0);
     }
 
-    let offset_extra_chars: DocLenT = 100; // just an offset length to cover potentially extra chars of percise DPCost
+    let offset_extra_chars: DocLenT = 0; // just an offset length to cover potentially extra chars of precise DPCost
     dlog(
-        &format!("offset_extra_chars is: {:#?}",
+        &format!("offset-extra-chars is: {:#?}",
                  cutils::sep_num_3(offset_extra_chars as i64)),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
@@ -107,22 +106,21 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     let (
         status,
         locally_recalculate_trx_dp_cost) =
-        document
-            .calc_doc_data_and_process_cost(
-                constants::stages::CREATING,
-                &now_,
-                offset_extra_chars);
+        document.calc_doc_data_and_process_cost(
+            constants::stages::CREATING,
+            &now_,
+            offset_extra_chars);
 
     dlog(
         &format!(
-            "The transaction  cost is ({})",
-            cutils::micro_pai_to_pai_6(&(locally_recalculate_trx_dp_cost as CMPAISValueT))),
+            "The transaction cost is ({})",
+            cutils::nano_pai_to_pai(locally_recalculate_trx_dp_cost as CMPAISValueT)),
         constants::Modules::Trx,
         constants::SecLevel::Info);
 
     if !status
     {
-        msg = "Fail in calculate transacton cost!".to_string();
+        msg = "Fail in calculate transaction cost!".to_string();
         dlog(
             &msg,
             constants::Modules::Trx,
@@ -139,6 +137,13 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
 
     let (afford_status, afford_msg, the_dp_cost) =
         tpl.can_afford_costs(locally_recalculate_trx_dp_cost);
+    dlog(
+        &format!(
+            "can-afford-costs: {}, msg: {}, cost: {}",
+            afford_status, afford_msg, the_dp_cost),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
+
     if !afford_status
     {
         return (false, afford_msg, doc, 0);
@@ -148,13 +153,13 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     dlog(
         &format!(
             "sum total_inputs_amount: {} PAI",
-            cutils::micro_pai_to_pai_6(&(total_inputs_amount as CMPAISValueT))),
+            cutils::nano_pai_to_pai(total_inputs_amount as CMPAISValueT)),
         constants::Modules::Trx,
         constants::SecLevel::Info);
     dlog(
         &format!(
             "sum outputs Value(except dp costs): {} PAI",
-            cutils::micro_pai_to_pai_6(&(total_outputs_amount_except_dp_costs as CMPAISValueT))),
+            cutils::nano_pai_to_pai(total_outputs_amount_except_dp_costs as CMPAISValueT)),
         constants::Modules::Trx,
         constants::SecLevel::Info);
     dlog(
@@ -172,7 +177,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     dlog(
         &format!(
             "change back amount ({} PAI) because of DPCosts",
-            cutils::micro_pai_to_pai_6(&change_back_amount)),
+            cutils::nano_pai_to_pai(change_back_amount)),
         constants::Modules::Trx,
         constants::SecLevel::Info);
 
@@ -222,6 +227,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
 
     // re-signing, because of output re-ordering
     tpl.sign_and_create_doc_ext_info();
+    document.m_if_basic_tx_doc.m_outputs = tpl.m_tpl_outputs.clone();
     document.m_doc_ext_info = tpl.m_tpl_doc_ext_info.clone();
     document.set_doc_ext_hash();
     document.set_doc_length();
@@ -234,6 +240,14 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     tmp_block.m_block_type = constants::block_types::NORMAL.to_string();
     tmp_block.m_block_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
     tmp_block.m_block_documents = vec![document.clone()];
+
+    msg = format!(
+        "Block to full Validate: {:#?}",
+        tmp_block);
+    dlog(
+        &msg,
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
     let (final_validate, msg_) = document.full_validate(&tmp_block);
     if !final_validate
@@ -269,8 +283,8 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     for (coin_code, an_inp) in &tpl.m_tpl_inputs
     {
         let vv: QVDicT = HashMap::from([
-            ("ut_o_address".to_string(), an_inp.m_owner.clone()),
-            ("ut_o_value".to_string(), an_inp.m_amount.to_string())]);
+            ("coin_owner".to_string(), an_inp.m_owner.clone()),
+            ("coin_value".to_string(), an_inp.m_amount.to_string())]);
         used_coins_dict.insert(coin_code.clone(), vv);
     }
 
@@ -343,7 +357,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
             "Pre-Successfully created transaction: {}",
             document.safe_stringify_doc(true)),
         constants::Modules::Trx,
-        constants::SecLevel::Error);
+        constants::SecLevel::Info);
 
     let now_ = application().now();
     let (_calc_status2, trx_dp_cost2) = document.m_if_basic_tx_doc.calc_doc_data_and_process_cost(
@@ -361,7 +375,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
 
         dlog(
             &format!("Failed in DPCost calc: trx_dp_cost2({}) {}",
-                     cutils::micro_pai_to_pai_6(&trx_dp_cost2),
+                     cutils::nano_pai_to_pai(trx_dp_cost2 as CMPAISValueT),
                      document.safe_stringify_doc(true)),
             constants::Modules::Trx,
             constants::SecLevel::Error);

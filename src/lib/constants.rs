@@ -35,8 +35,10 @@ pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 /*
   const bool BROADCAST_TO_NEIGHBOR_OF_NEIGHBOR = true;    // if machine allowed to publish email of neightbors of neighbors to hei neighbors?
   const bool SUPPORTS_CLONED_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
-  const bool SUPPORTS_P4P_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
 */
+
+// after writing a tons of unittests can activate this feature
+pub const SUPPORTS_P4P_TRANSACTION: bool = false;
 pub const LAUNCH_YEAR: u16 = 2022;
 // every twelve years the coinbse divided to 2
 pub const HALVING_PERIOD: u16 = 1;
@@ -146,11 +148,10 @@ pub const TRANSACTION_MINIMUM_LENGTH: DocLenT = 375;    // smallest transaction 
  * this "MAX_BLOCK_LENGTH_BY_CHAR" is a single max size of single message after adding headers and encrypting
  * it means real payload of a block (or real GQL messegaes size) must be roughly around 80% - 90%
  */
-pub const MAX_BLOCK_LENGTH_BY_CHAR: BlockLenT = 10000000 * 10;
+pub const MAX_BLOCK_LENGTH_BY_CHAR: BlockLenT = 10_000_000 * 10;
 
 
 // 10 Mega Byte is actually block size
-#[allow(unused, dead_code)]
 pub const MAX_DOC_LENGTH_BY_CHAR: DocLenT = 10 * 1024 * 1024 * 9;
 #[allow(unused, dead_code)]
 pub const MAX_DP_COST_PAY_DOCUMENT_SIZE: DocLenT = 600;
@@ -674,11 +675,26 @@ pub const THE_CARD_TYPES: [&str; 15] = [
 
 pub const OUTPUT_DP_COST: &str = "OUTPUT_DP_COST";
 pub const OUTPUT_NORMAL: &str = "OUTPUT_NORMAL";
-pub const TEMP_DP_COST_AMOUNT: CMPAIValueT = 1_111_111_111;
+pub const TEMP_DP_COST_AMOUNT: CMPAIValueT = 111_111_111;
 #[allow(unused, dead_code)]
 pub const OUTPUT_TREASURY: &str = "OUTPUT_TREASURY";
 pub const OUTPUT_CHANGE_BACK: &str = "OUTPUT_CHANGE_BACK";
 
+pub mod change_back_mods
+{
+    pub const EXACT_ADDRESS: &str = "exactAddress";
+    pub const BACKER_ADDRESS: &str = "backerAddress";
+    pub const A_NEW_ADDRESS: &str = "aNewAddress";
+}
+
+pub mod transaction_fee_calculate_methods
+{
+    pub const EXACT_FEE: &str = "exactFee";
+    #[allow(unused, dead_code)]
+    pub const MIN_FEE: &str = "minFee";
+}
+
+pub const CURRENT_SIGNATURE_VERSION: &str = "0.0.1";
 pub const CURRENT_AES_VERSION: &str = "0.0.0";
 pub const CURRENT_PGP_VERSION: &str = "0.0.0";
 
@@ -687,7 +703,9 @@ pub const CURRENT_PGP_VERSION: &str = "0.0.0";
 pub const WATCHING_BLOCKS_COUNT: u16 = 300; // default is 5 minutes = 300 second
 
 // hu part
+#[allow(unused, dead_code)]
 pub const HU_SHARE_ADDRESS: &str = "im1xqenscfjvscnjdfs89jngce5vd3rwd33vy6kxdtpxvukgwryxscs6xpe6r";
+#[allow(unused, dead_code)]
 pub const HU_INAME_OWNER_ADDRESS: &str = "im1xqenscfjvscnjdfs89jngce5vd3rwd33vy6kxdtpxvukgwryxscs6xpe6r";
 pub const INITIAL_SHARES: i32 = 10_000_000;
 

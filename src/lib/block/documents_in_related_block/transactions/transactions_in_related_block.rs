@@ -8,13 +8,13 @@ class BlockOverview
 {
 public:
   bool m_status = false;
-  QString m_msg = "";
+  String m_msg = "";
 
-  QStringList m_supported_P4P {};
-  QStringList m_block_used_coins {};
+  StringList m_supported_P4P {};
+  StringList m_block_used_coins {};
   QSDicT m_map_coin_to_spender_doc {};
   QV2DicT m_used_coins_dict {};
-  QStringList m_block_not_matured_coins {};
+  StringList m_block_not_matured_coins {};
 };
 
 class TransactionsInRelatedBlock
@@ -25,20 +25,20 @@ public:
   static BlockOverview prepareBlockOverview(
     const Block *block);
 
-  static std::tuple<bool, bool, QString, SpendCoinsList*> validateTransactions(
+  static std::tuple<bool, bool, String, SpendCoinsList*> validateTransactions(
     const Block* block,
-    const QString& stage);
+    const String& stage);
 
 
   static std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> considerInvalidCoins(
-    const QString& blockHash,
-    const QString& blockCreationDate,
-    const QStringList& block_used_coins,
+    const String& blockHash,
+    const String& blockCreationDate,
+    const StringList& block_used_coins,
     QV2DicT used_coins_dict,
-    QStringList maybe_invalid_coins,
+    StringList maybe_invalid_coins,
     const QSDicT& map_coin_to_spender_doc);
 
-  static std::tuple<bool, bool, QString> appendTransactions(
+  static std::tuple<bool, bool, String> appendTransactions(
     Block* block,
     TransientBlockInfo& transient_block_info);
 };
@@ -52,11 +52,11 @@ TransactionsInRelatedBlock::TransactionsInRelatedBlock()
 BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
   const Block *block)
 {
-  QString msg = "";
-  QStringList supported_P4P = {};
-  QStringList trx_uniqueness = {};
-  QStringList inputs_doc_hashes = {};
-  QStringList block_used_coins = {};
+  String msg = "";
+  StringList supported_P4P = {};
+  StringList trx_uniqueness = {};
+  StringList inputs_doc_hashes = {};
+  StringList block_used_coins = {};
   QSDicT map_coin_to_spender_doc = {};
 
   BlockOverview block_overview = {};
@@ -75,9 +75,9 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
     trx_uniqueness.append(a_doc->getDocHash());
 
     // extracting P4P (if exist)
-    if ((a_doc->m_doc_type == CConsts::DOC_TYPES::BasicTx) && (a_doc->m_doc_class == CConsts::TRX_CLASSES::P4P))
+    if ((a_doc->m_doc_type == constants::DOC_TYPES::BasicTx) && (a_doc->m_doc_class == constants::TRX_CLASSES::P4P))
     {
-      if (!CConsts::SUPPORTS_P4P_TRANSACTION)
+      if (!constants::SUPPORTS_P4P_TRANSACTION)
       {
         msg = "Network still doen't support P4P transactions. (" + CUtils::hash8c(a_doc->getDocHash()) + ") in block(" + CUtils::hash8c(block->getBlockHash()) + ")!";
         CLog::log(msg, "trx", "error");
@@ -93,7 +93,7 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
       for (TInput* input: a_doc->getInputs())
       {
         inputs_doc_hashes.append(input->m_transaction_hash);
-        QString a_coin = input->getCoinCode();
+        String a_coin = input->getCoinCode();
         block_used_coins.append(a_coin);
         map_coin_to_spender_doc[a_coin] = a_doc->getDocHash();
       }
@@ -130,13 +130,13 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
     block_overview.m_msg = msg;
     return block_overview;
   }
-  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + QString::number(block_used_coins.size())+ " inputs ", "trx", "trace");
+  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + String::number(block_used_coins.size())+ " inputs ", "trx", "trace");
 
   // it is a dictionary for all inputs either valid or invalid
   // it has 3 keys/values (ut_coin, ut_o_address, ut_o_value)
   QV2DicT used_coins_dict = {};
   // all inputs must be maturated, maturated means it passed at least 12 hours of creeating the outputs and now they are presented in table trx_utxos adn are spendable
-  QStringList spendable_coins = {};
+  StringList spendable_coins = {};
   if (block_used_coins.size() > 0)
   {
     // check if the coins exist in UTXOs?
@@ -167,10 +167,10 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
     }
   }
 
-  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + QString::number(spendable_coins.size()) + " maturated Inputs: " + spendable_coins.join(", "), "trx", "trace");
+  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + String::number(spendable_coins.size()) + " maturated Inputs: " + spendable_coins.join(", "), "trx", "trace");
 
   // all inputs which are not in spendable coins, potentialy can be invalid
-  QStringList block_not_matured_coins = CUtils::arrayDiff(block_used_coins, spendable_coins);
+  StringList block_not_matured_coins = CUtils::arrayDiff(block_used_coins, spendable_coins);
   if (block_not_matured_coins.size() > 0)
     CLog::log("Missed matured coins in table trx_utxo at " + CUtils::getNowSSS() + " block(" + block->getBlockHash() + ")  missed(" + block_not_matured_coins.join(", ") + ") inputs! probably is cloned transaction", "sec", "error");
 
@@ -184,11 +184,11 @@ BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
 }
 
 std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedBlock::considerInvalidCoins(
-  const QString& blockHash,
-  const QString& blockCreationDate,
-  const QStringList& block_used_coins,
+  const String& blockHash,
+  const String& blockCreationDate,
+  const StringList& block_used_coins,
   QV2DicT used_coins_dict,
-  QStringList maybe_invalid_coins,
+  StringList maybe_invalid_coins,
   const QSDicT& map_coin_to_spender_doc)
 {
 
@@ -220,7 +220,7 @@ std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedB
      * control if invalidity is because of using really unmatured outputs(which will be matured in next hours)?
      * if yes drop block
      */
-    for (QString aCoin: invalid_coins_dict.keys())
+    for (String aCoin: invalid_coins_dict.keys())
     {
       bool is_matured = CUtils::isMatured(
         invalid_coins_dict[aCoin]["coinGenDocType"].toString(),
@@ -260,13 +260,13 @@ std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedB
 
 
   // all spent_loc must exist in invalid_coins_dict
-  QStringList tmp1 = invalid_coins_dict.keys();
-  QStringList tmp2 = coinsInSpentTable->m_coins_dict.keys();
+  StringList tmp1 = invalid_coins_dict.keys();
+  StringList tmp2 = coinsInSpentTable->m_coins_dict.keys();
   if ((tmp1.size() != tmp2.size()) ||
     (CUtils::arrayDiff(tmp1, tmp2).size() > 0) ||
     (CUtils::arrayDiff(tmp2, tmp1).size()> 0))
   {
-    QString msg = "finding invalidations messed up block(" + CUtils::hash8c(blockHash) + ") maybe Invalid Inputs: ";
+    String msg = "finding invalidations messed up block(" + CUtils::hash8c(blockHash) + ") maybe Invalid Inputs: ";
     msg += "invalid Coins Dict: " + CUtils::dumpIt(invalid_coins_dict) + " coins In Spent Table: " + CUtils::dumpIt(coinsInSpentTable);
     CLog::log(msg, "sec", "error");
     return {false, invalid_coins_dict, used_coins_dict, false, coinsInSpentTable};
@@ -275,14 +275,14 @@ std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedB
   bool is_sus_block = false;
   if (invalid_coins_dict.keys().size() > 0)
   {
-    QString msg = "Some transaction inputs in block(" + CUtils::hash8c(blockHash) + ") are not valid";
+    String msg = "Some transaction inputs in block(" + CUtils::hash8c(blockHash) + ") are not valid";
     msg += "these are duplicated inputs: " + CUtils::dumpIt(invalid_coins_dict);
     CLog::log(msg, "trx", "error");
     is_sus_block = true;
   }
 
   // apllying machine-POV-order to coinsInSpentTable as an order-attr
-  for (QString aCoin: coinsInSpentTable->m_coins_dict.keys())
+  for (String aCoin: coinsInSpentTable->m_coins_dict.keys())
   {
     //looping on orders
     for (uint32_t inx = 0; inx < coinsInSpentTable->m_coins_dict[aCoin].size(); inx++)
@@ -305,11 +305,11 @@ std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedB
  * @param stage
  * @return <status, is_sus_block, double_spends>
  */
-std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::validateTransactions(
+std::tuple<bool, bool, String, SpendCoinsList*> TransactionsInRelatedBlock::validateTransactions(
   const Block *block,
-  const QString& stage)
+  const String& stage)
 {
-  QString msg;
+  String msg;
 
   if (block->m_block_ext_info.size() == 0)
   {
@@ -322,7 +322,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
   if (!block_overview.m_status)
     return {false, false, block_overview.m_msg, nullptr};
 
-  QStringList maybe_invalid_coins = block_overview.m_block_not_matured_coins;
+  StringList maybe_invalid_coins = block_overview.m_block_not_matured_coins;
 
   CMPAIValueT sum_remotes = 0;
   CMPAIValueT treasury_incomes, backer_incomes = 0;
@@ -341,7 +341,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
 
 
     // DPCOst payment control
-    if (a_doc->m_doc_type == CConsts::DOC_TYPES::DPCostPay)
+    if (a_doc->m_doc_type == constants::DOC_TYPES::DPCostPay)
     {
       auto [status, treasury_incomes_, backer_incomes_] = BlockUtils::retrieveDPCostInfo(
         a_doc,
@@ -359,12 +359,12 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
       // so we do not need to controll trx fee, because it is already payed
 
     }
-    else if (QStringList {CConsts::DOC_TYPES::DPCostPay}.contains(a_doc->m_doc_type))
+    else if (StringList {constants::DOC_TYPES::DPCostPay}.contains(a_doc->m_doc_type))
     {
       // this kind of documents do not need to have trx-fee
 
     } else {
-      if (!CConsts::SUPPORTS_CLONED_TRANSACTION && (a_doc->getDPIs().size() > 1))
+      if (!constants::SUPPORTS_CLONED_TRANSACTION && (a_doc->getDPIs().size() > 1))
       {
         msg = "The network still do not accept Cloned transactions!";
         CLog::log(msg, "trx", "error");
@@ -387,7 +387,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
 
       if (trx_stated_dp_cost < SocietyRules::getTransactionMinimumFee(block->m_block_creation_date))
       {
-        msg = "The backer fee is less than Minimum acceptable fee!! Block(" + CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) + ") trx_stated_dp_cost(" + QString::number(trx_stated_dp_cost)+ ") < minimum fee(" + SocietyRules::getTransactionMinimumFee(block->m_block_creation_date) + ")";
+        msg = "The backer fee is less than Minimum acceptable fee!! Block(" + CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) + ") trx_stated_dp_cost(" + String::number(trx_stated_dp_cost)+ ") < minimum fee(" + SocietyRules::getTransactionMinimumFee(block->m_block_creation_date) + ")";
         CLog::log(msg, "trx", "error");
         return {false, false, msg, nullptr};
       }
@@ -420,7 +420,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
 
   // control if block total trx fees are valid
   auto block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
-  auto befor_block_tax = (sum_remotes * CConsts::BACKER_PERCENT_OF_BLOCK_FEE) / 100;
+  auto befor_block_tax = (sum_remotes * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100;
   CMPAIValueT recalc_remote_backer_fee = befor_block_tax - block_fix_cost;
   if (recalc_remote_backer_fee != backer_incomes)
   {
@@ -443,7 +443,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
   }
 
   GRecordsT SCUDS {};
-  if (CConsts::SUPER_CONTROL_UTXO_DOUBLE_SPENDING)
+  if (constants::SUPER_CONTROL_UTXO_DOUBLE_SPENDING)
   {
     /**
     * after being sure about secure and proper functionality of code, we can cut this controll in next monthes
@@ -461,7 +461,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
     }
   }
 
-  if (CConsts::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
+  if (constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
   {
     /**
     * most paranoidic and pesimistic control of input validation
@@ -507,7 +507,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
   * since the block can contains only UTXOs which are already took palce in her hsitory
   * in oder words, they are in block's sibility
   */
-  if (!is_sus_block && !CConsts::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
+  if (!is_sus_block && !constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
   {
     bool is_visible = CoinsVisibilityHandler::controlCoinsVisibilityInGraphHistory(
       block_overview.m_block_used_coins,
@@ -527,7 +527,7 @@ std::tuple<bool, bool, QString, SpendCoinsList*> TransactionsInRelatedBlock::val
  * @param transient_block_info
  * @return {creating block status, should empty buffer, msg}
  */
-std::tuple<bool, bool, QString> TransactionsInRelatedBlock::appendTransactions(
+std::tuple<bool, bool, String> TransactionsInRelatedBlock::appendTransactions(
   Block* block,
   TransientBlockInfo& transient_block_info)
 {

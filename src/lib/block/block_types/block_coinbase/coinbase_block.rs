@@ -194,17 +194,17 @@ impl CoinbaseBlock {
 
        // recaluculate block final length
        String tmp_stringified = cutils::serializeJson(block);
-       block["bLen"] = cutils::padding_length_value(tmp_stringified.length());
+       block["bLen"] = cutils::padding_length_value(tmp_stringified.len());
 
        String out = cutils::serializeJson(block);
-       CLog::log("Safe sringified block(Coinbase) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.length()) + ") the block: " + out, "app", "trace");
+       CLog::log("Safe sringified block(Coinbase) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.len()) + ") the block: " + out, "app", "trace");
 
        return out;
      }
 
      BlockLenT CoinbaseBlock::calcBlockLength(const JSonObject& block_obj) const
      {
-       return cutils::serializeJson(block_obj).length();
+       return cutils::serializeJson(block_obj).len();
      }
     */
 

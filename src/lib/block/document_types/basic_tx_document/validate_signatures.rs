@@ -6,6 +6,7 @@ use crate::lib::block::document_types::basic_tx_document::basic_tx_document::Bas
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, CSigIndexT, QV2DicT, QVDicT, VString};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::extract_coins_owner;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::validate_sig_struct;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
@@ -18,12 +19,42 @@ impl BasicTxDocument {
         block: &Block,
     ) -> bool
     {
+        let mut coins_codes: Vec<CCoinCodeT> = vec![];
+        for an_inp in &self.m_inputs
+        {
+            coins_codes.push(an_inp.get_coin_code());
+        }
+
+        // retrieve coins owners from blockchain
+        let coins_owner_dict =
+            extract_coins_owner(&coins_codes);
+
+
         let mut used_coins_dict: QV2DicT = HashMap::new();
         for an_inp in &self.m_inputs
         {
+            let the_coin_owner = coins_owner_dict[&an_inp.get_coin_code()].clone();
+            // retrieve coins owners from blockchain
+            if an_inp.m_owner != "".to_string()
+            {
+                if an_inp.m_owner != the_coin_owner
+                {
+                    dlog(
+                        &format!(
+                            "Try to spend someone else coin! {}, pretended owner: {}, real owner: {}, m_inputs: {:#?}",
+                            doc.get_doc_identifier(),
+                            an_inp.m_owner,
+                            the_coin_owner,
+                            self.m_inputs),
+                        constants::Modules::Sec,
+                        constants::SecLevel::Fatal);
+                    return false;
+                }
+            }
+
             let vv: QVDicT = HashMap::from([
-                ("ut_o_address".to_string(), an_inp.m_owner.clone()),
-                ("ut_o_value".to_string(), an_inp.m_amount.to_string())]);
+                ("coin_owner".to_string(), the_coin_owner),
+                ("coin_value".to_string(), an_inp.m_amount.to_string())]);
             used_coins_dict.insert(an_inp.get_coin_code(), vv);
         }
 
@@ -49,9 +80,13 @@ impl BasicTxDocument {
         // for each input must control if given unlock structutr will be finished in a right(and valid) output address?
         // the order of inputs and ext Info ARE IMPORTANT. the wallet MUST sign and send inputs in order to bip 69
         dlog(
-            &format!("Signature validating for {}", doc.get_doc_identifier()),
+            &format!(
+                "Signature validating for {}, used_coins_dict: {:#?}",
+                doc.get_doc_identifier(),
+                used_coins_dict),
             constants::Modules::Trx,
             constants::SecLevel::TmpDebug);
+        // panic!("yyyyyy");
 
         let mut the_coins_must_be_signed_by_a_single_sign_set:
             HashMap<CInputIndexT, HashMap<CSigIndexT, VString>> = HashMap::new();
@@ -70,7 +105,7 @@ impl BasicTxDocument {
 
             let is_valid_unlocker: bool = validate_sig_struct(
                 an_unlock_set,
-                &used_coins_dict[&coin_code]["ut_o_address"],
+                &used_coins_dict[&coin_code]["coin_owner"],
                 &HashMap::new(),
             );
 
@@ -150,7 +185,9 @@ impl BasicTxDocument {
                 if !is_verified
                 {
                     msg = format!(
-                        "Invalid given signature for input({:?}) Block({}) {}",
+                        "Invalid given signature for signature sig:{}, _index({}) input({}) Block({}) {}",
+                        an_unlock_document.m_signatures[signature_index as usize][0],
+                        signature_index,
                         input_index,
                         cutils::hash8c(block_hash),
                         doc.get_doc_identifier());
@@ -237,12 +274,25 @@ impl BasicTxDocument {
             return false;
         }
 
-        let mut signables: String = self.get_input_output_signables1(doc, sig_hash, c_date);
-        signables = ccrypto::keccak256_dbl(&signables); // because of securiy, MUST use double hash
+        let sign_ables_clear: String = self.get_input_output_signables1(doc, sig_hash, c_date);
+        let sign_ables_hash = ccrypto::keccak256_dbl(&sign_ables_clear); // because of security, MUST use double hash
         let verify_res: bool = ccrypto::ecdsa_verify_signature(
             public_key,
-            &signables.substring(0, constants::SIGN_MSG_LENGTH as usize).to_string(),
+            &sign_ables_hash.substring(0, constants::SIGN_MSG_LENGTH as usize).to_string(),
             signature);
+
+        dlog(
+            &format!("YYY-Sign verify info: verify-res:{} sig-hash: {}, sign-ables-hash: {}, sign-ables-clear: {}, public-key:{}, signature:{}, the doc: {:#?}",
+                     verify_res,
+                     sig_hash,
+                     sign_ables_hash,
+                     sign_ables_clear,
+                     public_key,
+                     signature,
+                     doc),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+
         return verify_res;
     }
 }

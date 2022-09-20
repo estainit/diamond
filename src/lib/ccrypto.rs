@@ -480,12 +480,12 @@ pub fn ecdsa_sign_message(private_key: &String, message: &String) -> (bool, Stri
 
 //old_name_was ECDSAVerifysignature
 pub fn ecdsa_verify_signature(public_key: &String, message: &String, signature_string: &String) -> bool {
-    let secp = Secp256k1::new();
+    let sec_p = Secp256k1::new();
     let re_sig = Signature::from_str(&signature_string).unwrap();
-    let (staus, public_key) = ecdsa_import_hex_public_key(public_key);
-    if !staus { return false; }
+    let (status, public_key) = ecdsa_import_hex_public_key(public_key);
+    if !status { return false; }
     let message = Message::from_hashed_data::<sha256::Hash>(message.as_bytes());
-    secp.verify_ecdsa(&message, &re_sig, &public_key).is_ok()
+    sec_p.verify_ecdsa(&message, &re_sig, &public_key).is_ok()
 }
 
 /*

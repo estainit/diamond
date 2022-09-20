@@ -229,7 +229,7 @@ impl AppParams {
         }
 
         let day: Vec<&str> = min_creation_date.split(" ").collect();
-        let day = day[0].to_string(); // format("YYYY-MM-DD");
+        let day = day[0].to_string();
         let time_details: Vec<&str> = min_creation_date.split(" ").collect();
         let time_details: String = time_details[1].to_string();
         let time_details: Vec<&str> = time_details.split(":").collect();

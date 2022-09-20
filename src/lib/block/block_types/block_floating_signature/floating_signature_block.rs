@@ -312,10 +312,10 @@ String FloatingSignatureBlock::safe_stringify_block(const bool ext_info_in_docum
 
   // recaluculate block final length
   String tmp_stringified = cutils::serializeJson(block);
-  block["bLen"] = cutils::padding_length_value(tmp_stringified.length());
+  block["bLen"] = cutils::padding_length_value(tmp_stringified.len());
 
   String out = cutils::serializeJson(block);
-  CLog::log("Safe sringified block(floating signature) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.length()) + ") the block: " + out, "app", "trace");
+  CLog::log("Safe sringified block(floating signature) Block(" + cutils::hash8c(m_block_hash) + ") length(" + String::number(out.len()) + ") the block: " + out, "app", "trace");
 
   return out;
 }

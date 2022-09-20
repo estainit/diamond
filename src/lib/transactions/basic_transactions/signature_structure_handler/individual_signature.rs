@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use crate::cutils::remove_quotes;
 use crate::lib::constants;
 use crate::lib::custom_types::{JSonObject, TimeByHoursT};
 
@@ -7,14 +8,14 @@ use crate::lib::custom_types::{JSonObject, TimeByHoursT};
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct IndividualSignature
 {
-    pub m_signer_id: String,
     // a dummy handler id
-    pub m_signature_key: String,
+    pub m_signer_id: String,
     // sKey
-    pub m_permitted_to_pledge: String,
+    pub m_signature_key: String,
     // pPledge
-    pub m_permitted_to_delegate: String,
+    pub m_permitted_to_pledge: String,
     // pDelegate
+    pub m_permitted_to_delegate: String,
     pub m_input_time_lock: TimeByHoursT,
     pub m_input_time_lock_strickt: TimeByHoursT,
     pub m_output_time_lock: TimeByHoursT,
@@ -47,6 +48,19 @@ impl IndividualSignature {
         return out;
     }
 
+    pub fn load_from_json(j_obj: &JSonObject) -> (bool, Self) {
+        let out = Self {
+            m_signer_id: "".to_string(),
+            m_signature_key: remove_quotes(&j_obj["sKey"]),
+            m_permitted_to_pledge: remove_quotes(&j_obj["pPledge"]),
+            m_permitted_to_delegate: remove_quotes(&j_obj["pDelegate"]),
+            m_input_time_lock: j_obj["iTLock"].as_f64().unwrap(),
+            m_input_time_lock_strickt: j_obj["iTLockSt"].as_f64().unwrap(),
+            m_output_time_lock: j_obj["oTLock"].as_f64().unwrap(),
+        };
+        return (true, out);
+    }
+
     #[allow(unused, dead_code)]
     pub fn dump(&self) -> String {
         let prefix_tabs = "\t ";
@@ -66,7 +80,7 @@ impl IndividualSignature {
 pub fn dump_vec_of_ind_sig(custom_data: &Vec<IndividualSignature>) -> String {
     let prefix_tabs = "\t ";
     let mut out_str = constants::NL.to_string();
-    for an_ind in custom_data{
+    for an_ind in custom_data {
         out_str += &(constants::NL.to_owned() + &prefix_tabs + "an Individual Signature: " + &*an_ind.dump());
     }
     return out_str.to_string();

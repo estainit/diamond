@@ -69,9 +69,9 @@ String INameRegDocument::safe_stringify_doc(const bool ext_info_in_document) con
     document_json["dExtInfo"] = SignatureStructureHandler::compactUnlockersArray(document_json["dExtInfo"].toArray());
 
 //  // recaluculate block final length
-//  document_json["dLen"] = cutils::padding_length_value(cutils::serializeJson(document_json).length());
+//  document_json["dLen"] = cutils::padding_length_value(cutils::serializeJson(document_json).len());
 
-  CLog::log("8 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document_json).length()) + " serialized document: " + cutils::serializeJson(document_json), "app", "trace");
+  CLog::log("8 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document_json).len()) + " serialized document: " + cutils::serializeJson(document_json), "app", "trace");
 
   return cutils::serializeJson(document_json);
 }

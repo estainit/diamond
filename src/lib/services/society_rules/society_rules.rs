@@ -52,7 +52,7 @@ pub fn get_administrative_default_values() -> HashMap<String, f64>
         (polling_types::REQUEST_FOR_REFINE_INAME_BIND_PGP_PRICE.to_string(), 41.0),
         (polling_types::REQUEST_FOR_REFINE_INAME_MESSAGE_PRICE.to_string(), 11.0),
         (polling_types::REQUEST_FOR_REFINE_FREE_POST_PRICE.to_string(), 17.0),
-        (polling_types::REQUEST_FOR_REFINE_BASE_PRICE.to_string(), 683.0),
+        (polling_types::REQUEST_FOR_REFINE_BASE_PRICE.to_string(), 400.0),
         (polling_types::REQUEST_FOR_REFINE_BLOCK_FIXED_COST.to_string(), block_fix_cost),
         (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_WIKI.to_string(), 0.0001),        // create/edit wiki page
         (polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_FORUMS.to_string(), 0.00001),       // create/edit Demos
@@ -143,12 +143,11 @@ pub fn get_single_integer_value(
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
-    let val_f64 =  val.parse::<f64>().unwrap();
+    let val_f64 = val.parse::<f64>().unwrap();
     return val_f64 as CMPAIValueT;
 }
 
 //old_name_was getBasicTxDPCost
-#[allow(unused, dead_code)]
 pub fn get_basic_transaction_data_and_process_cost(
     doc_length: DocLenT,
     c_date: &CDateT) -> CMPAIValueT
@@ -158,11 +157,15 @@ pub fn get_basic_transaction_data_and_process_cost(
     // * TODO: maybe can be modified in next version of transaction to be more fair
     // * specially after implementing the indented bach32 unlockers(recursively unlimited unlockers which have another bech32 as an unlocker)
     let (_x, _y, _gain, rev_gain) = cutils::calc_log(
-        doc_length as f64,
-        constants::MAX_DOC_LENGTH_BY_CHAR as u64,
+        doc_length as i64,
+        constants::MAX_DOC_LENGTH_BY_CHAR as i64,
         1);//(dLen * 1) / (iConsts.MAX_DOC_LENGTH_BY_CHAR * 1);
-    let powered = (100.0 * rev_gain).powf(20.0);
-    let cost = cutils::i_floor_float(tx_base_price as f64 * powered);
+    println!("::::: tx_base_price {}", tx_base_price);
+    println!("::::: rev_gain {}", rev_gain);
+    // let powered = 10_000.0 * rev_gain;
+    // println!("::::: powered {}", powered);
+    let cost = cutils::i_floor_float(tx_base_price as f64 * rev_gain * 1000.0);
+    println!("::::: cost {}", cost);
     return cost as CMPAIValueT;
 }
 
@@ -270,7 +273,6 @@ pub fn prepare_doc_expense_dict(
 }
 
 //old_name_was getDocExpense
-#[allow(unused, dead_code)]
 pub fn get_doc_expense(
     doc_type: &str,
     doc_len: DocLenT,
@@ -278,7 +280,13 @@ pub fn get_doc_expense(
     c_date: &CDateT) -> CMPAIValueT
 {
     if doc_len > constants::MAX_DOC_LENGTH_BY_CHAR
-    { return 0; }
+    {
+        dlog(
+            &format!("Doc length is bigger then permission {}>{}", doc_len, constants::MAX_DOC_LENGTH_BY_CHAR),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return 0;
+    }
 
     let service_prices = prepare_doc_expense_dict(c_date, doc_len);
 
@@ -286,6 +294,11 @@ pub fn get_doc_expense(
     {
         return service_prices[doc_type];
     }
+
+    dlog(
+        &format!("Unknown doc type to extract expense: {}", doc_type),
+        constants::Modules::Sec,
+        constants::SecLevel::Warning);
 
     return 0;
 

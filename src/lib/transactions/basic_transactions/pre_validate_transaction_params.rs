@@ -3,8 +3,8 @@ use crate::lib::custom_types::CMPAIValueT;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::BasicTransactionTemplate;
 
 //old_name_was preValidateTransactionParams
-pub fn pre_validate_transaction_params(
-    tpl: &BasicTransactionTemplate) -> (bool, String, CMPAIValueT, CMPAIValueT)
+pub fn pre_validate_transaction_params(tpl: &BasicTransactionTemplate)
+                                       -> (bool, String, CMPAIValueT, CMPAIValueT)
 {
     let msg: String;
 

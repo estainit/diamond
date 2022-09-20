@@ -12,9 +12,10 @@ use crate::lib::block::document_types::null_document::NullDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
 use crate::lib::block::document_types::rp_docdocument::RepaymentDocument;
-use crate::lib::custom_types::{CBlockHashT, CDateT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, QV2DicT, VString, VVString};
+use crate::lib::custom_types::{CBlockHashT, CDateT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
+use crate::lib::transactions::basic_transactions::basic_transaction_template::{convert_json_to_doc_ext, export_doc_ext_to_json};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_inputs_tuples, make_outputs_tuples, stringify_outputs, TInput, TOutput};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -146,8 +147,7 @@ impl Document
 
         if !obj["dExtInfo"].is_null()
         {
-            println!("dExtInfo i i i i i iiiii: {}", obj["dExtInfo"]);
-            //self.m_doc_ext_info = remove_quotes(&obj[");
+            self.m_doc_ext_info = convert_json_to_doc_ext(obj["dExtInfo"].as_array().unwrap());
         }
 
         if (self.m_doc_ext_info.len() > 0) && (doc_index != -1) && (block.m_block_hash != "")
@@ -251,7 +251,7 @@ impl Document
         let mut j_doc: JSonObject = self.export_doc_to_json(ext_info_in_document);
         j_doc["dLen"] = constants::LEN_PROP_PLACEHOLDER.into();
         let serialized_j_doc: String = cutils::controlled_json_stringify(&j_doc);
-        // recaluculate block final length
+        // recalculate document final length
         j_doc["dLen"] = cutils::padding_length_value(
             serialized_j_doc.len().to_string(),
             constants::LEN_PROP_LENGTH)
@@ -259,9 +259,8 @@ impl Document
 
         dlog(
             &format!(
-                "5 safe Sringify A Doc({}):  {} / {} length:{} serialized document: {}",
-                cutils::hash8c(&self.m_doc_hash),
-                self.m_doc_type,
+                "Safe stringify a doc {} class: {} length:{} a serialized document: {}",
+                self.get_doc_identifier(),
                 self.m_doc_class,
                 j_doc["dLen"],
                 serialized_j_doc),
@@ -350,17 +349,17 @@ impl Document
             document["dClass"] = self.m_doc_class.clone().into();
         }
 
-        /*
         // maybe add inputs
-        auto [has_input, Jinputs] = exportInputsToJson();
-        if (has_input)
-        document["inputs"] = Jinputs;
+        if self.has_inputs()
+        {
+            document["inputs"] = make_inputs_tuples(self.get_inputs()).into();
+        }
 
         // maybe add outputs
-        auto [has_output, Joutputs] = exportOutputsToJson();
-        if (has_output)
-        document["outputs"] = Joutputs;
-        */
+        if self.has_outputs()
+        {
+            document["outputs"] = make_outputs_tuples(self.get_outputs()).into();
+        }
 
         if self.m_doc_ref != "" {
             document["dRef"] = self.m_doc_ref.clone().into();
@@ -381,10 +380,8 @@ impl Document
         }
 
         if ext_info_in_document {
-            document["dExtInfo"] = json!({
-            "dExtInfo": self.m_doc_ext_info
-        });
-            // document["dExtInfo"] = serde_json::to_string(&self.m_doc_ext_info).unwrap().into();
+            let d_ext_info = export_doc_ext_to_json(&self.m_doc_ext_info);
+            document["dExtInfo"] = d_ext_info.into();
         }
 
         return document;
@@ -581,6 +578,52 @@ impl Document
         panic!("Invalid document type to get inputs! {}", self.get_doc_identifier());
     }
 
+    pub fn has_inputs(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return true;
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return false;
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to has-inputs {}", self.get_doc_identifier());
+    }
+
+    pub fn has_outputs(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return true;
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return true;
+        } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
+        {} else if self.m_doc_type == constants::document_types::BALLOT
+        {} else if self.m_doc_type == constants::document_types::POLLING
+        {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
+        {} else if self.m_doc_type == constants::document_types::PROPOSAL
+        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
+        {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
+        {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
+        {}
+
+        panic!("Invalid document type to has-outputs {}", self.get_doc_identifier());
+    }
+
     // old name was setDExtHash
     pub fn set_doc_ext_hash(&mut self)
     {
@@ -646,7 +689,10 @@ impl Document
     {
         if self.m_doc_type == constants::document_types::COINBASE
         {
-            return self.m_if_coinbase_doc.custom_validate_doc(self, block);
+            return (true, "".to_string());
+        } else if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.custom_validate_doc(self, block);
         }
 
         panic!("Invalid document for 'custom Validate Doc' {}", self.get_doc_identifier());
@@ -799,6 +845,12 @@ impl Document
         c_date: &CDateT,
         extra_length: DocLenT) -> (bool, CMPAIValueT)
     {
+        dlog(
+            &format!(
+                "calc-doc-data-and-process-cost, stage: {}, c_date: {}, extra_length: {}",
+                stage, c_date, extra_length),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
         if self.m_doc_type == constants::document_types::BASIC_TX
         {
             return self.m_if_basic_tx_doc.calc_doc_data_and_process_cost(
@@ -924,10 +976,6 @@ false
     }.contains(dType));
     }
 
-    String Document::stringify_inputs() const
-    {
-    return SignatureStructureHandler::stringify_inputs(get_inputs());
-    }
 
     String Document::stringify_outputs() const
     {

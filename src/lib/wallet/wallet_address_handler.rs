@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, dlog, machine};
+use crate::{application, constants, dlog, machine};
+use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::custom_types::{ClausesT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_MACHINE_WALLET_ADDRESSES};
@@ -103,6 +104,39 @@ pub fn convert_to_values(w_address: &WalletAddress) -> (bool, HashMap<&str, Stri
     return (true, values);
 }
 
+pub fn create_and_insert_new_address_in_wallet<'a>(
+    signature_type: &'a str,
+    signature_mod: &'a str, // m of n
+    signature_version: &'a str) -> (bool, String)
+{
+    let err_msg: String;
+    let (status, unlock_doc) = create_a_new_address(
+        signature_type,
+        signature_mod,
+        signature_version);
+    if !status
+    {
+        err_msg = format!("Couldn't create an ECDSA key pairs. signature-type:{}, signature-mod:{}, signature-version:{}",
+                          signature_type, signature_mod, signature_version);
+        return (false, err_msg);
+    }
+    let the_address = unlock_doc.m_account_address.clone();
+    let mp_code = machine().get_selected_m_profile().clone();
+    let now_ = application().now();
+    let w_address = WalletAddress {
+        m_mp_code: mp_code,
+        m_address: the_address.clone(),
+        m_title: format!("{} address ({} signature) ver({})", signature_type, signature_mod, signature_version),
+        m_unlock_doc: unlock_doc,
+        m_creation_date: now_,
+    };
+    let (status, msg) = insert_address(&w_address);
+
+    if !status
+    { return (false, msg); }
+
+    return (true, the_address.clone());
+}
 
 //old_name_was insertAddress
 pub fn insert_address(w_address: &WalletAddress) -> (bool, String)

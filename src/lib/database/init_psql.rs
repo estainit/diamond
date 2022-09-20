@@ -732,7 +732,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     bd_doc_class varchar(32) NOT NULL,    -- mOfn, p4p, ...
     bd_payload TEXT NOT NULL,    -- stringifyed body of a single transaction
     bd_dp_cost BIGINT NOT NULL,    -- the backer's fee
-    bd_doc_len INT NOT NULL    -- transaction lengths by char
+    bd_doc_len INT4 NOT NULL    -- transaction lengths by char
     );
 ",
         "

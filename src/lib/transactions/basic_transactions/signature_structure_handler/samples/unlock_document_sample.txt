@@ -1,0 +1,104 @@
+{
+    "m_unlock_sets": [
+        {
+            "m_signature_type": "Strict",
+            "m_signature_ver": "0.0.1",
+            "m_signature_sets": [
+                {
+                    "m_signer_id": "0000001",
+                    "m_signature_key": "02deda35eeb5bceef530573917f6332c794fac354dc6a45c5dc1086c2880ae6173",
+                    "m_permitted_to_pledge": "N",
+                    "m_permitted_to_delegate": "N",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                },
+                {
+                    "m_signer_id": "0000002",
+                    "m_signature_key": "02d2df353fe8e306b0986c774c674b298c56c51e9de4200a142dccde65721282e1",
+                    "m_permitted_to_pledge": "N",
+                    "m_permitted_to_delegate": "N",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                }
+            ],
+            "m_merkle_proof": [
+                "r.leave_4",
+                "l.e7720680189ed8851aaa6dac86b75265b5867a52484c2e2afbd8a02c4d6230b8"
+            ],
+            "m_left_hash": "",
+            "m_salt": "7784f23b605ba6a4"
+        },
+        {
+            "m_signature_type": "Strict",
+            "m_signature_ver": "0.0.1",
+            "m_signature_sets": [
+                {
+                    "m_signer_id": "0000000",
+                    "m_signature_key": "0343b174ea00715e0b6011ba6198b7223c49e29e1141ed08e2b17b197cbe4c9301",
+                    "m_permitted_to_pledge": "Y",
+                    "m_permitted_to_delegate": "Y",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                },
+                {
+                    "m_signer_id": "0000001",
+                    "m_signature_key": "02deda35eeb5bceef530573917f6332c794fac354dc6a45c5dc1086c2880ae6173",
+                    "m_permitted_to_pledge": "N",
+                    "m_permitted_to_delegate": "N",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                }
+            ],
+            "m_merkle_proof": [
+                "r.4bd81f336636a93f9ff6b17182388605ed3580b6f0afce81a8cb127d7182ce8c",
+                "r.88b18ac38e17e322599e0cc304e3b493b25b28b97ae34c4f7dcd2dbf1478ae0a"
+            ],
+            "m_left_hash": "",
+            "m_salt": "f51ccac90852581a"
+        },
+        {
+            "m_signature_type": "Strict",
+            "m_signature_ver": "0.0.1",
+            "m_signature_sets": [
+                {
+                    "m_signer_id": "0000000",
+                    "m_signature_key": "0343b174ea00715e0b6011ba6198b7223c49e29e1141ed08e2b17b197cbe4c9301",
+                    "m_permitted_to_pledge": "Y",
+                    "m_permitted_to_delegate": "Y",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                },
+                {
+                    "m_signer_id": "0000002",
+                    "m_signature_key": "02d2df353fe8e306b0986c774c674b298c56c51e9de4200a142dccde65721282e1",
+                    "m_permitted_to_pledge": "N",
+                    "m_permitted_to_delegate": "N",
+                    "m_input_time_lock": 0,
+                    "m_output_time_lock": 0
+                }
+            ],
+            "m_merkle_proof": [
+                "r.88b18ac38e17e322599e0cc304e3b493b25b28b97ae34c4f7dcd2dbf1478ae0a"
+            ],
+            "m_left_hash": "6288cf5ad27c2a5e00167b035152e97a8e77759db9a0ddeea074fbd0571e19eb",
+            "m_salt": "5b63e243dca37c8c"
+        }
+    ],
+    "m_merkle_root": "38a2d19509e4c4cb761a5c5a39d8d4153a0c28dc77ff4c07b34aa42e150de393",
+    "m_account_address": "im1xqenscfjvscnjdfs89jngce5vd3rwd33vy6kxdtpxvukgwryxscs6xpe6r",
+    "m_merkle_version": "0.1.0",
+    "m_private_keys": {
+        "f51ccac90852581a": [
+            "4420f136fc2810907a9670bbab4d26b36ee6a02b759496f86fa0d3aed161a902",
+            "b093b11f9412bb2e0acee606f3e12df6fe693fef3dce63392f3f26636b1a43ce"
+        ],
+        "7784f23b605ba6a4": [
+            "b093b11f9412bb2e0acee606f3e12df6fe693fef3dce63392f3f26636b1a43ce",
+            "f5d31415c8ea9faf21f2742b8db7eec4906c3ce1f9c6b83d895db9e5f835231d"
+        ],
+        "5b63e243dca37c8c": [
+            "4420f136fc2810907a9670bbab4d26b36ee6a02b759496f86fa0d3aed161a902",
+            "f5d31415c8ea9faf21f2742b8db7eec4906c3ce1f9c6b83d895db9e5f835231d"
+        ]
+    }
+}

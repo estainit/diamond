@@ -1,0 +1,74 @@
+{
+    "dCDate": "2022-09-20 09:01:47",
+    "dClass": "SimpleTx",
+    "dExtHash": "5c0b333a49d3394669808db9fc4b9f7ebf2ca742520ebd7bc7ea44f05df2916f",
+    "dExtInfo": [
+        {
+            "signatures": [
+                [
+                    "3044022056dee311e80b2e823e75ab113c48e1bd57b85b3219d4beff05634fa60004c3f702207b747e7261a2d4e5b8208ae80f5f26df6ed981f9c08afed7552b82a15d503c55",
+                    "ALL"
+                ],
+                [
+                    "304402201d301bcd9d234b32209f0bb294d6f59f096566c2b544a5eeec02483ab4770d0e02200e409b28fd0a26f06d4847b328820ecf9c6e1b2c51634b2128dad01c90d03fa0",
+                    "ALL"
+                ]
+            ],
+            "uSet": {
+                "lHash": "",
+                "mProof": [
+                    "r.leave_4",
+                    "l.e7720680189ed8851aaa6dac86b75265b5867a52484c2e2afbd8a02c4d6230b8"
+                ],
+                "sSets": [
+                    {
+                        "iTLock": 0,
+                        "iTLockSt": 0,
+                        "oTLock": 0,
+                        "pDelegate": "N",
+                        "pPledge": "N",
+                        "sKey": "02deda35eeb5bceef530573917f6332c794fac354dc6a45c5dc1086c2880ae6173"
+                    },
+                    {
+                        "iTLock": 0,
+                        "iTLockSt": 0,
+                        "oTLock": 0,
+                        "pDelegate": "N",
+                        "pPledge": "N",
+                        "sKey": "02d2df353fe8e306b0986c774c674b298c56c51e9de4200a142dccde65721282e1"
+                    }
+                ],
+                "sType": "Strict",
+                "sVer": "0.0.1",
+                "salt": "7784f23b605ba6a4"
+            }
+        }
+    ],
+    "dHash": "5dcaa701ef3528b8a4d29199e0c5d4723de990b1dde299b1a5c2125e1e30e36c",
+    "dLen": "0001411",
+    "dPIs": [
+        2
+    ],
+    "dType": "BasicTx",
+    "dVer": "0.0.2",
+    "inputs": [
+        [
+            "df83ad0f273caeed72d7fd854ad27f3234d3c84cede89d08b5a56ab4b3a065ef",
+            "0"
+        ]
+    ],
+    "outputs": [
+        [
+            "im1xqmnqdtzvscn2wfexenxzvnrxumrwe3kv33nqve4vsukxdfcvguqycmndk",
+            "2003981124000"
+        ],
+        [
+            "im1xqenywtzvvunxefevs6n2wfk8qurgvp5x43rjetrxp3nqcf5xqcs8djvk5",
+            "44000000000"
+        ],
+        [
+            "im1xq6xyvmy8pnrsdmyx5engdnyxesnwwrrxuenscnyxgmnqdryx9nq507s4m",
+            "18876000"
+        ]
+    ]
+}

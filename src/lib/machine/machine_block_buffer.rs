@@ -42,7 +42,7 @@ impl CMachine {
         let doc_type = doc.get_doc_type();
         let doc_class = doc.get_doc_class();
         let dp_cost_i64 = dp_cost as i64;
-        let payload_len_i64 = payload.len() as i64;
+        let payload_len_i32 = payload.len() as i32;
         let now_ = application().now();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("bd_mp_code", &mp_code as &(dyn ToSql + Sync)),
@@ -52,7 +52,7 @@ impl CMachine {
             ("bd_doc_class", &doc_class as &(dyn ToSql + Sync)),
             ("bd_payload", &payload as &(dyn ToSql + Sync)),
             ("bd_dp_cost", &dp_cost_i64 as &(dyn ToSql + Sync)),
-            ("bd_doc_len", &payload_len_i64 as &(dyn ToSql + Sync)),
+            ("bd_doc_len", &payload_len_i32 as &(dyn ToSql + Sync)),
         ]);
         let status: bool = q_insert(
             C_MACHINE_BLOCK_BUFFER,
@@ -171,7 +171,7 @@ impl CMachine {
       String msg;
 
       QVDRecordsT buffered_trxs = search_buffered_docs(
-        {{"bd_doc_type", CConsts::DOC_TYPES::BasicTx}},
+        {{"bd_doc_type", constants::DOC_TYPES::BasicTx}},
         stb_machine_block_buffer_fields,
         {{"bd_dp_cost", "DESC"},
         {"bd_doc_class", "ASC"},
@@ -206,7 +206,7 @@ impl CMachine {
           return {false, false, msg};
         }
 
-        if (trx->m_doc_class == CConsts::TRX_CLASSES::P4P)
+        if (trx->m_doc_class == constants::TRX_CLASSES::P4P)
           supported_P4P.push(trx->m_doc_ref);
 
         for (auto an_output: trx->getOutputs())
@@ -248,7 +248,7 @@ impl CMachine {
 
       // create treasury payment
       CMPAISValueT block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
-      CMPAISValueT backer_net_fee = cutils::CFloor((block_total_dp_cost * CConsts::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
+      CMPAISValueT backer_net_fee = cutils::CFloor((block_total_dp_cost * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100) - block_fix_cost;
       if (backer_net_fee < 0)
       {
         msg = "The block can not cover broadcasting costs! \nblock Total DPCost(" + cutils::microPAIToPAI6(block_total_dp_cost) + "\nbacker Net Fee(" + cutils::microPAIToPAI6(backer_net_fee) + ")";
@@ -262,7 +262,7 @@ impl CMachine {
         {QJsonArray {CMachine::getBackerAddress(), QVariant::fromValue(backer_net_fee).toDouble()}}
       };
       Document* DPCostTrx = DocumentFactory::create(QJsonObject {
-        {"dType", CConsts::DOC_TYPES::DPCostPay},
+        {"dType", constants::DOC_TYPES::DPCostPay},
         {"dCDate", block->m_block_creation_date},
         {"outputs", Joutputs}});
       DPCostTrx->setDocHash();
@@ -308,9 +308,9 @@ impl CMachine {
 
       for (QVDicT serialized_doc: buffered_docs)
       {
-        BlockLenT roughly_block_size = block->safeStringifyBlock(true).length();
+        BlockLenT roughly_block_size = block->safeStringifyBlock(true).len();
         // size control TODO: needs a little tuneing
-        if (roughly_block_size > ((CConsts::MAX_BLOCK_LENGTH_BY_CHAR * 80) / 100))
+        if (roughly_block_size > ((constants::MAX_BLOCK_LENGTH_BY_CHAR * 80) / 100))
           continue;
 
         // TODO: it is too important in a unique block exit both trx and it's reffered Doc(if is reffered to a doc),

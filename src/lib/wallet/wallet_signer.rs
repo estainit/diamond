@@ -12,25 +12,27 @@ use crate::lib::transactions::basic_transactions::make_a_transaction::make_a_tra
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{TInput, TOutput};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
-use crate::lib::wallet::wallet_address_handler::get_addresses_info;
+use crate::lib::wallet::wallet_address_handler::{create_and_insert_new_address_in_wallet, get_addresses_info};
 use crate::lib::wallet::wallet_coins::{delete_from_funds, delete_from_funds_by_doc};
 
 
 //old_name_was walletSigner
 pub fn wallet_signer(
-    candidated_coins: &VString,
+    candidate_coins: &VString,
     sending_amount: CMPAIValueT,
+    fee_calc_method: &String,
     desired_trx_fee: CMPAIValueT,
     recipient: &CAddressT,
+    change_back_mod: &String,
     change_back_address: &CAddressT,
     output_bill_size: CMPAIValueT,  // 0 means one output for entire sending coins
     comment: String) -> (bool, String)
 {
     let message: String;
 
-    let unlocker_index = 0; // if client didn't mention, chose the first unlock struct FIXME =0
+    let un_locker_index = 0; // if client didn't mention, chose the first unlock struct FIXME =0
 
-    if candidated_coins.len() == 0
+    if candidate_coins.len() == 0
     {
         message = "No coin selected to spend!".to_string();
         dlog(
@@ -76,7 +78,7 @@ pub fn wallet_signer(
         m_clause_operand: "IN",
         m_field_multi_values: vec![],
     };
-    for a_coin in candidated_coins {
+    for a_coin in candidate_coins {
         c1.m_field_multi_values.push(a_coin as &(dyn ToSql + Sync));
     }
     let spendable_coins = search_in_spendable_coins(
@@ -127,9 +129,26 @@ pub fn wallet_signer(
 
     let mut outputs: Vec<TOutput> = vec![];
     let mut change_back_address = change_back_address.clone();
-    if change_back_address == ""
+    if change_back_mod == constants::change_back_mods::EXACT_ADDRESS
+    {
+        if change_back_address == ""
+        {
+            change_back_address = machine().get_backer_address();
+        }
+    } else if change_back_mod == constants::change_back_mods::BACKER_ADDRESS
     {
         change_back_address = machine().get_backer_address();
+    } else if change_back_mod == constants::change_back_mods::A_NEW_ADDRESS
+    {
+        let (status, msg) = create_and_insert_new_address_in_wallet(
+            constants::signature_types::BASIC,
+            "1/1",
+            constants::CURRENT_SIGNATURE_VERSION);
+        if !status
+        {
+            return (false, msg);
+        }
+        change_back_address = msg;
     }
 
     outputs.push(TOutput {
@@ -198,7 +217,7 @@ pub fn wallet_signer(
 
         let address_details: UnlockDocument = serde_json::from_str(
             &addresses_dict[&an_input.m_owner]["wa_detail"]).unwrap();
-        an_input.m_unlock_set = address_details.m_unlock_sets[unlocker_index].clone();
+        an_input.m_unlock_set = address_details.m_unlock_sets[un_locker_index].clone();
         let salt = &an_input.m_unlock_set.m_salt;
         // let private_keys: VString = address_details.m_private_keys[salt];
         an_input.m_private_keys = address_details.m_private_keys[salt].clone();
@@ -212,8 +231,8 @@ pub fn wallet_signer(
     let trx_template = BasicTransactionTemplate::new(
         inputs,
         outputs,
-        0,  // max trx fee
-        desired_trx_fee,    // dDPCost
+        fee_calc_method,
+        desired_trx_fee,
         comment,
     );
 
@@ -261,7 +280,6 @@ pub fn wallet_signer(
 
     return (true, message);
 }
-
 
 //old_name_was locallyMarkUTXOAsUsed
 pub fn locally_mark_coin_as_used(doc: &Document)

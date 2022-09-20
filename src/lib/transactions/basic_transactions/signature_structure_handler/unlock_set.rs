@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use crate::cutils::remove_quotes;
 
 use crate::lib::constants;
 use crate::lib::custom_types::{JSonObject, VString};
@@ -45,6 +46,35 @@ impl UnlockSet {
            "salt": self.m_salt,
         });
         return out;
+    }
+
+    pub fn load_from_json(j_obj: &JSonObject) -> (bool, Self)
+    {
+        let mut signature_sets: Vec<IndividualSignature> = vec![];
+        for a_set in j_obj["sSets"].as_array().unwrap()
+        {
+            let (status, inv_set) = IndividualSignature::load_from_json(a_set);
+            if !status
+            {
+                return (false, Self::new())
+            }
+            signature_sets.push(inv_set);
+        }
+
+        let mut merkle_proof: VString = vec![];
+        for an_item in j_obj["mProof"].as_array().unwrap()
+        {
+            merkle_proof.push(remove_quotes(an_item));
+        }
+        let out = Self {
+            m_signature_type: remove_quotes(&j_obj["sType"]),
+            m_signature_ver: remove_quotes(&j_obj["sVer"]),
+            m_signature_sets: signature_sets,
+            m_merkle_proof: merkle_proof,
+            m_left_hash: remove_quotes(&j_obj["lHash"]),
+            m_salt: remove_quotes(&j_obj["salt"]),
+        };
+        return (true, out);
     }
 
     pub fn dump(&self) -> String {

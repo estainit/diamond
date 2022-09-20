@@ -1,13 +1,12 @@
 use std::collections::HashMap;
 use actix_web::{get, post, Responder, web};
 use serde_json::json;
-use crate::{application, constants, dlog, machine};
+use crate::{constants, dlog, machine};
 use crate::constants::{MONEY_MAX_DIVISION};
 use crate::cutils::{controlled_str_to_json, remove_quotes};
-use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::custom_types::{CMPAIValueT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::wallet::get_addresses_list::get_addresses_list;
-use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
+use crate::lib::wallet::wallet_address_handler::{create_and_insert_new_address_in_wallet};
 use crate::lib::wallet::wallet_coins::get_coins_list;
 use crate::lib::wallet::wallet_signer::wallet_signer;
 
@@ -88,27 +87,31 @@ pub async fn refresh_w_coins() -> web::Json<QVDRecordsT>
 pub async fn create_basic_1of1_address() -> web::Json<(bool, String)>
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let err_msg: String;
-        let (status, unlock_doc) = create_a_new_address(
+        return create_and_insert_new_address_in_wallet(
             constants::signature_types::BASIC,
             "1/1",
-            "0.0.1");
-        if !status
-        {
-            err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
-            return (false, err_msg);
-        }
-        let mp_code = machine().get_selected_m_profile().clone();
-        let now_ = application().now();
-        let w_address = WalletAddress {
-            m_mp_code: mp_code,
-            m_address: unlock_doc.m_account_address.clone(),
-            m_title: "Basic address (1/1 signature) ver(0.0.1)".to_string(),
-            m_unlock_doc: unlock_doc,
-            m_creation_date: now_,
-        };
-        let (status, msg) = insert_address(&w_address);
-        return (status, msg);
+            constants::CURRENT_SIGNATURE_VERSION);
+
+        // let (status, unlock_doc) = create_a_new_address(
+        //     constants::signature_types::BASIC,
+        //     "1/1",
+        //     "0.0.1");
+        // if !status
+        // {
+        //     err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
+        //     return (false, err_msg);
+        // }
+        // let mp_code = machine().get_selected_m_profile().clone();
+        // let now_ = application().now();
+        // let w_address = WalletAddress {
+        //     m_mp_code: mp_code,
+        //     m_address: unlock_doc.m_account_address.clone(),
+        //     m_title: "Basic address (1/1 signature) ver(0.0.1)".to_string(),
+        //     m_unlock_doc: unlock_doc,
+        //     m_creation_date: now_,
+        // };
+        // let (status, msg) = insert_address(&w_address);
+        // return (status, msg);
     }).await.expect("Failed in create Basic 1/1 address!");
     web::Json(api_res)
 }
@@ -117,27 +120,32 @@ pub async fn create_basic_1of1_address() -> web::Json<(bool, String)>
 pub async fn create_basic_2of3_address() -> web::Json<(bool, String)>
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let err_msg: String;
-        let (status, unlock_doc) = create_a_new_address(
+        return create_and_insert_new_address_in_wallet(
             constants::signature_types::BASIC,
             "2/3",
-            "0.0.1");
-        if !status
-        {
-            err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
-            return (false, err_msg);
-        }
-        let mp_code = machine().get_selected_m_profile().clone();
-        let now_ = application().now();
-        let w_address = WalletAddress {
-            m_mp_code: mp_code,
-            m_address: unlock_doc.m_account_address.clone(),
-            m_title: "Basic address (2/3 signature) ver(0.0.1)".to_string(),
-            m_unlock_doc: unlock_doc,
-            m_creation_date: now_,
-        };
-        let (status, msg) = insert_address(&w_address);
-        return (status, msg);
+            constants::CURRENT_SIGNATURE_VERSION);
+
+        // let err_msg: String;
+        // let (status, unlock_doc) = create_a_new_address(
+        //     constants::signature_types::BASIC,
+        //     "2/3",
+        //     constants::CURRENT_SIGNATURE_VERSION);
+        // if !status
+        // {
+        //     err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
+        //     return (false, err_msg);
+        // }
+        // let mp_code = machine().get_selected_m_profile().clone();
+        // let now_ = application().now();
+        // let w_address = WalletAddress {
+        //     m_mp_code: mp_code,
+        //     m_address: unlock_doc.m_account_address.clone(),
+        //     m_title: "Basic address (2/3 signature) ver(0.0.1)".to_string(),
+        //     m_unlock_doc: unlock_doc,
+        //     m_creation_date: now_,
+        // };
+        // let (status, msg) = insert_address(&w_address);
+        // return (status, msg);
     }).await.expect("Failed in create Basic 1/1 address!");
     web::Json(api_res)
 }
@@ -146,27 +154,32 @@ pub async fn create_basic_2of3_address() -> web::Json<(bool, String)>
 pub async fn create_basic_3of5_address() -> web::Json<(bool, String)>
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let err_msg: String;
-        let (status, unlock_doc) = create_a_new_address(
+        return create_and_insert_new_address_in_wallet(
             constants::signature_types::BASIC,
             "3/5",
-            "0.0.1");
-        if !status
-        {
-            err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
-            return (false, err_msg);
-        }
-        let mp_code = machine().get_selected_m_profile().clone();
-        let now_ = application().now();
-        let w_address = WalletAddress {
-            m_mp_code: mp_code,
-            m_address: unlock_doc.m_account_address.clone(),
-            m_title: "Basic address (3/5 signature) ver(0.0.1)".to_string(),
-            m_unlock_doc: unlock_doc,
-            m_creation_date: now_,
-        };
-        let (status, msg) = insert_address(&w_address);
-        return (status, msg);
+            constants::CURRENT_SIGNATURE_VERSION);
+
+        // let err_msg: String;
+        // let (status, unlock_doc) = create_a_new_address(
+        //     constants::signature_types::BASIC,
+        //     "3/5",
+        //     constants::CURRENT_SIGNATURE_VERSION);
+        // if !status
+        // {
+        //     err_msg = format!("Couldn't create an ECDSA 1of1 key pairs");
+        //     return (false, err_msg);
+        // }
+        // let mp_code = machine().get_selected_m_profile().clone();
+        // let now_ = application().now();
+        // let w_address = WalletAddress {
+        //     m_mp_code: mp_code,
+        //     m_address: unlock_doc.m_account_address.clone(),
+        //     m_title: "Basic address (3/5 signature) ver(0.0.1)".to_string(),
+        //     m_unlock_doc: unlock_doc,
+        //     m_creation_date: now_,
+        // };
+        // let (status, msg) = insert_address(&w_address);
+        // return (status, msg);
     }).await.expect("Failed in create Basic 1/1 address!");
     web::Json(api_res)
 }
@@ -178,18 +191,64 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
     let api_res = tokio::task::spawn_blocking(move || {
         let (_status, request) = controlled_str_to_json(&post);
         println!("New POST request to create a post! request {:?}", request);
-        let trx_recipient = remove_quotes(&request["txRecepient"]);
+
+        let d_comment = remove_quotes(&request["dComment"]);
+        if request["txAmount"].is_null() || request["txAmount"] == "\"\""
+        {
+            return json!({
+                "status": false,
+                "message": "Missed transaction amount!".to_string(),
+                "info": json!({}),
+            });
+        }
         let trx_amount = remove_quotes(&request["txAmount"]).parse::<CMPAIValueT>().unwrap();
-        let trx_fee = (&request["txFee"].as_f64().unwrap() * constants::MONEY_MAX_DIVISION as f64) as CMPAIValueT;
+
+        if request["txRecipient"].is_null() || request["txRecipient"] == "\"\""
+        {
+            return json!({
+                "status": false,
+                "message": "Missed recipient!".to_string(),
+                "info": json!({}),
+            });
+        }
+        let trx_recipient = remove_quotes(&request["txRecipient"]);
+
+        if request["txFeeCalcMethod"].is_null() || request["txFeeCalcMethod"] == "\"\""
+        {
+            return json!({
+                "status": false,
+                "message": "Missed Fee Calculate Method!".to_string(),
+                "info": json!({}),
+            });
+        }
+        let trx_fee_calc_method = remove_quotes(&request["txFeeCalcMethod"]);
+
+        let mut trx_fee: CMPAIValueT = 0;
+        if trx_fee_calc_method == constants::transaction_fee_calculate_methods::EXACT_FEE.to_string()
+        {
+            if request["txFee"].is_null() || request["txFee"] == "\"\"" || request["txFee"] == "0"
+            {
+                return json!({
+                    "status": false,
+                    "message": "Missed transaction fee!".to_string(),
+                    "info": json!({}),
+                });
+            }
+            trx_fee = (&request["txFee"].as_f64().unwrap() * constants::MONEY_MAX_DIVISION as f64) as CMPAIValueT;
+        }
+
+        let trx_change_back_mod = remove_quotes(&request["changeBackMod"]);
         let trx_change_back_address = remove_quotes(&request["changeBackAddress"]);
         let selected_coins = request["selectedCoins"].as_array().unwrap();
+
         println!("selected_coins,1,,,,,{:?}", selected_coins);
         let selected_coins = selected_coins
             .iter()
             .map(|x| remove_quotes(&x))
             .collect::<VString>();
         println!("selected_coins,2,,,,,{:?}", selected_coins);
-        let d_comment = remove_quotes(&request["dComment"]);
+
+
         if selected_coins.len() == 0
         {
             return json!({
@@ -215,8 +274,10 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
         let (sign_res, sign_status_msg) = wallet_signer(
             &selected_coins,
             trx_amount * MONEY_MAX_DIVISION,
-            trx_fee * MONEY_MAX_DIVISION,
+            &trx_fee_calc_method,
+            trx_fee,
             &trx_recipient,
+            &trx_change_back_mod,
             &trx_change_back_address,
             bill_size,
             d_comment,
@@ -232,7 +293,7 @@ pub async fn sign_trx_and_push_to_buffer(post: String) -> impl Responder
                 constants::SecLevel::Error);
             return json!({
                 "status": false,
-                "message": "Transaction was signed and sent to machine buffer".to_string(),
+                "message": "Failed in transaction sign or send to machine buffer".to_string(),
                 "info": json!({}),
             });
         }

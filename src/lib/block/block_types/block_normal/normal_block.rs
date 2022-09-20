@@ -20,10 +20,10 @@ bool NormalBlock::setByJsonObj(const QJsonObject& obj)
   return true;
 }
 
-QString NormalBlock::dumpBlock() const
+String NormalBlock::dumpBlock() const
 {
   // firsdt call parent dump
-  QString out = Block::dumpBlock();
+  String out = Block::dumpBlock();
 
   // then child dumpping
   out += "\n in child";
@@ -31,7 +31,7 @@ QString NormalBlock::dumpBlock() const
 }
 
 
-QString NormalBlock::stringifyFloatingVotes() const
+String NormalBlock::stringifyFloatingVotes() const
 {
   // process m_floating_votes (if exist)
   QJsonArray fVotes{};  // legacy including unimplemented feaure in blocks in order to forward compatibility
@@ -41,10 +41,10 @@ QString NormalBlock::stringifyFloatingVotes() const
 }
 
 
-QString NormalBlock::getBlockHashableString() const
+String NormalBlock::getBlockHashableString() const
 {
   // in order to have almost same hash! we sort the attribiutes alphabeticaly
-  QString hashable_block = "{";
+  String hashable_block = "{";
   hashable_block += "\"ancestors\":" + CUtils::serializeJson(QVariant::fromValue(m_ancestors).toJsonArray()) + ",";
   hashable_block += "\"backer\":\"" + m_block_backer + "\",";
   hashable_block += "\"bCDate\":\"" + m_block_creation_date + "\",";
@@ -78,9 +78,9 @@ BlockLenT NormalBlock::calcBlockLength(const QJsonObject& block_obj) const
 }
 
 
-QString NormalBlock::calcBlockHash() const
+String NormalBlock::calcBlockHash() const
 {
-  QString hashable_block = getBlockHashableString();
+  String hashable_block = getBlockHashableString();
 
   // clonedTransactionsRootHash: block.clonedTransactionsRootHash, // note that we do not put the clonedTransactions directly in block hash, instead using clonedTransactions-merkle-root-hash
 
@@ -88,10 +88,10 @@ QString NormalBlock::calcBlockHash() const
   return CCrypto::keccak256(hashable_block);
 }
 
-std::tuple<bool, QString> NormalBlock::calcBlockExtRootHash() const
+std::tuple<bool, String> NormalBlock::calcBlockExtRootHash() const
 {
   // for POW blocks the block has only one document and the dExtHash of doc and bExtHash of block are equal
-  QStringList doc_ext_hashes = {};
+  StringList doc_ext_hashes = {};
   for(Document* a_doc: m_documents)
     doc_ext_hashes.append(a_doc->m_doc_ext_hash);
   auto[documentsExtRootHash, final_verifies, version, levels, leaves] = CMerkle::generate(doc_ext_hashes);
@@ -104,10 +104,10 @@ std::tuple<bool, QString> NormalBlock::calcBlockExtRootHash() const
 
 bool NormalBlock::controlBlockLength() const
 {
-  QString stringyfied_block = safeStringifyBlock(false);
-  if (static_cast<BlockLenT>(stringyfied_block.length()) != m_block_length)
+  String stringyfied_block = safeStringifyBlock(false);
+  if (static_cast<BlockLenT>(stringyfied_block.len()) != m_block_length)
   {
-    CLog::log("Mismatch Normal block length Block(" + CUtils::hash8c(m_block_hash) + ") local length(" + QString::number(stringyfied_block.length()) + ") remote length(" + QString::number(m_block_length) + ") stringyfied_block:" + stringyfied_block, "sec", "error");
+    CLog::log("Mismatch Normal block length Block(" + CUtils::hash8c(m_block_hash) + ") local length(" + String::number(stringyfied_block.len()) + ") remote length(" + String::number(m_block_length) + ") stringyfied_block:" + stringyfied_block, "sec", "error");
     return false;
   }
   return true;
@@ -123,10 +123,10 @@ bool NormalBlock::controlBlockLength() const
  * @param stage
  * @return {status, is_sus_block, double_spends}
  */
-std::tuple<bool, bool, QString, SpendCoinsList*> NormalBlock::validateNormalBlock(
-  const QString& stage) const
+std::tuple<bool, bool, String, SpendCoinsList*> NormalBlock::validateNormalBlock(
+  const String& stage) const
 {
-  QString msg = "";
+  String msg = "";
 //   let hookValidate = listener.doCallSync('SASH_before_validate_normal_block', args);
    CLog::log("xxxxxxxxxxxx validate Normal Block xxxxxxxxxxxxxxxxxxxx", "app", "trace");
    CLog::log("\n\n\n" + dumpBlock(), "app", "trace");
@@ -143,13 +143,13 @@ std::tuple<bool, bool, QString, SpendCoinsList*> NormalBlock::validateNormalBloc
 //       grpdRes.shouldPurgeMessage = true;
   }
 
-  QStringList dTyps = transient_block_info.m_groupped_documents.keys();
+  StringList dTyps = transient_block_info.m_groupped_documents.keys();
   dTyps.sort();
   CLog::log("Block(" +CUtils::hash6c(m_block_hash) + ") docs types(" + CUtils::dumpIt(dTyps), "app", "info");
 
   // control if each trx is referenced to only one Document?
-  QStringList tmpTrxs;
-  for(QString  key: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
+  StringList tmpTrxs;
+  for(String  key: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
     tmpTrxs.append(transient_block_info.m_map_trx_ref_to_trx_hash[key]);
 
   if (tmpTrxs.size() != CUtils::arrayUnique(tmpTrxs).size())
@@ -269,7 +269,7 @@ std::tuple<bool, bool> NormalBlock::handleReceivedBlock() const
 {
   CLog::log("******** handle Received Normal Block(" + CUtils::hash8c(m_block_hash)+ ")", "app", "trace");
 
-  auto[status, is_sus_block, validate_msg, double_spends] = validateNormalBlock(CConsts::STAGES::Validating);
+  auto[status, is_sus_block, validate_msg, double_spends] = validateNormalBlock(constants::STAGES::Validating);
 
   CLog::log("Received a block of type(" + m_block_type + ") block(" +CUtils::hash8c(m_block_hash) + "), validation result: is_sus_block(" + CUtils::dumpIt(is_sus_block) + ") double_spends(" +CUtils::dumpDoubleSpends(double_spends) + ")", "app", "trace");
   if (!status)
@@ -287,7 +287,7 @@ std::tuple<bool, bool> NormalBlock::handleReceivedBlock() const
   UTXOHandler::removeUsedCoinsByBlock(this);
 
   // log spend coins
-  QString cDate = CUtils::getNow();
+  String cDate = CUtils::getNow();
   // if machine is in sync mode, we send half a cycle after creationdate to avoid deleting all spend records in table "trx_spend"
   if (CMachine::isInSyncProcess())
     cDate = m_block_creation_date;
@@ -310,7 +310,7 @@ std::tuple<bool, bool> NormalBlock::handleReceivedBlock() const
     {
       auto[status_sus, tmp_block] = FloatingVoteBlock::createFVoteBlock(
         m_block_hash,  // uplink
-        CConsts::FLOAT_BLOCKS_CATEGORIES::Trx,  // bCat
+        constants::FLOAT_BLOCKS_CATEGORIES::Trx,  // bCat
         SpentCoinsHandler::convertSpendsToJsonObject(double_spends), // voteData
         cDate);
 
@@ -321,7 +321,7 @@ std::tuple<bool, bool> NormalBlock::handleReceivedBlock() const
         CLog::log("\n\nFailed on generating floating vote(susVote) : of block uplink(" + CUtils::hash8c(m_block_hash) + ") ", "app", "error");
         return {false, true};
       }
-      QString stringified_block = tmp_block->safeStringifyBlock();
+      String stringified_block = tmp_block->safeStringifyBlock();
       CLog::log(
         "\n\nBroadcasting floating vote(susVote) because of block uplink(" +
         CUtils::hash8c(m_block_hash) + ") FVBlock(" + CUtils::hash8c(tmp_block->getBlockHash()) +

@@ -5,3 +5,4 @@ pub mod test_time_funcs;
 pub mod test_array_funcs;
 pub mod test_email_parsing;
 pub mod test_hash;
+pub mod test_logarithm;

@@ -121,9 +121,9 @@ impl PollingDocument
           JSonObject document = export_doc_to_json(ext_info_in_document);
 
           // recaluculate block final length
-          document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).length());
+          document["dLen"] = cutils::padding_length_value(cutils::serializeJson(document).len());
 
-          CLog::log("11 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document).length()) + " serialized document: " + cutils::serializeJson(document), "app", "trace");
+          CLog::log("11 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(document).len()) + " serialized document: " + cutils::serializeJson(document), "app", "trace");
 
           return cutils::serializeJson(document);
         }
