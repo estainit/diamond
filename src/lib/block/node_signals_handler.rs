@@ -1,7 +1,10 @@
+use serde_json::json;
+use crate::constants;
 use crate::lib::block::block_types::block::Block;
+use crate::lib::custom_types::JSonObject;
 
 //old_name_was logSignals
-pub fn log_signals(_block:&Block)
+pub fn log_signals(_block: &Block)
 {
     /*
   for (QJsonValue aSignal_ : block.m_signals)
@@ -63,17 +66,21 @@ QVDRecordsT NodeSignalsHandler::searchInSignals(
 }
 
 
+*/
 
-JSonObject NodeSignalsHandler::getMachineSignals()
+//old_name_was getMachineSignals
+pub fn get_machine_signals() -> Vec<JSonObject>
 {
-  JSonObject signals_ {
-    {"nodeInfo", JSonObject {{"spec", "C++"}, {"ver", constants::CLIENT_VERSION}}},
-    {"P4Psupport", constants::NO}};
+    let signals: JSonObject = json!({
+      "nodeInfo": json! ({
+        "spec": "Rust",
+        "ver": constants::CLIENT_VERSION
+      }),
+      "P4Psupport": constants::NO
+    });
 
-  //signals = listener.doCallSync('SASH_signals', { signals_ });
-  return signals_;
+    //signals = listener.doCallSync('SASH_signals', { signals_ });
+    return vec![signals];
 }
 
 
-
-*/

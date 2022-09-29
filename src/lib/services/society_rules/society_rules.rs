@@ -315,7 +315,6 @@ pub fn get_doc_expense(
 }
 
 //old_name_was getTransactionMinimumFee
-#[allow(unused, dead_code)]
 pub fn get_transaction_minimum_fee(c_date: &CDateT) -> CMPAIValueT
 {
     return
@@ -380,7 +379,7 @@ double SocietyRules::getSingleFloatValue(
   const String& pollingKey,
   cDate: &CDateT)
 {
-  if (!cutils::isValidDateForamt(cDate))
+  if (!cutils::is_a_valid_date_format(cDate))
     cutils::exiter("invalid cDate for get Single Float Value for pollingKey(" + pollingKey + ") cDate:(" + cDate + ") ", 812);
 
   // fetch from DB the price for calculation Date
@@ -622,10 +621,10 @@ QVDicT SocietyRules::readAdministrativeCurrentValues()
 
   QVDicT res {
     {"cycleStartDate", cycleStartDate},
-    {"transactionMinimumFee", QVariant::fromValue(getTransactionMinimumFee(cDate))},
+    {"transactionMinimumFee", QVariant::fromValue(get_transaction_minimum_fee(cDate))},
     {"docExpenseDict", prepareDocExpenseDict(cDate, constants::TRANSACTION_MINIMUM_LENGTH)},
     {"basePricePerChar", QVariant::fromValue(getBasePricePerChar(cDate))},
-    {"blockFixCost", QVariant::fromValue(getBlockFixCost(cDate))},
+    {"blockFixCost", QVariant::fromValue(get_block_fix_cost(cDate))},
     {"minShareToAllowedIssueFVote", getMinShareToAllowedIssueFVote(cDate)},
     {"minShareToAllowedVoting", getMinShareToAllowedVoting(cDate)},
     {"minShareToAllowedSignCoinbase", getMinShareToAllowedSignCoinbase(cDate)}
@@ -658,9 +657,9 @@ JSonArray SocietyRules::loadAdmPollings(
 
     JSonObject {
       {"key", polling_types::RFRfBlockFixCost},
-      {"label", "Request for Refine Block Fix Cost, currently is " + cutils::microPAIToPAI6(getBlockFixCost(cDate)) + " micro PAI per Block"},
+      {"label", "Request for Refine Block Fix Cost, currently is " + cutils::microPAIToPAI6(get_block_fix_cost(cDate)) + " micro PAI per Block"},
       {"pValues", JSonObject {
-        {"pFee", QVariant::fromValue(getBlockFixCost(cDate)).toDouble()},
+        {"pFee", QVariant::fromValue(get_block_fix_cost(cDate)).toDouble()},
         {"pTimeframe", QVariant::fromValue(CMachine::getMinPollingTimeframeByHour()).toDouble()}}
       }
     },

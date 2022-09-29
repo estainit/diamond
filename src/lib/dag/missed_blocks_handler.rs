@@ -237,8 +237,8 @@ pub fn refresh_missed_block() -> bool
         prerequisites = cutils::arrayAdd(prerequisites, a_record["pq_prerequisites"].to_string().split(","));
       }
 
-      prerequisites = cutils::arrayUnique(prerequisites);
-      prerequisites = cutils::arrayDiff(prerequisites, existed_in_queue);
+      prerequisites = cutils::array_unique(prerequisites);
+      prerequisites = cutils::array_diff(prerequisites, existed_in_queue);
 
       // insert into missed
       addMissedBlocksToInvoke(prerequisites);

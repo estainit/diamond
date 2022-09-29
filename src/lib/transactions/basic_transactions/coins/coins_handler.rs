@@ -106,7 +106,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
     VString block_hashes = get_descendants(VString{to_be_deleted_blcok});  // first generation of descendents
     block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // second generation
     block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // third generation
-    block_hashes = cutils::arrayUnique(block_hashes);
+    block_hashes = cutils::array_unique(block_hashes);
     QVDRecordsT descendent_blocks = exclude_floating_blocks(block_hashes); // exclude floating blocks
     CLog::log("visible_bys after exclude floating signature blocks: " + cutils::dumpIt(descendent_blocks), "trx", "trace");
 
@@ -139,7 +139,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
       for(QVDicT elm: existed_res.records)
         existed_coins.push(elm["ut_coin"].to_string());
 
-      VString updateables = cutils::arrayDiff(candid_coins, existed_coins);
+      VString updateables = cutils::array_diff(candid_coins, existed_coins);
       if (updateables.len() > 0)
       {
         // TODO: improve it
@@ -189,22 +189,35 @@ ClausesT UTXOHandler::prepareUTXOQuery(
   return clauses;
 }
 
-QVDRecordsT UTXOHandler::searchInSpendableCoinsCache(
-  const VString& coins)
-{
-  QVDRecordsT out {};
-  auto[status, cachedSpendableCoins] = CMachine::cached_spendable_coins();
-  if (!status)
-  {
-    CLog::log("couldn't read from cached Spendable Coins!", "app", "fatal");
-  }
-  for (QVDicT a_coin: cachedSpendableCoins)
-    if (coins.contains(a_coin["ut_coin"].to_string()))
-      out.push(a_coin);
-  return out;
-}
-
 */
+
+//old_name_was searchInSpendableCoinsCache
+pub fn search_in_spendable_coins_cache(coins: &VString) -> QVDRecordsT
+{
+    let mut out: QVDRecordsT = vec![];
+    let (status, cached_spendable_coins) =
+        machine().cached_spendable_coins(
+        "read",
+        &vec![],
+        &"".to_string(),
+        &"".to_string());
+    if !status
+    {
+        dlog(
+            &format!("Couldn't read from cached Spendable Coins!"),
+            constants::Modules::App,
+            constants::SecLevel::Fatal);
+    }
+
+    for a_coin in &cached_spendable_coins
+    {
+        if coins.contains(&a_coin["ut_coin"])
+        {
+            out.push(a_coin.clone());
+        }
+    }
+    return out;
+}
 
 pub fn extract_coins_owner(candidate_coins: &Vec<CCoinCodeT>) -> HashMap<CCoinCodeT, CAddressT>
 {
@@ -490,8 +503,8 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const VString& block_hashes, cons
 
   if ( (unremoveable_blocks.len() > 0) || (unremoveable_coins.len() > 0) )
   {
-    unremoveable_blocks = cutils::arrayUnique(unremoveable_blocks);
-    unremoveable_coins = cutils::arrayUnique(unremoveable_coins);
+    unremoveable_blocks = cutils::array_unique(unremoveable_blocks);
+    unremoveable_coins = cutils::array_unique(unremoveable_coins);
     CLog::log("There are some unremovable blocks/coins! " + unremoveable_blocks.join(", ") + " " + unremoveable_coins.join(", "), "sec", "error");
     return false;
   }
@@ -512,7 +525,7 @@ void UTXOHandler::removeCoinFromCachedSpendableCoins(
 
 bool UTXOHandler::removeCoin(const CCoinCodeT& the_coin)
 {
-//  CLog::log("remove an spent coin(" + cutils::shortCoinRef(the_coin) + ")", "trx", "trace");
+//  CLog::log("remove an spent coin(" + cutils::short_coin_code(the_coin) + ")", "trx", "trace");
   DbModel::dDelete(
     C_TRX_COINS,
     {{"ut_coin", the_coin}},

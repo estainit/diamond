@@ -4,7 +4,6 @@ use crate::lib::custom_types::{CMPAISValueT, CMPAIValueT, DocLenT, JSonObject, Q
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
-use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, export_doc_ext_to_json, generate_bip69_input_tuples, generate_bip69_output_tuples};
 use crate::lib::transactions::basic_transactions::pre_validate_transaction_params::pre_validate_transaction_params;
 
@@ -76,7 +75,7 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         &format!("trx_json in pre-transaction: {:#}", &trx_json),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
-    let (status, mut document) = load_document(&trx_json, &Block::new(), -1);
+    let (status, mut document) = Document::load_document(&trx_json, &Block::new(), -1);
     if !status
     {
         dlog(

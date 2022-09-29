@@ -134,7 +134,7 @@ std::tuple<bool, uint32_t, String> GeneralPledgeHandler::validatePledgerSignedRe
 {
   String msg;
 
-  QJsonObject dExtInfo = pledge->m_doc_ext_info[0].toObject();
+  JSonObject dExtInfo = pledge->m_doc_ext_info[0].toObject();
 
   // does truly referenced the proposal
   if (proposal->getDocHash() != pledge->m_proposal_ref)
@@ -145,8 +145,8 @@ std::tuple<bool, uint32_t, String> GeneralPledgeHandler::validatePledgerSignedRe
   }
 
   // pledger singature structure check
-  QJsonObject pledger_unlock_set = dExtInfo["pledgerUSet"].toObject();
-  bool is_valid_unlock = SignatureStructureHandler::validateSigStruct(
+  JSonObject pledger_unlock_set = dExtInfo["pledgerUSet"].toObject();
+  bool is_valid_unlock = validate_sig_struct(
     pledger_unlock_set,
     pledge->m_pledger_address);
   if (!is_valid_unlock)
@@ -461,7 +461,7 @@ bool GeneralPledgeHandler::doApplyClosingPledge(
   return true;
 }
 
-String GeneralPledgeHandler::renderPledgeDocumentToHTML(const QJsonObject& Jpledge)
+String GeneralPledgeHandler::renderPledgeDocumentToHTML(const JSonObject& Jpledge)
 {
   PledgeDocument pledge = PledgeDocument(Jpledge);
   String out = "";
@@ -507,16 +507,16 @@ bool GeneralPledgeHandler::pledgerSignsPledge(PledgeDocument* pledge_document)
     return false;
   }
 
-  QJsonObject addrDtl = cutils::parseToJsonObj(pledgerAddInfo[0]["wa_detail"].to_string());
+  JSonObject addrDtl = cutils::parseToJsonObj(pledgerAddInfo[0]["wa_detail"].to_string());
   VString signatures {};
-  QJsonObject dExtInfo {};
+  JSonObject dExtInfo {};
   for (auto an_unlock_set_: addrDtl["uSets"].toArray())
   {
     // if already signed exit
     if (signatures.len() > 0)
       continue;
     String pPledge = constants::NO;
-    QJsonObject an_unlock_set = an_unlock_set_.toObject();
+    JSonObject an_unlock_set = an_unlock_set_.toObject();
     QJsonArray sSets = an_unlock_set["sSets"].toArray();
     for (auto aSign: sSets)
       if (aSign.toObject()["pPledge"].to_string() == constants::YES)
@@ -524,7 +524,7 @@ bool GeneralPledgeHandler::pledgerSignsPledge(PledgeDocument* pledge_document)
 
     if (pPledge == constants::YES)
     {
-      pledge_document->m_doc_ext_info = QJsonArray{QJsonObject {{"pledgerUSet", an_unlock_set}}};
+      pledge_document->m_doc_ext_info = QJsonArray{JSonObject {{"pledgerUSet", an_unlock_set}}};
       String sign_message = pledge_document->getSignMsgAsPledger(); //{ pledge: pledge_document, dExtInfo: pledge_document.dExtInfo });
       for (CSigIndexT inx = 0; inx < sSets.len(); inx++)
       {
@@ -548,7 +548,7 @@ bool GeneralPledgeHandler::pledgerSignsPledge(PledgeDocument* pledge_document)
     return false;
   }
 
-  pledge_document->m_doc_ext_info = QJsonArray{QJsonObject {
+  pledge_document->m_doc_ext_info = QJsonArray{JSonObject {
     {"pledgerUSet", pledge_document->m_doc_ext_info[0].toObject()["pledgerUSet"].toObject()},
     {"pledgerSignatures", cutils::convertStringListToJSonArray(signatures)}}};
 
@@ -660,7 +660,7 @@ std::tuple<bool, PledgeDocument*> GeneralPledgeHandler::doPledgeAddress(
   }
 
 
-  PledgeDocument* pledge_document = new PledgeDocument(QJsonObject {
+  PledgeDocument* pledge_document = new PledgeDocument(JSonObject {
     {"dType", document_type},
     {"dClass", document_class},
     {"dVer", "0.0.2"}});
@@ -722,7 +722,7 @@ bool GeneralPledgeHandler::createAndRecordPPTBundle(
   const CDateT& creation_date)
 {
 
-  QJsonObject bundle {
+  JSonObject bundle {
     {"pledgeeSignedPledge", pledge->exportDocToJson()},
     {"pledgeDocPayerTrx", pledgeDocPayerTrx->exportDocToJson()},
 
@@ -745,21 +745,21 @@ bool GeneralPledgeHandler::createAndRecordPPTBundle(
  */
 std::tuple<bool, bool> GeneralPledgeHandler::handleReceivedProposalLoanRequest(
   const String& sender,
-  const QJsonObject& payload,
+  const JSonObject& payload,
   const String& connection_type,
   const CDateT& receive_date)
 {
   CLog::log("payload in handle Received Proposal Loan Request: " + cutils::serializeJson(payload), "app", "info");
 
   String msg;
-  QJsonObject Jproposal = payload["proposal"].toObject();
-  QJsonObject Jpledge = payload["pledgerSignedPledge"].toObject();
+  JSonObject Jproposal = payload["proposal"].toObject();
+  JSonObject Jpledge = payload["pledgerSignedPledge"].toObject();
 
   DNAProposalDocument* proposal = new DNAProposalDocument(Jproposal);
   PledgeDocument* pledge = new PledgeDocument(Jpledge);
 
   String cdVer = payload["cdVer"].to_string();
-  if ((cdVer == "") || !cutils::isValidVersionNumber(cdVer))
+  if ((cdVer == "") || !is_valid_version_number(cdVer))
   {
     msg = "missed cdVer gql in handle Received Proposal Loan Request";
     CLog::log(msg, "app", "error");
@@ -770,7 +770,7 @@ std::tuple<bool, bool> GeneralPledgeHandler::handleReceivedProposalLoanRequest(
   auto[status_pledger_sign, repayments_number, validate_res_msg] = validatePledgerSignedRequest(
     proposal,
     pledge,
-    constants::STAGES::Validating,
+    constants::stages::Validating,
     cutils::getNow());
   if (!status_pledger_sign)
   {
@@ -781,7 +781,7 @@ std::tuple<bool, bool> GeneralPledgeHandler::handleReceivedProposalLoanRequest(
     return {false, true};
   }
 
-  QJsonObject payload_to_record {
+  JSonObject payload_to_record {
     {"proposal", proposal->exportDocToJson()},
     {"pledgerSignedPledge", pledge->exportDocToJson()},
   };
@@ -830,16 +830,16 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsPledge(PledgeDocument
     return {false, msg};
   }
 
-  QJsonObject addrDtl = cutils::parseToJsonObj(pledgeeAddInfo[0]["wa_detail"].to_string());
+  JSonObject addrDtl = cutils::parseToJsonObj(pledgeeAddInfo[0]["wa_detail"].to_string());
   VString signatures {};
-  QJsonObject dExtInfo = pledge->m_doc_ext_info[0].toObject();
+  JSonObject dExtInfo = pledge->m_doc_ext_info[0].toObject();
   for (auto an_unlock_set_: addrDtl["uSets"].toArray())
   {
     // if already signed exit
     if (signatures.len() > 0)
       continue;
 
-    QJsonObject an_unlock_set = an_unlock_set_.toObject();
+    JSonObject an_unlock_set = an_unlock_set_.toObject();
     QJsonArray sSets = an_unlock_set["sSets"].toArray();
 
     dExtInfo["pledgeeUSet"] = an_unlock_set;
@@ -874,7 +874,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   String msg;
 
   CLog::log("going to validate proposal: " + proposal->safeStringifyDoc());
-  Block* tmp_block1 = new Block(QJsonObject {
+  Block* tmp_block1 = new Block(JSonObject {
     {"bCDate", cutils::getNow()},
     {"bType", "futureBlockproposal"},
     {"bHash", "futureHashproposal"}});
@@ -888,7 +888,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   auto[status_pledger_sign, repayments_number, validate_res_msg] = validatePledgerSignedRequest(
     proposal,
     pledge,
-    constants::STAGES::Creating,
+    constants::stages::Creating,
     cutils::getNow());
   if (!status_pledger_sign)
       return {false, "Invalid pledger signature! " + validate_res_msg};
@@ -903,7 +903,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   pledge->setDocLength();
 
   auto[cost_status, pledge_dp_cost] = pledge->calcDocDataAndProcessCost(
-    constants::STAGES::Creating,
+    constants::stages::Creating,
     cutils::getNow());
   if (!cost_status)
   {
@@ -976,7 +976,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   pledge->setDocHash(); // = this.calcHashDPledge(pledge);
 
   CLog::log("full Validate completed pledge contract: " + pledge->safeStringifyDoc(true), "app", "info");
-  Block* tmp_block2 = new Block(QJsonObject {
+  Block* tmp_block2 = new Block(JSonObject {
     {"bCDate", cutils::getNow()},
     {"bType", "futureBlockpledge"},
     {"bHash", "futureHashpledge"}});

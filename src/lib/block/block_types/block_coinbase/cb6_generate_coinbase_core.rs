@@ -150,7 +150,7 @@ pub fn generate_coinbase_core(
         constants::Modules::CB,
         constants::SecLevel::TmpDebug);
 
-    // let doc: Document = load_document(&doc, &Block::new(), 0);
+    // let doc: Document = Document::load_document(&doc, &Block::new(), 0);
 
     doc.m_doc_length = doc.calc_doc_length();
     dlog(

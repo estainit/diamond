@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::cutils::{remove_quotes};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::block::document_types::document_factory::load_document;
+use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CDateT, ClausesT, JSonObject, TimeByMinutesT};
 use crate::lib::database::abs_psql::{q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_POLLING_PROFILES, C_POLLINGS};
@@ -82,7 +82,7 @@ pub fn auto_create_polling_for_proposal(params: &mut JSonObject, block: &Block) 
         constants::LEN_PROP_LENGTH);
     params["dLen"] = doc_length.into();
 
-    let (status, doc) = load_document(params, block, 0);
+    let (status, doc) = Document::load_document(params, block, 0);
     if !status
     {
         dlog(
@@ -967,7 +967,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
     adm_polling_doc.m_doc_type,
     adm_polling_doc.m_doc_class,
     voters_count,
-    constants::DOC_TYPES::Polling,
+    constants::document_types::Polling,
     POLLING_PROFILE_CLASSES["Basic"]["ppName"].to_string(),
     doc_comment,
     c_date);

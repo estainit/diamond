@@ -1,7 +1,9 @@
 use serde_json::{json};
 use crate::{ccrypto, constants, cutils, dlog};
 use crate::cutils::remove_quotes;
-use crate::lib::custom_types::{JSonObject, VString};
+use crate::lib::block::document_types::document::Document;
+use crate::lib::custom_types::{CAddressT, CMPAIValueT, DocLenT, JSonObject, VString};
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::TOutput;
 
 
 //old_name_was ifAncestorsAreValid
@@ -20,46 +22,41 @@ pub fn if_ancestors_are_valid(ancestors: &VString) -> bool
     return true;
 }
 
-
-/*
-/**
- * @brief BlockUtils::retrieveDPCostInfo
- * @param doc
- * @param backer
- * @return {treasury_incomes, backer_incomes}
- */
-std::tuple<bool, uint64_t, uint64_t> BlockUtils::retrieveDPCostInfo(
-  const Document* doc,
-  const String& backer)
+//old_name_was retrieveDPCostInfo
+pub fn retrieve_dp_cost_info(
+    doc: &Document,
+    backer: &CAddressT) -> (bool /* status*/, CMPAIValueT /* treasury_incomes */, CMPAIValueT /* backer_incomes */)
 {
-  Vec<TOutput*> outputs = doc->get_outputs();
-  /**
-  * the block cost payment transaction is a document that always has to has no input and 2 outputs.
-  * 0. TP_DP   Treasury Payment Data&  Process Cost
-  * 1. backer fee
-  */
-  if (
-    (outputs.len() != 2) ||
-    (outputs[0].m_address != "TP_DP") ||
-    (outputs[1].m_address != backer))
-  {
-    CLog::log("Invalid treasury payment because of receiver Doc(" + cutils::hash8c(doc->get_doc_hash()) + ") account(" + outputs[0].m_address + ") or Backer address(" + outputs[1].m_address + ")! ", "trx", "error");
-    return {false, 0, 0};
-  }
+    let outputs: &Vec<TOutput> = doc.get_outputs();
+     // * 0. TP_DP   Treasury Payment Data&  Process Cost
+     // * 1. backer fee
+    if (outputs.len() != 2) ||
+        (outputs[0].m_address != "TP_DP".to_string()) ||
+        (outputs[1].m_address != backer.to_string())
+    {
+        dlog(&format!("Invalid treasury payment because of receiver Doc {} account({}) or Backer address({})! ",
+                      doc.get_doc_identifier(),
+                      outputs[0].m_address,
+                      outputs[1].m_address
+        ),
+             constants::Modules::Trx,
+             constants::SecLevel::Error);
+        return (false, 0, 0);
+    }
 
-  String ddd = doc->safe_stringify_doc();
-  DocLenT len = static_cast<DocLenT>(ddd.len());
-  if (len > constants::MAX_DPCostPay_DOC_SIZE)
-  {
-    CLog::log("Invalid treasury payment doc length in Doc(" + cutils::hash8c(doc->get_doc_hash()) + ")! ", "trx", "error");
-    return {false, 0, 0};
-  }
+    let ddd: String = doc.safe_stringify_doc(true);
+    let len: DocLenT = ddd.len() as DocLenT;
+    if len > constants::MAX_DP_COST_PAY_DOCUMENT_SIZE
+    {
+        dlog(
+            &format!("Invalid treasury payment doc length in Doc {}", doc.get_doc_identifier()),
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        return (false, 0, 0);
+    }
 
-  return { true, outputs[0].m_amount, outputs[1].m_amount };
+    return (true, outputs[0].m_amount, outputs[1].m_amount);
 }
-
-
-*/
 
 //old_name_was wrapSafeContentForDB
 pub fn wrap_safe_content_for_db(content: &String, safe_ver: &str)
@@ -238,7 +235,7 @@ const VString to_double_fields = {
 "tr_value",
 
 "getMinShareToAllowedIssueFVote", "getMinShareToAllowedVoting", "getMinShareToAllowedSignCoinbase",
-"getTransactionMinimumFee", "getBasePricePerChar", "getBlockFixCost"
+"get_transaction_minimum_fee", "getBasePricePerChar", "get_block_fix_cost"
 
 
 };
@@ -389,27 +386,31 @@ out.push(convertToJSonObject(a_row));
 return out;
 }
 
+*/
 
-VString BlockUtils::normalizeAncestors(VString ancestors)
+//old_name_was normalizeAncestors
+pub fn normalize_ancestors(ancestors: &VString) -> VString
 {
-VString normalized_ancestors {};
-ancestors = cutils::arrayUnique(ancestors);
-ancestors.sort();
-for (String an_ancestor: ancestors)
-{
-if ((an_ancestor != "") && (an_ancestor.len() == 64))
-  normalized_ancestors.push(an_ancestor);
-// TODO: maybe add hex char only, controls
-}
-return normalized_ancestors;
+    let mut normalized_ancestors: VString = vec![];
+    let mut ancestors = cutils::array_unique(ancestors);
+    ancestors.sort();
+    for an_ancestor in &ancestors
+    {
+        if (an_ancestor.to_string() != "".to_string())
+            && (an_ancestor.len() == 64)
+        { normalized_ancestors.push(an_ancestor.clone()); }
+        // TODO: maybe add hex char only, controls
+    }
+    return normalized_ancestors;
 }
 
+/*
 MerkleNodeData BlockUtils::getDocumentMerkleProof(
 const JSonObject& block,
 const CDocHashT& docHash)
 {
 VString docHashes {};
-for(auto a_doc: block["docs"].toArray())
+for(auto a_doc: block["bDocs"].toArray())
 docHashes.push(a_doc.toObject()["dHash"].to_string());
 auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate(docHashes);
 Q_UNUSED(root);

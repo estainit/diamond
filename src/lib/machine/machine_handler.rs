@@ -1027,13 +1027,12 @@ impl CMachine {
     }
 
     // old name was cachedSpendableCoins
-    #[allow(unused, dead_code)]
     pub fn cached_spendable_coins(
         &mut self,
         action: &str,
         coins: &QVDRecordsT,
         visible_by: &CBlockHashT,
-        the_coin: &CCoinCodeT) -> (bool, &QVDRecordsT)
+        the_coin: &CCoinCodeT) -> (bool, QVDRecordsT)
     {
         if action == "assign"
         {
@@ -1080,7 +1079,7 @@ impl CMachine {
             }
         }
 
-        return (true, &self.m_cache_spendable_coins);
+        return (true, self.m_cache_spendable_coins.clone());
 
         // } catch (std::logic_error&)
         // {

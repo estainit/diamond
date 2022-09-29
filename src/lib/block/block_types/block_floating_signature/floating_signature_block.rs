@@ -75,7 +75,7 @@ bool FloatingSignatureBlock::validateFSBlock() const
   }
 
 
-  bool isValidUnlock = SignatureStructureHandler::validateSigStruct(
+  bool isValidUnlock = validate_sig_struct(
     m_fsign_ext_info.m_unlock_set,
     m_block_backer);
   if (isValidUnlock != true) {
@@ -146,7 +146,7 @@ JSonObject FloatingSignatureBlock::export_block_to_json(const bool ext_info_in_d
 {
   JSonObject block = Block::export_block_to_json(ext_info_in_document);
 
-  block.remove("docs");
+  block.remove("bDocs");
   block.remove("fVotes");
   block.remove("bDocsRootHash");
 

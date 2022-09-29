@@ -1,4 +1,4 @@
-use crate::lib::custom_types::{BlockLenT, CMPAIValueT, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CMPAIValueT, DocLenT, SharesPercentT};
 
 #[allow(dead_code, unused)]
 pub enum Modules {
@@ -27,15 +27,15 @@ pub const BECH32_ADDRESS_VER: &str = "0";
 pub const TRUNCATE_FOR_BECH32_ADDRESS: u8 = 32;
 
 // to be compatible with JS clients: Number.MAX_SAFE_INTEGER
-pub const MAX_COINS_AMOUNT: CMPAIValueT = 9_007_199_254_740_991;
+pub const MAX_COINS_AMOUNT: CMPAIValueT = 24_000_000 * 1_000_000_000;
 
 pub const STANDARD_CYCLE_BY_MINUTES: u32 = 720;
 
 
 /*
   const bool BROADCAST_TO_NEIGHBOR_OF_NEIGHBOR = true;    // if machine allowed to publish email of neightbors of neighbors to hei neighbors?
-  const bool SUPPORTS_CLONED_TRANSACTION = false;    // after writing a tons of unittests can activate this feature
 */
+pub const SUPPORTS_CLONED_TRANSACTION: bool = false;    // after writing a tons of unittests can activate this feature
 
 // after writing a tons of unittests can activate this feature
 pub const SUPPORTS_P4P_TRANSACTION: bool = false;
@@ -119,13 +119,17 @@ pub mod sig_hashes
     pub const CUSTOM: &str = "CUSTOM"; // TODO: implement it in order to have ability to sign some random inputs & outputs
 }
 
-pub const MAX_TOLERATED_MISS_BLOCKS: u8 = 5;
 // if machine missed more than this number, does not allowed to issue a coinbase block
+pub const MAX_TOLERATED_MISS_BLOCKS: u8 = 5;
+// can be disabled for the sake of performance
+pub const SUPER_CONTROL_COINS_DOUBLE_SPENDING: bool = true;
+// can be disabled for the sake of performance
+pub const SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING: bool = true;
+pub const SUPER_CONTROL_SHOULD_CONTROL_SIGNATURES_AS_WELL: bool = true;
+// can be disabled for the sake of performance
+pub const LOG_SUPER_VALIDATE_DEBUG :bool = true;
 /*
 
-  const bool SUPER_CONTROL_UTXO_DOUBLE_SPENDING = true; // can be disabled for the sake of performance
-  const bool SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING = true;  // can be disabled for the sake of performance
-  const bool log_super_validate_debug = true;  // can be disabled for the sake of performance
 
   const bool DECODE_ALL_FREE_POST_FILES = true; // TODO: improve it to support different file types & security levels
 */
@@ -215,12 +219,9 @@ pub const PUBLIC: &str = "Public";
 pub const PRIVATE: &str = "Private";
 #[allow(unused, dead_code)]
 pub const GENERAL: &str = "General";
-/*
-
-  pub const COMPLETE =  "Complete";
-  pub const SHORT =  "Short";
-
-*/
+#[allow(unused, dead_code)]
+pub const COMPLETE: &str = "Complete";
+pub const SHORT: &str = "Short";
 #[allow(unused, dead_code)]
 pub const YES: &str = "Y";
 #[allow(unused, dead_code)]
@@ -278,8 +279,10 @@ pub const TO_NETWORK: &str = "ToNetwork";
   pub const BundlePPT = "BundlePPT";  // Bundle of Proposal+Pledge+Transactions
 
   const float MINIMUM_SUS_VOTES_TO_ALLOW_CONSIDERING_SUS_BLOCK = 51.0;
-  const uint8_t BACKER_PERCENT_OF_BLOCK_FEE = 71; // 71 % of block incomes goes to backer
 */
+
+// 71 % of block incomes goes to backer
+pub const BACKER_PERCENT_OF_BLOCK_FEE: SharesPercentT = 71.0;
 pub const TREASURY_PAYMENTS: [&str; 13] =
     [
         "TP_DP",            // Data & Process Costs
@@ -441,19 +444,21 @@ pub const FleNS = "FleNS"; // collision on registring an iName
 }
 */
 
-/*
-
-namespace FPOST_CLASSES
+pub mod free_post_classes
 {
-pub const File = "File";
+    #[allow(unused, dead_code)]
+    pub const FILE: &str = "File";
 
-pub const DMS_RegAgora = "DMS_RegAgora";   // Demos register an Agora
-pub const DMS_Post = "DMS_Post";           // Demos Post
+    // Demos register an Agora
+    #[allow(unused, dead_code)]
+    pub const DMS_REGISTER_AGORA: &str = "DMS_RegAgora";
+    pub const DMS_POST: &str = "DMS_Post";           // Demos Post
 
-pub const WK_CreatePage = "WK_CreatePage";
-pub const WK_EditPage = "WK_EditPage";
-};
-*/
+    #[allow(unused, dead_code)]
+    pub const WK_CREATE_PAGE: &str = "WK_CreatePage";
+    #[allow(unused, dead_code)]
+    pub const WK_EDIT_PAGE: &str = "WK_EditPage";
+}
 
 pub mod trx_classes
 {

@@ -168,7 +168,7 @@ pub fn push_to_parsing_q(
                 for (auto x: tmp)
                 currentWNVTBIA_arr.push(x.to_string());
                 currentWNVTBIA_arr.push(uplinkBlock);
-                currentWNVTBIA_arr = cutils::arrayUnique(currentWNVTBIA_arr);
+                currentWNVTBIA_arr = cutils::array_unique(currentWNVTBIA_arr);
             }
             currentWNVTBIA = cutils::serializeJson(currentWNVTBIA_arr);
             KVHandler::upsertKValue("SusBlockWNVTBIA", currentWNVTBIA);

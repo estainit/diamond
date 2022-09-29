@@ -6,9 +6,9 @@ use crate::lib::block::block_types::block::Block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 
 impl Block {
-    pub fn load_block(obj: &JSonObject) -> (bool, Block)
+    pub fn load_block(obj: &JSonObject) -> (bool, Self)
     {
-        let mut block: Block = Self::new();
+        let mut block: Self = Self::new();
         let status = block.set_block_by_json_obj(obj);
         if !status {
             println!("Failed in set block by JSON obj: {}", cutils::controlled_json_stringify(&obj));
@@ -83,7 +83,7 @@ impl Block {
 Block* BlockFactory::create(const JSonObject &obj)
 {
   String block_type = obj.value("bType").to_string();
-  if (block_type == constants::BLOCK_TYPES::Normal)
+  if (block_type == constants::block_types::Normal)
   {
     return new NormalBlock(obj);
 
@@ -94,31 +94,31 @@ Block* BlockFactory::create(const JSonObject &obj)
     return b;
 
   }
-  else if (block_type == constants::BLOCK_TYPES::RpBlock)
+  else if (block_type == constants::block_types::RpBlock)
   {
     Block *b{new RepaybackBlock(obj)};
     return b;
 
   }
-  else if (block_type == constants::BLOCK_TYPES::FSign)
+  else if (block_type == constants::block_types::FSign)
   {
     Block *b{new FloatingSignatureBlock(obj)};
     return b;
 
   }
-  else if (block_type == constants::BLOCK_TYPES::FVote)
+  else if (block_type == constants::block_types::FVote)
   {
     Block *b{new FloatingVoteBlock(obj)};
     return b;
 
   }
-  else if (block_type == constants::BLOCK_TYPES::POW)
+  else if (block_type == constants::block_types::POW)
   {
     Block *b{new POWBlock(obj)};
     return b;
 
   }
-  else if (block_type == constants::BLOCK_TYPES::Genesis)
+  else if (block_type == constants::block_types::Genesis)
   {
     return new GenesisBlock(obj);
   }

@@ -44,7 +44,7 @@ bool RepaybackBlock::set_by_json_obj(const JSonObject& obj)
 {
   Block::set_by_json_obj(obj);
 
-//  m_rp_documents = obj["docs"].toArray();
+//  m_rp_documents = obj["bDocs"].toArray();
 
   return true;
 }
@@ -99,7 +99,7 @@ String RepaybackBlock::getBlockHashableString(const JSonObject& Jblock)
 //  hashables += "\"bVer\":\"" + Jblock["dVer"].to_string() + "\",";
 //  hashables += "\"creation Date\":\"" + Jblock["creation ]ate").to_string() + "\",";
 //  VString docs {};
-//  for (QJsonValueRef a_doc: Jblock["docs"].toArray())
+//  for (QJsonValueRef a_doc: Jblock["bDocs"].toArray())
 //  {
 //    String a_doc_str = RepaymentDocument::get_doc_hashable_string(a_doc.toObject());
 //    docs.push(a_doc_str);
@@ -165,14 +165,14 @@ JSonObject RepaybackBlock::getRepayBlockTpl()
   return JSonObject {
     {"bNet", "im"},
     {"bVer", "0.0.0"},
-    {"bType", constants::BLOCK_TYPES::RpBlock},
+    {"bType", constants::block_types::RpBlock},
     {"bCycle", ""},
     {"bLen", constants::LEN_PROP_PLACEHOLDER},
     {"bHash", constants::HASH_ZEROS_PLACEHOLDER.to_string()},
     {"ancestors", {}},
     {"bCDate", ""},
     {"bDocsRootHash", ""}, // the hash root of merkle tree of transaction}s
-    {"docs", {}}};
+    {"bDocs", {}}};
 }
 
 JSonArray RepaybackBlock::export_documents_to_json(const bool ext_info_in_document) const
@@ -180,7 +180,7 @@ JSonArray RepaybackBlock::export_documents_to_json(const bool ext_info_in_docume
   JSonArray documents {};
   for(auto a_doc: m_rp_documents)
   {
-    documents.push(a_doc->export_doc_to_json(ext_info_in_document));
+    documents.push(a_doc.export_doc_to_json(ext_info_in_document));
   }
   return documents;
 }
@@ -327,7 +327,7 @@ pub fn import_double_check()
 {
     /*
       QVDRecordsT not_imported = DAG::searchInDAG(
-        {{"b_type", constants::BLOCK_TYPES::RpBlock}, {"b_coins_imported", constants::NO}},
+        {{"b_type", constants::block_types::RpBlock}, {"b_coins_imported", constants::NO}},
         {"b_hash", "b_body"});
       if (not_imported.len() > 0)
       {
@@ -340,7 +340,7 @@ pub fn import_double_check()
           JSonObject Jblock = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(a_repay_block["b_body"].to_string()).content);    // do not need safe open check
 
           // add missed repayback coins
-          JSonArray documents = Jblock["docs"].toArray();
+          JSonArray documents = Jblock["bDocs"].toArray();
           for (CDocIndexT doc_inx = 0; doc_inx < static_cast<CDocIndexT>(documents.len()); doc_inx++)
           {
             auto a_doc = documents[doc_inx].toObject();

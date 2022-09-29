@@ -228,7 +228,7 @@ if (VString {
   constants::pleaseRemoveMeFromYourNeighbors}.contains(type))
 {
 String dummy_hash = CCrypto::keccak256(cutils::getNowSSS());
-if (!cutils::isValidVersionNumber(message["cdVer"].to_string()))
+if (!is_valid_version_number(message["cdVer"].to_string()))
 {
   CLog::log("invalid cdVer for GQL(" + dummy_hash + ") in dispatcher! type(" + type + ")", "sec", "error");
   return {false, true};
@@ -247,7 +247,7 @@ else if (card_type == constants::FullDAGDownloadResponse)
 {
 JSonObject block = message["block"].toObject();
 String block_hash = block["bHash"].to_string();
-if (!cutils::isValidVersionNumber(message["cdVer"].to_string()))
+if (!is_valid_version_number(message["cdVer"].to_string()))
 {
   CLog::log("invalid cdVer for GQL(" + block_hash + ") in dispatcher! type(" + type + ")", "sec", "error");
   return {false, true};

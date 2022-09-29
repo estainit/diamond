@@ -148,7 +148,7 @@ bool INameRegDocument::veridfyDocSignature() const
   JSonObject dExtInfo = m_doc_ext_info[0].toObject();
   auto unlock_set = dExtInfo.value("uSet").toObject();
 
-  bool is_valid_unlock = SignatureStructureHandler::validateSigStruct(
+  bool is_valid_unlock = validate_sig_struct(
     unlock_set,
     m_iname_owner);
 
@@ -254,7 +254,7 @@ void INameRegDocument::importCostsToTreasury(
 
       if (doc_cost_is_payed)
       {
-        CLog::log("Successfully TP_INAME_REG Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_INAME_REG)", "app", "trace");
+        CLog::log("Successfully TP_INAME_REG Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_INAME_REG)", "app", "trace");
 
         String title =  "TP_INAME_REG iName(" + cutils::hash8c(iName_hash) + ") Trx(" + cutils::hash8c(a_treasury_entry.m_trx_hash) + ") ";
         cost_payment_status[iName_hash].m_message = "iName reg Cost imported to treasury succsessfully.";
@@ -268,7 +268,7 @@ void INameRegDocument::importCostsToTreasury(
           a_treasury_entry.m_coin);
 
       } else {
-        CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_INAME_REG)", "sec", "error");
+        CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_INAME_REG)", "sec", "error");
         CLog::log("cost_payment_status not payed: " + CoinImportDataContainer::dumpMe(cost_payment_status[iName_hash]), "sec", "error");
 
         INameHandler::removeINameByHash(iName_hash);  // iNameInRelatedBlock.removeINameBecauseOfPaymentsFail(iName_hash);

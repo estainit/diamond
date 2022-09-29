@@ -12,13 +12,15 @@ use crate::lib::custom_types::{CDocIndexT, JSonObject};
 //     return doc;
 // }
 
-pub fn load_document(
-    obj: &JSonObject,
-    block: &Block,
-    doc_index: CDocIndexT) -> (bool, Document)
-{
-    let mut doc: Document = Document::new();
-    let status = doc.set_doc_by_json_obj(obj, block, doc_index);
-    return (status, doc);
+impl Document {
+    pub fn load_document(
+        obj: &JSonObject,
+        block: &Block,
+        doc_index: CDocIndexT) -> (bool, Document)
+    {
+        let mut doc: Document = Document::new();
+        let status = doc.set_doc_by_json_obj(obj, block, doc_index);
+        return (status, doc);
+    }
 }
 

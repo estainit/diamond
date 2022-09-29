@@ -233,7 +233,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
 
         if (toCut > 0)
         {
-          toCutFromBackerFee = cutils::CFloor((toCut * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100);// - cnfHandler.getBlockFixCost();
+          toCutFromBackerFee = cutils::CFloor((toCut * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100);// - get_block_fix_cost();
           toCutFromTreasuryFee = cutils::CFloor(toCut - toCutFromBackerFee);
         }
         block_inspect_container.m_to_cut_from_backer_fee = toCutFromBackerFee;
@@ -249,7 +249,7 @@ pub fn import_normal_block_coins(c_date: &CDateT)
         block_inspect_container.m_block_DPCost_treasury_final = block_inspect_container.m_block_DPCost_treasury.m_value - block_inspect_container.m_to_cut_from_treasury_fee;
 
         if (block_inspect_container.m_block_DPCost_backer_final < 0)
-          block_inspect_container.m_block_DPCost_treasury_final += block_inspect_container.m_block_DPCost_backer_final; // to cover cnfHandler.getBlockFixCost()
+          block_inspect_container.m_block_DPCost_treasury_final += block_inspect_container.m_block_DPCost_backer_final; // to cover get_block_fix_cost()
 
         block_inspect_container.m_block_has_income = (
           (block_inspect_container.m_block_DPCost_backer_final > 0) &&

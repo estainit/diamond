@@ -197,7 +197,7 @@ impl ProposalDocument {
     //  JSonObject dExtInfo = m_doc_ext_info;
     ////  auto unlockSet = dExtInfo.value("uSet").toObject();
 
-    ////  bool is_valid_unlock = SignatureStructureHandler::validateSigStruct(
+    ////  bool is_valid_unlock = validate_sig_struct(
     ////    unlockSet,
     ////    m_voter);
 
@@ -317,7 +317,7 @@ impl ProposalDocument {
         {
           // retrieve proposals & pledge mappings
           if (
-            (aDoc.m_doc_type == constants::DOC_TYPES::Pledge) &&
+            (aDoc.m_doc_type == constants::document_types::Pledge) &&
             (aDoc.m_doc_class == constants::PLEDGE_CLASSES::PledgeP) &&
             (aDoc->getProposalRef() != ""))
           {
@@ -409,7 +409,7 @@ impl ProposalDocument {
           cost_payment_status[proposal_hash].m_is_payed = doc_cost_is_payed;
           if (doc_cost_is_payed)
           {
-            CLog::log("Successfully TP_PROPOSAL Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "app", "trace");
+            CLog::log("Successfully TP_PROPOSAL Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "app", "trace");
 
             cost_payment_status[proposal_hash].m_message = "Proposal Cost imported to treasury succsessfully.";
             TreasuryHandler::insertIncome(
@@ -422,7 +422,7 @@ impl ProposalDocument {
               a_treasury_entry.m_coin);
 
           } else {
-              CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "sec", "error");
+              CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "sec", "error");
               CLog::log("Failed cost_payment_status: Proposal(" + cutils::hash8c(proposal_hash) + ")" + CoinImportDataContainer::dumpMe(cost_payment_status[proposal_hash]), "sec", "error");
 
               // since by adding block to DAG, the proposals(and related pollings) also were added to DAG, and after 12 hours we found the payment

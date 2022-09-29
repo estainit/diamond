@@ -453,7 +453,7 @@ std::tuple<bool, VString> DAG::controllDAGHealth()
   // controll all blocks (except Genesis) have ancestor(s)
   if (blocks_with_no_ancestors.len() > 1)
   {
-    error_messages.push("Some blocks haven't ancestors!" + cutils::arrayDiff(all_block_hashes, ancestors_by_block.keys()).join(","));
+    error_messages.push("Some blocks haven't ancestors!" + cutils::array_diff(all_block_hashes, ancestors_by_block.keys()).join(","));
     final_stat &= false;
   }
 
@@ -473,9 +473,9 @@ std::tuple<bool, VString> DAG::controllDAGHealth()
       visited_blocks.push(a_hash);
       new_ancestors = cutils::arrayAdd(new_ancestors, blocks_info[a_hash].ancestors);
     }
-    blocks_to_be_considered = cutils::arrayUnique(new_ancestors);
+    blocks_to_be_considered = cutils::array_unique(new_ancestors);
   }
-  VString missed_blocks = cutils::arrayDiff(blocks_info.keys(), visited_blocks);
+  VString missed_blocks = cutils::array_diff(blocks_info.keys(), visited_blocks);
   if (missed_blocks.len() > 0)
   {
     error_messages.push("Some blocks weren't visible in backward moving!" + missed_blocks.join(","));
@@ -484,7 +484,7 @@ std::tuple<bool, VString> DAG::controllDAGHealth()
 
   // controll forward moving
   QVDRecordsT genesis = searchInDAG(
-    {{"b_type", constants::BLOCK_TYPES::Genesis}},
+    {{"b_type", constants::block_types::Genesis}},
     {"b_hash", "b_ancestors", "b_descendants", "b_creation_date"});
   VString exit_in_forward_moving = {};
   blocks_to_be_considered = VString {genesis[0]["b_hash"].to_string()};
@@ -501,9 +501,9 @@ std::tuple<bool, VString> DAG::controllDAGHealth()
       visited_blocks.push(a_hash);
       new_descendents = cutils::arrayAdd(new_descendents, blocks_info[a_hash].descendents);
     }
-    blocks_to_be_considered = cutils::arrayUnique(new_descendents);
+    blocks_to_be_considered = cutils::array_unique(new_descendents);
   }
-  missed_blocks = cutils::arrayDiff(blocks_info.keys(), visited_blocks);
+  missed_blocks = cutils::array_diff(blocks_info.keys(), visited_blocks);
   if (missed_blocks.len() > 0)
   {
     error_messages.push("Some blocks weren't visible in forward moving!" + missed_blocks.join(","));

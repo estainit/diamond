@@ -17,7 +17,7 @@ use crate::lib::transactions::basic_transactions::signature_structure_handler::u
 
 
 
-RepaymentDocument::RepaymentDocument(const QJsonObject& obj)
+RepaymentDocument::RepaymentDocument(const JSonObject& obj)
 {
   setByJsonObj(obj);
 }
@@ -42,16 +42,16 @@ bool RepaymentDocument::deleteOutputs()
   return true;
 }
 
-bool RepaymentDocument::setByJsonObj(const QJsonObject& obj)
+bool RepaymentDocument::setByJsonObj(const JSonObject& obj)
 {
   Document::setByJsonObj(obj);
 
   // maybe some drived class assigning
 
-  if (obj["inputs"].toArray().size() > 0)
+  if (obj["inputs"].toArray().len() > 0)
     setDocumentInputs(obj["inputs"]);
 
-  if (obj["outputs"].toArray().size() > 0)
+  if (obj["outputs"].toArray().len() > 0)
     setDocumentOutputs(obj["outputs"]);
 
   return true;
@@ -82,12 +82,12 @@ std::tuple<bool, QJsonArray> RepaymentDocument::exportOutputsToJson() const
   return {true, outputs};
 }
 
-QJsonObject RepaymentDocument::getRepayDocTpl()
+JSonObject RepaymentDocument::getRepayDocTpl()
 {
-  return QJsonObject {
+  return JSonObject {
     {"dHash", "0000000000000000000000000000000000000000000000000000000000000000"},
-    {"dType", constants::DOC_TYPES::RpDoc},
-    {"dClass", constants::DOC_TYPES::RpDoc},
+    {"dType", constants::document_types::RpDoc},
+    {"dClass", constants::document_types::RpDoc},
     {"dVer", "0.0.0"},
     {"cycle", ""}, // 'yyyy-mm-dd am' / 'yyyy-mm-dd pm'
     {"inputs", QJsonArray{}},
@@ -246,9 +246,9 @@ pub fn calc_repayment_details(
 }
 
 /*
-QJsonObject RepaymentDocument::exportDocToJson(const bool ext_info_in_document) const
+JSonObject RepaymentDocument::exportDocToJson(const bool ext_info_in_document) const
 {
-  QJsonObject document = Document::exportDocToJson(ext_info_in_document);
+  JSonObject document = Document::exportDocToJson(ext_info_in_document);
 
   document.remove("dCDate");
   document.remove("dLen");
@@ -262,7 +262,7 @@ QJsonObject RepaymentDocument::exportDocToJson(const bool ext_info_in_document) 
 
 String RepaymentDocument::safeStringifyDoc(const bool ext_info_in_document) const
 {
-  QJsonObject Jdoc = exportDocToJson(ext_info_in_document);
+  JSonObject Jdoc = exportDocToJson(ext_info_in_document);
 
 
   CLog::log("12 safe Sringify Doc(" + cutils::hash8c(m_doc_hash) + "): " + m_doc_type + " / " + m_doc_class + " length:" + String::number(cutils::serializeJson(Jdoc).len()) + " serialized document: " + cutils::serializeJson(Jdoc), "app", "trace");
@@ -318,7 +318,7 @@ bool RepaymentDocument::setDocumentInputs(const QJsonValue& obj)
   {
     QJsonArray io = an_input.toArray();
     TInput* i  = new TInput({io[0].to_string(), static_cast<COutputIndexT>(io[1].toVariant().toDouble())});
-    m_inputs.push_back(i);
+    m_inputs.push(i);
   }
   return true;
 }
@@ -330,7 +330,7 @@ bool RepaymentDocument::setDocumentOutputs(const QJsonValue& obj)
   {
     QJsonArray oo = an_output.toArray();
     TOutput *o  = new TOutput({oo[0].to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
-    m_outputs.push_back(o);
+    m_outputs.push(o);
   }
   return true;
 }

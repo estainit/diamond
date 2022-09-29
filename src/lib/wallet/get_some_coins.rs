@@ -31,7 +31,7 @@ pub fn get_some_coins(
         constants::SecLevel::Info);
     /*
         // retrieve rejected transactions
-        let rejected_coins_records = searchInRejectedTrx(
+        let rejected_coins_records = search_in_rejected_trx(
             vec![],
             vec![],
             vec![],

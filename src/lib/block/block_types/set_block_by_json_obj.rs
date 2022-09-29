@@ -117,8 +117,8 @@ impl Block {
             if !status
             { return false; }
             // self.m_block_documents = remove_quotes(&obj["bDocs"]);
-            // if (object_keys.contains("docs"))
-            // createDocuments(obj.value("docs"));
+            // if (object_keys.contains("bDocs"))
+            // createDocuments(obj.value("bDocs"));
         }
 
         if !obj["bExtHash"].is_null() {

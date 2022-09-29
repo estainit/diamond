@@ -154,5 +154,4 @@ typedef Vec<Coin> CoinsT;
 
 #[allow(dead_code, unused)]
 pub type DocDicT = HashMap<String, Document>;
-#[allow(dead_code, unused)]
 pub type DocDicVecT = HashMap<String, Vec<Document>>;

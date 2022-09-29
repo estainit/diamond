@@ -53,7 +53,7 @@ impl Block {
         // insert into DB
         let confidence_string = cutils::convert_float_to_string(self.m_block_confidence, constants::FLOAT_LENGTH);
         let confidence_float = confidence_string.parse::<f64>().unwrap();
-        let signals = cutils::controlled_json_stringify(&self.m_block_signals);
+        let signals = serde_json::to_string(&self.m_block_signals).unwrap();
         let (_status, _sf_version, body) = wrap_safe_content_for_db(&self.safe_stringify_block(false), constants::WRAP_SAFE_CONTENT_VERSION);
         let docs_count = self.m_block_documents.len() as i32;
         let ancestors = self.m_block_ancestors.join(",");

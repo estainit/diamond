@@ -77,7 +77,6 @@ impl Document
     }
 
     //old_name_was getDocExtInfo
-    #[allow(unused, dead_code)]
     pub fn get_doc_ext_info(&self) -> &Vec<DocExtInfo>
     {
         return &self.m_doc_ext_info;
@@ -270,11 +269,6 @@ impl Document
         return cutils::controlled_json_stringify(&j_doc);
     }
 
-    //old_name_was getRef
-    pub fn get_ref(&self) -> String
-    {
-        return self.m_doc_ref.clone();
-    }
     /*
 
         String Document::getRefType() const
@@ -448,6 +442,12 @@ impl Document
         return self.m_doc_class.clone();
     }
 
+    pub fn get_doc_length(&self) -> DocLenT
+    {
+        self.m_doc_length
+    }
+
+    //old_name_was getRef
     pub fn get_doc_ref(&self) -> String
     {
         return self.m_doc_ref.clone();
@@ -629,6 +629,10 @@ impl Document
     {
         self.m_doc_ext_hash = self.calc_doc_ext_info_hash();
     }
+    pub fn get_doc_ext_hash(&self) -> CDocHashT
+    {
+        self.m_doc_ext_hash.clone()
+    }
 
     // old name was setDocLength
     pub fn set_doc_length(&mut self)
@@ -698,13 +702,21 @@ impl Document
         panic!("Invalid document for 'custom Validate Doc' {}", self.get_doc_identifier());
     }
 
-
     pub fn get_doc_identifier(&self) -> String
     {
         let doc_identifier = format!(
             " doc({}/{}) ",
             self.m_doc_type,
             cutils::hash8c(&self.m_doc_hash));
+        return doc_identifier;
+    }
+
+    pub fn get_js_doc_identifier(js_doc: &JSonObject) -> String
+    {
+        let doc_identifier = format!(
+            " doc({}/{}) ",
+            remove_quotes(&js_doc["dType"]),
+            cutils::hash8c(&remove_quotes(&js_doc["dHash"])));
         return doc_identifier;
     }
 
@@ -897,129 +909,99 @@ false
 */
 
     //old_name_was mapDocToBlock
-    pub fn map_doc_to_block(&self,
-                            block_hash: &CBlockHashT,
-                            doc_index: CDocIndexT)
+    pub fn map_doc_to_block(
+        &self,
+        block_hash: &CBlockHashT,
+        doc_index: CDocIndexT)
     {
         return map_doc_to_block(&self.m_doc_hash, block_hash, doc_index);
     }
 
+    pub fn trx_has_input(&self) -> bool
+    {
+        return trx_has_input(&self.m_doc_type);
+    }
+
+
+    // old name was trxHasNotInput
+    pub fn trx_has_not_input(&self) -> bool
+    {
+        return trx_has_not_input(&self.m_doc_type);
+    }
+
+    pub fn is_basic_transaction(&self) -> bool
+    {
+        is_basic_transaction(&self.m_doc_type)
+    }
+
+    pub fn is_dp_cost_payment(&self) -> bool
+    {
+        is_dp_cost_payment(&self.m_doc_type)
+    }
+
+    // old name was canBeACostPayerDoc
+    pub fn can_be_a_cost_payer_doc(d_type: &String) -> bool
+    {
+        return [constants::document_types::BASIC_TX.to_string()].contains(d_type);
+    }
+
+
+    // * The documents which do not need another doc to pay their cost.
+    // * instead they can pay the cost of another docs
+    // old name was isNoNeedCostPayerDoc
+    pub fn is_no_need_cost_payer_doc(d_type: &String) -> bool
+    {
+        return [
+            constants::document_types::BASIC_TX.to_string(),
+            constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string(),
+            constants::document_types::REPAYMENT_DOCUMENT.to_string()].contains(d_type);
+    }
+
     /*
 
-    bool Document::trxHasInput(const String& document_type)
-    {
-    return VString {
-    constants::document_types::BASIC_TX,
-    constants::DOC_TYPES::RpDoc
-    }.contains(document_type);
-    }
+        String Document::stringify_outputs() const
+        {
+        return SignatureStructureHandler::stringify_outputs(get_outputs());
+        }
 
-    bool Document::trxHasInput()
-    {
-    return Document::trxHasInput(m_doc_type);
-    }
+        // old name was trxHasOutput
+        bool Document::docHasOutput(const String& document_type)
+        {
+        return VString {
+        constants::document_types::COINBASE,
+        constants::document_types::BASIC_TX,
+        constants::document_types::RpDoc,
+        constants::document_types::RlDoc,}.contains(document_type);
+        }
 
-    bool Document::trxHasNotInput(const String& document_type)
-    {
-    return VString {
-    constants::document_types::COINBASE,
-    constants::DOC_TYPES::DPCostPay,
-    constants::DOC_TYPES::RlDoc
-    }.contains(document_type);
-    }
+        bool Document::docHasOutput()
+        {
+        return docHasOutput(m_doc_type);
+        }
 
-    bool Document::trxHasNotInput()
-    {
-    return Document::trxHasNotInput(m_doc_type);
-    }
+        void Document::importCostsToTreasury(
+        const Block* block,
+        CoinImportDataContainer* block_inspect_container)
+        {
+        cutils::exiter("Import Costs To Treasury not implemented for base class block Type(" + block.m_block_type + ")", 97);
+        }
 
-    bool Document::isBasicTransaction(const String& dType)
-    {
-    // Note: the iConsts.DOC_TYPES.Coinbase  and iConsts.DOC_TYPES.DPCostPay altough are transactions, but have special tretmnent
-    // Note: the iConsts.DOC_TYPES.RpDoc altough is a transaction, but since is created directly by node and based on validated coinbase info, so does not need validate
-    return VString{constants::document_types::BASIC_TX}.contains(dType);
-    }
+        QVDRecordsT Document::searchInDocBlockMap(
+        const ClausesT& clauses,
+        const VString fields,
+        const OrderT order,
+        const uint64_t limit)
+        {
+        QueryRes res = DbModel::select(
+        stbl_docs_blocks_map,
+        fields,
+        clauses,
+        order,
+        limit);
+        return res.records;
+        }
 
-    bool Document::isBasicTransaction()
-    {
-    return isBasicTransaction(m_doc_type);
-    }
-
-    bool Document::isDPCostPayment(const String& dType)
-    {
-    return VString{constants::DOC_TYPES::DPCostPay}.contains(dType);
-    }
-
-    bool Document::isDPCostPayment()
-    {
-    return isDPCostPayment(m_doc_type);
-    }
-
-    bool Document::canBeACostPayerDoc(const String& dType)
-    {
-    return VString{constants::document_types::BASIC_TX}.contains(dType);
-    }
-
-    /**
-    * The documents which do not need another doc to pay their cost.
-    * instead they can pay the cost of another docs
-    *
-    * @param {} dType
-    */
-    bool Document::isNoNeedCostPayerDoc(const String& dType)
-    {
-    return (VString {
-    constants::document_types::BASIC_TX,
-    constants::DOC_TYPES::DPCostPay,
-    constants::DOC_TYPES::RpDoc,
-    constants::DOC_TYPES::RlDoc
-    }.contains(dType));
-    }
-
-
-    String Document::stringify_outputs() const
-    {
-    return SignatureStructureHandler::stringify_outputs(get_outputs());
-    }
-
-    // old name was trxHasOutput
-    bool Document::docHasOutput(const String& document_type)
-    {
-    return VString {
-    constants::document_types::COINBASE,
-    constants::document_types::BASIC_TX,
-    constants::DOC_TYPES::RpDoc,
-    constants::DOC_TYPES::RlDoc,}.contains(document_type);
-    }
-
-    bool Document::docHasOutput()
-    {
-    return docHasOutput(m_doc_type);
-    }
-
-    void Document::importCostsToTreasury(
-    const Block* block,
-    CoinImportDataContainer* block_inspect_container)
-    {
-    cutils::exiter("Import Costs To Treasury not implemented for base class block Type(" + block.m_block_type + ")", 97);
-    }
-
-    QVDRecordsT Document::searchInDocBlockMap(
-    const ClausesT& clauses,
-    const VString fields,
-    const OrderT order,
-    const uint64_t limit)
-    {
-    QueryRes res = DbModel::select(
-    stbl_docs_blocks_map,
-    fields,
-    clauses,
-    order,
-    limit);
-    return res.records;
-    }
-
-    */
+        */
 }
 
 //old_name_was mapDocToBlock
@@ -1065,4 +1047,35 @@ pub fn set_document_outputs(obj: &Vec<JSonObject>) -> Vec<TOutput>
         outputs.push(o);
     }
     return outputs;
+}
+
+//old_name_was trxHasInput
+pub fn trx_has_input(document_type: &String) -> bool
+{
+    return [
+        constants::document_types::BASIC_TX.to_string(),
+        constants::document_types::REPAYMENT_DOCUMENT.to_string()].contains(document_type);
+}
+
+//old_name_was trxHasNotInput
+pub fn trx_has_not_input(document_type: &String) -> bool
+{
+    [
+        constants::document_types::COINBASE.to_string(),
+        constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string()
+    ].contains(document_type)
+}
+
+//old_name_was isBasicTransaction
+pub fn is_basic_transaction(d_type: &String) -> bool
+{
+// Note: the iConsts.DOC_TYPES.Coinbase  and iConsts.DOC_TYPES.DPCostPay altough are transactions, but have special tretmnent
+// Note: the iConsts.DOC_TYPES.RpDoc altough is a transaction, but since is created directly by node and based on validated coinbase info, so does not need validate
+    [constants::document_types::BASIC_TX.to_string()].contains(d_type)
+}
+
+//old_name_was isDPCostPayment
+pub fn is_dp_cost_payment(d_type: &String) -> bool
+{
+    [constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string()].contains(d_type)
 }

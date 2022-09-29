@@ -55,7 +55,7 @@ bool DAGMessageHandler::invokeDescendents(
     // control if block's potentially descendent(s) exist in parsing q
     QVDRecordsT likeHashRes = ParsingQHandler::searchParsingQ(
       {
-        {"pq_type", {constants::BLOCK_TYPES::Normal, constants::block_types::COINBASE}, "IN"},
+        {"pq_type", {constants::block_types::Normal, constants::block_types::COINBASE}, "IN"},
         {"pq_code", block_hash}
       },
       {"pq_type", "pq_code", "pq_payload"});
@@ -78,7 +78,7 @@ bool DAGMessageHandler::invokeDescendents(
     if (existed_descendents_in_parsingQ.len() > 0)
     {
       // controling if the ancestors of descendent exist in local or not
-      existed_descendents_in_parsingQ = cutils::arrayUnique(existed_descendents_in_parsingQ);
+      existed_descendents_in_parsingQ = cutils::array_unique(existed_descendents_in_parsingQ);
       return blockInvokingNeeds(existed_descendents_in_parsingQ);
       // set prerequisities null and attemps zero in order to force machine parsing them
 
@@ -168,7 +168,7 @@ bool DAGMessageHandler::blockInvokingNeeds(
     VString tmp;
     for(QVDicT a_row: existedInDAG)
       tmp.push(a_row["b_hash"].to_string());
-    VString array_diff = cutils::arrayDiff(block_hashes, tmp);
+    VString array_diff = cutils::array_diff(block_hashes, tmp);
 
     // control if block exist in parsing_q
     for (auto looking_hash: array_diff)
@@ -206,9 +206,9 @@ bool DAGMessageHandler::blockInvokingNeeds(
         }
       }
     }
-    block_hashes = cutils::arrayUnique(next_level_block_hashes);
+    block_hashes = cutils::array_unique(next_level_block_hashes);
   }
-  missed_blocks = cutils::arrayUnique(missed_blocks);
+  missed_blocks = cutils::array_unique(missed_blocks);
   addMissedBlocksToInvoke(missed_blocks);
 //  loopMissedBlocksInvoker();
   return true;
@@ -370,9 +370,7 @@ pub fn launch_invoke_leaves()
     {
         // TODO: needs control for latest invoke to not spaming network
         invoke_leaves();
-        /*
-        setMaybeAskForLatestBlocksFlag(constants::NO);
-        */
+        set_maybe_ask_for_latest_blocks_flag(constants::NO);
     }
 }
 

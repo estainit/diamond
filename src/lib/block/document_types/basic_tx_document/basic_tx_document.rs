@@ -268,7 +268,7 @@ impl BasicTxDocument {
             doc.m_doc_ext_hash,
             cutils::padding_length_value(doc.m_doc_length.to_string(), constants::LEN_PROP_LENGTH),
             serde_json::to_string(&self.m_data_and_process_payment_indexes).unwrap(),
-            doc.get_ref(),
+            doc.get_doc_ref(),
             doc.m_doc_type,
             doc.m_doc_version,
             stringify_inputs(self.get_inputs()),

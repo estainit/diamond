@@ -2,47 +2,48 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use serde_json::{json};
 use serde::{Serialize, Deserialize};
-use crate::{ccrypto, constants, cutils, dlog};
+use crate::{application, ccrypto, constants, cutils, dlog};
+use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash};
+use crate::lib::block::block_types::block_normal::normal_block::NormalBlock;
 use crate::lib::block::block_types::block_repayback::repayback_block::RepaybackBlock;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::block::document_types::document_factory::load_document;
 use crate::lib::block_utils::{unwrap_safed_content_for_db, wrap_safe_content_for_db};
-use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString};
+use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCK_EXT_INFO};
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
 use crate::lib::services::society_rules::society_rules::get_max_block_size;
+use crate::lib::utils::version_handler::is_valid_version_number;
 
-#[allow(unused, dead_code)]
+#[derive(Debug)]
 pub struct TransientBlockInfo
 {
-    m_status: bool,
-    m_block: Block,
-    m_stage: String,
+    pub m_status: bool,
+    pub m_block: Block,
+    pub m_stage: String,
 
-    m_map_trx_hash_to_trx_ref: QSDicT,
-    m_map_trx_ref_to_trx_hash: QSDicT,
-    m_map_referencer_to_referenced: QSDicT,
-    m_map_referenced_to_referencer: QSDicT,
+    pub m_map_trx_hash_to_trx_ref: QSDicT,
+    pub m_map_trx_ref_to_trx_hash: QSDicT,
+    pub m_map_referencer_to_referenced: QSDicT,
+    pub m_map_referenced_to_referencer: QSDicT,
 
-    m_doc_by_hash: HashMap<String, Document>,
-    m_transactions_dict: HashMap<String, Document>,
-    m_groupped_documents: DocDicVecT,
-    m_doc_index_by_hash: HashMap<CDocHashT, CDocIndexT>,
+    pub m_doc_by_hash: HashMap<String, Document>,
+    pub m_transactions_dict: HashMap<String, Document>,
+    pub m_grouped_documents: DocDicVecT,
+    pub m_doc_index_by_hash: HashMap<CDocHashT, CDocIndexT>,
 
-    m_block_total_output: CMPAISValueT,
-    m_block_documents_hashes: VString,
-    m_block_ext_infos_hashes: VString,
-    m_pre_requisities_ancestors: VString, // in case of creating a block which contains some ballots, the block explicitely includes the related polling blocks, in order to force and asure existance of polling recorded in DAG, befor applying the ballot(s)
+    pub m_block_total_output: CMPAISValueT,
+    pub m_block_documents_hashes: VString,
+    pub m_block_ext_info_hashes: VString,
+    pub m_pre_requisites_ancestors: VString, // in case of creating a block which contains some ballots, the block explicitely includes the related polling blocks, in order to force and asure existance of polling recorded in DAG, befor applying the ballot(s)
 }
 
 impl TransientBlockInfo {
-    #[allow(unused, dead_code)]
     pub fn new() -> Self {
         TransientBlockInfo {
             m_status: false,
@@ -54,12 +55,12 @@ impl TransientBlockInfo {
             m_map_referenced_to_referencer: Default::default(),
             m_doc_by_hash: HashMap::new(),
             m_transactions_dict: HashMap::new(),
-            m_groupped_documents: HashMap::new(),
+            m_grouped_documents: HashMap::new(),
             m_doc_index_by_hash: HashMap::new(),
             m_block_total_output: 0,
             m_block_documents_hashes: vec![],
-            m_block_ext_infos_hashes: vec![],
-            m_pre_requisities_ancestors: vec![],
+            m_block_ext_info_hashes: vec![],
+            m_pre_requisites_ancestors: vec![],
         }
     }
 }
@@ -95,7 +96,7 @@ pub struct Block
     pub m_block_version: String,
     pub m_block_ancestors: VString,
     pub m_block_descendants: VString,
-    pub m_block_signals: JSonObject,
+    pub m_block_signals: Vec<JSonObject>,
     pub m_block_backer: String,
     pub m_block_confidence: f64,
     pub m_block_creation_date: String,
@@ -109,6 +110,7 @@ pub struct Block
     pub m_block_floating_votes: JSonArray, // TODO: to be implemented later
 
     pub m_if_coinbase_block: CoinbaseBlock,
+    pub m_if_normal_block: NormalBlock,
     pub m_if_repayback_block: RepaybackBlock,
 }
 
@@ -123,7 +125,7 @@ impl Block {
             m_block_version: constants::DEFAULT_BLOCK_VERSION.to_string(),
             m_block_ancestors: vec![],
             m_block_descendants: vec![],
-            m_block_signals: json!({}),
+            m_block_signals: vec![],
             m_block_backer: "".to_string(),
             m_block_confidence: 0.0,
             m_block_creation_date: "".to_string(),
@@ -136,8 +138,15 @@ impl Block {
             m_block_floating_votes: json!([]),
 
             m_if_coinbase_block: CoinbaseBlock::new(),
-            m_if_repayback_block: RepaybackBlock::new()
+            m_if_normal_block: NormalBlock::new(),
+            m_if_repayback_block: RepaybackBlock::new(),
         }
+    }
+
+    // old name was getDocuments
+    pub fn get_documents(&self) -> &Vec<Document>
+    {
+        return &self.m_block_documents;
     }
 
     /*
@@ -281,50 +290,61 @@ impl Block {
         return out;
     }
 
-    /*
-
-    String Block::getBlockHashableString() const
+    pub fn get_docs_count(&self) -> CDocIndexT
     {
-      return "";
+        self.m_block_documents.len() as CDocIndexT
     }
 
-    VString Block::getDocumentsHashes(const JSonObject& block)
+    //old name was getDocumentsHashes
+    pub fn get_documents_hashes(&self) -> VString
     {
-      VString hashes {};
-      JSonArray documents = block["docs"].toArray();
-      for (auto a_doc: documents)
-        hashes.push(a_doc.toObject()["dHash"].to_string());
-      return hashes;
+        let mut hashes: VString = vec![];
+        for a_doc in &self.m_block_documents
+        {
+            hashes.push(a_doc.get_doc_hash());
+        }
+        return hashes;
     }
 
-    VString Block::getDocumentsHashes() const
+    #[allow(unused, dead_code)]
+    pub fn js_get_documents_hashes(block: &JSonObject) -> VString
     {
-      VString hashes {};
-      for (Document* a_doc: m_documents)
-        hashes.push(a_doc.m_doc_hash);
-      return hashes;
+        let mut hashes: VString = vec![];
+        for a_doc in block["bDocs"].as_array().unwrap()
+        {
+            hashes.push(remove_quotes(&a_doc["dHash"]));
+        }
+        return hashes;
     }
 
-    std::tuple<bool, CDocHashT> Block::calcDocumentsRootHash() const
+    // old name was calcDocumentsRootHash
+    pub fn calc_documents_root_hash(&self) -> (bool, CDocHashT)
     {
-      auto[root, verifies, merkle_version, levels, leaves] = CMerkle::generate(getDocumentsHashes());
-      Q_UNUSED(verifies);
-      Q_UNUSED(merkle_version);
-      Q_UNUSED(levels);
-      Q_UNUSED(leaves);
-      return {true, root};
+        let (
+            root,
+            _verifies,
+            _merkle_version,
+            _levels,
+            _leaves) =
+            generate_m(
+                self.get_documents_hashes(),
+                &"hashed".to_string(),
+                &"keccak256".to_string(),
+                &MERKLE_VERSION.to_string());
+        return (true, root);
     }
 
-
-    bool Block::fillInBlockExtInfo()
+    //old_name_was fillInBlockExtInfo
+    pub fn fill_in_block_ext_info(&mut self) -> bool
     {
-      m_block_ext_info = {};
-      for (Document* doc: m_documents)
-        m_block_ext_info.push(SignatureStructureHandler::compactUnlockersArray(doc->get_doc_ext_info()));
-      return true;
+        self.m_block_ext_info = vec![];
+        for doc in &self.m_block_documents
+        {
+            self.m_block_ext_info.push(doc.get_doc_ext_info().clone());
+            // self.m_block_ext_info.push(compactUnlockersArray(doc.get_doc_ext_info()));
+        }
+        return true;
     }
-
-    */
 
     //old_name_was exportDocumentsToJSon
     pub fn export_documents_to_json(&self, ext_info_in_document: bool) -> Vec<JSonObject>
@@ -374,9 +394,32 @@ impl Block {
     }
 
     // old name was calcBlockExtRootHash
+    pub fn calc_block_ext_root_hash_super(&self) -> (bool, String)
+    {
+        // for POW blocks the block has only one document and the dExtHash of doc and bExtHash of block are equal
+        let mut doc_ext_hashes: VString = vec![];
+        for a_doc in &self.m_block_documents
+        { doc_ext_hashes.push(a_doc.get_doc_ext_hash()); }
+        let (
+            documents_exts_root_hash,
+            _final_verifies,
+            _version,
+            _levels,
+            _leaves) = generate_m(
+            doc_ext_hashes,
+            &"hashed".to_string(),
+            &"keccak256".to_string(),
+            &MERKLE_VERSION.to_string());
+        return (true, documents_exts_root_hash);
+    }
+
+    // old name was calcBlockExtRootHash
     pub fn calc_block_ext_root_hash(&self) -> (bool, CDocHashT)
     {
-        if self.m_block_type == constants::block_types::COINBASE
+        if self.m_block_type == constants::block_types::NORMAL
+        {
+            return self.calc_block_ext_root_hash_super();
+        } else if self.m_block_type == constants::block_types::COINBASE
         {
             return self.m_if_coinbase_block.calc_block_ext_root_hash(self);
         }
@@ -384,15 +427,13 @@ impl Block {
         panic!("Missed 'calc Block Ext Root Hash method in {}", self.get_block_identifier());
     }
 
-    /*
-
-    void Block::calcAndSetBlockLength()
+    // old_name_was calcAndSetBlockLength
+    pub fn calc_and_set_block_length(&mut self)
     {
-      String stringyfied_block = safe_stringify_block(false);
-      m_block_length = static_cast<BlockLenT>(stringyfied_block.len());
+        let stringyfied_block: String = self.safe_stringify_block(false);
+        self.m_block_length = stringyfied_block.len() as BlockLenT;
     }
 
-*/
     // old_name_was calcBlockLength
     pub fn calc_block_length(&self) -> BlockLenT
     {
@@ -402,12 +443,26 @@ impl Block {
         block_length
     }
 
+    pub fn get_ancestors(&self) -> VString
+    {
+        self.m_block_ancestors.clone()
+    }
+
     pub fn get_block_identifier(&self) -> String
     {
         let block_identifier = format!(
-            " block({}/{}) ",
+            " block({} {}) ",
             self.m_block_type,
             cutils::hash8c(&self.m_block_hash));
+        return block_identifier;
+    }
+
+    pub fn get_js_block_identifier(j_block: &JSonObject) -> String
+    {
+        let block_identifier = format!(
+            " block({} {}) ",
+            remove_quotes(&j_block["bType"]),
+            cutils::hash8c(&remove_quotes(&j_block["bHash"])));
         return block_identifier;
     }
 
@@ -474,6 +529,11 @@ impl Block {
         return self.m_block_hash.clone();
     }
 
+    pub fn get_block_type(&self) -> String
+    {
+        return self.m_block_type.clone();
+    }
+
 
     pub fn calc_block_hash(&self) -> CBlockHashT {
         if self.m_block_type == constants::block_types::GENESIS {
@@ -518,7 +578,7 @@ impl Block {
         while doc_inx < documents.len() as CDocIndexT
         {
             // ; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
-            let (status, doc) = load_document(
+            let (status, doc) = Document::load_document(
                 &documents[doc_inx as usize],
                 self,
                 doc_inx);
@@ -591,205 +651,293 @@ impl Block {
             false);
         return records;
     }
-    /*
 
-        /**
-         *
-         * @param {*} args
-         * do a groupping and some general validations on entire documents of a Block
-         * TODO: maybe enhance it to use memory buffer
-         */
 
-        TransientBlockInfo Block::groupDocsOfBlock(const String& stage) const
+    // * do a groupping and some general validations on entire documents of a Block
+    // old name was groupDocsOfBlock
+    pub fn group_docs_of_block(&self, stage: &String) -> TransientBlockInfo
+    {
+        let mut transient_block_info = TransientBlockInfo::new();
+        transient_block_info.m_status = false;
+        transient_block_info.m_block = self.clone();
+        transient_block_info.m_stage = stage.clone();
+
+
+        if self.get_docs_count() == 0
+        { return transient_block_info; }
+
+        let now_ = application().now();
+        let mut doc_inx: CDocIndexT = 0;
+        while doc_inx < self.m_block_documents.len() as CDocIndexT
         {
-          TransientBlockInfo transient_block_info {false, this, stage};
+            let a_doc: &Document = &self.m_block_documents[doc_inx as usize];
+            transient_block_info.m_doc_by_hash.insert(a_doc.get_doc_hash(), a_doc.clone());
 
-
-          if (m_documents.len() == 0)
-            return transient_block_info;
-
-          String now_ = application().now();
-          for (CDocIndexT doc_inx = 0; doc_inx < m_documents.len(); doc_inx++)
-          {
-            Document *a_doc = m_documents[doc_inx];
-            transient_block_info.m_doc_by_hash[a_doc->get_doc_hash()] = a_doc;
-
-            if ((a_doc.m_doc_creation_date > m_block_creation_date) || (a_doc.m_doc_creation_date > now_))
+            if (a_doc.m_doc_creation_date > self.m_block_creation_date)
+                || (a_doc.m_doc_creation_date > now_)
             {
-              CLog::log("Block has document with creationdate after block-creation Date! stage(" + stage + "), block(" + cutils::hash8c(m_block_hash) + ") Doc(" + cutils::hash8c(a_doc->get_doc_hash()) + ")", "app", "error");
-              return transient_block_info;
-            }
-            transient_block_info.m_doc_index_by_hash[a_doc->get_doc_hash()] = doc_inx;
+                dlog(
+                    &format!(
+                        "Block has document with creation-date after block-creation Date! stage({}), \
+                        block({}) Doc({})",
+                        stage,
+                        cutils::hash8c(&self.m_block_hash),
+                        cutils::hash8c(&a_doc.get_doc_hash())
+                    ),
+                    constants::Modules::App,
+                    constants::SecLevel::Error);
 
-            if (!cutils::isValidVersionNumber(a_doc.m_doc_version))
+                return transient_block_info;
+            }
+            transient_block_info.m_doc_index_by_hash.insert(a_doc.get_doc_hash(), doc_inx);
+
+            if !is_valid_version_number(&a_doc.m_doc_version)
             {
-              CLog::log("invalid dVer in group Docs Of Block stage(" + stage + ") for doc(" + cutils::hash8c(a_doc->get_doc_hash()) + ")", "sec", "error");
-              return transient_block_info;
+                dlog(
+                    &format!(
+                        "Invalid dVer in group Docs Of Block stage({}) for doc({})",
+                        stage,
+                        cutils::hash8c(&a_doc.get_doc_hash())
+                    ),
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
+                return transient_block_info;
             }
-
 
             // document length control
-            Document *tmp_doc = DocumentFactory::create(a_doc->export_doc_to_json), this, doc_inx);
+            let (status, tmp_doc) = Document::load_document(
+                &a_doc.export_doc_to_json(true), self, doc_inx);
+            if !status
+            {
+                dlog(
+                    &format!(
+                        "Failed in load-doc: stage:{}, {}",
+                        stage,
+                        a_doc.export_doc_to_json(true)
+                    ),
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
+            }
 
-            DocLenT recalculate_doc_length = static_cast<DocLenT>(tmp_doc->calc_doc_length());
-            if ((tmp_doc.m_doc_type != constants::DOC_TYPES::DPCostPay) &&
-                ((tmp_doc.m_doc_length != recalculate_doc_length) ||
-                 (tmp_doc.m_doc_length != a_doc.m_doc_length))
+            let recalculate_doc_length: DocLenT = tmp_doc.calc_doc_length();
+            if (tmp_doc.get_doc_type() != constants::document_types::DATA_AND_PROCESS_COST_PAYMENT)
+                &&
+                (
+                    (tmp_doc.get_doc_length() != recalculate_doc_length) ||
+                        (tmp_doc.get_doc_length() != a_doc.get_doc_length())
                 )
             {
-              String msg = "The doc stated dLen is not same as real length. stage(" + stage + ") doc type(" + tmp_doc.m_doc_type + "/" + cutils::hash8c(tmp_doc->get_doc_hash()) + ") stated dLen(" + String::number(a_doc.m_doc_length) + "), ";
-              msg += " real length(" + String::number(tmp_doc->calc_doc_length()) + ")";
-              CLog::log(msg, "sec", "error");
+                let msg = format!(
+                    "The doc stated dLen is not same as real length. stage({}) doc {} stated dLen({}), real length({})",
+                    stage,
+                    tmp_doc.get_doc_identifier(),
+                    a_doc.calc_doc_length(),
+                    tmp_doc.calc_doc_length());
+                dlog(
+                    &msg,
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
 
-              delete tmp_doc;
+                drop(tmp_doc);
 
-              return transient_block_info;
+                return transient_block_info;
             }
-            delete tmp_doc;
+            drop(tmp_doc);
 
-
-            if (!transient_block_info.m_groupped_documents.keys().contains(a_doc.m_doc_type))
-              transient_block_info.m_groupped_documents[a_doc.m_doc_type] = {};
-
-            transient_block_info.m_groupped_documents[a_doc.m_doc_type].push(a_doc);
-
-            if (a_doc->get_ref() != "")
+            if !transient_block_info.m_grouped_documents.contains_key(&a_doc.m_doc_type)
             {
-              if (Document::canBeACostPayerDoc(a_doc.m_doc_type))
-              {
-                transient_block_info.m_transactions_dict[a_doc->get_doc_hash()] = a_doc;
-                transient_block_info.m_map_trx_hash_to_trx_ref[a_doc->get_doc_hash()] = a_doc->get_ref();
-                transient_block_info.m_map_trx_ref_to_trx_hash[a_doc->get_ref()] = a_doc->get_doc_hash();
-              } else {
-                transient_block_info.m_map_referencer_to_referenced[a_doc->get_doc_hash()] = a_doc->get_ref();
-                transient_block_info.m_map_referenced_to_referencer[a_doc->get_ref()] = a_doc->get_doc_hash();
-              }
+                transient_block_info.m_grouped_documents.insert(a_doc.m_doc_type.clone(), vec![]);
             }
-          }
 
-          VString payedRefs1 = transient_block_info.m_map_trx_ref_to_trx_hash.keys();
-          VString payedRefs2;
-          for(String key: transient_block_info.m_map_trx_hash_to_trx_ref.keys())
-            payedRefs2.push(transient_block_info.m_map_trx_hash_to_trx_ref[key]);
+            let mut tmp = transient_block_info.m_grouped_documents[&a_doc.m_doc_type].clone();
+            tmp.push(a_doc.clone());
+            transient_block_info.m_grouped_documents.insert(a_doc.m_doc_type.clone(), tmp);
 
-          for (Document* a_doc: m_documents)
-          {
-            if (!Document::isNoNeedCostPayerDoc(a_doc.m_doc_type))
+            if a_doc.get_doc_ref() != "".to_string()
             {
-              // there must be a transaction to pay for this document
-              if (!payedRefs1.contains(a_doc->get_doc_hash()) || !payedRefs2.contains(a_doc->get_doc_hash()))
-              {
-                if ((a_doc.m_doc_type == constants::DOC_TYPES::FPost) && (a_doc.m_doc_class == constants::FPOST_CLASSES::DMS_Post))
+                if Document::can_be_a_cost_payer_doc(&a_doc.get_doc_type())
                 {
-                  if ((getNonce() == "") || (m_block_creation_date > "2021-01-01 00:00:00"))
-                  {
-                    CLog::log("The document DMS_Post has not Nonce & not payed by no transaction. stage(" + stage + ") document(" + cutils::hash8c(a_doc->get_doc_hash()) + ") ", "sec", "error");
-                    return transient_block_info;
-                  }
+                    transient_block_info.m_transactions_dict.insert(a_doc.get_doc_hash(), a_doc.clone());
+                    transient_block_info.m_map_trx_hash_to_trx_ref.insert(a_doc.get_doc_hash(), a_doc.get_doc_ref());
+                    transient_block_info.m_map_trx_ref_to_trx_hash.insert(a_doc.get_doc_ref(), a_doc.get_doc_hash());
                 } else {
-                  CLog::log("The document is not payed by no transaction. stage(" + stage + ") document(" + cutils::hash8c(a_doc->get_doc_hash()) + ") ", "sec", "error");
-                  return transient_block_info;
+                    transient_block_info.m_map_referencer_to_referenced.insert(a_doc.get_doc_hash(), a_doc.get_doc_ref());
+                    transient_block_info.m_map_referenced_to_referencer.insert(a_doc.get_doc_ref(), a_doc.get_doc_hash());
                 }
-              }
             }
-          }
-
-          if (transient_block_info.m_map_trx_ref_to_trx_hash.keys().len() != transient_block_info.m_map_trx_hash_to_trx_ref.keys().len())
-          {
-            CLog::log("transaction count and ref count are different! stage(" + stage + ") mapTrxRefToTrxHash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash) + " mapTrxHashToTrxRef: " + cutils::dumpIt(transient_block_info.m_map_trx_hash_to_trx_ref) + " ", "sec", "error");
-            return transient_block_info;
-          }
-
-          for (String a_ref: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
-          {
-            if (!transient_block_info.m_transactions_dict.keys().contains(transient_block_info.m_map_trx_ref_to_trx_hash[a_ref]))
-            {
-              CLog::log("missed some1 transaction to support referenced documents. stage(" + stage + ") trxDict: " + cutils::dumpIt(transient_block_info.m_transactions_dict) + " mapTrxRefToTrxHash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash) + " ", "sec", "error");
-              return transient_block_info;
-            }
-          }
-          if (cutils::arrayDiff (transient_block_info.m_map_trx_hash_to_trx_ref.keys(), transient_block_info.m_transactions_dict.keys()).len() != 0)
-          {
-            CLog::log("missed some transaction, to support referenced documents. stage(" + stage + ") trxDict: " + cutils::dumpIt(transient_block_info.m_transactions_dict) + " mapTrxRefToTrxHash: " + cutils::dumpIt(transient_block_info.m_map_trx_ref_to_trx_hash) + " ", "sec", "error");
-            return transient_block_info;
-          }
-          for (String a_ref: transient_block_info.m_map_trx_ref_to_trx_hash.keys())
-          {
-            if (!transient_block_info.m_doc_by_hash.keys().contains(a_ref))
-            {
-              CLog::log("missed a referenced document. stage(" + stage + ") referenced doc(" + cutils::hash8c(a_ref) + "), referencer doc(" + cutils::hash8c(transient_block_info.m_map_trx_ref_to_trx_hash[a_ref]) + ") ", "sec", "error");
-              return transient_block_info;
-            }
-          }
-
-          if (static_cast<uint32_t>(transient_block_info.m_doc_index_by_hash.keys().len()) != static_cast<uint32_t>(m_documents.len()))
-          {
-            CLog::log("There is duplicated doc.hash in block. stage(" + stage + ") block(" + cutils::hash8c(m_block_hash) + ") ", "sec", "error");
-            return transient_block_info;
-          }
-
-          VString doc_types = transient_block_info.m_groupped_documents.keys();
-          doc_types.sort();
-          for(String a_type: doc_types)
-            CLog::log("block(" + cutils::hash8c(m_block_hash) + ") has " + String::number(transient_block_info.m_groupped_documents[a_type].len()) + " Document(s) of type(" + a_type + ") ", "app", "trace");
-
-          transient_block_info.m_status = true;
-          return transient_block_info;
-
-        //  {
-        //    true,
-        //    trxDict,
-        //    docByHash,
-        //    grpdDocuments,
-        //    docIndexByHash,
-        //    mapTrxHashToTrxRef,
-        //    mapTrxRefToTrxHash,
-        //    mapReferencedToReferencer,
-        //    mapReferencerToReferenced
-        //  };
+            doc_inx += 1;
         }
 
-
-        String Block::getNonce() const
+        let payed_refs_1: VString = transient_block_info.m_map_trx_ref_to_trx_hash.keys().cloned().collect::<VString>();
+        let mut payed_refs_2: VString = vec![];
+        for key in transient_block_info.m_map_trx_hash_to_trx_ref.keys().cloned().collect::<VString>()
         {
-          cutils::exiter("m_nonce isn't implement for Block Base class", 0);
-          return "";
+            payed_refs_2.push(transient_block_info.m_map_trx_hash_to_trx_ref[&key].clone());
         }
 
-        Vec<Document *> Block::getDocuments() const
+        for a_doc in &self.m_block_documents
         {
-          return m_documents;
+            if !Document::is_no_need_cost_payer_doc(&a_doc.get_doc_type())
+            {
+                // there must be a transaction to pay for this document
+                if !payed_refs_1.contains(&a_doc.get_doc_hash()) || !payed_refs_2.contains(&a_doc.get_doc_hash())
+                {
+                    if (a_doc.get_doc_type() == constants::document_types::FREE_POST)
+                        && (a_doc.get_doc_class() == constants::free_post_classes::DMS_POST)
+                    {
+                        // if ((getNonce() == "") || (m_block_creation_date > "2021-01-01 00:00:00"))
+                        // {
+                        //   CLog::log("The document DMS_Post has not Nonce & not payed by no transaction. stage(" + stage + ") document(" + cutils::hash8c(a_doc.get_doc_hash()) + ") ", "sec", "error");
+                        //   return transient_block_info;
+                        // }
+                    } else {
+                        dlog(
+                            &format!(
+                                "The document is not payed by no transaction. stage({}) document {}",
+                                stage, a_doc.get_doc_identifier()),
+                            constants::Modules::Sec,
+                            constants::SecLevel::Error);
+                        return transient_block_info;
+                    }
+                }
+            }
         }
 
-        //std::tuple<bool, JSonObject> Block::selectBExtInfosFromDB(const String& block_hash)
-        //{
-        //  QueryRes bExtInfo = DbModel::select(
-        //    "db_comen_blocks",
-        //    C_BLOCK_EXT_INFO,
-        //    VString {"x_block_hash", "x_detail"},     // fields
-        //    {ModelClause("x_block_hash", block_hash)},
-        //    {},
-        //    1   // limit
-        //  );
-        //  if (bExtInfo.records.len() == 0)
-        //    return {false, JSonObject {}};
+        if transient_block_info.m_map_trx_ref_to_trx_hash.keys().len()
+            != transient_block_info.m_map_trx_hash_to_trx_ref.keys().len()
+        {
+            dlog(
+                &format!(
+                    "transaction count and ref count are different! stage({}) mapTrxRefToTrxHash: {:#?} mapTrxHashToTrxRef: {:#?}",
+                    stage,
+                    transient_block_info.m_map_trx_ref_to_trx_hash,
+                    transient_block_info.m_map_trx_hash_to_trx_ref),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return transient_block_info;
+        }
 
-        //  QVariant x_detail = bExtInfo.records[0]["x_detail"];
-        //  String serializedBextInfo = x_detail.to_string();
-        //  auto[unwrap_status, unwrap_ver, unwrap_content] = BlockUtils::unwrapSafeContentForDB(serializedBextInfo);
+        for a_ref in transient_block_info.m_map_trx_ref_to_trx_hash.keys().cloned().collect::<VString>()
+        {
+            if !transient_block_info.m_transactions_dict.contains_key(
+                &transient_block_info.m_map_trx_ref_to_trx_hash[&a_ref])
+            {
+                dlog(
+                    &format!(
+                        "Missed some1 transaction to support referenced documents. stage({}) trxDict: {:#?} \
+                        mapTrxRefToTrxHash: {:#?}",
+                        stage,
+                        transient_block_info.m_transactions_dict,
+                        transient_block_info.m_map_trx_ref_to_trx_hash),
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
+                return transient_block_info;
+            }
+        }
+        if cutils::array_diff(
+            &transient_block_info.m_map_trx_hash_to_trx_ref.keys().cloned().collect::<VString>(),
+            &transient_block_info.m_transactions_dict.keys().cloned().collect::<VString>()).len() != 0
+        {
+            dlog(
+                &format!(
+                    "Missed some transaction, to support referenced documents. stage({}) trxDict: {:#?} mapTrxRefToTrxHash: {:#?}",
+                    stage,
+                    transient_block_info.m_transactions_dict,
+                    transient_block_info.m_map_trx_ref_to_trx_hash),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return transient_block_info;
+        }
 
-        //  JSonObject JsonObj = cutils::parseToJsonObj(unwrap_content);
+        for a_ref in &transient_block_info.m_map_trx_ref_to_trx_hash.keys().cloned().collect::<VString>()
+        {
+            if !transient_block_info.m_doc_by_hash.contains_key(a_ref)
+            {
+                dlog(
+                    &format!(
+                        "Missed a referenced document. stage({}) referenced-doc({}), referencer doc {}",
+                        stage,
+                        cutils::hash8c(a_ref),
+                        cutils::hash8c(&transient_block_info.m_map_trx_ref_to_trx_hash[a_ref])),
+                    constants::Modules::Sec,
+                    constants::SecLevel::Error);
+                return transient_block_info;
+            }
+        }
 
-        //  return {true, JsonObj};
+        if transient_block_info.m_doc_index_by_hash.keys().len()
+            != self.m_block_documents.len()
+        {
+            dlog(
+                &format!(
+                    "There is duplicated doc.hash in block. stage({}) block({}) ",
+                    stage,
+                    cutils::hash8c(&self.get_block_hash())),
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return transient_block_info;
+        }
 
-        //}
+        let mut doc_types: VString = transient_block_info.m_grouped_documents.keys().cloned().collect::<VString>();
+        doc_types.sort();
+        for a_type in doc_types
+        {
+            dlog(
+                &format!(
+                    "The block: {} has {} Document(s) of type({}) ",
+                    self.get_block_identifier(),
+                    transient_block_info.m_grouped_documents[&a_type].len(),
+                    a_type),
+                constants::Modules::App,
+                constants::SecLevel::TmpDebug);
+        }
 
-        //std::tuple<bool, JSonObject> Block::selectBExtInfosFromDB() const
-        //{
-        //  return selectBExtInfosFromDB(m_block_hash);
-        //}
+        transient_block_info.m_status = true;
+        return transient_block_info;
+    }
 
-    */
+    /*
+
+         String Block::getNonce() const
+         {
+           cutils::exiter("m_nonce isn't implement for Block Base class", 0);
+           return "";
+         }
+
+         Vec<Document *> Block::getDocuments() const
+         {
+           return m_documents;
+         }
+
+         //std::tuple<bool, JSonObject> Block::selectBExtInfosFromDB(const String& block_hash)
+         //{
+         //  QueryRes bExtInfo = DbModel::select(
+         //    "db_comen_blocks",
+         //    C_BLOCK_EXT_INFO,
+         //    VString {"x_block_hash", "x_detail"},     // fields
+         //    {ModelClause("x_block_hash", block_hash)},
+         //    {},
+         //    1   // limit
+         //  );
+         //  if (bExtInfo.records.len() == 0)
+         //    return {false, JSonObject {}};
+
+         //  QVariant x_detail = bExtInfo.records[0]["x_detail"];
+         //  String serializedBextInfo = x_detail.to_string();
+         //  auto[unwrap_status, unwrap_ver, unwrap_content] = BlockUtils::unwrapSafeContentForDB(serializedBextInfo);
+
+         //  JSonObject JsonObj = cutils::parseToJsonObj(unwrap_content);
+
+         //  return {true, JsonObj};
+
+         //}
+
+         //std::tuple<bool, JSonObject> Block::selectBExtInfosFromDB() const
+         //{
+         //  return selectBExtInfosFromDB(m_block_hash);
+         //}
+
+     */
     //old_name_was insertToDB
     //old_name_was insertBlockExtInfoToDB
     pub fn insert_block_ext_info_to_db(
@@ -836,22 +984,22 @@ impl Block {
           }
           return {-1, nullptr};
         }
-
-        std::tuple<int64_t, JSonObject> Block::getDocumentJByHash(
-          const JSonObject& block,
-          const CDocHashT& doc_hash)
-        {
-          JSonArray documents = block["docs"].toArray();
-          for (CDocIndexT doc_inx = 0; doc_inx < documents.len(); doc_inx++)
-          {
-            if (documents[doc_inx].toObject()["dHash"].to_string() == doc_hash)
-              return {doc_inx, documents[doc_inx].toObject()};
-          }
-          return {-1, {}};
-        }
-
 */
-
+    //old_name_was getDocumentJByHash
+    pub fn get_json_document_by_hash(
+        block: &JSonObject,
+        doc_hash: &CDocHashT) -> (CDocIndexT, JSonObject)
+    {
+        let documents = block["bDocs"].as_array().unwrap();
+        let mut doc_inx: CDocIndexT = 0;
+        while doc_inx < documents.len() as CDocIndexT
+        {
+            if remove_quotes(&documents[doc_inx as usize]["dHash"]) == doc_hash.to_string()
+            { return (doc_inx, documents[doc_inx as usize].clone()); }
+            doc_inx += 1;
+        }
+        return (-1, json!({}));
+    }
 }
 
 //old_name_was regenerateBlock

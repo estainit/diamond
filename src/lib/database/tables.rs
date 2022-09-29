@@ -144,6 +144,13 @@ pub const C_MACHINE_DRAFT_PLEDGES: &str = "c_machine_draft_pledges";
 #[allow(dead_code, unused)]
 pub const C_MACHINE_DRAFT_PLEDGES_FIELDS: [&str; 12] = ["dpl_id", "dpl_mp_code", "dpl_type", "dpl_class", "dpl_version", "dpl_comment", "dpl_pledger", "dpl_pledgee", "dpl_arbiter", "dpl_doc_ref", "dpl_body", "dpl_req_date"];
 
+#[allow(dead_code, unused)]
+pub const C_TRX_SPEND: &str = "c_trx_spend";
+#[allow(dead_code, unused)]
+pub const C_TRX_SPEND_FIELDS: [&str; 3] = ["sp_coin", "sp_spend_loc", "sp_spend_date"];
+
+
+
 
 
 

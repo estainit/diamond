@@ -1,5 +1,6 @@
+use std::collections::HashMap;
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
-use crate::{CMachine, constants};
+use crate::{CMachine, constants, dlog};
 use crate::cutils::{padding_left};
 use crate::lib::custom_types::{CDateT, TimeByMinutesT, TimeBySecT};
 
@@ -676,6 +677,59 @@ impl AppParams {
                 &(cycle_dtl[0].to_string() + &" 00:00:01"));
             return self.get_coinbase_range(&c_date);
         }
+    }
+
+    // old name was getMatureCyclesCount
+    pub fn get_mature_cycles_count(&self, document_type: &String) -> u8
+    {
+        let cycle_map: HashMap<String, u8> = HashMap::from([
+            (constants::document_types::BASIC_TX.to_string(), 1),
+            (constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string(), 1),
+            (constants::document_types::COINBASE.to_string(), 2),
+            (constants::document_types::REPAYMENT_DOCUMENT.to_string(), 2),
+        ]);
+
+        if cycle_map.contains_key(document_type)
+        { return cycle_map[document_type]; }
+
+        dlog(
+            &format!("Invalid document_type in 'get Mature Cycles Count'! {}", document_type),
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return 0;
+    }
+
+    // old name was isMatured
+    pub fn is_matured(
+        &self,
+        doc_type: &String,
+        coin_creation_date: &String,
+        c_date: &String) -> bool
+    {
+        let mature_cycles = self.get_mature_cycles_count(doc_type);
+        if mature_cycles == 0
+        { return false; }
+
+        // control maturity
+        if
+        // (spendBlock.bType != iConsts.BLOCK_TYPES.RpBlock) &&
+        self.time_diff(coin_creation_date.clone(), c_date.clone()).as_minutes < mature_cycles as u64 * self.get_cycle_by_minutes()
+        {
+            let msg = format!(
+                "Is Matured: {} block({}) uses an output coin-creation-date{}) before being maturated by {} cycles",
+                doc_type,
+                c_date,
+                coin_creation_date,
+                mature_cycles
+            );
+            dlog(
+                &msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return false;
+        }
+
+        return true;
     }
 }
 

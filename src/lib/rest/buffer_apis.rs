@@ -1,15 +1,9 @@
-use std::collections::HashMap;
 use actix_web::{get, post, Responder, web};
 use postgres::types::ToSql;
 use serde_json::json;
-use crate::{constants, dlog, machine};
-use crate::constants::{MONEY_MAX_DIVISION};
 use crate::cutils::{controlled_str_to_json, remove_quotes};
-use crate::lib::custom_types::{CMPAIValueT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
-use crate::lib::wallet::get_addresses_list::get_addresses_list;
-use crate::lib::wallet::wallet_address_handler::{create_and_insert_new_address_in_wallet};
-use crate::lib::wallet::wallet_coins::get_coins_list;
+use crate::machine;
 
 
 #[get("/getBuffer")]
@@ -55,13 +49,22 @@ pub async fn delete_buffered_doc(post: String) -> impl Responder
             m_clause_operand: "=",
             m_field_multi_values: vec![],
         }]);
-
-        let res = json!({
-            "status": true,
-            "message": format!("Requested document was deleted, {} ", bd_id),
-            "info": json!({}),
-        });
-        res
+        if status
+        {
+            let res = json!({
+                "status": true,
+                "message": format!("Requested document was deleted, {} ", bd_id),
+                "info": json!({}),
+            });
+            res
+        } else {
+            let res = json!({
+                "status": false,
+                "message": format!("Failed in delete {}", bd_id),
+                "info": json!({}),
+            });
+            res
+        }
     }).await.expect("sign transaction panicked");
     web::Json(api_res)
 }
@@ -70,14 +73,23 @@ pub async fn delete_buffered_doc(post: String) -> impl Responder
 pub async fn broadcast_the_block() -> impl Responder
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let(status, msg) = machine().broadcast_block(&"".to_string(), &"".to_string());
-
-        let res = json!({
+        let (status, msg) = machine().broadcast_block(&"".to_string(), &"".to_string());
+        if !status
+        {
+            let res = json!({
+                "status": false,
+                "message": msg,
+                "info": json!({}),
+            });
+            res
+        } else {
+            let res = json!({
                 "status": true,
                 "message": format!("Block was broadcast. {}", 88),
                 "info": json!({}),
             });
-        res
+            res
+        }
     }).await.expect("Failed in create Basic 1/1 address!");
     web::Json(api_res)
 }

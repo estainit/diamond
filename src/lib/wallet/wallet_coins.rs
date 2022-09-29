@@ -248,7 +248,7 @@ pub fn delete_from_funds_by_doc(doc: &Document) -> bool
 void Wallet::removeRef(CCoinCodeT coin_code)
 {
   String mp_code = CMachine::getSelectedMProfile();
-  CLog::log("removing unused coin from machine_used_utxos (" + cutils::shortCoinRef(coin_code) + ")");
+  CLog::log("removing unused coin from machine_used_utxos (" + cutils::short_coin_code(coin_code) + ")");
   DbModel::dDelete(
     stbl_machine_used_coins,
     {{"lu_mp_code", mp_code},

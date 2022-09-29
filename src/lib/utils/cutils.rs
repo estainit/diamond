@@ -2,7 +2,7 @@
 use std::fmt::format;
 use substring::Substring;
 use lazy_static::lazy_static;
-use regex::Regex;
+use regex::{Regex};
 use serde_json::json;
 use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
@@ -388,6 +388,32 @@ pub fn hash8c(s: &String) -> String
     s.substring(0, 8).to_string()
 }
 
+//old_name_was shortCoinRef
+pub fn short_coin_code(coin: &CCoinCodeT) -> CCoinCodeT
+{
+    let coins_segments =
+        coin
+            .split(":")
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|x| x.to_string())
+            .collect::<VString>();
+    return [hash16c(&coins_segments[0]), coins_segments[1].to_string()].join(":");
+}
+
+//old_name_was unpackCoinSpendLoc
+pub fn unpack_coin_spend_loc(spend_location: &String) -> (String, String)
+{
+    let segments: VString =
+        spend_location
+            .split(":")
+            .collect::<Vec<&str>>()
+            .iter()
+            .map(|&x| x.to_string())
+            .collect::<Vec<String>>();
+    return (segments[0].clone(), segments[1].clone());
+}
+
 pub fn hash16c(s: &String) -> String
 {
     s.substring(0, 16).to_string()
@@ -469,6 +495,7 @@ pub fn i_floor_float(number: f64) -> f64
 //     return out;
 // }
 
+//old_name_was convertJSonArrayToQStringList
 pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
 {
     let vec_val = s
@@ -512,6 +539,17 @@ pub fn array_unique(inp_arr: &Vec<String>) -> Vec<String>
         }
     }
     out_arr
+}
+
+//old_name_was shortStringsList
+pub fn short_strings_list(items: &VString, length: usize) -> VString
+{
+    let mut shorts: VString = vec![];
+    for item in items
+    {
+        shorts.push(item.substring(0, length).to_string());
+    }
+    shorts
 }
 
 //old_name_was removeEmptyElements

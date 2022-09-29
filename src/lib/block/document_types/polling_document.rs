@@ -301,7 +301,7 @@ impl PollingDocument
 
           if (doc_cost_is_payed)
           {
-            CLog::log("Successfully TP_POLLING Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_POLLING)", "app", "trace");
+            CLog::log("Successfully TP_POLLING Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_POLLING)", "app", "trace");
 
             cost_payment_status[polling_hash].m_message = "Ballot Cost imported to treasury succsessfully.";
             String title = "TP_POLLING Polling(" + cutils::hash6c(polling_hash) + ")";
@@ -315,14 +315,14 @@ impl PollingDocument
               a_treasury_entry.m_coin);
 
             } else {
-              CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::shortCoinRef(a_treasury_entry.m_coin) + ") importing(TP_POLLING)", "sec", "error");
+              CLog::log("Failed TP_... Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_POLLING)", "sec", "error");
               CLog::log("cost_payment_status not payed: " + CoinImportDataContainer::dumpMe(cost_payment_status[polling_hash]), "sec", "error");
 
               PollingHandler::removePollingG(polling_hash);
 
               // remove referenced & related doc for which there is a polling
               String ref_type = polling_doc->getRefType();
-              if (ref_type == constants::DOC_TYPES::ReqForRelRes)
+              if (ref_type == constants::document_types::ReqForRelRes)
               {
                 ResevedCoinsHandler::removeReqRelRes(polling_doc->get_ref());
 

@@ -1,537 +1,722 @@
-/*
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::lib::block::block_types::block::{Block, TransientBlockInfo};
+use crate::{application, constants, cutils, dlog, machine};
+use crate::lib::block::document_types::document::Document;
+use crate::lib::block::documents_in_related_block::transactions::coins_visibility_handler::control_coins_visibility_in_graph_history;
+use crate::lib::block::documents_in_related_block::transactions::equations_controls::validate_equation;
+use crate::lib::block_utils::retrieve_dp_cost_info;
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocIndexT, CMPAISValueT, CMPAIValueT, COutputIndexT, GRecordsT, QSDicT, QV2DicT, QVDicT, QVDRecordsT, VString};
+use crate::lib::dag::dag::get_coins_generation_info_via_sql;
+use crate::lib::dag::normal_block::rejected_transactions_handler::search_in_rejected_trx;
+use crate::lib::dag::super_control_til_coinbase_minting::tracking_back_the_coins;
+use crate::lib::database::abs_psql::ModelClause;
+use crate::lib::services::society_rules::society_rules::{get_block_fix_cost, get_transaction_minimum_fee};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::search_in_spendable_coins_cache;
+use crate::lib::transactions::basic_transactions::coins::spent_coins_handler::{SpendCoinInfo, SpendCoinsList, SpentCoinsHandler};
 
-
-#ifndef TRANSACTIONSINRELATEDBLOCK_H
-#define TRANSACTIONSINRELATEDBLOCK_H
-
-class BlockOverview
+pub struct BlockOverview
 {
-public:
-  bool m_status = false;
-  String m_msg = "";
+    pub m_status: bool,
+    pub m_msg: String,
 
-  VString m_supported_P4P {};
-  VString m_block_used_coins {};
-  QSDicT m_map_coin_to_spender_doc {};
-  QV2DicT m_used_coins_dict {};
-  VString m_block_not_matured_coins {};
-};
-
-class TransactionsInRelatedBlock
-{
-public:
-  TransactionsInRelatedBlock();
-
-  static BlockOverview prepareBlockOverview(
-    const Block *block);
-
-  static std::tuple<bool, bool, String, SpendCoinsList*> validateTransactions(
-    const Block* block,
-    const String& stage);
-
-
-  static std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> considerInvalidCoins(
-    const String& blockHash,
-    const String& blockCreationDate,
-    const VString& block_used_coins,
-    QV2DicT used_coins_dict,
-    VString maybe_invalid_coins,
-    const QSDicT& map_coin_to_spender_doc);
-
-  static std::tuple<bool, bool, String> appendTransactions(
-    Block* block,
-    TransientBlockInfo& transient_block_info);
-};
-
-
-TransactionsInRelatedBlock::TransactionsInRelatedBlock()
-{
-
+    pub m_supported_p4p: VString,
+    pub m_block_used_coins: VString,
+    pub m_map_coin_to_spender_doc: QSDicT,
+    pub m_used_coins_dict: QV2DicT,
+    pub m_block_not_matured_coins: VString,
 }
 
-BlockOverview TransactionsInRelatedBlock::prepareBlockOverview(
-  const Block *block)
+impl BlockOverview
 {
-  String msg = "";
-  VString supported_P4P = {};
-  VString trx_uniqueness = {};
-  VString inputs_doc_hashes = {};
-  VString block_used_coins = {};
-  QSDicT map_coin_to_spender_doc = {};
-
-  BlockOverview block_overview = {};
-  for (CDocIndexT doc_inx = 0; doc_inx < block->getDocuments().size(); doc_inx++)
-  {
-    Document* a_doc = block->getDocuments()[doc_inx];
-
-    if (a_doc->m_doc_creation_date > block->m_block_creation_date)
+    pub fn new() -> Self
     {
-      msg = "The trx(" + CUtils::hash8c(a_doc->getDocHash()) + ") is after block(" + CUtils::hash8c(block->getBlockHash()) + ") creation-date!";
-      CLog::log(msg, "trx", "error");
-      block_overview.m_msg = msg;
-      return block_overview;
+        Self {
+            m_status: false,
+            m_msg: "".to_string(),
+            m_supported_p4p: vec![],
+            m_block_used_coins: vec![],
+            m_map_coin_to_spender_doc: Default::default(),
+            m_used_coins_dict: Default::default(),
+            m_block_not_matured_coins: vec![],
+        }
+    }
+}
+
+//old_name_was prepareBlockOverview
+pub fn prepare_block_overview(
+    block: &Block) -> BlockOverview
+{
+    let msg: String;
+    let mut supported_p4p: VString = vec![];
+    let mut trx_uniqueness: VString = vec![];
+    let mut inputs_doc_hashes: VString = vec![];
+    let mut block_used_coins: VString = vec![];
+    let mut map_coin_to_spender_doc: QSDicT = HashMap::new();
+
+    let mut block_overview: BlockOverview = BlockOverview::new();
+    let mut doc_inx: CDocIndexT = 0;
+    while doc_inx < block.get_docs_count()
+    {
+        let a_doc: &Document = &block.get_documents()[doc_inx as usize];
+
+        if a_doc.m_doc_creation_date > block.m_block_creation_date
+        {
+            msg = format!(
+                "The trx creation-date is after block! {} {}!",
+                a_doc.get_doc_identifier(),
+                block.get_block_identifier()
+            );
+            dlog(
+                &msg,
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+
+
+            block_overview.m_msg = msg;
+            return block_overview;
+        }
+
+        trx_uniqueness.push(a_doc.get_doc_hash());
+
+        // extracting P4P (if exist)
+        if (a_doc.get_doc_type() == constants::document_types::BASIC_TX)
+            && (a_doc.get_doc_class() == constants::trx_classes::P4P)
+        {
+            if constants::SUPPORTS_P4P_TRANSACTION
+            {
+                msg = format!(
+                    "Network still don't support P4P transactions. {} in block {} !",
+                    a_doc.get_doc_identifier(),
+                    block.get_block_identifier()
+                );
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                block_overview.m_msg = msg;
+                return block_overview;
+            }
+            if a_doc.get_doc_ref() != ""
+            { supported_p4p.push(a_doc.get_doc_ref()); }
+        }
+
+        if a_doc.trx_has_input() && !a_doc.trx_has_not_input()
+        {
+            for input in a_doc.get_inputs()
+            {
+                inputs_doc_hashes.push(input.m_transaction_hash.clone());
+                let a_coin: String = input.get_coin_code();
+                block_used_coins.push(a_coin.clone());
+                map_coin_to_spender_doc.insert(a_coin, a_doc.get_doc_hash());
+            }
+        }
+        doc_inx += 1;
     }
 
-    trx_uniqueness.append(a_doc->getDocHash());
-
-    // extracting P4P (if exist)
-    if ((a_doc->m_doc_type == constants::DOC_TYPES::BasicTx) && (a_doc->m_doc_class == constants::TRX_CLASSES::P4P))
+    // uniqueness test
+    if trx_uniqueness.len() != cutils::array_unique(&trx_uniqueness).len()
     {
-      if (!constants::SUPPORTS_P4P_TRANSACTION)
-      {
-        msg = "Network still doen't support P4P transactions. (" + CUtils::hash8c(a_doc->getDocHash()) + ") in block(" + CUtils::hash8c(block->getBlockHash()) + ")!";
-        CLog::log(msg, "trx", "error");
+        msg = format!(
+            "Duplicating same trx in block body. block {}!",
+            block.get_block_identifier()
+        );
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
         block_overview.m_msg = msg;
         return block_overview;
-      }
-      if (a_doc->getRef() != "")
-        supported_P4P.append(a_doc->getRef());
     }
 
-    if (a_doc->trxHasInput() && !a_doc->trxHasNotInput())
+    // control for using of rejected Transactions coins
+    // in fact a refLoc can exist in table trx_utxo or not. if not, it doesn't matter whether exist in rejected trx or not.
+    // and this control of rejected trx is not necessary but it is a fastest way to discover a double-spend
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "rt_doc_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &inputs_doc_hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+    let rejected_transactions: QVDRecordsT = search_in_rejected_trx(
+        vec![c1],
+        vec![],
+        vec![],
+        0);
+    if rejected_transactions.len() > 0
     {
-      for (TInput* input: a_doc->getInputs())
-      {
-        inputs_doc_hashes.append(input->m_transaction_hash);
-        String a_coin = input->getCoinCode();
-        block_used_coins.append(a_coin);
-        map_coin_to_spender_doc[a_coin] = a_doc->getDocHash();
-      }
+        msg = format!(
+            "Using rejected transaction's outputs in block {}! rejected transactions: {:?}",
+            block.get_block_identifier(),
+            rejected_transactions
+        );
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        block_overview.m_msg = msg;
+        return block_overview;
     }
-  }
 
-  // uniquness test
-  if (trx_uniqueness.size() != CUtils::arrayUnique(trx_uniqueness).size())
-  {
-    msg = "Duplicating same trx in block body. block(" + CUtils::hash8c(block->getBlockHash()) + ")!";
-    CLog::log(msg, "trx", "error");
-    block_overview.m_msg = msg;
-    return block_overview;
-  }
+    // control double spending in a block
+    // because malisciuos user can use one ref in multiple transaction in same block
+    if block_used_coins.len() != cutils::array_unique(&block_used_coins).len()
+    {
+        msg = format!(
+            "Double spending same refs in a block {}",
+            block.get_block_identifier()
+        );
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        block_overview.m_msg = msg;
+        return block_overview;
+    }
+    dlog(
+        &format!(
+            "Block has {} inputs {}",
+            block_used_coins.len(), block.get_block_identifier()
+        ),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
-  // control for using of rejected Transactions refLocs
-  // in fact a refLoc can exist in table trx_utxo or not. if not, it doesn't matter whether exist in rejected trx or not.
-  // and this controll of rejected trx is not necessary but it is a fastest way to discover a double-spend
-  QVDRecordsT rejected_transactions = RejectedTransactionsHandler::searchInRejectedTrx({{"rt_doc_hash", inputs_doc_hashes, "IN"}});
-  if (rejected_transactions.size() > 0)
-  {
-    msg = "Useing rejected transaction's outputs in block(" + CUtils::hash8c(block->getBlockHash()) + ")! rejected transactions:(" + CUtils::dumpIt(rejected_transactions) + ")!";
-    CLog::log(msg, "trx", "error");
-    block_overview.m_msg = msg;
-    return block_overview;
-  }
+    // it is a dictionary for all inputs either valid or invalid
+    // it has 3 keys/values (ut_coin, ut_o_address, ut_o_value)
+    let mut used_coins_dict: QV2DicT = HashMap::new();
 
-  // control double spending in a block
-  // because malisciuos user can use one ref in multiple transaction in same block
-  if (block_used_coins.size() != CUtils::arrayUnique(block_used_coins).size())
-  {
-    msg = "Double spending same refs in a block(" + CUtils::hash8c(block->getBlockHash()) + ")! ";
-    CLog::log(msg, "trx", "error");
-    block_overview.m_msg = msg;
-    return block_overview;
-  }
-  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + String::number(block_used_coins.size())+ " inputs ", "trx", "trace");
+    // all inputs must be maturated, maturated means it passed at least 12 hours of creeating the outputs and now they are presented in table trx_utxos adn are spendable
+    let mut spendable_coins: VString = vec![];
+    if block_used_coins.len() > 0
+    {
+        // check if the coins exist in UTXOs?
+        // implementing spendable coins cache to reduce DB load
+        let coins_info: QVDRecordsT = search_in_spendable_coins_cache(&block_used_coins);
 
-  // it is a dictionary for all inputs either valid or invalid
-  // it has 3 keys/values (ut_coin, ut_o_address, ut_o_value)
-  QV2DicT used_coins_dict = {};
-  // all inputs must be maturated, maturated means it passed at least 12 hours of creeating the outputs and now they are presented in table trx_utxos adn are spendable
-  VString spendable_coins = {};
-  if (block_used_coins.size() > 0)
-  {
-    // check if the coins exist in UTXOs?
-    // implementing spendable coins chache to reduce DB load
-    QVDRecordsT coins_info = UTXOHandler::searchInSpendableCoinsCache(block_used_coins);
-
-//    remve top line and uncoment this lines after solving block database problem
+//    remove top line and uncomment this lines after solving block database problem
 //    QVDRecordsT coins_info = UTXOHandler::searchInSpendableCoins(
 //      {{"ut_coin", block_used_coins, "IN"}},
 //      {"ut_ref_creation_date"});
 
-    if (coins_info.size() > 0)
-    {
-      for (QVDicT a_coin: coins_info)
-      {
-        CCoinCodeT ut_coin = a_coin.value("ut_coin").toString();
-        spendable_coins.append(ut_coin);
-        used_coins_dict[ut_coin] = a_coin;
-        // the block creation Date MUST be at least 12 hours after the creation date of reflocs
-        if (block->m_block_creation_date < CUtils::minutesAfter(CMachine::getCycleByMinutes(), a_coin.value("ut_ref_creation_date").toString()))
+        if coins_info.len() > 0
         {
-          msg = "The creation of coin(" + CUtils::shortCoinRef(ut_coin) + ") is after usage in Block(" + CUtils::hash8c(block->getBlockHash()) + ")! ";
-          CLog::log(msg, "trx", "error");
-          block_overview.m_msg = msg;
-          return block_overview;
+            for a_coin in coins_info
+            {
+                let ut_coin: CCoinCodeT = a_coin["ut_coin"].clone();
+                spendable_coins.push(ut_coin.clone());
+                used_coins_dict.insert(ut_coin.clone(), a_coin.clone());
+                // the block creation Date MUST be at least 12 hours after the creation date of reflocs
+                let cycle_by_min = application().get_cycle_by_minutes();
+                if block.m_block_creation_date < application().minutes_after(cycle_by_min, &a_coin["ut_ref_creation_date"])
+                {
+                    msg = format!(
+                        "The creation of coin( {}) is after usage in the Block {}!",
+                        cutils::short_coin_code(&ut_coin),
+                        block.get_block_identifier()
+                    );
+                    dlog(
+                        &msg,
+                        constants::Modules::Trx,
+                        constants::SecLevel::Error);
+                    block_overview.m_msg = msg;
+                    return block_overview;
+                }
+            }
         }
-      }
     }
-  }
 
-  CLog::log("Block(" + CUtils::hash8c(block->getBlockHash()) + ") has " + String::number(spendable_coins.size()) + " maturated Inputs: " + spendable_coins.join(", "), "trx", "trace");
+    dlog(
+        &format!("Block {} has {} maturated Inputs: {:?}",
+                 block.get_block_identifier(),
+                 spendable_coins.len(),
+                 spendable_coins
+        ),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
-  // all inputs which are not in spendable coins, potentialy can be invalid
-  VString block_not_matured_coins = CUtils::arrayDiff(block_used_coins, spendable_coins);
-  if (block_not_matured_coins.size() > 0)
-    CLog::log("Missed matured coins in table trx_utxo at " + CUtils::getNowSSS() + " block(" + block->getBlockHash() + ")  missed(" + block_not_matured_coins.join(", ") + ") inputs! probably is cloned transaction", "sec", "error");
+    // all inputs which are not in spendable coins, potentialy can be invalid
+    let block_not_matured_coins: VString = cutils::array_diff(&block_used_coins, &spendable_coins);
+    if block_not_matured_coins.len() > 0
+    {
+        dlog(
+            &format!(
+                "Missed matured coins in table trx_coins at {} block {} missed({:#?}) inputs! probably is cloned transaction",
+                application().get_now_sss(),
+                block.get_block_identifier(),
+                block_not_matured_coins,
+            ),
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+    }
 
-  block_overview.m_status = true;
-  block_overview.m_supported_P4P = supported_P4P;
-  block_overview.m_block_used_coins = block_used_coins;
-  block_overview.m_map_coin_to_spender_doc = map_coin_to_spender_doc;
-  block_overview.m_used_coins_dict = used_coins_dict;
-  block_overview.m_block_not_matured_coins = block_not_matured_coins;
-  return block_overview;
+    block_overview.m_status = true;
+    block_overview.m_supported_p4p = supported_p4p;
+    block_overview.m_block_used_coins = block_used_coins.clone();
+    block_overview.m_map_coin_to_spender_doc = map_coin_to_spender_doc;
+    block_overview.m_used_coins_dict = used_coins_dict;
+    block_overview.m_block_not_matured_coins = block_not_matured_coins;
+    return block_overview;
 }
 
-std::tuple<bool, QV2DicT, QV2DicT, bool, SpendCoinsList*> TransactionsInRelatedBlock::considerInvalidCoins(
-  const String& blockHash,
-  const String& blockCreationDate,
-  const VString& block_used_coins,
-  QV2DicT used_coins_dict,
-  VString maybe_invalid_coins,
-  const QSDicT& map_coin_to_spender_doc)
+//old_name_was considerInvalidCoins
+pub fn consider_invalid_coins(
+    block_hash: &CBlockHashT,
+    block_creation_date: &CDateT,
+    block_used_coins: &VString,
+    used_coins_dict: &QV2DicT,
+    maybe_invalid_coins: &VString,
+    map_coin_to_spender_doc: &QSDicT) -> (bool, QV2DicT, QV2DicT, bool, SpendCoinsList)
 {
+    let msg: String;
+    let mut maybe_invalid_coins = maybe_invalid_coins.clone();
+    let mut used_coins_dict = used_coins_dict.clone();
+    let mut invalid_coins_dict: QV2DicT = HashMap::new();  // it contains invalid coins historical creation info
 
-  QV2DicT invalid_coins_dict {};  // it contains invalid coins historical creation info
-
-  // retrieve all spent coins in last 5 days
-  SpendCoinsList* coinsInSpentTable = SpentCoinsHandler::makeSpentCoinsDict(block_used_coins);
-  if (coinsInSpentTable->m_coins_dict.keys().size()> 0)
-  {
-    // the inputs which are already spended are invalid coins too
-    maybe_invalid_coins = CUtils::arrayAdd(maybe_invalid_coins, coinsInSpentTable->m_coins_dict.keys());
-    maybe_invalid_coins = CUtils::arrayUnique(maybe_invalid_coins);
-  }
-
-  if (maybe_invalid_coins.size() > 0)
-  {
-    CLog::log("maybe Invalid coins (either because of not matured or already spend): " + CUtils::dumpIt(maybe_invalid_coins), "trx", "error");
-    invalid_coins_dict = DAG::getCoinsGenerationInfoViaSQL(maybe_invalid_coins);
-    CLog::log("invalid Coins Dict: " + CUtils::dumpIt(invalid_coins_dict), "trx", "trace");
-
-    // controll if all potentially invalid coins, have coin creation record in DAG history
-    if (invalid_coins_dict.keys().size() != maybe_invalid_coins.size())
+    // retrieve all spent coins in last 5 days
+    let mut coins_in_spent_table: SpendCoinsList = SpentCoinsHandler::make_spent_coins_dict(block_used_coins);
+    if coins_in_spent_table.m_coins_dict.keys().len() > 0
     {
-      CLog::log("The block uses some un-existed inputs. may be machine is not synched. block(" + CUtils::hash8c(blockHash) + ")", "trx", "error");
-      return {false, invalid_coins_dict, used_coins_dict, false, coinsInSpentTable};
+        // the inputs which are already spent are invalid coins too
+        maybe_invalid_coins = cutils::array_add(
+            &maybe_invalid_coins,
+            &coins_in_spent_table
+                .m_coins_dict
+                .keys()
+                .cloned()
+                .collect::<VString>());
+        maybe_invalid_coins = cutils::array_unique(&maybe_invalid_coins);
     }
 
-    /**
-     * control if invalidity is because of using really unmatured outputs(which will be matured in next hours)?
-     * if yes drop block
-     */
-    for (String aCoin: invalid_coins_dict.keys())
+    if maybe_invalid_coins.len() > 0
     {
-      bool is_matured = CUtils::isMatured(
-        invalid_coins_dict[aCoin]["coinGenDocType"].toString(),
-        invalid_coins_dict[aCoin]["coinGenCreationDate"].toString());
-      if (!is_matured)
-      {
-        CLog::log("The block uses at least one unmaturated input: block(" + CUtils::hash8c(blockHash) + ") coin(" + aCoin +")", "trx", "error");
-        return {false, invalid_coins_dict, used_coins_dict, false, coinsInSpentTable};
-      }
-    }
-  }
+        dlog(
+            &format!("Maybe invalid coins (either because of not matured or already spend): {:#?}", maybe_invalid_coins),
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        invalid_coins_dict = get_coins_generation_info_via_sql(&maybe_invalid_coins);
+        dlog(
+            &format!("invalid Coins Dict: {:?}", invalid_coins_dict),
+            constants::Modules::Trx,
+            constants::SecLevel::TmpDebug);
 
-
-  for (CCoinCodeT an_invalid_coin_code: invalid_coins_dict.keys())
-  {
-    // append also invalid refs to used coins dict
-    used_coins_dict[an_invalid_coin_code] = QVDicT{
-      {"ut_coin", an_invalid_coin_code},
-      {"ut_o_address", invalid_coins_dict[an_invalid_coin_code]["coinGenOutputAddress"]},
-      {"ut_o_value", invalid_coins_dict[an_invalid_coin_code]["coinGenOutputValue"]},
-      {"ut_ref_creation_date", invalid_coins_dict[an_invalid_coin_code]["coinGenCreationDate"]}};
-
-    /**
-     * adding to spend-input-dictionary the invalid coins in current block too
-     * in order to having a complete history & order of entire spent coins of the block
-     */
-    if (!coinsInSpentTable->m_coins_dict.keys().contains(an_invalid_coin_code))
-      coinsInSpentTable->m_coins_dict[an_invalid_coin_code] = std::vector<SpendCoinInfo*> {};
-
-    coinsInSpentTable->m_coins_dict[an_invalid_coin_code].emplace_back(
-      new SpendCoinInfo {
-      blockCreationDate,
-      blockHash,
-      map_coin_to_spender_doc[an_invalid_coin_code]});
-
-  }
-
-
-  // all spent_loc must exist in invalid_coins_dict
-  VString tmp1 = invalid_coins_dict.keys();
-  VString tmp2 = coinsInSpentTable->m_coins_dict.keys();
-  if ((tmp1.size() != tmp2.size()) ||
-    (CUtils::arrayDiff(tmp1, tmp2).size() > 0) ||
-    (CUtils::arrayDiff(tmp2, tmp1).size()> 0))
-  {
-    String msg = "finding invalidations messed up block(" + CUtils::hash8c(blockHash) + ") maybe Invalid Inputs: ";
-    msg += "invalid Coins Dict: " + CUtils::dumpIt(invalid_coins_dict) + " coins In Spent Table: " + CUtils::dumpIt(coinsInSpentTable);
-    CLog::log(msg, "sec", "error");
-    return {false, invalid_coins_dict, used_coins_dict, false, coinsInSpentTable};
-  }
-
-  bool is_sus_block = false;
-  if (invalid_coins_dict.keys().size() > 0)
-  {
-    String msg = "Some transaction inputs in block(" + CUtils::hash8c(blockHash) + ") are not valid";
-    msg += "these are duplicated inputs: " + CUtils::dumpIt(invalid_coins_dict);
-    CLog::log(msg, "trx", "error");
-    is_sus_block = true;
-  }
-
-  // apllying machine-POV-order to coinsInSpentTable as an order-attr
-  for (String aCoin: coinsInSpentTable->m_coins_dict.keys())
-  {
-    //looping on orders
-    for (uint32_t inx = 0; inx < coinsInSpentTable->m_coins_dict[aCoin].size(); inx++)
-      coinsInSpentTable->m_coins_dict[aCoin][inx]->m_spend_order = inx;
-  }
-
-
-  return {
-    true,
-    invalid_coins_dict,
-    used_coins_dict,
-    is_sus_block,
-    coinsInSpentTable};
-
-}
-
-/**
- * @brief TransactionsInRelatedBlock::validateTransactions
- * @param block
- * @param stage
- * @return <status, is_sus_block, double_spends>
- */
-std::tuple<bool, bool, String, SpendCoinsList*> TransactionsInRelatedBlock::validateTransactions(
-  const Block *block,
-  const String& stage)
-{
-  String msg;
-
-  if (block->m_block_ext_info.size() == 0)
-  {
-    msg = "Missed ext Info for Block(CUtils::hash8c(" + block->getBlockHash() + ")!";
-    CLog::log(msg, "trx", "error");
-    return {false, false, msg, nullptr};
-  }
-
-  BlockOverview block_overview = prepareBlockOverview(block);
-  if (!block_overview.m_status)
-    return {false, false, block_overview.m_msg, nullptr};
-
-  VString maybe_invalid_coins = block_overview.m_block_not_matured_coins;
-
-  CMPAIValueT sum_remotes = 0;
-  CMPAIValueT treasury_incomes, backer_incomes = 0;
-
-  // let remoteBlockDPCostBacker = 0;
-  for (CDocIndexT doc_inx = 0; doc_inx < block->getDocuments().size(); doc_inx++)
-  {
-    Document* a_doc = block->getDocuments()[doc_inx];
-
-    // do validate only transactions
-    if (
-      !Document::isBasicTransaction(a_doc->m_doc_type) &&
-      !Document::isDPCostPayment(a_doc->m_doc_type)
-    )
-      continue;
-
-
-    // DPCOst payment control
-    if (a_doc->m_doc_type == constants::DOC_TYPES::DPCostPay)
-    {
-      auto [status, treasury_incomes_, backer_incomes_] = BlockUtils::retrieveDPCostInfo(
-        a_doc,
-        block->m_block_backer);
-      if (!status)
-        return {false, false, "Failed in calculation of retrieve-DPCost-Info", nullptr};
-      treasury_incomes = treasury_incomes_;
-      backer_incomes = backer_incomes_;
-    }
-
-    CMPAIValueT trx_stated_dp_cost = 0;
-    if (block_overview.m_supported_P4P.contains(a_doc->getDocHash()))
-    {
-      CLog::log("The trx is supported by p4p trx. Block(" + CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) + ") ", "trx", "info");
-      // so we do not need to controll trx fee, because it is already payed
-
-    }
-    else if (VString {constants::DOC_TYPES::DPCostPay}.contains(a_doc->m_doc_type))
-    {
-      // this kind of documents do not need to have trx-fee
-
-    } else {
-      if (!constants::SUPPORTS_CLONED_TRANSACTION && (a_doc->getDPIs().size() > 1))
-      {
-        msg = "The network still do not accept Cloned transactions!";
-        CLog::log(msg, "trx", "error");
-        return {false, false, msg, nullptr};
-      }
-
-      for (DPIIndexT a_dpi_index: a_doc->getDPIs())
-      {
-        if (a_doc->getOutputs()[a_dpi_index]->m_address == block->m_block_backer)
+        // controll if all potentially invalid coins, have coin creation record in DAG history
+        if invalid_coins_dict.keys().len() != maybe_invalid_coins.len()
         {
-          trx_stated_dp_cost = a_doc->getOutputs()[a_dpi_index]->m_amount;
+            dlog(
+                &format!("The block uses some un-existed inputs. may be machine is not synced. block({})", cutils::hash8c(block_hash)),
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return (false, invalid_coins_dict, used_coins_dict.clone(), false, coins_in_spent_table);
         }
-      }
-      if (trx_stated_dp_cost == 0)
-      {
-        msg = "At least one trx hasn't backer fee! Block(" + CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) + ")";
-        CLog::log(msg, "trx", "error");
-        return {false, false, msg, nullptr};
-      }
 
-      if (trx_stated_dp_cost < SocietyRules::getTransactionMinimumFee(block->m_block_creation_date))
-      {
-        msg = "The backer fee is less than Minimum acceptable fee!! Block(" + CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) + ") trx_stated_dp_cost(" + String::number(trx_stated_dp_cost)+ ") < minimum fee(" + SocietyRules::getTransactionMinimumFee(block->m_block_creation_date) + ")";
-        CLog::log(msg, "trx", "error");
-        return {false, false, msg, nullptr};
-      }
-
-      auto[status, locally_recalculate_trx_dp_cost] = a_doc->calcDocDataAndProcessCost(
-        stage,
-        block->m_block_creation_date);
-      if (!status)
-        return {false, false, "Failed in calc-Doc-Data-And-Process-Cost", nullptr};
-
-      CLog::log(
-        "compare costs(remote: " + CUtils::sepNum(trx_stated_dp_cost) + " local: " + CUtils::sepNum(locally_recalculate_trx_dp_cost) + " ) doc(" +
-        a_doc->m_doc_type + " / " + CUtils::hash8c(a_doc->getDocHash()) +")  Block(" + CUtils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
-
-      if (trx_stated_dp_cost < locally_recalculate_trx_dp_cost)
-      {
-        msg = "Miss-calculated documet length: " + a_doc->safeStringifyDoc(true);
-        msg += "The backer fee is less than network values! Block(" +
-          CUtils::hash8c(block->getBlockHash()) + ") trx(" + CUtils::hash8c(a_doc->getDocHash()) +
-          ") trx_stated_dp_cost(" + CUtils::sepNum(trx_stated_dp_cost)+ ") < network minimum fee(" +
-              CUtils::sepNum(locally_recalculate_trx_dp_cost) + ") mcPAIs",
-        CLog::log(msg, "trx", "error");
-        return {false, false, msg, nullptr};
-      }
+        // * control if invalidity is because of using really unmatured outputs(which will be matured in next hours)?
+        // * if yes drop block
+        for a_coin in invalid_coins_dict.keys()
+        {
+            let now_ = application().now();
+            let is_matured = application().is_matured(
+                &invalid_coins_dict[a_coin]["coinGenDocType"].to_string(),
+                &invalid_coins_dict[a_coin]["coinGenCreationDate"].to_string(),
+                &now_);
+            if !is_matured
+            {
+                dlog(
+                    &format!("The block uses at least one un-maturated input: block({}) coin({})",
+                             cutils::hash8c(block_hash), a_coin),
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, invalid_coins_dict, used_coins_dict.clone(), false, coins_in_spent_table);
+            }
+        }
     }
 
-    sum_remotes += trx_stated_dp_cost;
-  }
-  CLog::log("Backer Fees Sum = " + CUtils::sepNum(sum_remotes) + " PAIs for Block(" + CUtils::hash8c(block->getBlockHash()) + ") ", "app", "info");
-
-  // control if block total trx fees are valid
-  auto block_fix_cost = SocietyRules::getBlockFixCost(block->m_block_creation_date);
-  auto befor_block_tax = (sum_remotes * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100;
-  CMPAIValueT recalc_remote_backer_fee = befor_block_tax - block_fix_cost;
-  if (recalc_remote_backer_fee != backer_incomes)
-  {
-    msg = "The locally calculated backer fee is not what remote is! local(" + CUtils::sepNum(recalc_remote_backer_fee)+
-      ") remote(" + CUtils::sepNum(backer_incomes) + ") mcPAIs, Block(" +
-      CUtils::hash8c(block->getBlockHash()) + ")";
-    CLog::log(msg, "trx", "error");
-
-    return {false, false, msg, nullptr};
-  }
-
-  CMPAIValueT locally_recalculate_block_treasury_income = sum_remotes - recalc_remote_backer_fee;
-  if (locally_recalculate_block_treasury_income != treasury_incomes)
-  {
-      msg = "The locally calculated treasury is not what remote is! Block(" +
-      CUtils::hash8c(block->getBlockHash()) + ") locally_recalculate_block_treasury_income(" + CUtils::sepNum(locally_recalculate_block_treasury_income)+ ") treasury_incomes(" +
-      CUtils::sepNum(treasury_incomes) + ") mcPAIs";
-      CLog::log(msg, "trx", "error");
-    return {false, false, msg, nullptr};
-  }
-
-  GRecordsT SCUDS {};
-  if (constants::SUPER_CONTROL_UTXO_DOUBLE_SPENDING)
-  {
-    /**
-    * after being sure about secure and proper functionality of code, we can cut this controll in next monthes
-    * finding the block(s) which are used these coins and already are registerg in DAG
-    */
-    auto[status, SCUDS] = SpentCoinsHandler::findCoinsSpendLocations(block_overview.m_block_used_coins);
-    if (!status)
-      return {false, false, "Failed in find-Coins-Spend-Locations", nullptr};
-
-    if (SCUDS.keys().size() > 0)
+    for an_invalid_coin_code in invalid_coins_dict.keys()
     {
-      msg = "SCUDS: SUPER_CONTROL_UTXO_DOUBLE_SPENDING found some double-spending with block(" + CUtils::hash8c(block->getBlockHash()) + ") SCUDS.spendsDict: " + CUtils::dumpIt(SCUDS);
-      CLog::log(msg, "sec", "error");
-      return {false, false, msg, nullptr};
-    }
-  }
+        // append also invalid refs to used coins dict
+        let tmp: QVDicT = HashMap::from([
+            ("ut_coin".to_string(), an_invalid_coin_code.clone()),
+            ("ut_o_address".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenOutputAddress"].clone()),
+            ("ut_o_value".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenOutputValue"].clone()),
+            ("ut_ref_creation_date".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenCreationDate"].clone())]);
+        used_coins_dict.insert(an_invalid_coin_code.clone(), tmp);
 
-  if (constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
-  {
-    /**
-    * most paranoidic and pesimistic control of input validation
-    * for now I put this double-controll to also quality controll of the previuos-controls.
-    * this control is too costly, so it must be removed or optimized ASAP
-    */
-    auto[validate_status, validate_msg, coins_track] = SuperControlTilCoinbaseMinting::trackingBackTheCoins(
-      block,
-      {},
-      {});
-    if (!validate_status)
+
+        // * adding to spend-input-dictionary the invalid coins in current block too
+        // * in order to having a complete history & order of entire spent coins of the block
+        if !coins_in_spent_table.m_coins_dict.contains_key(an_invalid_coin_code)
+        {
+            coins_in_spent_table.m_coins_dict.insert(an_invalid_coin_code.clone(), vec![]);// < SpendCoinInfo * > {};
+        }
+
+        let mut tmp_dict = coins_in_spent_table.m_coins_dict[an_invalid_coin_code].clone();
+        let tmp_elm: SpendCoinInfo = SpendCoinInfo {
+            m_spend_date: block_creation_date.clone(),
+            m_spend_block: block_hash.clone(),
+            m_spend_document: map_coin_to_spender_doc[an_invalid_coin_code].clone(),
+            m_spend_order: 0,
+        };
+        tmp_dict.push(tmp_elm);
+
+        coins_in_spent_table.m_coins_dict.insert(an_invalid_coin_code.clone(), tmp_dict);
+    }
+
+
+    // all spent_loc must exist in invalid_coins_dict
+    let tmp1: VString = invalid_coins_dict.keys().cloned().collect();
+    let tmp2: VString = coins_in_spent_table.m_coins_dict.keys().cloned().collect::<VString>();
+    if (tmp1.len() != tmp2.len()) ||
+        (cutils::array_diff(&tmp1, &tmp2).len() > 0) ||
+        (cutils::array_diff(&tmp2, &tmp1).len() > 0)
     {
-      msg = "SuperValidate, block(" + CUtils::hash8c(block->getBlockHash()) + ") error message: " + validate_msg;
-      CLog::log(msg, "trx", "error");
-      return {false, false, msg, nullptr};
-    } else {
-      CLog::log("SuperValidate, block(${CUtils::hash8c(block->getBlockHash())})'s inputs have confirmed path going back to coinbase", "trx", "info");
+        msg = format!(
+            "Finding invalidation's messed up block({}) maybe Invalid Inputs, invalid Coins Dict: {:?} coins In Spent Table: {:?}",
+            cutils::hash8c(block_hash),
+            invalid_coins_dict,
+            coins_in_spent_table);
+        dlog(
+            &msg,
+            constants::Modules::Sec,
+            constants::SecLevel::Error);
+        return (false, invalid_coins_dict.clone(), used_coins_dict, false, coins_in_spent_table);
     }
-  }
 
-  auto[status2, invalid_coins_dict, used_coins_dict_, is_sus_block, double_spends] = considerInvalidCoins(
-    block->getBlockHash(),
-    block->m_block_creation_date,
-    block_overview.m_block_used_coins,
-    block_overview.m_used_coins_dict,
-    maybe_invalid_coins,
-    block_overview.m_map_coin_to_spender_doc);
-  if (!status2)
-    return {false, false, "Failed in consider-Invalid-Coins", double_spends};
-  block_overview.m_used_coins_dict = used_coins_dict_;
+    let mut is_sus_block = false;
+    if invalid_coins_dict.keys().len() > 0
+    {
+        msg = format!("Some transaction inputs in block({}) are not valid, these are duplicated inputs: {:?}",
+                      cutils::hash8c(block_hash), invalid_coins_dict);
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        is_sus_block = true;
+    }
 
-
-  bool equation_control_res = EquationsControls::validateEquation(
-    block,
-    block_overview.m_used_coins_dict,
-    invalid_coins_dict);
-  if (!equation_control_res)
-    return {false, false, "Failed in validate-Equation", double_spends};
-
-
-  /**
-  * control UTXO visibility in DAG history by going back throught ancestors
-  * since the block can contains only UTXOs which are already took palce in her hsitory
-  * in oder words, they are in block's sibility
-  */
-  if (!is_sus_block && !constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING)
-  {
-    bool is_visible = CoinsVisibilityHandler::controlCoinsVisibilityInGraphHistory(
-      block_overview.m_block_used_coins,
-      block->m_ancestors,
-      block->getBlockHash());
-    if (!is_visible)
-      return {false, false, "Failed in control-Coins-Visibility-In-Graph-History", double_spends};
-  }
+    // apllying machine-POV-order to coinsInSpentTable as an order-attr
+    let coins_code = coins_in_spent_table.m_coins_dict.keys().cloned().collect::<VString>();
+    for a_coin_code in &coins_code
+    {
+        //looping on orders
+        let mut inx: COutputIndexT = 0;
+        let mut coins_vec = coins_in_spent_table.m_coins_dict[a_coin_code].clone();
+        while inx < coins_vec.len() as COutputIndexT
+        {
+            coins_vec[inx as usize].m_spend_order = inx;
+            inx += 1;
+        }
+        coins_in_spent_table.m_coins_dict.insert(a_coin_code.clone(), coins_vec);
+    }
 
 
-  return {true, is_sus_block, "valid", double_spends};
+    return (
+        true,
+        invalid_coins_dict,
+        used_coins_dict,
+        is_sus_block,
+        coins_in_spent_table);
 }
 
-/**
- * @brief TransactionsInRelatedBlock::appendTransactions
- * @param block
- * @param transient_block_info
- * @return {creating block status, should empty buffer, msg}
- */
-std::tuple<bool, bool, String> TransactionsInRelatedBlock::appendTransactions(
-  Block* block,
-  TransientBlockInfo& transient_block_info)
+//old_name_was validateTransactions
+pub fn validate_transactions(block: &Block, stage: &String) ->
+(bool /* status */, bool /* is_sus_block */, String/* msg */, SpendCoinsList /* double_spends */)
 {
-  return CMachine::fetchBufferedTransactions(block, transient_block_info);
+    let msg: String;
+
+    if block.m_block_ext_info.len() == 0
+    {
+        msg = format!("Missed ext Info for Block! {}, {}", block.get_block_identifier(), block.safe_stringify_block(true));
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        return (false, false, msg, SpendCoinsList::new());
+    }
+
+    let mut block_overview: BlockOverview = prepare_block_overview(block);
+    if !block_overview.m_status
+    { return (false, false, block_overview.m_msg, SpendCoinsList::new()); }
+
+    let maybe_invalid_coins: VString = block_overview.m_block_not_matured_coins;
+
+    let mut sum_remotes: CMPAIValueT = 0;
+    let mut treasury_incomes: CMPAIValueT = 0;
+    let mut backer_incomes: CMPAIValueT = 0;
+
+    // let remoteBlockDPCostBacker = 0;
+    let mut doc_inx: CDocIndexT = 0;
+    while doc_inx < block.get_docs_count()
+    {
+        let a_doc: &Document = &block.get_documents()[doc_inx as usize];
+
+        // do validate only transactions
+        if !a_doc.is_basic_transaction() &&
+            !a_doc.is_dp_cost_payment()
+        { continue; }
+
+
+        // DPCOst payment control
+        if a_doc.get_doc_type() == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string()
+        {
+            let (status, treasury_incomes_, backer_incomes_) = retrieve_dp_cost_info(
+                a_doc,
+                &block.m_block_backer);
+            if !status
+            { return (false, false, "Failed in calculation of retrieve-DPCost-Info".to_string(), SpendCoinsList::new()); }
+            treasury_incomes = treasury_incomes_;
+            backer_incomes = backer_incomes_;
+        }
+
+        let mut trx_stated_dp_cost: CMPAIValueT = 0;
+        if block_overview.m_supported_p4p.contains(&a_doc.get_doc_hash())
+        {
+            dlog(
+                &format!("The trx is supported by p4p trx. Block {} trx {}",
+                         block.get_block_identifier(),
+                         a_doc.get_doc_identifier()
+                ),
+                constants::Modules::Trx,
+                constants::SecLevel::Info);
+            // so we do not need to control trx fee, because it is already payed
+        } else if [constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string()].contains(&a_doc.get_doc_type())
+        {
+            // this kind of documents do not need to have trx-fee
+        } else {
+            if !constants::SUPPORTS_CLONED_TRANSACTION && (a_doc.get_dpis().len() > 1)
+            {
+                msg = format!("The network still do not accept Cloned transactions!");
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, false, msg, SpendCoinsList::new());
+            }
+
+            for a_dpi_index in a_doc.get_dpis()
+            {
+                if a_doc.get_outputs()[*a_dpi_index as usize].m_address == block.m_block_backer
+                {
+                    trx_stated_dp_cost = a_doc.get_outputs()[*a_dpi_index as usize].m_amount;
+                }
+            }
+
+            if trx_stated_dp_cost == 0
+            {
+                msg = format!(
+                    "At least one trx hasn't backer fee! Block {} Trx {}",
+                    block.get_block_identifier(),
+                    a_doc.get_doc_identifier()
+                );
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, false, msg, SpendCoinsList::new());
+            }
+
+            if trx_stated_dp_cost < get_transaction_minimum_fee(&block.get_creation_date())
+            {
+                msg = format!(
+                    "The backer fee is less than Minimum acceptable fee!! Block {} Trx {} trx_stated_dp_cost({}) < minimum fee({})",
+                    block.get_block_identifier(),
+                    a_doc.get_doc_identifier(),
+                    trx_stated_dp_cost,
+                    get_transaction_minimum_fee(&block.get_creation_date())
+                );
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, false, msg, SpendCoinsList::new());
+            }
+
+            let (status, locally_recalculate_trx_dp_cost) = a_doc.calc_doc_data_and_process_cost(
+                stage,
+                &block.get_creation_date(),
+                0);
+            if !status
+            { return (false, false, "Failed in calc-Doc-Data-And-Process-Cost".to_string(), SpendCoinsList::new()); }
+
+            dlog(
+                &format!("Compare costs(remote: {} local: {}) doc {}  Block {}",
+                         cutils::sep_num_3(trx_stated_dp_cost as CMPAISValueT),
+                         cutils::sep_num_3(locally_recalculate_trx_dp_cost as CMPAISValueT),
+                         a_doc.get_doc_identifier(),
+                         block.get_block_identifier()
+                ),
+                constants::Modules::Trx,
+                constants::SecLevel::TmpDebug);
+
+            if trx_stated_dp_cost < locally_recalculate_trx_dp_cost
+            {
+                msg = format!(
+                    "Miss-calculated document length: {} The backer fee is less than network values! Block {} Trx {} trx_stated_dp_cost({}) < network minimum fee({}) nano-PAIs",
+                    a_doc.safe_stringify_doc(true),
+                    block.get_block_identifier(),
+                    a_doc.get_doc_identifier(),
+                    cutils::sep_num_3(trx_stated_dp_cost as CMPAISValueT),
+                    cutils::sep_num_3(locally_recalculate_trx_dp_cost as CMPAISValueT)
+                );
+                dlog(
+                    &msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, false, msg, SpendCoinsList::new());
+            }
+        }
+
+        sum_remotes += trx_stated_dp_cost;
+        doc_inx += 1;
+    }
+
+    dlog(
+        &format!(
+            "Backer Fees Sum = {} PAIs for Block {} ",
+            cutils::sep_num_3(sum_remotes as CMPAISValueT),
+            block.get_block_identifier()
+        ),
+        constants::Modules::App,
+        constants::SecLevel::Info);
+
+    // control if block total trx fees are valid
+    let block_fix_cost = get_block_fix_cost(&block.get_creation_date());
+    let before_block_tax = (sum_remotes as f64 * constants::BACKER_PERCENT_OF_BLOCK_FEE) / 100.0;
+    let recalc_remote_backer_fee: CMPAIValueT = before_block_tax as CMPAIValueT - block_fix_cost;
+    if recalc_remote_backer_fee != backer_incomes
+    {
+        msg = format!(
+            "The locally calculated backer fee is not what remote is! local({}) remote({}) nano-PAIs, Block {}",
+            cutils::sep_num_3(recalc_remote_backer_fee as CMPAISValueT),
+            cutils::sep_num_3(backer_incomes as CMPAISValueT),
+            block.get_block_identifier()
+        );
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        return (false, false, msg, SpendCoinsList::new());
+    }
+
+    let locally_recalculate_block_treasury_income: CMPAIValueT = sum_remotes - recalc_remote_backer_fee;
+    if locally_recalculate_block_treasury_income != treasury_incomes
+    {
+        msg = format!(
+            "The locally calculated treasury is not what remote is! Block {} locally-recalculate-block-treasury-income({}) treasury-incomes({}) nano-PAIs",
+            block.get_block_identifier(),
+            cutils::sep_num_3(locally_recalculate_block_treasury_income as CMPAISValueT),
+            cutils::sep_num_3(treasury_incomes as CMPAISValueT)
+        );
+        dlog(
+            &msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        return (false, false, msg, SpendCoinsList::new());
+    }
+
+    let scuds: GRecordsT = HashMap::new();
+    if constants::SUPER_CONTROL_COINS_DOUBLE_SPENDING
+    {
+        // * after being sure about secure and proper functionality of code, we can cut this control in next months
+        // * finding the block(s) which are used these coins and already are registered in DAG
+        let (status, _scuds) = SpentCoinsHandler::find_coins_spend_locations(&block_overview.m_block_used_coins);
+        if !status
+        {
+            return (false, false, "Failed in find-Coins-Spend-Locations".to_string(), SpendCoinsList::new());
+        }
+
+        if scuds.keys().len() > 0
+        {
+            msg = format!(
+                "SCUDS: SUPER-CONTROL-COINS-DOUBLE-SPENDING found some double-spending with block {} SCUDS.spendsDict: {:?}",
+                block.get_block_identifier(), scuds
+            );
+            dlog(
+                &msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            return (false, false, msg, SpendCoinsList::new());
+        }
+    }
+
+    if constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING
+    {
+        // * most paranoidic and pessimistic control of input validation
+        // * for now I put this double-control to also quality control of the previous-controls.
+        // * this control is too costly, so it must be removed or optimized ASAP
+        let (validate_status, validate_msg, _coins_track) = tracking_back_the_coins(
+            block,
+            &vec![],
+            &vec![]);
+        if !validate_status
+        {
+            msg = format!(
+                "SuperValidate, block {} error message: {}",
+                block.get_block_identifier(),
+                validate_msg
+            );
+            dlog(
+                &msg,
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return (false, false, msg, SpendCoinsList::new());
+        } else {
+            dlog(
+                &format!("SuperValidate, block {} inputs have confirmed path going back to coinbase", block.get_block_identifier()),
+                constants::Modules::Trx,
+                constants::SecLevel::Info);
+        }
+    }
+
+    let (
+        status2,
+        invalid_coins_dict,
+        used_coins_dict_,
+        is_sus_block,
+        double_spends) =
+        consider_invalid_coins(
+            &block.get_block_hash(),
+            &block.m_block_creation_date,
+            &block_overview.m_block_used_coins,
+            &block_overview.m_used_coins_dict,
+            &maybe_invalid_coins,
+            &block_overview.m_map_coin_to_spender_doc);
+    if !status2
+    { return (false, false, "Failed in consider-Invalid-Coins".to_string(), double_spends); }
+    block_overview.m_used_coins_dict = used_coins_dict_;
+
+    let equation_control_res = validate_equation(
+        block,
+        &block_overview.m_used_coins_dict,
+        &invalid_coins_dict);
+    if !equation_control_res
+    { return (false, false, "Failed in validate-Equation".to_string(), double_spends); }
+
+    // * control coin visibility in DAG history by going back throught ancestors
+    // * since the block can contains only UTXOs which are already took palce in her hsitory
+    // * in oder words, they are in block's sibility
+    if !is_sus_block && !constants::SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING
+    {
+        let is_visible = control_coins_visibility_in_graph_history(
+            &block_overview.m_block_used_coins,
+            &block.m_block_ancestors,
+            &block.get_block_hash());
+        if !is_visible
+        { return (false, false, "Failed in control-Coins-Visibility-In-Graph-History".to_string(), double_spends); }
+    }
+
+
+    return (true, is_sus_block, "valid".to_string(), double_spends);
 }
 
-*/
+//old_name_was appendTransactions
+pub fn append_transactions(
+    block: &mut Block,
+    transient_block_info: &mut TransientBlockInfo)
+    -> (bool /* creating block status */, bool /* should empty buffer */, String /* msg */)
+{
+    return machine().fetch_buffered_transactions(block, transient_block_info);
+}
+

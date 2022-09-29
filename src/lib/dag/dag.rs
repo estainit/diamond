@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog};
-use crate::cutils::{array_add, array_unique};
-use crate::lib::custom_types::{CBlockHashT, CDateT, ClausesT, OrderT, QVDicT, QVDRecordsT, VString};
+use crate::cutils::{array_add, array_unique, remove_quotes};
+use crate::lib::block_utils::unwrap_safed_content_for_db;
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, ClausesT, COutputIndexT, GRecordsT, OrderT, QV2DicT, QVDicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::C_BLOCKS;
+use crate::lib::database::tables::{C_BALLOTS_FIELDS, C_BLOCKS, C_DOCS_BLOCKS_MAP};
 
 //old_name_was appendDescendents
 pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
@@ -50,51 +51,77 @@ pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<Stri
     }
 }
 
-/*
-
-/**
- * @brief DAG::getBlockHashesByDocHashes
- * @param doc_hashes
- * @param hashes_type
- * @return {block_hashes, map_doc_to_block}
- */
-std::tuple<VString, GRecordsT> DAG::getBlockHashesByDocHashes(
-  const VString& doc_hashes,
-  const String& hashes_type)
+//old_name_was getBlockHashesByDocHashes
+pub fn get_block_hashes_by_doc_hashes(
+    doc_hashes: &VString,
+    hashes_type: &String) -> (VString /* block_hashes */, GRecordsT /* map_doc_to_block */)
 {
-  ClausesT clauses {};
-  if (hashes_type == constants::SHORT)
-  {
-    VString tmp{};
-    for(String a_hash: doc_hashes)
-      tmp.push(a_hash + "%");
-    clauses.push({"dbm_doc_hash", tmp, "LIKE:OR"});
-  } else {
-    clauses.push({"dbm_doc_hash", doc_hashes, "IN"});
-  }
+    let mut clauses: ClausesT = vec![];
+    let empty_string = "".to_string();
 
-  QueryRes res = DbModel::select(
-    stbl_docs_blocks_map,
-    {"dbm_block_hash", "dbm_doc_hash", "dbm_doc_index"},
-    clauses);
-  VString block_hashes{};
-  GRecordsT map_doc_to_block{};
-  for (QVDicT element: res.records)
-  {
-    block_hashes.push(element["dbm_block_hash"].to_string());
-    // since we can have more than 1 coinbase block for each cycle, so mapping a document to its container block could be 1 to n mapping
-    // also in lone transactions we have same psituation in which a certain transaction can take place in different blocks by different backers
-    String dbm_doc_hash = element["dbm_doc_hash"].to_string();
-    if (!map_doc_to_block.keys().contains(dbm_doc_hash))
-      map_doc_to_block[dbm_doc_hash] = QVDRecordsT{};
-    map_doc_to_block[dbm_doc_hash].push(QVDicT{
-      {"block_hash", element["dbm_block_hash"]},
-      {"doc_index", element["dbm_doc_index"]}
-    });
-  }
-  return {block_hashes, map_doc_to_block};
+    let mut place_holder_hashes: VString = vec![];
+    if hashes_type == constants::SHORT
+    {
+        // let mut tmp: VString = vec![];
+        // for a_hash in doc_hashes
+        // { tmp.push(a_hash + "%"); }
+        let mut c0 = ModelClause {
+            m_field_name: "dbm_doc_hash",
+            m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+            m_clause_operand: "LIKE:OR",
+            m_field_multi_values: vec![],
+        };
+        for a_hash in doc_hashes
+        {
+            place_holder_hashes.push(format!("{}%", a_hash));
+        }
+        for a_hash in &place_holder_hashes
+        {
+            c0.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+        }
+        clauses.push(c0);
+    } else {
+        let mut c1 = ModelClause {
+            m_field_name: "dbm_doc_hash",
+            m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+            m_clause_operand: "IN",
+            m_field_multi_values: vec![],
+        };
+        for a_hash in doc_hashes {
+            c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+        }
+        clauses.push(c1);
+    }
+
+    let (_status, records) = q_select(
+        C_DOCS_BLOCKS_MAP,
+        vec!["dbm_block_hash", "dbm_doc_hash", "dbm_doc_index"],
+        clauses,
+        vec![],
+        0,
+        false);
+    let mut block_hashes: VString = vec![];
+    let mut map_doc_to_block: GRecordsT = HashMap::new();
+    for element in records
+    {
+        block_hashes.push(element["dbm_block_hash"].clone());
+        // since we can have more than 1 coinbase block for each cycle, so mapping a document to its container block could be 1 to n mapping
+        // also in lone transactions we have same psituation in which a certain transaction can take place in different blocks by different backers
+        let dbm_doc_hash = element["dbm_doc_hash"].clone();
+        if !map_doc_to_block.contains_key(&dbm_doc_hash)
+        { map_doc_to_block.insert(dbm_doc_hash.clone(), vec![]); }
+
+        let mut tmp_v = map_doc_to_block[&dbm_doc_hash].clone();
+
+        let b_info: QVDicT = HashMap::from([
+            ("block_hash".to_string(), element["dbm_block_hash"].clone()),
+            ("doc_index".to_string(), element["dbm_doc_index"].clone())
+        ]);
+        tmp_v.push(b_info);
+        map_doc_to_block.insert(dbm_doc_hash, tmp_v);
+    }
+    return (block_hashes, map_doc_to_block);
 }
-*/
 
 //old_name_was searchInDAG
 pub fn search_in_dag(
@@ -122,18 +149,37 @@ pub fn search_in_dag(
     return records;
 }
 
-/*
-std::tuple<QVDRecordsT, GRecordsT> DAG::getWBlocksByDocHash(
-  const VString& doc_hashes,
-  const String& hashes_type)
+//old_name_was getWBlocksByDocHash
+pub fn get_wrap_blocks_by_doc_hash(
+    doc_hashes: &VString,
+    hashes_type: &String) -> (QVDRecordsT, GRecordsT)
 {
-  auto[block_hashes, map_doc_to_block] = getBlockHashesByDocHashes(doc_hashes, hashes_type);
-    if (block_hashes.len() == 0)
-      return {QVDRecordsT {}, map_doc_to_block};
+    let (block_hashes, map_doc_to_block) = get_block_hashes_by_doc_hashes(doc_hashes, hashes_type);
+    if block_hashes.len() == 0
+    { return (vec![], map_doc_to_block); }
 
-  QVDRecordsT block_records = searchInDAG({{"b_hash", block_hashes, "IN"}});
-  return {block_records, map_doc_to_block};
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for a_hash in &block_hashes {
+        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+    }
+
+    let block_records = search_in_dag(
+        vec![c1],
+        Vec::from(C_BALLOTS_FIELDS),
+        vec![],
+        0,
+        false,
+    );
+    return (block_records, map_doc_to_block);
 }
+
+/*
 
 /**
  * @brief DAG::retrieveDocByDocHash
@@ -148,7 +194,7 @@ std::tuple<bool, JSonObject, CDocIndexT, MerkleNodeData, JSonArray> DAG::retriev
   const bool need_doc_merkle_proof)
 {
   String msg;
-  auto[block_records, map_] = getWBlocksByDocHash({doc_hash});
+  auto[block_records, map_] = get_wrap_blocks_by_doc_hash({doc_hash});
   if (block_records.len() == 0)
     return {false, {}, {}, {}, {}};
 
@@ -156,7 +202,7 @@ std::tuple<bool, JSonObject, CDocIndexT, MerkleNodeData, JSonArray> DAG::retriev
 
   JSonObject document {};
   CDocIndexT documentIndex = 0;
-  JSonArray docs = block["docs"].toArray();
+  JSonArray docs = block["bDocs"].toArray();
   for (CDocIndexT docInx = 0; docInx < docs.len(); docInx++)
   {
     JSonObject aDoc = docs[docInx].toObject();
@@ -195,65 +241,79 @@ std::tuple<bool, JSonObject, CDocIndexT, MerkleNodeData, JSonArray> DAG::retriev
   return {true, document, documentIndex, proofs, the_doc_ext_info};
 }
 
-/**
-*
-* @param {*} coins
-* finding the blocks in which were created given coins
 */
-QV2DicT DAG::getCoinsGenerationInfoViaSQL(const VString& coins)
+/**
+ *
+ * @param {*} coins
+ * finding the blocks in which were created given coins
+ */
+//old_name_was getCoinsGenerationInfoViaSQL
+pub fn get_coins_generation_info_via_sql(coins: &VString) -> QV2DicT
 {
-  VString docsHashes {};
-  for(String a_coin: coins)
-  {
-    auto[doc_hash_, output_index_] = cutils::unpackCoinCode(a_coin);
-    Q_UNUSED(output_index_);
-    docsHashes.push(doc_hash_);
-  }
-  CLog::log("find Output Info By RefLocViaSQL for docs: " + docsHashes.join(", "), "trx", "trace");
-
-  auto[block_records, map_] = getWBlocksByDocHash(docsHashes);
-  Q_UNUSED(map_);
-  // console.log('find Output Info By RefLocViaSQL', block_records);
-  QV2DicT outputsDict {};
-  for (QVDicT wBlock: block_records)
-  {
-    JSonObject block = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock["b_body"].to_string()).content);
-    if (block.keys().contains("docs"))
+    let mut docs_hashes: VString = vec![];
+    for a_coin in coins
     {
-      for (QJsonValueRef doc_: block["docs"].toArray())
-      {
-        JSonObject doc = doc_.toObject();
-        if (doc.keys().contains("outputs"))
-        {
-          JSonArray outputs = doc["outputs"].toArray();
-          for (COutputIndexT output_index = 0; output_index < static_cast<COutputIndexT>(outputs.len()); output_index++)
-          {
-            auto output = outputs[output_index].toArray();
-            String aCoin = cutils::packCoinCode(doc["dHash"].to_string(), output_index);
-            outputsDict[aCoin] = QVDicT {
-              {"coinGenCycle", wBlock["b_cycle"]},
-              {"coinGenBlockHash", block["bHash"]},
-              {"coinGenBType", block["bType"]},
-              {"coinGenCreationDate", block["bCDate"]}, // coin creation date is the BLOCK creation date and not the transaction date
-              {"coinGenDocType", doc["dType"]},
-              {"coinGenRefLoc", aCoin},
-              {"coinGenOutputAddress", output[0].to_string()},
-              {"coinGenOutputValue", output[1].toDouble()}};
-          }
-        }
-      }
+        let (doc_hash, _output_index) = cutils::unpack_coin_code(a_coin);
+        docs_hashes.push(doc_hash);
     }
-  }
+    dlog(
+        &format!(
+            "find Output Info By RefLocViaSQL for docs: {:?}", docs_hashes),
+        constants::Modules::Trx,
+        constants::SecLevel::TmpDebug);
 
-  QV2DicT res {};
-  for (auto aCoin: coins)
-  {
-    if (outputsDict.keys().contains(aCoin))
-      res[aCoin] = outputsDict[aCoin];
-  }
-  return res;
+    let (block_records, _map) = get_wrap_blocks_by_doc_hash(&docs_hashes, &constants::COMPLETE.to_string());
+    // console.log('find Output Info By RefLocViaSQL', block_records);
+    let mut outputs_dict: QV2DicT = HashMap::new();
+    for w_block in block_records
+    {
+        let (_status, _sf_ver, content) = unwrap_safed_content_for_db(&w_block["b_body"]);
+        let (_status, block) = cutils::controlled_str_to_json(&content);
+        if !block["bDocs"].is_null()
+        {
+            for doc in block["bDocs"].as_array().unwrap()
+            {
+                // JSonObject doc = doc_.toObject();
+                if !doc["outputs"].is_null()
+                {
+                    let outputs = doc["outputs"].as_array().unwrap();
+                    let mut output_index: COutputIndexT = 0;
+                    while output_index < outputs.len() as COutputIndexT
+                    {
+                        let output = &outputs[output_index as usize];
+                        let a_coin: CCoinCodeT = cutils::pack_coin_code(
+                            &remove_quotes(&doc["dHash"]),
+                            output_index);
+                        let tmp_dict: QVDicT = HashMap::from([
+                            ("coinGenCycle".to_string(), w_block["b_cycle"].clone()),
+                            ("coinGenBlockHash".to_string(), remove_quotes(&block["bHash"])),
+                            ("coinGenBType".to_string(), remove_quotes(&block["bType"])),
+                            ("coinGenCreationDate".to_string(), remove_quotes(&block["bCDate"])), // coin creation date is the BLOCK creation date and not the transaction date
+                            ("coinGenDocType".to_string(), remove_quotes(&doc["dType"])),
+                            ("coinGenRefLoc".to_string(), a_coin.clone()),
+                            ("coinGenOutputAddress".to_string(), output[0].to_string()),
+                            ("coinGenOutputValue".to_string(), output[1].to_string())
+                        ]);
+                        outputs_dict.insert(a_coin, tmp_dict);
+                        output_index += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    let mut res: QV2DicT = HashMap::new();
+    for a_coin in coins
+    {
+        if outputs_dict.contains_key(a_coin)
+        {
+            res.insert(a_coin.clone(), outputs_dict[a_coin].clone());
+        }
+    }
+    return res;
 }
 
+/*
 void DAG::recursive_backwardInTime(
   const VString& block_hashes,
   const String& date,
@@ -275,7 +335,7 @@ void DAG::recursive_backwardInTime(
   for (QVDicT aRes: res)
     out = cutils::arrayAdd(out, aRes["b_ancestors"].to_string().split(","));
 
-  out = cutils::arrayUnique(out);
+  out = cutils::array_unique(out);
   ancestors = cutils::arrayAdd(ancestors, out);
 
   if (out.len()> 0)
@@ -537,10 +597,10 @@ Vec<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoinCodeT& t
   Vec<CCoin> results {};
   CLog::log("retrieve Blocks In which the coin: (" + the_coin + ") is created", "app", "trace");
 
-  auto[doc_hash, output_index_] = cutils::unpackCoinCode(the_coin);
+  auto[doc_hash, output_index_] = cutils::unpack_coin_code(the_coin);
   Q_UNUSED(output_index_);
 
-  auto[block_hashes, map_doc_to_block_] = getBlockHashesByDocHashes({doc_hash});
+  auto[block_hashes, map_doc_to_block_] = get_block_hashes_by_doc_hashes({doc_hash});
   Q_UNUSED(map_doc_to_block_);
 
   QVDRecordsT wBlocks = DAG::searchInDAG(
@@ -595,7 +655,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
 {
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_coins_imported", constants::NO},
-    {"b_type", {constants::BLOCK_TYPES::FSign, constants::BLOCK_TYPES::FVote}, "NOT IN"},
+    {"b_type", {constants::block_types::FSign, constants::block_types::FVote}, "NOT IN"},
     {"b_type", VString{constants::block_types::COINBASE}, "IN"}});
 
   CMPAIValueT sum = 0;
@@ -612,7 +672,7 @@ std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlo
         calculated_coinbase.push(block["bCycle"].to_string());
 
     // analyze outputs
-    JSonObject doc = block["docs"].toArray()[0].toObject();
+    JSonObject doc = block["bDocs"].toArray()[0].toObject();
     JSonArray outputs = doc["outputs"].toArray();
     for (auto output_inx = 0; output_inx < outputs.len(); output_inx++)
     {
@@ -648,7 +708,7 @@ std::tuple<CMPAIValueT, VString, String> DAG::getNotImportedNormalBlock()
 {
   QVDRecordsT wBlocks = searchInDAG(
     {{"b_coins_imported", constants::NO},
-    {"b_type", VString{constants::BLOCK_TYPES::Normal, "IN"}}});
+    {"b_type", VString{constants::block_types::Normal, "IN"}}});
   CMPAIValueT sum = 0;
   HashMap<CDocHashT, int64_t> maybe_dbl_spends = {};
   VString processed_outputs {};
@@ -657,7 +717,7 @@ std::tuple<CMPAIValueT, VString, String> DAG::getNotImportedNormalBlock()
   {
     JSonObject block = cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock["b_body"].to_string()).content);
 
-    for (auto doc_: block["docs"].toArray())
+    for (auto doc_: block["bDocs"].toArray())
     {
       auto doc = doc_.toObject();
       if (!VString{constants::document_types::BASIC_TX}.contains(doc["dType"].to_string()))
@@ -720,7 +780,7 @@ std::tuple<CMPAIValueT, VString, String> DAG::getNotImportedNormalBlock()
   VString dbl_spends {};
   for (CDocHashT ref: maybe_dbl_spends.keys())
     if (maybe_dbl_spends[ref] > 1)
-      dbl_spends.push(cutils::shortCoinRef(ref) + "->" + String::number(maybe_dbl_spends[ref]));
+      dbl_spends.push(cutils::short_coin_code(ref) + "->" + String::number(maybe_dbl_spends[ref]));
 
 
   return {sum, dbl_spends, processed_outputs.join("\n")};
@@ -764,9 +824,9 @@ std::tuple<CMPAIValueT, HashMap<CBlockHashT, CMPAIValueT>, CMPAIValueT, HashMap<
 
     CMPAIValueT block_outputs_sum = 0;
     CMPAIValueT blockMissedPAIs = 0;
-    if (block.keys().contains("docs"))
+    if (block.keys().contains("bDocs"))
     {
-      auto docs = block["docs"].toArray();
+      auto docs = block["bDocs"].toArray();
       for (auto aDoc_: docs)
       {
         auto aDoc = aDoc_.toObject();
