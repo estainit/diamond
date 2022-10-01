@@ -6,6 +6,7 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CAddressT, CCoinCodeT, CInputIndexT, ClausesT, CMPAIValueT, LimitT, OrderT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_MACHINE_USED_COINS;
+use crate::lib::machine::machine_buffer::block_buffer::push_to_block_buffer;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::BasicTransactionTemplate;
 use crate::lib::transactions::basic_transactions::coins::coins_handler::search_in_spendable_coins;
 use crate::lib::transactions::basic_transactions::make_a_transaction::make_a_transaction_document;
@@ -253,7 +254,7 @@ pub fn wallet_signer(
 
     // push transaction to Block buffer
     let mp_code = machine().get_selected_m_profile();
-    let (buffer_push_res, buffer_push_message) = machine().push_to_block_buffer(
+    let (buffer_push_res, buffer_push_message) = push_to_block_buffer(
         &trx_doc,
         dp_cost,
         &mp_code,

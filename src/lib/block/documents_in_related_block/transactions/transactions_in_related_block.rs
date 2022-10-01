@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::lib::block::block_types::block::{Block, TransientBlockInfo};
-use crate::{application, constants, cutils, dlog, machine};
+use crate::{application, constants, cutils, dlog};
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::documents_in_related_block::transactions::coins_visibility_handler::control_coins_visibility_in_graph_history;
 use crate::lib::block::documents_in_related_block::transactions::equations_controls::validate_equation;
@@ -11,6 +11,7 @@ use crate::lib::dag::dag::get_coins_generation_info_via_sql;
 use crate::lib::dag::normal_block::rejected_transactions_handler::search_in_rejected_trx;
 use crate::lib::dag::super_control_til_coinbase_minting::tracking_back_the_coins;
 use crate::lib::database::abs_psql::ModelClause;
+use crate::lib::machine::machine_buffer::fetch_buffered_transactions::fetch_buffered_transactions;
 use crate::lib::services::society_rules::society_rules::{get_block_fix_cost, get_transaction_minimum_fee};
 use crate::lib::transactions::basic_transactions::coins::coins_handler::search_in_spendable_coins_cache;
 use crate::lib::transactions::basic_transactions::coins::spent_coins_handler::{SpendCoinInfo, SpendCoinsList, SpentCoinsHandler};
@@ -717,6 +718,6 @@ pub fn append_transactions(
     transient_block_info: &mut TransientBlockInfo)
     -> (bool /* creating block status */, bool /* should empty buffer */, String /* msg */)
 {
-    return machine().fetch_buffered_transactions(block, transient_block_info);
+    return fetch_buffered_transactions(block, transient_block_info);
 }
 

@@ -155,15 +155,15 @@ pub mod b_genesis {
     //old_name_was getBlockHashableString
     pub fn genesis_get_block_hashable_string(block: &Block) -> String
     {
-        // in order to have almost same hash! we sort the attribiutes alphabeticaly
+        // in order to have almost same hash! we sort the attributes alphabetically
         let hashable_block: String = format!(
-            "bAncestors:[],bCDate:{},bDocsRootHash:{},bLen:{},bType:{},bVer:{},net:{}",
+            "bAncestors:[],bCDate:{},bDocsRootHash:{},bLen:{},bNet:{},bType:{},bVer:{}",
             block.m_block_creation_date,
             block.m_block_length,
+            block.m_block_net,
             block.m_block_type,
             block.m_block_version,
             block.m_block_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
-            block.m_block_net
         );
         return hashable_block;
     }

@@ -4,7 +4,7 @@ use crate::{application, constants, cutils, dlog, machine};
 use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
-use crate::lib::block::document_types::rp_docdocument::RepaymentDocument;
+use crate::lib::block::document_types::rp_document::RepaymentDocument;
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDocHashT, CDocIndexT, COutputIndexT, QVDRecordsT, VString};
 use crate::lib::dag::dag::set_coins_import_status;
 use crate::lib::transactions::basic_transactions::coins::coins_handler::add_new_coin;

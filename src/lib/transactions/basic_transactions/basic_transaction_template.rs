@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use serde_json::Value;
+use serde_json::{json, Value};
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, JSonArray, JSonObject, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_inputs_tuples, make_outputs_tuples, TInput, TOutput};
 
 #[derive(Debug)]
@@ -215,7 +215,9 @@ impl BasicTransactionTemplate {
                 {
                     return false;
                 }
-                signatures.push(vec![signature, self.m_tpl_sig_hash.clone()]);
+                signatures.push(vec![signature.clone(), self.m_tpl_sig_hash.clone()]);
+                println!("sssssssss asv2 {}", signature);
+                panic!("5555555");
             }
             let d_ext = DocExtInfo {
                 m_unlock_set: self.m_tpl_inputs[a_coin].m_unlock_set.clone(),
@@ -294,14 +296,14 @@ impl BasicTransactionTemplate {
     }
 }
 
-pub fn export_doc_ext_to_json(ext_info: &Vec<DocExtInfo>) -> Vec<JSonObject>
+pub fn export_doc_ext_to_json(ext_info: &Vec<DocExtInfo>) -> JSonArray
 {
-    let mut out: Vec<JSonObject> = vec![];
+    let mut out_js_arr: JSonArray = json!([]);
     for an_ext in ext_info
     {
-        out.push(an_ext.export_to_json());
+        out_js_arr.as_array_mut().unwrap().push(an_ext.export_to_json());
     }
-    out
+    out_js_arr
 }
 
 pub fn convert_json_to_doc_ext(ext_info: &Vec<Value>) -> Vec<DocExtInfo>

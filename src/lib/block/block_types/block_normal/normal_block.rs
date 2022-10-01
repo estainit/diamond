@@ -1,4 +1,7 @@
 use serde::{Serialize, Deserialize};
+use crate::{ccrypto, constants, dlog};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::custom_types::JSonObject;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NormalBlock
@@ -9,6 +12,54 @@ impl NormalBlock
     pub fn new() -> Self
     {
         Self {}
+    }
+
+    pub fn calc_block_hash(&self, block: &Block) -> String
+    {
+        let block_hash_ables: String = self.get_block_hashable_string(block);
+        // clonedTransactionsRootHash: block.clonedTransactionsRootHash, // note that we do not put the clonedTransactions directly in block hash, instead using clonedTransactions-merkle-root-hash
+
+        dlog(
+            &format!("The NORMAL block hashable: {}", block_hash_ables),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+
+        return ccrypto::keccak256(&block_hash_ables);
+    }
+
+    //old_name_was getBlockHashableString
+    pub fn get_block_hashable_string(&self, block: &Block) -> String
+    {
+        // in order to have almost same hash! we sort the attributes alphabetically
+        let block_hash_ables: String = format!(
+            "bAncestors:{},backer:{},bCDate:{},bDocsRootHash:{},bExtHash:{},bLen:{},bNet:{},bSignals:{},bType:{},bVer:{},bFVotes:{}",
+            serde_json::to_string(&block.m_block_ancestors).unwrap(),
+            block.m_block_backer,
+            block.m_block_creation_date,
+            block.m_block_documents_root_hash, // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
+            block.m_block_ext_root_hash,    // note that we do not put the segwits directly in block hash, instead using segwits-merkle-root-hash
+            block.m_block_length,
+            block.m_block_net,
+            serde_json::to_string(&block.m_block_signals).unwrap(),
+            block.m_block_type,
+            block.m_block_version,
+            self.stringify_floating_votes()
+        );
+        return block_hash_ables;
+    }
+
+    // old name was stringifyFloatingVotes
+    pub fn stringify_floating_votes(&self) -> String
+    {
+        return "[]".to_string();
+        // // process m_floating_votes (if exist)
+        // // legacy including unimplemented feature in blocks in order to forward compatibility
+        // let  mut      fVotes:Vec<JSonObject>=vec![];
+        // if self.m_block_floating_votes.len() > 0
+        // {
+        //     fVotes = self.m_block_floating_votes;
+        // }
+        // return cutils::serializeJson(fVotes);
     }
 }
 
@@ -45,33 +96,7 @@ String NormalBlock::dumpBlock() const
 }
 
 
-String NormalBlock::stringifyFloatingVotes() const
-{
-  // process m_floating_votes (if exist)
-  QJsonArray fVotes{};  // legacy including unimplemented feaure in blocks in order to forward compatibility
-  if (m_floating_votes.len() > 0)
-    fVotes = m_floating_votes;
-  return cutils::serializeJson(fVotes);
-}
 
-
-String NormalBlock::getBlockHashableString() const
-{
-  // in order to have almost same hash! we sort the attribiutes alphabeticaly
-  String hashable_block = "{";
-  hashable_block += "\"ancestors\":" + cutils::serializeJson(QVariant::fromValue(m_ancestors).toJsonArray()) + ",";
-  hashable_block += "\"backer\":\"" + m_block_backer + "\",";
-  hashable_block += "\"bCDate\":\"" + m_block_creation_date + "\",";
-  hashable_block += "\"bExtHash\":\"" + m_block_ext_root_hash + "\",";  // note that we do not put the segwits directly in block hash, instead using segwits-merkle-root-hash
-  hashable_block += "\"bLen\":\"" + cutils::paddingLengthValue(m_block_length) + "\",";
-  hashable_block += "\"bType\":\"" + m_block_type + "\",";
-  hashable_block += "\"bVer\":\"" + m_block_version + "\",";
-  hashable_block += "\"docsRootHash\":\"" + m_documents_root_hash + "\",";  // note that we do not put the docsHash directly in block hash, instead using docsHash-merkle-root-hash
-  hashable_block += "\"fVotes\":" + stringifyFloatingVotes() + ",";
-  hashable_block += "\"net\":\"" + m_net + "\",";
-  hashable_block += "\"signals\":" + cutils::serializeJson(m_signals) + "}";
-  return hashable_block;
-}
 
 JSonObject NormalBlock::exportBlockToJSon(const bool ext_info_in_document) const
 {
@@ -90,18 +115,6 @@ BlockLenT NormalBlock::calcBlockLength(const JSonObject& block_obj) const
 {
   return Block::calcBlockLength(block_obj);
 }
-
-
-String NormalBlock::calcBlockHash() const
-{
-  String hashable_block = getBlockHashableString();
-
-  // clonedTransactionsRootHash: block.clonedTransactionsRootHash, // note that we do not put the clonedTransactions directly in block hash, instead using clonedTransactions-merkle-root-hash
-
-  CLog::log("The NORMAL! block hashable: " + hashable_block + "\n", "app", "trace");
-  return CCrypto::keccak256(hashable_block);
-}
-
 
 bool NormalBlock::controlBlockLength() const
 {

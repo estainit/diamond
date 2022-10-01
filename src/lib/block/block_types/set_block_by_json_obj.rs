@@ -2,6 +2,7 @@ use crate::cutils::remove_quotes;
 use crate::{constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::genesis_set_by_json_obj;
+use crate::lib::block::document_types::floating_vote_document::FloatingVoteDocument;
 use crate::lib::custom_types::{BlockLenT, JSonObject, VString};
 
 impl Block {
@@ -135,9 +136,8 @@ impl Block {
         }
 
         if !obj["bFVotes"].is_null() {
-            // self.m_floating_votes = obj["bFVotes"].toArray();
+            self.m_block_floating_votes = FloatingVoteDocument::load_floating_votes(&obj["bFVotes"]);
         }
-
 
         if self.m_block_type == constants::block_types::NORMAL {
             return true;

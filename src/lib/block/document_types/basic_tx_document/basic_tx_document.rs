@@ -260,7 +260,7 @@ impl BasicTxDocument {
 
     pub fn get_doc_hashable_string(&self, doc: &Document) -> String
     {
-        let doc_hashables: String = format!(
+        let doc_hash_ables: String = format!(
             "dCDate:{},dClass:{},dComment:{},dExtHash:{},dLen:{},dPIs:{},dRef:{},dType:{},dVer:{},inputs:{},outputs:{}",
             doc.m_doc_creation_date,
             doc.m_doc_class,
@@ -274,7 +274,7 @@ impl BasicTxDocument {
             stringify_inputs(self.get_inputs()),
             stringify_outputs(self.get_outputs())
         );
-        return doc_hashables;
+        return doc_hash_ables;
     }
 
     // TODO: some unit test for pure hashable

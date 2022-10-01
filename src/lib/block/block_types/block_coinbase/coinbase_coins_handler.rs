@@ -5,7 +5,7 @@ use crate::lib::constants;
 use crate::{application, cutils, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_repayback::repayback_block::create_repayment_block;
-use crate::lib::block::document_types::rp_docdocument::{calc_repayment_details, RepaymentDocument};
+use crate::lib::block::document_types::rp_document::{calc_repayment_details, RepaymentDocument};
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::{CCoinCodeT, CDateT, COutputIndexT, GRecordsT};
 use crate::lib::dag::dag::{search_in_dag, set_coins_import_status};

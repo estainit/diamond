@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use serde_json::json;
+use crate::cutils::remove_quotes;
 use crate::lib::custom_types::{JSonObject, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
@@ -37,7 +38,7 @@ impl DocExtInfo {
                     .as_array()
                     .unwrap()
                     .iter()
-                    .map(|x| x.to_string())
+                    .map(|x| remove_quotes(x))
                     .collect::<VString>());
         }
         let (status, unlock_set) = UnlockSet::load_from_json(&j_obj["uSet"]);

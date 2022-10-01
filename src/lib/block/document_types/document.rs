@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use serde_json::{json};
+use serde_json::{json, Value};
 use serde::{Serialize, Deserialize};
 use crate::{application, constants, cutils, dlog};
 use crate::cutils::{remove_quotes};
@@ -8,10 +8,11 @@ use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::coinbase_document::CoinbaseDocument;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
+use crate::lib::block::document_types::dp_cost_payment_document::DPCostPaymentDocument;
 use crate::lib::block::document_types::null_document::NullDocument;
 use crate::lib::block::document_types::proposal_document::ProposalDocument;
 use crate::lib::block::document_types::polling_document::PollingDocument;
-use crate::lib::block::document_types::rp_docdocument::RepaymentDocument;
+use crate::lib::block::document_types::rp_document::RepaymentDocument;
 use crate::lib::custom_types::{CBlockHashT, CDateT, CDocHashT, CDocIndexT, CMPAIValueT, COutputIndexT, DocLenT, JSonObject, VVString};
 use crate::lib::database::abs_psql::q_insert;
 use crate::lib::database::tables::C_DOCS_BLOCKS_MAP;
@@ -37,6 +38,7 @@ pub struct Document
     pub m_doc_length: DocLenT,
 
     pub m_if_basic_tx_doc: BasicTxDocument,
+    pub m_if_dp_cost_payment: DPCostPaymentDocument,
     pub m_if_coinbase_doc: CoinbaseDocument,
     pub m_if_repayment_doc: RepaymentDocument,
     pub m_if_proposal_doc: ProposalDocument,
@@ -69,6 +71,7 @@ impl Document
             m_if_proposal_doc: ProposalDocument::new(),
             m_if_polling_doc: PollingDocument::new(),
             m_if_basic_tx_doc: BasicTxDocument::new(),
+            m_if_dp_cost_payment: DPCostPaymentDocument::new(),
             m_if_coinbase_doc: CoinbaseDocument::new(),
             m_if_null_doc: NullDocument::new(),
             m_empty_vec: vec![],
@@ -173,10 +176,7 @@ impl Document
             return self.m_if_basic_tx_doc.set_doc_by_json_obj(obj);
         } else if doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
         {
-            /*
-            doc = new
-            DPCostPayDocument(obj);
-            */
+            return self.m_if_dp_cost_payment.set_doc_by_json_obj(obj);
         } else if doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.set_doc_by_json_obj(obj);
@@ -258,7 +258,7 @@ impl Document
 
         dlog(
             &format!(
-                "Safe stringify a doc {} class: {} length:{} a serialized document: {}",
+                "Safe stringify a doc{} class: {} length:{} a serialized document: {}",
                 self.get_doc_identifier(),
                 self.m_doc_class,
                 j_doc["dLen"],
@@ -330,7 +330,7 @@ impl Document
 
     pub fn export_doc_to_json_super(&self, ext_info_in_document: bool) -> JSonObject
     {
-        let mut document: JSonObject = json!({
+        let mut js_doc: JSonObject = json!({
             "dHash":self.m_doc_hash,
             "dType": self.m_doc_type,
             "dVer": self.m_doc_version,
@@ -340,54 +340,61 @@ impl Document
 
         if self.m_doc_class != ""
         {
-            document["dClass"] = self.m_doc_class.clone().into();
+            js_doc["dClass"] = self.m_doc_class.clone().into();
         }
 
         // maybe add inputs
         if self.has_inputs()
         {
-            document["inputs"] = make_inputs_tuples(self.get_inputs()).into();
+            js_doc["inputs"] = make_inputs_tuples(self.get_inputs()).into();
         }
 
         // maybe add outputs
         if self.has_outputs()
         {
-            document["outputs"] = make_outputs_tuples(self.get_outputs()).into();
+            js_doc["outputs"] = make_outputs_tuples(self.get_outputs()).into();
         }
 
         if self.m_doc_ref != "" {
-            document["dRef"] = self.m_doc_ref.clone().into();
+            js_doc["dRef"] = self.m_doc_ref.clone().into();
         }
         if self.m_doc_title != "" {
-            document["dTitle"] = self.m_doc_title.clone().into();
+            js_doc["dTitle"] = self.m_doc_title.clone().into();
         }
         if self.m_doc_comment != "" {
-            document["dComment"] = self.m_doc_comment.clone().into();
+            js_doc["dComment"] = self.m_doc_comment.clone().into();
         }
 
         if self.m_doc_tags != "" {
-            document["dTags"] = self.m_doc_tags.clone().into();
+            js_doc["dTags"] = self.m_doc_tags.clone().into();
         }
 
         if self.m_doc_ext_hash != "" {
-            document["dExtHash"] = self.m_doc_ext_hash.clone().into();
+            js_doc["dExtHash"] = self.m_doc_ext_hash.clone().into();
         }
 
         if ext_info_in_document {
             let d_ext_info = export_doc_ext_to_json(&self.m_doc_ext_info);
-            document["dExtInfo"] = d_ext_info.into();
+            js_doc["dExtInfo"] = d_ext_info;
+            // js_doc["dExtInfo"] = Value::from(d_ext_info);
         }
 
-        return document;
+        return js_doc;
     }
 
     pub fn export_doc_to_json(&self, ext_info_in_document: bool) -> JSonObject
     {
-        if self.m_doc_type == constants::document_types::BASIC_TX {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
             return self.m_if_basic_tx_doc.export_doc_to_json(self, ext_info_in_document);
-        } else if self.m_doc_type == constants::document_types::COINBASE {
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {
+            return self.m_if_dp_cost_payment.export_doc_to_json(self, ext_info_in_document);
+        } else if self.m_doc_type == constants::document_types::COINBASE
+        {
             return self.m_if_coinbase_doc.export_doc_to_json(self, ext_info_in_document);
-        } else if self.m_doc_type == constants::document_types::PROPOSAL {
+        } else if self.m_doc_type == constants::document_types::PROPOSAL
+        {
             return self.m_if_proposal_doc.export_doc_to_json(self, ext_info_in_document);
         }
 
@@ -483,7 +490,9 @@ impl Document
         {
             return self.m_if_basic_tx_doc.calc_doc_hash(self);
         } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
-        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_dp_cost_payment.calc_doc_hash(self);
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.calc_doc_hash(&self);
         } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
@@ -535,7 +544,9 @@ impl Document
         {
             return self.m_if_basic_tx_doc.get_outputs();
         } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
-        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_dp_cost_payment.get_outputs();
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.get_outputs();
         } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
@@ -584,7 +595,9 @@ impl Document
         {
             return true;
         } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
-        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return false;
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return false;
         } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT
@@ -607,7 +620,9 @@ impl Document
         {
             return true;
         } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
-        {} else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return true;
+        } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return true;
         } else if self.m_doc_type == constants::document_types::REPAYMENT_DOCUMENT

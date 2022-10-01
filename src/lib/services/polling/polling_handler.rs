@@ -1072,14 +1072,14 @@ std::tuple<bool, String> makeReqForAdmPolling(
   locally_mark_coin_as_used(polling_payer_trx);
 
 
-  auto[push_res1, push_msg1] = machine().push_to_block_buffer(adm_polling_doc, adm_dp_cost);
+  auto[push_res1, push_msg1] = push_to_block_buffer(adm_polling_doc, adm_dp_cost);
   if (!push_res1)
   {
     msg = "Failed in push to block buffer adm-polling(" + adm_polling_doc.m_doc_comment + ") " + push_msg1;
     CLog::log(msg, "app", "error");
     return {false, msg};
   }
-  auto[push_res2, push_msg2] = machine().push_to_block_buffer(adm_polling_payer_trx, adm_polling_payer_trx->getDocCosts());
+  auto[push_res2, push_msg2] = push_to_block_buffer(adm_polling_payer_trx, adm_polling_payer_trx->getDocCosts());
   if (!push_res2)
   {
     msg = "Failed in push to block buffer trx2 (" + adm_polling_payer_trx->get_doc_hash() + ") " + push_msg2;
@@ -1087,14 +1087,14 @@ std::tuple<bool, String> makeReqForAdmPolling(
     return {false, msg};
   }
 
-  auto[push_res3, push_msg3] = machine().push_to_block_buffer(polling_doc, polling_dp_cost);
+  auto[push_res3, push_msg3] = push_to_block_buffer(polling_doc, polling_dp_cost);
   if (!push_res3)
   {
     msg = "Failed in push to block buffer polling(" + adm_polling_doc.m_doc_comment + ") " + push_msg3;
     CLog::log(msg, "app", "error");
     return {false, msg};
   }
-  auto[push_res4, push_msg4] = machine().push_to_block_buffer(polling_payer_trx, polling_payer_trx->getDocCosts());
+  auto[push_res4, push_msg4] = push_to_block_buffer(polling_payer_trx, polling_payer_trx->getDocCosts());
   if (!push_res4)
   {
     msg = "Failed in push to block buffer trx4 (" + polling_payer_trx->get_doc_hash() + ") " + push_msg4;

@@ -11,6 +11,7 @@ use crate::lib::block::block_types::block_normal::normal_block::NormalBlock;
 use crate::lib::block::block_types::block_repayback::repayback_block::RepaybackBlock;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
+use crate::lib::block::document_types::floating_vote_document::FloatingVoteDocument;
 use crate::lib::block_utils::{unwrap_safed_content_for_db, wrap_safe_content_for_db};
 use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT};
 use crate::lib::dag::dag::search_in_dag;
@@ -107,7 +108,7 @@ pub struct Block
     pub m_block_ext_root_hash: String,
     pub m_block_documents: Vec<Document>,
     pub m_block_ext_info: Vec<Vec<DocExtInfo>>,
-    pub m_block_floating_votes: JSonArray, // TODO: to be implemented later
+    pub m_block_floating_votes: Vec<FloatingVoteDocument>, // TODO: to be implemented later
 
     pub m_if_coinbase_block: CoinbaseBlock,
     pub m_if_normal_block: NormalBlock,
@@ -135,7 +136,7 @@ impl Block {
             m_block_documents_root_hash: "".to_string(),
             m_block_ext_info: vec![],
             m_block_ext_root_hash: "".to_string(),
-            m_block_floating_votes: json!([]),
+            m_block_floating_votes: vec![],
 
             m_if_coinbase_block: CoinbaseBlock::new(),
             m_if_normal_block: NormalBlock::new(),
@@ -534,12 +535,14 @@ impl Block {
         return self.m_block_type.clone();
     }
 
-
+    //old_name_was calcBlockHash
     pub fn calc_block_hash(&self) -> CBlockHashT {
-        if self.m_block_type == constants::block_types::GENESIS {
-            return genesis_calc_block_hash(self);
+        if self.m_block_type == constants::block_types::NORMAL {
+            return self.m_if_normal_block.calc_block_hash(self);
         } else if self.m_block_type == constants::block_types::COINBASE {
             return self.m_if_coinbase_block.calc_block_hash(self);
+        } else if self.m_block_type == constants::block_types::GENESIS {
+            return genesis_calc_block_hash(self);
         }
 
         panic!("Undefined block type in (calc block hash): {}", self.m_block_type);
@@ -720,12 +723,11 @@ impl Block {
             }
 
             let recalculate_doc_length: DocLenT = tmp_doc.calc_doc_length();
+            // println!("a_doc: {:#?}", a_doc);
+            // println!("tmp_doc: {:#?}", tmp_doc);
             if (tmp_doc.get_doc_type() != constants::document_types::DATA_AND_PROCESS_COST_PAYMENT)
                 &&
-                (
-                    (tmp_doc.get_doc_length() != recalculate_doc_length) ||
-                        (tmp_doc.get_doc_length() != a_doc.get_doc_length())
-                )
+                (recalculate_doc_length != a_doc.get_doc_length())
             {
                 let msg = format!(
                     "The doc stated dLen is not same as real length. stage({}) doc {} stated dLen({}), real length({})",

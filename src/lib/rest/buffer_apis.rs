@@ -3,6 +3,8 @@ use postgres::types::ToSql;
 use serde_json::json;
 use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, simple_eq_clause};
+use crate::lib::machine::machine_buffer::broadcast_block::broadcast_block;
+use crate::lib::machine::machine_buffer::block_buffer::{remove_from_buffer, search_buffered_docs};
 use crate::machine;
 
 
@@ -11,7 +13,7 @@ pub async fn get_buffered_docs() -> impl Responder
 {
     let api_res = tokio::task::spawn_blocking(|| {
         let mp_code = machine().get_selected_m_profile();
-        let buffered_docs = machine().search_buffered_docs(
+        let buffered_docs = search_buffered_docs(
             vec![
                 simple_eq_clause("bd_mp_code", &mp_code),
             ],
@@ -43,7 +45,7 @@ pub async fn delete_buffered_doc(post: String) -> impl Responder
 
         let bd_id = remove_quotes(&request["bdId"]).parse::<i64>().unwrap();
 
-        let status = machine().remove_from_buffer(vec![ModelClause {
+        let status = remove_from_buffer(vec![ModelClause {
             m_field_name: "bd_id",
             m_field_single_str_value: &bd_id as &(dyn ToSql + Sync),
             m_clause_operand: "=",
@@ -73,7 +75,7 @@ pub async fn delete_buffered_doc(post: String) -> impl Responder
 pub async fn broadcast_the_block() -> impl Responder
 {
     let api_res = tokio::task::spawn_blocking(|| {
-        let (status, msg) = machine().broadcast_block(&"".to_string(), &"".to_string());
+        let (status, msg) = broadcast_block(&"".to_string(), &"".to_string());
         if !status
         {
             let res = json!({

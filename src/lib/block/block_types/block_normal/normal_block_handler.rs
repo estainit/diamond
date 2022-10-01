@@ -6,6 +6,7 @@ use crate::lib::block::node_signals_handler::get_machine_signals;
 use crate::lib::block_utils::normalize_ancestors;
 use crate::lib::custom_types::{CDateT, VString};
 use crate::lib::dag::leaves_handler::{get_leave_blocks, has_fresh_leaves};
+use crate::lib::machine::machine_buffer::retrieve_and_group_buffered_documents::retrieve_and_group_buffered_documents;
 use crate::lib::messaging_protocol::dag_message_handler::set_maybe_ask_for_latest_blocks_flag;
 
 //old_name_was createANormalBlock
@@ -26,16 +27,16 @@ pub fn create_a_normal_block(
         creation_date = application().now();
     }
 
-    if !has_fresh_leaves()
-    {
-        msg = format!("Machine hasn't fresh leaves, so it can not broadcast new block(Normal block)");
-        dlog(
-            &msg,
-            constants::Modules::App,
-            constants::SecLevel::Warning);
-        set_maybe_ask_for_latest_blocks_flag(constants::YES);
-        return (false, Block::new(), false, msg);
-    }
+    // if !has_fresh_leaves()
+    // {
+    //     msg = format!("Machine hasn't fresh leaves, so it can not broadcast new block(Normal block)");
+    //     dlog(
+    //         &msg,
+    //         constants::Modules::App,
+    //         constants::SecLevel::Warning);
+    //     set_maybe_ask_for_latest_blocks_flag(constants::YES);
+    //     return (false, Block::new(), false, msg);
+    // }
 
     let (status, mut block) = Block::load_block(&json!({
     "bType": constants::block_types::NORMAL,
@@ -55,7 +56,9 @@ pub fn create_a_normal_block(
     block.m_block_ext_root_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
     block.m_block_ext_info = vec![];
 
+    println!("status {}, block {:#?}", status, block);
     block.m_block_backer = machine().get_backer_address();
+    println!("block.m_block_backer {:#?}", block.m_block_backer);
 
     // * the first step of creating a block is appending the transactions
     // * each block MUST have at least one transaction
@@ -67,14 +70,16 @@ pub fn create_a_normal_block(
     {
         return (append_res, block, should_reset_block_buffer, append_res_msg);
     }
+    println!("kkkkk  k 5");
 
-    let (groupping_res, should_reset_block_buffer2, grouping_res_msg) =
-        machine().retrieve_and_group_buffered_documents(&mut block, &mut transient_block_info);
+    let (grouping_res, should_reset_block_buffer2, grouping_res_msg) =
+        retrieve_and_group_buffered_documents(&mut block, &mut transient_block_info);
     should_reset_block_buffer &= should_reset_block_buffer2;
-    if !groupping_res
+    if !grouping_res
     {
-        return (groupping_res, block, should_reset_block_buffer, grouping_res_msg);
+        return (grouping_res, block, should_reset_block_buffer, grouping_res_msg);
     }
+    println!("kkkkk  k 6");
 
 
     // control if each trx is referenced to only one Document?
@@ -94,6 +99,7 @@ pub fn create_a_normal_block(
             constants::SecLevel::Error);
         return (false, block, false, msg);
     }
+    println!("kkkkk  k 7");
 
     // TODO: important! currently the order of adding documents to block is important(e.g. polling must be added before proposalsand pledges)
     // improve the code and remove this dependency
@@ -220,16 +226,20 @@ pub fn create_a_normal_block(
         constants::Modules::App,
         constants::SecLevel::Warning);
 
+    println!("kkkkk  k 8");
 
     let (doc_status, doc_root_hash) = block.calc_documents_root_hash();
     if !doc_status
     { return (false, block, false, "Failed in creation documents root hash".to_string()); }
     block.m_block_documents_root_hash = doc_root_hash;
+    println!("kkkkk  k 9");
 
     let (ext_status, ext_root_hash) = block.calc_block_ext_root_hash();
     if !ext_status
     { return (false, block, false, "Failed in creation documents ext root hash".to_string()); }
     block.m_block_ext_root_hash = ext_root_hash;
+
+    println!("kkkkk  k 10");
 
     if ancestors.len() > 0
     {
@@ -239,6 +249,7 @@ pub fn create_a_normal_block(
             &get_leave_blocks(&"".to_string()).keys().cloned().collect::<VString>(),
             &block.get_ancestors());
     }
+    println!("kkkkk  k 11");
 
     block.m_block_ancestors = normalize_ancestors(&block.get_ancestors());
     if transient_block_info.m_pre_requisites_ancestors.len() > 0
@@ -262,6 +273,7 @@ pub fn create_a_normal_block(
         constants::Modules::App,
         constants::SecLevel::Info);
 
+    println!("kkkkk  k 12");
 
     // fill in the bloc.m_block_ext_info
     block.fill_in_block_ext_info();
@@ -278,6 +290,7 @@ pub fn create_a_normal_block(
         &msg,
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
+    println!("kkkkk  k 13");
 
     // re-validate block transactions
     if !allowed_to_double_spend
@@ -290,8 +303,10 @@ pub fn create_a_normal_block(
         }
     }
 
+    println!("kkkkk  k 14");
 
     let b_id = block.get_block_identifier();
+    println!("kkkkk  k 15");
     return (
         true,
         block,
