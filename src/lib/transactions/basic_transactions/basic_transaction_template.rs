@@ -3,7 +3,7 @@ use serde_json::{json, Value};
 use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, JSonArray, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, JSonArray, VString, VVString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{make_inputs_tuples, make_outputs_tuples, TInput, TOutput};
 
 #[derive(Debug)]

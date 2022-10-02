@@ -7,7 +7,6 @@ use crate::lib::block_utils::normalize_ancestors;
 use crate::lib::custom_types::{CDateT, VString};
 use crate::lib::dag::leaves_handler::{get_leave_blocks, has_fresh_leaves};
 use crate::lib::machine::machine_buffer::retrieve_and_group_buffered_documents::retrieve_and_group_buffered_documents;
-use crate::lib::messaging_protocol::dag_message_handler::set_maybe_ask_for_latest_blocks_flag;
 
 //old_name_was createANormalBlock
 pub fn create_a_normal_block(

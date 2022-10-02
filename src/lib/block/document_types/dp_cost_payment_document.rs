@@ -2,8 +2,7 @@ use crate::lib::block::document_types::document::{Document, set_document_outputs
 use crate::lib::custom_types::JSonObject;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{stringify_outputs, TOutput};
 use serde::{Serialize, Deserialize};
-use substring::Substring;
-use crate::{ccrypto, constants, cutils, dlog};
+use crate::{ccrypto, constants, dlog};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DPCostPaymentDocument
@@ -70,8 +69,8 @@ impl DPCostPaymentDocument {
         //     document.remove("dLen");
         // if (document.keys().contains("dExtHash"))
         //     document.remove("dExtHash");
-        let mut document: JSonObject = doc.export_doc_to_json_super(ext_info_in_document);
-        return document;
+        let js_doc: JSonObject = doc.export_doc_to_json_super(ext_info_in_document);
+        return js_doc;
     }
 
 }

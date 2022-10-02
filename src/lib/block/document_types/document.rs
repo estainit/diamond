@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use serde_json::{json, Value};
+use serde_json::{json};
 use serde::{Serialize, Deserialize};
 use crate::{application, constants, cutils, dlog};
 use crate::cutils::{remove_quotes};

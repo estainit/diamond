@@ -133,11 +133,14 @@ pub fn tracking_back_the_coins_recursive(
         for a_doc_hash in interested_docs.clone()
         {
             let (_inx, the_doc) = Block::get_json_document_by_hash(block, &a_doc_hash);
-            for an_inp in the_doc["inputs"].as_array().unwrap()
+            if !the_doc["inputs"].is_null()
             {
-                interested_coins.push(cutils::pack_coin_code(
-                    &remove_quotes(&an_inp[0]),
-                    remove_quotes(&an_inp[1]).parse::<COutputIndexT>().unwrap()));
+                for an_inp in the_doc["inputs"].as_array().unwrap()
+                {
+                    interested_coins.push(cutils::pack_coin_code(
+                        &remove_quotes(&an_inp[0]),
+                        remove_quotes(&an_inp[1]).parse::<COutputIndexT>().unwrap()));
+                }
             }
         }
     }
@@ -429,6 +432,7 @@ pub fn tracking_back_the_coins_recursive(
                 }
 
                 // looking for refBlock.output = block.input
+                #[allow(unused_assignments)]
                 let mut input_exist_in_referred_block = false;
                 for a_ref_doc in ref_block["bDocs"].as_array().unwrap()
                 {

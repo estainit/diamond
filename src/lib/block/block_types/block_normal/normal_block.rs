@@ -1,7 +1,6 @@
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, constants, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::JSonObject;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NormalBlock

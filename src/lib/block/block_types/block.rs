@@ -13,7 +13,7 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::floating_vote_document::FloatingVoteDocument;
 use crate::lib::block_utils::{unwrap_safed_content_for_db, wrap_safe_content_for_db};
-use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, JSonArray, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCK_EXT_INFO};

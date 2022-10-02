@@ -5,7 +5,7 @@ use crate::cutils::{array_add, array_unique, remove_quotes};
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, ClausesT, COutputIndexT, GRecordsT, OrderT, QV2DicT, QVDicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
-use crate::lib::database::tables::{C_BALLOTS_FIELDS, C_BLOCKS, C_DOCS_BLOCKS_MAP};
+use crate::lib::database::tables::{C_BLOCKS, C_BLOCKS_FIELDS, C_DOCS_BLOCKS_MAP};
 
 //old_name_was appendDescendents
 pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
@@ -171,7 +171,7 @@ pub fn get_wrap_blocks_by_doc_hash(
 
     let block_records = search_in_dag(
         vec![c1],
-        Vec::from(C_BALLOTS_FIELDS),
+        Vec::from(C_BLOCKS_FIELDS),
         vec![],
         0,
         false,
