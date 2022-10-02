@@ -5,8 +5,8 @@ use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::basic_tx_document::basic_tx_document::BasicTxDocument;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
-use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, CSigIndexT, QV2DicT, QVDicT, VString};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::extract_coins_owner;
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, CSigIndexT, VString};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::{Coin, extract_coins_owner};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::validate_sig_struct;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
@@ -30,7 +30,7 @@ impl BasicTxDocument {
             extract_coins_owner(&coins_codes);
 
 
-        let mut used_coins_dict: QV2DicT = HashMap::new();
+        let mut used_coins_dict: HashMap<CCoinCodeT, Coin> = HashMap::new();
         for an_inp in &self.m_inputs
         {
             let the_coin_owner = coins_owner_dict[&an_inp.get_coin_code()].clone();
@@ -52,10 +52,15 @@ impl BasicTxDocument {
                 }
             }
 
-            let vv: QVDicT = HashMap::from([
-                ("coin_owner".to_string(), the_coin_owner),
-                ("coin_value".to_string(), an_inp.m_amount.to_string())]);
-            used_coins_dict.insert(an_inp.get_coin_code(), vv);
+            let the_coin: Coin = Coin {
+                m_coin_code: "".to_string(),
+                m_creation_date: "".to_string(),
+                m_ref_creation_date: "".to_string(),
+                m_coin_owner: the_coin_owner,
+                ut_visible_by: "".to_string(),
+                m_coin_value: an_inp.m_amount,
+            };
+            used_coins_dict.insert(an_inp.get_coin_code(), the_coin);
         }
 
         return self.validate_tx_signatures(
@@ -71,7 +76,7 @@ impl BasicTxDocument {
     pub fn validate_tx_signatures(
         &self,
         doc: &Document,
-        used_coins_dict: &QV2DicT,
+        used_coins_dict: &HashMap<CCoinCodeT, Coin>,
         exclude_coins: &VString,
         block_hash: &CBlockHashT) -> bool
     {
@@ -81,7 +86,7 @@ impl BasicTxDocument {
         // the order of inputs and ext Info ARE IMPORTANT. the wallet MUST sign and send inputs in order to bip 69
         dlog(
             &format!(
-                "Signature validating for {}, used_coins_dict: {:#?}",
+                "Signature validating for{}, used_coins_dict: {:#?}",
                 doc.get_doc_identifier(),
                 used_coins_dict),
             constants::Modules::Trx,
@@ -102,13 +107,15 @@ impl BasicTxDocument {
             let an_ext_info: &DocExtInfo = &doc.m_doc_ext_info[input_index as usize];
             let an_unlock_set: &UnlockSet = &an_ext_info.m_unlock_set;
 
-            let is_valid_unlocker: bool = validate_sig_struct(
+            println!("XXXXX 1 coin_code {}", coin_code);
+            println!("XXXXX 2 used_coins_dict {:?}", used_coins_dict);
+            let is_valid_un_locker: bool = validate_sig_struct(
                 an_unlock_set,
-                &used_coins_dict[&coin_code]["coin_owner"],
+                &used_coins_dict[&coin_code].m_coin_owner,
                 &HashMap::new(),
             );
 
-            if !is_valid_unlocker
+            if !is_valid_un_locker
             {
                 msg = format!(
                     "Invalid block, because of invalid unlock structure! Block({}) transaction({}) input-index({:?}) unlock structure: {:#?}",

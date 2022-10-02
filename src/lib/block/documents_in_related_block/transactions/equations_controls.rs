@@ -3,11 +3,12 @@ use crate::{constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CDocIndexT, CMPAISValueT, CMPAIValueT, QV2DicT};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::Coin;
 
 //old_name_was validateEquation
 pub fn validate_equation(
     block: &Block,
-    used_coins_dict: &QV2DicT,
+    used_coins_dict: &HashMap<CCoinCodeT, Coin>,
     invalid_coins_dict: &QV2DicT) -> bool
 {
     let mut validate_res: bool;
@@ -71,13 +72,13 @@ pub fn validate_equation(
                     let a_coin_code: CCoinCodeT = input.get_coin_code();
                     if used_coins_dict.contains_key(&a_coin_code)
                     {
-                        if used_coins_dict[&a_coin_code.clone()]["coin_value"].parse::<CMPAIValueT>().unwrap() >= constants::MAX_COINS_AMOUNT
+                        if used_coins_dict[&a_coin_code.clone()].m_coin_value >= constants::MAX_COINS_AMOUNT
                         {
                             dlog(
                                 &format!("The transaction has input bigger than MAX_SAFE_INTEGER! trx {} Block {} value: {}",
                                          doc.get_doc_identifier(),
                                          block.get_block_identifier(),
-                                         cutils::nano_pai_to_pai(used_coins_dict[&a_coin_code]["ut_o_value"].parse::<CMPAISValueT>().unwrap())
+                                         cutils::nano_pai_to_pai(used_coins_dict[&a_coin_code].m_coin_value as CMPAISValueT)
                                 ),
                                 constants::Modules::Sec,
                                 constants::SecLevel::Error);
@@ -85,7 +86,7 @@ pub fn validate_equation(
                         }
 
                         let mut tmp_amount = inputs_amounts_dict[&doc.get_doc_hash()];
-                        tmp_amount += used_coins_dict[&a_coin_code]["ut_o_value"].parse::<CMPAIValueT>().unwrap();
+                        tmp_amount += used_coins_dict[&a_coin_code].m_coin_value;
                         inputs_amounts_dict.insert(doc.get_doc_hash(), tmp_amount);
                     } else {
                         // * trx uses already spent outputs! so try invalid_coins_dict

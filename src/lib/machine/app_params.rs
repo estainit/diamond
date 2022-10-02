@@ -21,6 +21,8 @@ pub struct AppParams {
     #[allow(dead_code, unused)]
     m_app_config_source: String,
     m_app_hard_root_path: String,
+
+    m_app_forced_launch_date:bool,
     m_app_launch_date: String,
 
     m_app_db_host: String,
@@ -52,6 +54,8 @@ impl AppParams {
             m_app_web_server_address: "".to_string(),
             m_app_config_source: "".to_string(),
             m_app_hard_root_path: "".to_string(),
+
+            m_app_forced_launch_date: false,
             m_app_launch_date: "".to_string(),
 
             m_app_db_host: "".to_string(),
@@ -65,6 +69,8 @@ impl AppParams {
         self.m_app_clone_id = machine.get_app_clone_id();
         self.m_app_machine_id = machine.get_app_machine_id();
         self.m_app_is_develop_mod = machine.is_develop_mod();
+
+        self.m_app_forced_launch_date = machine.does_launch_date();
         self.m_app_launch_date = machine.get_launch_date();
 
         self.m_app_db_host = machine.m_db_host.clone();
@@ -333,7 +339,13 @@ impl AppParams {
         return cycle_number;
     }
 
-    pub fn launch_date(&self) -> CDateT {
+    pub fn does_forced_launch_date(&self) -> bool
+    {
+        self.m_app_forced_launch_date
+    }
+
+    pub fn launch_date(&self) -> CDateT
+    {
         self.m_app_launch_date.clone()
     }
 

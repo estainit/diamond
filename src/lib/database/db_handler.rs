@@ -17,10 +17,12 @@ pub struct DBHandler {
 }
 
 impl DBHandler {
-    pub fn new() -> Self {
+    pub fn new() -> Self
+    {
         eprintln!("New DBHandler is going to be created.");
 
-        let db = DBHandler {
+        let db = Self
+        {
             m_db_host: "".to_string(),
             m_db_name: "".to_string(),
             m_db_user: "".to_string(),
@@ -35,7 +37,8 @@ impl DBHandler {
     }
 }
 
-pub fn get_connection() -> Client {
+pub fn get_connection() -> Client
+{
     let db_host: String = application().db_host();
     let db_name: String = application().db_name();
     let db_user: String = application().db_user();
@@ -64,7 +67,7 @@ pub fn maybe_initialize_db() -> (bool, String)
                 true
             }
             Err(e) => {
-                println!("No table existed, so create it, {}",e);
+                println!("No table existed, so create it, {}", e);
                 false
             }
         };

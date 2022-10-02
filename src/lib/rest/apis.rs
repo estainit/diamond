@@ -8,7 +8,7 @@ use crate::lib::machine::machine_profile::MachineProfile;
 use crate::lib::rest::profile_apis::{save_machine_settings, profile, profiles};
 use serde::{Serialize, Deserialize};
 use crate::lib::rest::buffer_apis::{broadcast_the_block, delete_buffered_doc, get_buffered_docs};
-use crate::lib::rest::monitor_apis::{dag_info, get_inbox_files, get_leaves_by_kv, get_missed_blocks, get_outbox_files, get_parsing_q, get_sending_q, is_synchronizing, list_fresh_leaves};
+use crate::lib::rest::monitor_apis::{dag_info, get_inbox_files, get_leaves_by_kv, get_missed_blocks, get_outbox_files, get_parsing_q, get_sending_q, is_synchronizing, list_fresh_leaves, send_out_one_packet};
 use crate::lib::rest::wallet_apis::{create_basic_1of1_address, create_basic_2of3_address, create_basic_3of5_address, get_addresses, get_coins, refresh_w_coins, sign_trx_and_push_to_buffer};
 
 pub async fn run_web_server() -> std::io::Result<()> {
@@ -45,6 +45,7 @@ pub async fn run_web_server() -> std::io::Result<()> {
             .service(get_sending_q)
             .service(get_outbox_files)
             .service(get_leaves_by_kv)
+            .service(send_out_one_packet)
             .service(list_fresh_leaves)
             .service(is_synchronizing)
 

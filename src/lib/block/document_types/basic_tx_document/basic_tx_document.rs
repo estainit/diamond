@@ -10,6 +10,7 @@ use crate::lib::block::document_types::document::{Document, set_document_outputs
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, DocLenT, JSonArray, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::services::society_rules::society_rules::{get_base_price_per_char, get_doc_expense};
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{generate_bip69_input_tuples, generate_bip69_output_tuples};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::Coin;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{safe_stringify_unlock_set, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
@@ -639,7 +640,7 @@ impl BasicTxDocument {
     pub fn equation_check(
         &self,
         doc: &Document,
-        used_coins_dict: &QV2DicT,
+        used_coins_dict: &HashMap<CCoinCodeT, Coin>,
         invalid_coins_dict: &QV2DicT,
         block_hash: &CBlockHashT) -> (bool, String, CMPAIValueT, CMPAIValueT)
     {
@@ -654,13 +655,13 @@ impl BasicTxDocument {
                 let a_coin_code: CCoinCodeT = an_input.get_coin_code();
                 if used_coins_dict.contains_key(&a_coin_code)
                 {
-                    if used_coins_dict[&a_coin_code]["coin_value"].parse::<CMPAIValueT>().unwrap()
+                    if used_coins_dict[&a_coin_code].m_coin_value
                         >= MAX_COINS_AMOUNT
                     {
                         msg = format!(
                             "The transaction has input bigger than MAX_SAFE_INTEGER! {} Block({})  value: {}",
                             doc.get_doc_identifier(), cutils::hash8c(block_hash),
-                            cutils::nano_pai_to_pai(used_coins_dict[&a_coin_code]["coin_value"].parse::<CMPAISValueT>().unwrap()));
+                            cutils::nano_pai_to_pai(used_coins_dict[&a_coin_code].m_coin_value as CMPAISValueT));
                         dlog(
                             &msg,
                             constants::Modules::Sec,
@@ -668,9 +669,7 @@ impl BasicTxDocument {
 
                         return (false, msg, 0, 0);
                     }
-                    total_inputs_amounts += used_coins_dict[&a_coin_code]["coin_value"]
-                        .parse::<CMPAIValueT>()
-                        .unwrap();
+                    total_inputs_amounts += used_coins_dict[&a_coin_code].m_coin_value;
                 } else {
                     // * trx uses already spent outputs! so try invalid_coins_dict
                     // * probably it is a double-spend case, which will be decided after 12 hours, in importing step

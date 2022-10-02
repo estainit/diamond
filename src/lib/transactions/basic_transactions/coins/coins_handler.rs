@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::thread;
+use serde::{Serialize, Deserialize};
 use postgres::types::ToSql;
 use crate::lib::constants;
 use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT, VString};
@@ -7,6 +8,34 @@ use crate::lib::dlog::dlog;
 use crate::{application, cutils, machine};
 use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_TRX_COINS;
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Coin
+{
+    pub m_coin_code: CCoinCodeT,
+    pub m_creation_date: CDateT,
+    pub m_ref_creation_date: CDateT,
+    pub m_coin_owner: CAddressT,
+    pub ut_visible_by: CBlockHashT,
+    pub m_coin_value: CMPAIValueT,
+}
+
+impl Coin {
+    #[allow(unused, dead_code)]
+    pub fn new() -> Self
+    {
+        Self
+        {
+            m_creation_date: "".to_string(),
+            m_ref_creation_date: "".to_string(),
+            m_coin_code: "".to_string(),
+            m_coin_owner: "".to_string(),
+            ut_visible_by: "".to_string(),
+            m_coin_value: 0,
+        }
+    }
+}
+
 
 //old_name_was loopCoinCleaner
 #[allow(unused, dead_code)]
@@ -197,10 +226,10 @@ pub fn search_in_spendable_coins_cache(coins: &VString) -> QVDRecordsT
     let mut out: QVDRecordsT = vec![];
     let (status, cached_spendable_coins) =
         machine().cached_spendable_coins(
-        "read",
-        &vec![],
-        &"".to_string(),
-        &"".to_string());
+            "read",
+            &vec![],
+            &"".to_string(),
+            &"".to_string());
     if !status
     {
         dlog(

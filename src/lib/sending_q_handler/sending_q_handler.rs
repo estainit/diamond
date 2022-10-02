@@ -453,7 +453,7 @@ void SendingQHandler::loopPullSendingQ()
   while (CMachine::shouldLoopThreads())
   {
     CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::RUNNING);
-    sendOutThePacket();
+    send_out_the_packet();
 
     CMachine::reportThreadStatus(thread_prefix, thread_code, constants::THREAD_STATE::SLEEPING);
     std::this_thread::sleep_for(std::chrono::seconds(CMachine::getSendingQGap()));

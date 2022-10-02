@@ -129,6 +129,7 @@ impl CMachine {
                     _from_hour,
                     _to_hour) = application().get_coinbase_info(&now_, "");
                 self.m_launch_date = from_t;
+                self.m_forced_launch_date = true;
 
                 // save launch date to local file (beside config file)
                 write_exact_file(&fld_file, &self.m_launch_date);

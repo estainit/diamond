@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use actix_web::{get, web};
+use actix_web::{get, Responder, web};
+use serde_json::json;
 use crate::{application, machine};
 use crate::lib::custom_types::{QVDRecordsT, VString};
 use crate::lib::dag::dag::search_in_dag;
@@ -8,7 +9,7 @@ use crate::lib::dag::missed_blocks_handler::list_missed_blocks;
 use crate::lib::database::abs_psql::OrderModifier;
 use crate::lib::file_handler::file_handler::list_exact_files;
 use crate::lib::parsing_q_handler::queue_utils::search_parsing_q;
-use crate::lib::sending_q_handler::sending_q_handler::fetch_from_sending_q;
+use crate::lib::sending_q_handler::sending_q_handler::{fetch_from_sending_q, send_out_the_packet};
 
 #[get("/dagInfo")]
 pub async fn dag_info() -> web::Json<QVDRecordsT>
@@ -127,6 +128,21 @@ pub async fn list_fresh_leaves() -> web::Json<HashMap<String, LeaveBlock>>
         let fresh_leaves = get_fresh_leaves();
         fresh_leaves
     }).await.expect("Failed in retrieve fresh leaves!");
+    web::Json(api_res)
+}
+
+#[get("/sendOutThePacket")]
+pub async fn send_out_one_packet() -> impl Responder
+{
+    let api_res = tokio::task::spawn_blocking(|| {
+        let status = send_out_the_packet();
+        let res = json!({
+                "status": status,
+                "message": "",
+                "info": json!({}),
+            });
+        res
+    }).await.expect("Failed in retrieve outbox info!");
     web::Json(api_res)
 }
 

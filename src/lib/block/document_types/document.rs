@@ -605,7 +605,9 @@ impl Document
         {} else if self.m_doc_type == constants::document_types::POLLING
         {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
         {} else if self.m_doc_type == constants::document_types::PROPOSAL
-        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {
+            return false;
+        } else if self.m_doc_type == constants::document_types::PLEDGE
         {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
         {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
         {} else if self.m_doc_type == constants::document_types::I_NAME_BIND
@@ -630,7 +632,9 @@ impl Document
         {} else if self.m_doc_type == constants::document_types::POLLING
         {} else if self.m_doc_type == constants::document_types::ADMINISTRATIVE_POLLING
         {} else if self.m_doc_type == constants::document_types::PROPOSAL
-        {} else if self.m_doc_type == constants::document_types::PLEDGE
+        {
+            return false;
+        } else if self.m_doc_type == constants::document_types::PLEDGE
         {} else if self.m_doc_type == constants::document_types::CLOSE_PLEDGE
         {} else if self.m_doc_type == constants::document_types::I_NAME_REGISTER
         {} else if self.m_doc_type == constants::document_types::I_NAME_BIND

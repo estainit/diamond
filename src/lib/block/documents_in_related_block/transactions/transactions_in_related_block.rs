@@ -6,14 +6,14 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::block::documents_in_related_block::transactions::coins_visibility_handler::control_coins_visibility_in_graph_history;
 use crate::lib::block::documents_in_related_block::transactions::equations_controls::validate_equation;
 use crate::lib::block_utils::retrieve_dp_cost_info;
-use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocIndexT, CMPAISValueT, CMPAIValueT, COutputIndexT, GRecordsT, QSDicT, QV2DicT, QVDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocIndexT, CMPAISValueT, CMPAIValueT, COutputIndexT, GRecordsT, QSDicT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::dag::dag::get_coins_generation_info_via_sql;
 use crate::lib::dag::normal_block::rejected_transactions_handler::search_in_rejected_trx;
 use crate::lib::dag::super_control_til_coinbase_minting::tracking_back_the_coins;
 use crate::lib::database::abs_psql::ModelClause;
 use crate::lib::machine::machine_buffer::fetch_buffered_transactions::fetch_buffered_transactions;
 use crate::lib::services::society_rules::society_rules::{get_block_fix_cost, get_transaction_minimum_fee};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::search_in_spendable_coins_cache;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::{Coin, search_in_spendable_coins_cache};
 use crate::lib::transactions::basic_transactions::coins::spent_coins_handler::{SpendCoinInfo, SpendCoinsList, SpentCoinsHandler};
 
 pub struct BlockOverview
@@ -24,7 +24,7 @@ pub struct BlockOverview
     pub m_supported_p4p: VString,
     pub m_block_used_coins: VString,
     pub m_map_coin_to_spender_doc: QSDicT,
-    pub m_used_coins_dict: QV2DicT,
+    pub m_used_coins_dict: HashMap<CCoinCodeT, Coin>,
     pub m_block_not_matured_coins: VString,
 }
 
@@ -186,7 +186,7 @@ pub fn prepare_block_overview(
 
     // it is a dictionary for all inputs either valid or invalid
     // it has 3 keys/values (ut_coin, ut_o_address, ut_o_value)
-    let mut used_coins_dict: QV2DicT = HashMap::new();
+    let mut used_coins_dict: HashMap<CCoinCodeT, Coin> = HashMap::new();
 
     // all inputs must be maturated, maturated means it passed at least 12 hours of creeating the outputs and now they are presented in table trx_utxos adn are spendable
     let mut spendable_coins: VString = vec![];
@@ -207,7 +207,16 @@ pub fn prepare_block_overview(
             {
                 let ut_coin: CCoinCodeT = a_coin["ut_coin"].clone();
                 spendable_coins.push(ut_coin.clone());
-                used_coins_dict.insert(ut_coin.clone(), a_coin.clone());
+                used_coins_dict.insert(
+                    ut_coin.clone(),
+                    Coin {
+                        m_creation_date: a_coin["ut_creation_date"].clone(),
+                        m_ref_creation_date: a_coin["ut_ref_creation_date"].clone(),
+                        m_coin_code: a_coin["ut_coin"].clone(),
+                        m_coin_owner: a_coin["ut_o_address"].clone(),
+                        ut_visible_by: a_coin["ut_visible_by"].clone(),
+                        m_coin_value: a_coin["ut_o_value"].parse::<CMPAIValueT>().unwrap(),
+                    });
                 // the block creation Date MUST be at least 12 hours after the creation date of reflocs
                 let cycle_by_min = application().get_cycle_by_minutes();
                 if block.m_block_creation_date < application().minutes_after(cycle_by_min, &a_coin["ut_ref_creation_date"])
@@ -266,9 +275,9 @@ pub fn consider_invalid_coins(
     block_hash: &CBlockHashT,
     block_creation_date: &CDateT,
     block_used_coins: &VString,
-    used_coins_dict: &QV2DicT,
+    used_coins_dict: &HashMap<CCoinCodeT, Coin>,
     maybe_invalid_coins: &VString,
-    map_coin_to_spender_doc: &QSDicT) -> (bool, QV2DicT, QV2DicT, bool, SpendCoinsList)
+    map_coin_to_spender_doc: &QSDicT) -> (bool, QV2DicT, HashMap<CCoinCodeT, Coin>, bool, SpendCoinsList)
 {
     let msg: String;
     let mut maybe_invalid_coins = maybe_invalid_coins.clone();
@@ -336,13 +345,15 @@ pub fn consider_invalid_coins(
     for an_invalid_coin_code in invalid_coins_dict.keys()
     {
         // append also invalid refs to used coins dict
-        let tmp: QVDicT = HashMap::from([
-            ("ut_coin".to_string(), an_invalid_coin_code.clone()),
-            ("ut_o_address".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenOutputAddress"].clone()),
-            ("ut_o_value".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenOutputValue"].clone()),
-            ("ut_ref_creation_date".to_string(), invalid_coins_dict[an_invalid_coin_code]["coinGenCreationDate"].clone())]);
-        used_coins_dict.insert(an_invalid_coin_code.clone(), tmp);
-
+        let the_coin: Coin = Coin {
+            m_coin_code: an_invalid_coin_code.clone(),
+            m_creation_date: "".to_string(),
+            m_ref_creation_date: invalid_coins_dict[an_invalid_coin_code]["coinGenCreationDate"].clone(),
+            m_coin_owner: invalid_coins_dict[an_invalid_coin_code]["coinGenOutputAddress"].clone(),
+            ut_visible_by: "".to_string(),
+            m_coin_value: invalid_coins_dict[an_invalid_coin_code]["coinGenOutputValue"].parse::<CMPAIValueT>().unwrap(),
+        };
+        used_coins_dict.insert(an_invalid_coin_code.clone(), the_coin);
 
         // * adding to spend-input-dictionary the invalid coins in current block too
         // * in order to having a complete history & order of entire spent coins of the block

@@ -234,7 +234,6 @@ impl CMachine {
 pub fn insert_hu_key() -> bool
 {
     let profile: MachineProfile = get_hu_profile();
-    println!("xxxxx profile {:?}", profile);
     let w_address = WalletAddress::new(
         &profile.m_mp_settings.m_backer_detail,
         constants::DEFAULT.to_string(),   // mp code
