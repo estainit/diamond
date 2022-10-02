@@ -145,8 +145,7 @@ pub fn import_minted_coins(c_date: &CDateT)
         let the_only_doc = &block.m_block_documents[0];
         let outputs = &the_only_doc.m_if_coinbase_doc.m_outputs;
 
-        let mut output_index: COutputIndexT = 0;
-        while output_index < outputs.len() as COutputIndexT
+        for output_index in 0..outputs.len() as COutputIndexT
         {
             let an_output: &TOutput = &outputs[output_index as usize];
             let the_coin: CCoinCodeT = cutils::pack_coin_code(&the_only_doc.get_doc_hash(), output_index);
@@ -187,7 +186,6 @@ pub fn import_minted_coins(c_date: &CDateT)
                         &block.get_creation_date()); // refCreationDate:
                 }
             }
-            output_index += 1;
         }
 
         // if there is some cutting from income, create a new block(RpBlock) and record in DAG

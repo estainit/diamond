@@ -114,8 +114,7 @@ pub fn normalize_rp_outputs(
     if should_sort && (normalized_outputs.len() > 1)
     {
         let mut dict: HashMap<String, TOutput> = HashMap::new();
-        let mut inx: COutputIndexT = 0;
-        while inx < normalized_outputs.len() as COutputIndexT
+        for inx in 0..normalized_outputs.len() as COutputIndexT
         {
             let an_output: &TOutput = &normalized_outputs[inx as usize];
             let key: String = vec![
@@ -123,7 +122,6 @@ pub fn normalize_rp_outputs(
                 cutils::padding_left(&an_output.m_amount.to_string(), 20),
                 cutils::padding_left(&inx.to_string(), 5)].join(",");
             dict.insert(key, an_output.clone());
-            inx += 1;
         }
 
 

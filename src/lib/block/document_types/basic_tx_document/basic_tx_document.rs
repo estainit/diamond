@@ -35,7 +35,8 @@ impl BasicTxDocument {
     pub fn set_doc_by_json_obj(&mut self, json_obj: &JSonObject) -> bool {
         self.m_data_and_process_payment_indexes = vec![];
         let mut inx: usize = 0;
-        while !json_obj["dPIs"][inx].is_null() {
+        while !json_obj["dPIs"][inx].is_null()
+        {
             self.m_data_and_process_payment_indexes
                 .push(json_obj["dPIs"][inx]
                     .to_string()

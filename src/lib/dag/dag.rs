@@ -277,8 +277,7 @@ pub fn get_coins_generation_info_via_sql(coins: &VString) -> QV2DicT
                 if !doc["outputs"].is_null()
                 {
                     let outputs = doc["outputs"].as_array().unwrap();
-                    let mut output_index: COutputIndexT = 0;
-                    while output_index < outputs.len() as COutputIndexT
+                    for output_index in 0..outputs.len() as COutputIndexT
                     {
                         let output = &outputs[output_index as usize];
                         let a_coin: CCoinCodeT = cutils::pack_coin_code(
@@ -295,7 +294,6 @@ pub fn get_coins_generation_info_via_sql(coins: &VString) -> QV2DicT
                             ("coinGenOutputValue".to_string(), output[1].to_string())
                         ]);
                         outputs_dict.insert(a_coin, tmp_dict);
-                        output_index += 1;
                     }
                 }
             }

@@ -232,14 +232,12 @@ impl BasicTransactionTemplate {
     // old name was setDPcostAmount
     pub fn set_dp_cost_amount(&mut self, amount: CMPAIValueT) -> bool
     {
-        let mut inx: COutputIndexT = 0;
-        while inx < self.m_tpl_outputs.len() as COutputIndexT
+        for inx in 0..self.m_tpl_outputs.len() as COutputIndexT
         {
             if self.m_tpl_outputs[inx as usize].m_output_character == constants::OUTPUT_DP_COST.to_string()
             {
                 self.m_tpl_outputs[inx as usize].m_amount = amount;
             }
-            inx += 1;
         }
         return true;
     }
@@ -263,15 +261,13 @@ impl BasicTransactionTemplate {
     pub fn set_change_back_output_amount(&mut self, amount: CMPAIValueT) -> bool
     {
         let mut change_back_existed: bool = false;
-        let mut inx: COutputIndexT = 0;
-        while inx < self.m_tpl_outputs.len() as COutputIndexT
+        for inx in 0..self.m_tpl_outputs.len() as COutputIndexT
         {
             if self.m_tpl_outputs[inx as usize].m_output_character == constants::OUTPUT_CHANGE_BACK
             {
                 self.m_tpl_outputs[inx as usize].m_amount = amount;
                 change_back_existed = true;
             }
-            inx += 1;
         }
         if change_back_existed
         {

@@ -112,6 +112,7 @@ pub fn tracking_back_the_coins_recursive(
     let mut msg: String = "".to_string();
     level += 1;
 
+    println!("innnnnnnnn tracking_back_the_coins_recursive {}", level);
     if (level == 1) && (interested_docs.len() == 0)
     {
         // log all docs as interested
@@ -167,8 +168,7 @@ pub fn tracking_back_the_coins_recursive(
 
     coin_track.push(trace_back);
     let documents = block["bDocs"].as_array().unwrap();
-    let mut doc_inx: CDocIndexT = 0;
-    while doc_inx < documents.len() as CDocIndexT
+    for doc_inx in 0..documents.len() as CDocIndexT
     {
         let js_doc = &documents[doc_inx as usize];
         let doc_hash = remove_quotes(&js_doc["dHash"]);
@@ -286,8 +286,7 @@ pub fn tracking_back_the_coins_recursive(
                 constants::SecLevel::Info);
         }
 
-        let mut input_index: CInputIndexT = 0;
-        while input_index < inputs.len() as CInputIndexT
+        for input_index in 0..inputs.len() as CInputIndexT
         {
             let input = &inputs[input_index as usize];
 
@@ -522,9 +521,7 @@ pub fn tracking_back_the_coins_recursive(
                     return (false, msg);
                 }
             }
-            input_index += 1;
         }
-        doc_inx += 1;
     }
     return (true, msg);
 }

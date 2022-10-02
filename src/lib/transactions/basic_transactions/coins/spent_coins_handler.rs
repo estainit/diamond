@@ -116,8 +116,7 @@ impl SpentCoinsHandler
                                     &format!("SCUDS: doc has {} inputs", the_inputs.len()),
                                     constants::Modules::Trx,
                                     constants::SecLevel::Info);
-                                let mut input_index: CInputIndexT = 0;
-                                while input_index < the_inputs.len() as CInputIndexT
+                                for input_index in 0..the_inputs.len() as CInputIndexT
                                 {
                                     let trx_input = the_inputs[input_index as usize].as_array().unwrap();
                                     // if the doc_hash is referenced as an input index, select id
@@ -144,7 +143,6 @@ impl SpentCoinsHandler
                                             recorded_spend_in_dag.insert(tmp_coin, tmp_v);
                                         }
                                     }
-                                    input_index += 1;
                                 }
                             }
                         }

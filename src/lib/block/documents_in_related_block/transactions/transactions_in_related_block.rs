@@ -56,8 +56,7 @@ pub fn prepare_block_overview(
     let mut map_coin_to_spender_doc: QSDicT = HashMap::new();
 
     let mut block_overview: BlockOverview = BlockOverview::new();
-    let mut doc_inx: CDocIndexT = 0;
-    while doc_inx < block.get_docs_count()
+    for doc_inx in 0..block.get_docs_count() as CDocIndexT
     {
         let a_doc: &Document = &block.get_documents()[doc_inx as usize];
 
@@ -112,7 +111,6 @@ pub fn prepare_block_overview(
                 map_coin_to_spender_doc.insert(a_coin, a_doc.get_doc_hash());
             }
         }
-        doc_inx += 1;
     }
 
     // uniqueness test
@@ -402,12 +400,10 @@ pub fn consider_invalid_coins(
     for a_coin_code in &coins_code
     {
         //looping on orders
-        let mut inx: COutputIndexT = 0;
         let mut coins_vec = coins_in_spent_table.m_coins_dict[a_coin_code].clone();
-        while inx < coins_vec.len() as COutputIndexT
+        for inx in 0..coins_vec.len() as COutputIndexT
         {
             coins_vec[inx as usize].m_spend_order = inx;
-            inx += 1;
         }
         coins_in_spent_table.m_coins_dict.insert(a_coin_code.clone(), coins_vec);
     }
@@ -448,8 +444,7 @@ pub fn validate_transactions(block: &Block, stage: &String) ->
     let mut backer_incomes: CMPAIValueT = 0;
 
     // let remoteBlockDPCostBacker = 0;
-    let mut doc_inx: CDocIndexT = 0;
-    while doc_inx < block.get_docs_count()
+    for doc_inx in 0..block.get_docs_count() as CDocIndexT
     {
         let a_doc: &Document = &block.get_documents()[doc_inx as usize];
 
@@ -570,7 +565,6 @@ pub fn validate_transactions(block: &Block, stage: &String) ->
         }
 
         sum_remotes += trx_stated_dp_cost;
-        doc_inx += 1;
     }
 
     dlog(

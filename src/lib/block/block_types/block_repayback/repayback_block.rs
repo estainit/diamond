@@ -284,16 +284,14 @@ pub fn create_repayment_block(
 
 
     // immediately add newly created coins
-    let mut doc_inx: CDocIndexT = 0;
-    while doc_inx < tmp_repay_block.m_block_documents.len() as CDocIndexT
+    for doc_inx in 0..tmp_repay_block.m_block_documents.len() as CDocIndexT
     {
         let a_doc: &Document = &tmp_repay_block.m_block_documents[doc_inx as usize];
 
         // connect documents and blocks/ maybe it is not necessay at all
         a_doc.map_doc_to_block(&tmp_repay_block.m_block_hash, doc_inx);
 
-        let mut out_inx: COutputIndexT = 0;
-        while out_inx < a_doc.m_if_repayment_doc.m_outputs.len() as COutputIndexT
+        for out_inx in 0..a_doc.m_if_repayment_doc.m_outputs.len() as COutputIndexT
         {
             let an_output = &a_doc.m_if_repayment_doc.m_outputs[out_inx as usize];
             let coin: CCoinCodeT = cutils::pack_coin_code(&a_doc.m_doc_hash, out_inx);
@@ -312,9 +310,7 @@ pub fn create_repayment_block(
                     an_output.m_amount, // coin value
                     &tmp_repay_block.m_block_creation_date); // refCreationDate
             }
-            out_inx += 1;
         }
-        doc_inx += 1;
     }
 
     set_coins_import_status(&tmp_repay_block.m_block_hash, &constants::YES.to_string());

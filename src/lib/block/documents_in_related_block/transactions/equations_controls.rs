@@ -15,8 +15,7 @@ pub fn validate_equation(
     // transaction details check
     let mut inputs_amounts_dict: HashMap<CDocHashT, CMPAIValueT> = HashMap::new();
     let mut outputs_amounts_dict: HashMap<CDocHashT, CMPAIValueT> = HashMap::new();
-    let mut doc_inx: CDocIndexT = 0;
-    while doc_inx < block.get_documents().len() as CDocIndexT
+    for doc_inx in 0..block.get_documents().len() as CDocIndexT
     {
         if block.get_documents()[doc_inx as usize].is_basic_transaction()
         // if Document::is_basic_transaction(&block.get_documents()[doc_inx as usize].m_doc_type)
@@ -206,7 +205,6 @@ pub fn validate_equation(
                 return false;
             }
         }
-        doc_inx += 1;
     }
 
     // calculate block total inputs & outputs

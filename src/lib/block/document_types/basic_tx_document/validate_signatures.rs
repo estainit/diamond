@@ -90,9 +90,8 @@ impl BasicTxDocument {
 
         let mut the_coins_must_be_signed_by_a_single_sign_set:
             HashMap<CInputIndexT, HashMap<CSigIndexT, VString>> = HashMap::new();
-        let mut vvv: VString;
-        let mut input_index: CInputIndexT = 0;
-        while input_index < self.m_inputs.len() as CInputIndexT
+        let mut tmp_v: VString;
+        for input_index in 0..self.m_inputs.len() as CInputIndexT
         {
             // for each input must find proper block and bech32 address of output and insert into validate function
             let coin_code: CCoinCodeT = self.m_inputs[input_index as usize].get_coin_code();
@@ -126,10 +125,9 @@ impl BasicTxDocument {
 
             // prepare a signature dictionary
             // the_coins_must_be_signed_by_a_single_sign_set[input_index] = {};
-            let mut ggg = HashMap::new();
+            let mut tmp_dict = HashMap::new();
             let sign_sets = &an_unlock_set.m_signature_sets;
-            let mut signature_index: CSigIndexT = 0;
-            while signature_index < sign_sets.len() as CSigIndexT
+            for signature_index in 0..sign_sets.len() as CSigIndexT
             {
                 let sig_info: &VString = &an_ext_info.m_signatures[signature_index as usize];
                 let (inputs, _outputs) =
@@ -137,26 +135,22 @@ impl BasicTxDocument {
                         &self.m_inputs,
                         &self.m_outputs,
                         &sig_info[1]);
-                vvv = vec![];
+                tmp_v = vec![];
                 // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index] = VString {};
                 for an_inp in inputs
                 {
                     // the_coins_must_be_signed_by_a_single_sign_set[input_index][singature_index]
                     //     .push(an_inp.get_coin_code());
 
-                    vvv.push(an_inp.get_coin_code());
+                    tmp_v.push(an_inp.get_coin_code());
                 }
-                ggg.insert(signature_index, vvv);
+                tmp_dict.insert(signature_index, tmp_v);
                 // the_coins_must_be_signed_by_a_single_sign_set[input_index].insert(singature_index, vvv);
-                signature_index += 1;
             }
-            the_coins_must_be_signed_by_a_single_sign_set.insert(input_index, ggg);
-
-            input_index += 1;
+            the_coins_must_be_signed_by_a_single_sign_set.insert(input_index, tmp_dict);
         }
 
-        let mut input_index = 0;
-        while input_index < self.m_inputs.len() as CInputIndexT
+        for input_index in 0..self.m_inputs.len() as CInputIndexT
         {
             // for each input must find proper block and bech32 address of output and insert into validate function
             let coin_code: CCoinCodeT = self.m_inputs[input_index as usize].get_coin_code();
@@ -225,8 +219,6 @@ impl BasicTxDocument {
                 }
                 signature_index += 1;
             }
-
-            input_index += 1;
         }
 
         dlog(

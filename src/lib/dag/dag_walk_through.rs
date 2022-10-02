@@ -236,25 +236,25 @@ pub fn get_all_descendants(
 {
     let mut decends: VString = vec![block_hash.to_string()];
     let mut previous_descendents = decends.clone();
-    let mut i = 0i32;
-    i += 1;
+    let mut inx = 0i32;
+    inx += 1;
     dlog(
         &format!(
             "The Block previous-descendants {}. {}",
-            i, previous_descendents.join(", ")),
+            inx, previous_descendents.join(", ")),
         constants::Modules::Trx,
         constants::SecLevel::TmpDebug);
 
     while decends.len() > 0
     {
-        i += 1;
+        inx += 1;
         decends = get_descendants(&decends, 1);
         previous_descendents = cutils::array_unique(
             &cutils::array_add(&previous_descendents, &decends));
         dlog(
             &format!(
                 "The Blocks previous descendents {}: {}",
-                i, previous_descendents.join(", ")),
+                inx, previous_descendents.join(", ")),
             constants::Modules::Trx,
             constants::SecLevel::TmpDebug);
     }

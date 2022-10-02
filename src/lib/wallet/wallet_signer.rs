@@ -286,11 +286,10 @@ pub fn wallet_signer(
 pub fn locally_mark_coin_as_used(doc: &Document)
 {
     let mp_code: String = machine().get_selected_m_profile();
-    let mut inx: CInputIndexT = 0;
     let now_ = application().now();
     let inputs = doc.get_inputs();
     let doc_hash = doc.get_doc_hash();
-    while inx < inputs.len() as CInputIndexT
+    for inx in 0..inputs.len() as CInputIndexT
     {
         let coin_code: CCoinCodeT = inputs[inx as usize].get_coin_code();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
@@ -307,7 +306,6 @@ pub fn locally_mark_coin_as_used(doc: &Document)
             C_MACHINE_USED_COINS,
             &values,
             false);
-        inx += 1;
     }
 }
 

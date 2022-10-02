@@ -44,8 +44,7 @@ pub fn update_funds_from_new_block(
         if a_doc.m_doc_type == constants::document_types::COINBASE.to_string()
         {
             let outputs: &Vec<TOutput> = a_doc.get_outputs();
-            let mut output_index: COutputIndexT = 0;
-            while output_index < outputs.len() as COutputIndexT
+            for output_index in 0..outputs.len() as COutputIndexT
             {
                 println!("xxxxx xxxxx 555 {} outputs {} {}",
                          outputs.len(), a_doc.m_doc_type, output_index);
@@ -66,13 +65,11 @@ pub fn update_funds_from_new_block(
                     &maturate_date,
                     &mp_code,
                 );
-                output_index += 1;
             }
         } else if a_doc.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT.to_string()
         {
             let outputs: &Vec<TOutput> = a_doc.get_outputs();
-            let mut output_index: COutputIndexT = 0;
-            while output_index < outputs.len() as COutputIndexT
+            for output_index in 0..outputs.len() as COutputIndexT
             {
                 let an_output = &outputs[output_index as usize];
                 // import only wallet controlled funds, implicitely removes the "TP_DP" outputs too.
@@ -94,13 +91,11 @@ pub fn update_funds_from_new_block(
                     &maturate_date,
                     &mp_code,
                 );
-                output_index += 1;
             }
         } else if a_doc.m_doc_type == constants::document_types::BASIC_TX
         {
             let outputs: &Vec<TOutput> = a_doc.get_outputs();
-            let mut output_index: COutputIndexT = 0;
-            while output_index < outputs.len() as COutputIndexT
+            for output_index in 0..outputs.len() as COutputIndexT
             {
                 let an_output = &outputs[output_index as usize];
 
@@ -127,7 +122,6 @@ pub fn update_funds_from_new_block(
                     &maturate_date,
                     &mp_code,
                 );
-                output_index += 1;
             }
 
             // removing spent UTXOs in block too

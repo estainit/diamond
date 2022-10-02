@@ -577,10 +577,8 @@ impl Block {
     pub fn create_block_documents(&mut self, documents: &Vec<JSonObject>) -> bool
     {
         // JSonArray docs = documents.toArray();
-        let mut doc_inx: CDocIndexT = 0;
-        while doc_inx < documents.len() as CDocIndexT
+        for doc_inx in 0..documents.len() as CDocIndexT
         {
-            // ; doc_inx < static_cast<CDocIndexT>(docs.len()); doc_inx++)
             let (status, doc) = Document::load_document(
                 &documents[doc_inx as usize],
                 self,
@@ -598,7 +596,6 @@ impl Block {
                 return false;
             }
             self.m_block_documents.push(doc);
-            doc_inx += 1;
         }
         return true;
     }
@@ -670,8 +667,7 @@ impl Block {
         { return transient_block_info; }
 
         let now_ = application().now();
-        let mut doc_inx: CDocIndexT = 0;
-        while doc_inx < self.m_block_documents.len() as CDocIndexT
+        for doc_inx in 0..self.m_block_documents.len() as CDocIndexT
         {
             let a_doc: &Document = &self.m_block_documents[doc_inx as usize];
             transient_block_info.m_doc_by_hash.insert(a_doc.get_doc_hash(), a_doc.clone());
@@ -767,7 +763,6 @@ impl Block {
                     transient_block_info.m_map_referenced_to_referencer.insert(a_doc.get_doc_ref(), a_doc.get_doc_hash());
                 }
             }
-            doc_inx += 1;
         }
 
         let payed_refs_1: VString = transient_block_info.m_map_trx_ref_to_trx_hash.keys().cloned().collect::<VString>();
@@ -993,12 +988,10 @@ impl Block {
         doc_hash: &CDocHashT) -> (CDocIndexT, JSonObject)
     {
         let documents = block["bDocs"].as_array().unwrap();
-        let mut doc_inx: CDocIndexT = 0;
-        while doc_inx < documents.len() as CDocIndexT
+        for doc_inx in 0..documents.len() as CDocIndexT
         {
             if remove_quotes(&documents[doc_inx as usize]["dHash"]) == doc_hash.to_string()
             { return (doc_inx, documents[doc_inx as usize].clone()); }
-            doc_inx += 1;
         }
         return (-1, json!({}));
     }
