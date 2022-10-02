@@ -160,7 +160,7 @@ impl CoinbaseBlock {
         // maybe remove add some item in object
         if !parent_json_obj["bExtInfo"].is_null()
         {
-            parent_json_obj["bExtInfo"] = "".into();
+            parent_json_obj["bExtInfo"] = json!([]);
         }
 
         if !parent_json_obj["bExtHash"].is_null()

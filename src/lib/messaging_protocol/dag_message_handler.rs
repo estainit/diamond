@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use serde_json::{json, Value};
 use crate::{application, ccrypto, constants, cutils, dlog, get_value, machine};
 use crate::cutils::remove_quotes;
-use crate::lib::block::block_types::block::{Block, regenerate_block};
+use crate::lib::block::block_types::block::{Block, regenerate_js_block};
 use crate::lib::custom_types::{CBlockHashT, CDateT, JSonObject, QVDRecordsT, TimeBySecT};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::dag::leaves_handler::{get_leave_blocks, LeaveBlock};
@@ -513,7 +513,7 @@ pub fn handle_block_invoke_request(
         constants::SecLevel::TmpDebug);
 
     // retrieve block from DAG
-    let (status, regenerated_json_block) = regenerate_block(&block_hash);
+    let (status, regenerated_json_block) = regenerate_js_block(&block_hash);
 
     if !status
     {

@@ -13,12 +13,13 @@ use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::floating_vote_document::FloatingVoteDocument;
 use crate::lib::block_utils::{unwrap_safed_content_for_db, wrap_safe_content_for_db};
-use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CBlockHashT, CDateT, CDocIndexT, ClausesT, JSonObject, OrderT, QVDRecordsT, QSDicT, CDocHashT, DocDicVecT, CMPAISValueT, VString, DocLenT, JSonArray};
 use crate::lib::dag::dag::search_in_dag;
 use crate::lib::database::abs_psql::{q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCK_EXT_INFO};
 use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
 use crate::lib::services::society_rules::society_rules::get_max_block_size;
+use crate::lib::transactions::basic_transactions::basic_transaction_template::export_doc_ext_to_json;
 use crate::lib::utils::version_handler::is_valid_version_number;
 
 #[derive(Debug)]
@@ -365,11 +366,13 @@ impl Block {
     //old_name_was exportBlockToJSon
     pub fn export_block_to_json(&self, ext_info_in_document: bool) -> JSonObject
     {
+        println!("xxxxxx .export_block_exts_to_json() {}", self.export_block_exts_to_json());
+
         let mut out: JSonObject = json!({
             "bAncestors": self.m_block_ancestors,
             "bCDate": self.m_block_creation_date,
             "bExtHash": self.m_block_ext_root_hash,
-            "bExtInfo": self.m_block_ext_info,
+            "bExtInfo": self.export_block_exts_to_json(),
             "bHash": self.m_block_hash,
             "bLen": cutils::padding_length_value(self.m_block_length.to_string(), constants::LEN_PROP_LENGTH),
             "bType": self.m_block_type,
@@ -392,6 +395,12 @@ impl Block {
                 ext_info_in_document);
         }
         return out;
+    }
+
+
+    pub fn export_block_exts_to_json(&self) -> JSonArray
+    {
+        return export_block_exts_to_json(&self.m_block_ext_info);
     }
 
     // old name was calcBlockExtRootHash
@@ -601,18 +610,18 @@ impl Block {
     }
 
     #[allow(unused, dead_code)]
-    pub fn get_block_ext_info(&self) ->
+    pub fn get_block_exts_infos(&self) ->
     (
         bool/* status */,
         bool/* block_has_ext_info */,
-        Vec<DocExtInfo>/* block_ext_info */)
+        Vec<Vec<DocExtInfo>>/* block_ext_info */)
     {
         if self.m_block_ext_info.len() > 0
         {
-            return (true, true, self.m_block_ext_info[0].clone());
+            return (true, true, self.m_block_ext_info.clone());
         }
 
-        return get_block_ext_info(&self.m_block_hash);
+        return get_block_exts_infos(&self.m_block_hash);
     }
     /*
            bool Block::appendToDocuments(Document* doc)
@@ -997,8 +1006,20 @@ impl Block {
     }
 }
 
+
+pub fn export_block_exts_to_json(exts_infos: &Vec<Vec<DocExtInfo>>) -> JSonArray
+{
+    let mut out_js_arr: JSonArray = json!([]);
+    for a_doc_ext in exts_infos
+    {
+        out_js_arr.as_array_mut().unwrap().push(export_doc_ext_to_json(a_doc_ext));
+    }
+    out_js_arr
+}
+
+
 //old_name_was regenerateBlock
-pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
+pub fn regenerate_js_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
 {
     //listener.doCallSync('SPSH_before_regenerate_block', { block_hash });
     let records = search_in_dag(
@@ -1049,7 +1070,7 @@ pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
         return (false, json!({}));
     }
 
-    let (status, ext_info_exist, block_ext_info) = get_block_ext_info(block_hash);
+    let (status, ext_info_exist, block_ext_info) = get_block_exts_infos(block_hash);
     if !status
     {
         return (false, json!({}));
@@ -1057,20 +1078,18 @@ pub fn regenerate_block(block_hash: &CBlockHashT) -> (bool, JSonObject)
 
     if ext_info_exist
     {
-        j_block["bExtInfo"] = json!({
-            "bExtInfo": block_ext_info
-        });
+        j_block["bExtInfo"] = export_block_exts_to_json(&block_ext_info);
     }
 
     return (true, j_block);
 }
 
 //old_name_was getBlockExtInfo
-pub fn get_block_ext_info(block_hash: &String) ->
+pub fn get_block_exts_infos(block_hash: &String) ->
 (
-    bool/* status */,
-    bool/* block_has_ext_info */,
-    Vec<DocExtInfo>/* block_ext_info */)
+    bool /* status */,
+    bool /* block_has_ext_info */,
+    Vec<Vec<DocExtInfo>> /* block_ext_info */)
 {
     let (status, records) = q_select(
         C_BLOCK_EXT_INFO,
@@ -1107,7 +1126,7 @@ pub fn get_block_ext_info(block_hash: &String) ->
     }
 
     let mut is_valid: bool = true;
-    let block_ext_info: Vec<DocExtInfo> = match serde_json::from_str(&serialized_block) {
+    let block_ext_info: Vec<Vec<DocExtInfo>> = match serde_json::from_str(&serialized_block) {
         Ok(r) => r,
         Err(e) => {
             is_valid = false;

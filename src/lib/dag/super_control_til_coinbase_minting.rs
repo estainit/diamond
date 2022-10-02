@@ -262,7 +262,9 @@ pub fn tracking_back_the_coins_recursive(
         {
             if !block["bExtInfo"].is_null()
             {
+                println!("b_ext_info00000 {:?}", block["bExtInfo"]);
                 let b_ext_info = block["bExtInfo"].as_array().unwrap();
+                println!("b_ext_info00001 {:?}", b_ext_info);
                 for a_doc_ext in b_ext_info[doc_inx as usize].as_array().unwrap()
                 {
                     let (_status, tmp) = DocExtInfo::load_from_json(a_doc_ext);
