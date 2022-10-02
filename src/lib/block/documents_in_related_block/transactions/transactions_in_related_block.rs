@@ -192,7 +192,7 @@ pub fn prepare_block_overview(
     let mut spendable_coins: VString = vec![];
     if block_used_coins.len() > 0
     {
-        // check if the coins exist in UTXOs?
+        // check if the coins exist in cache?
         // implementing spendable coins cache to reduce DB load
         let coins_info: QVDRecordsT = search_in_spendable_coins_cache(&block_used_coins);
 

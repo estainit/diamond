@@ -8,7 +8,7 @@ use crate::lib::address::address_handler::create_a_new_address;
 use crate::lib::constants;
 use crate::lib::dag::dag_walk_through::get_latest_block_record;
 use crate::lib::database::abs_psql::{q_select, q_upsert, simple_eq_clause};
-use crate::lib::database::tables::{C_KVALUE, C_MACHINE_PROFILES};
+use crate::lib::database::tables::{C_KVALUE, C_MACHINE_PROFILES, C_TRX_COINS};
 use crate::lib::dlog::dlog;
 use crate::lib::file_handler::file_handler::{mkdir, path_exist};
 use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
@@ -124,7 +124,6 @@ impl CMachine {
             m_recorded_blocks_in_db: 0, // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             /*
               VString m_cache_coins_visibility = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem and bloom filter implementation
-            QVDRecordsT m_cache_spendable_coins = {}; // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             QVDRecordsT m_dag_cached_blocks; // TODO: optimize it ASAP
             VString m_dag_cached_block_hashes = {}; // TODO: optimize it ASAP
 
@@ -132,6 +131,7 @@ impl CMachine {
 
               */
             m_cache_coins_visibility: vec![],
+            // TODO: remove this variable(mechanism) after fixing sqlite database lock problem
             m_cache_spendable_coins: vec![],
             m_dag_cached_blocks: vec![],
             m_dag_cached_block_hashes: vec![],
@@ -618,24 +618,52 @@ impl CMachine {
               m_machine_is_loaded = true;
               s_DAG_is_initialized = true;
 
+   */
 
-              {
-                // remove this block after improving db and fixing database block problem
-                auto[status, coins] = cached_spendable_coins("read");
-                if (!status)
-                {
-                  CLog::log("couldn't read from cached Spendable Coins!", "app", "fatal");
-                }
+        {
+            // remove this block after improving db and fixing database block problem
+            let (status, coins) = self.cached_spendable_coins(
+                "read",
+                &vec![],
+                &"".to_string(),
+                &"".to_string());
+            if !status
+            {
+                dlog(
+                    &format!("Couldn't read from cached Spendable Coins!"),
+                    constants::Modules::App,
+                    constants::SecLevel::Fatal);
+            }
 
-                if (coins.len() < 500)
+            if coins.len() < 500
+            {
+                let (status, records) = q_select(
+                    C_TRX_COINS,
+                    vec!["ut_coin", "ut_creation_date", "ut_ref_creation_date", "ut_visible_by", "ut_o_address", "ut_o_value"],
+                    vec![],
+                    vec![],
+                    0,
+                    false,
+                );
+                if !status
                 {
-                  QueryRes exist_coins = DbModel::select(
-                    "c_trx_coins",
-                    {"ut_coin", "ut_creation_date", "ut_ref_creation_date", "ut_visible_by", "ut_o_address", "ut_o_value"});
-                  cached_spendable_coins("assign", exist_coins.records);
+                    dlog(
+                        &format!("Couldn't read from db Spendable Coins!"),
+                        constants::Modules::App,
+                        constants::SecLevel::Fatal);
+                } else {
+                    dlog(
+                        &format!("Assigned {} spendable coins to cache!", records.len()),
+                        constants::Modules::App,
+                        constants::SecLevel::Info);
                 }
-              }
-            */
+                self.cached_spendable_coins(
+                    "assign",
+                    &records,
+                    &"".to_string(),
+                    &"".to_string());
+            }
+        }
 
         return true;
     }
