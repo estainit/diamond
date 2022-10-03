@@ -77,6 +77,7 @@ pub struct CMachine {
     pub m_web_server_address: String,
     pub m_config_source: String,
     pub m_hard_root_path: String,
+    pub m_forced_launch_date: bool,
     pub m_launch_date: String,
 
     pub m_db_host: String,
@@ -140,6 +141,7 @@ impl CMachine {
             m_hard_root_path: "".to_string(),
             m_config_source: "".to_string(),
             m_last_sync_status_check: "2024-00-00 00:00:00".to_string(),
+            m_forced_launch_date: false,
             m_launch_date: "2024-00-00 00:00:00".to_string(),
 
             m_db_host: "".to_string(),
@@ -156,6 +158,13 @@ impl CMachine {
 
         self.m_last_sync_status_check = self.get_launch_date();
 
+        if application().does_forced_launch_date()
+        {
+            // empty database
+            println!("Empty DB!");
+            empty_db();
+        }
+
         // control DataBase
         let (status, msg) = maybe_initialize_db();
         if !status
@@ -167,7 +176,6 @@ impl CMachine {
         {
             panic!("failed on maybe initialize db2 {}", msg)
         }
-
 
         let (status, _msg) = self.maybe_init_default_profile();
         if status != true {
@@ -494,6 +502,11 @@ impl CMachine {
     pub fn get_launch_date(&self) -> String
     {
         self.m_launch_date.clone()
+    }
+
+    pub fn does_launch_date(&self) -> bool
+    {
+        self.m_forced_launch_date
     }
 
     //old_name_was initDefaultProfile

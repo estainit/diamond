@@ -143,11 +143,6 @@ impl CoinbaseDocument {
     {
         let mut j_doc: JSonObject = doc.export_doc_to_json_super(ext_info_in_document);
 
-        if !j_doc["dExtInfo"].is_null()
-        {
-            j_doc["dExtInfo"] = "".into();
-        }
-
         j_doc["dCycle"] = self.m_doc_cycle.clone().into();
         j_doc["dCDate"] = self.m_doc_cycle.clone().into();
         j_doc["treasuryFrom"] = self.m_treasury_from.clone().into();

@@ -387,12 +387,14 @@ pub fn tracking_back_the_coins_recursive(
             for a_hash in &ref_block_hashes {
                 c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
             }
+            println!("bbbbbbbbbb rr {}", ref_block_hashes[0]);
             let block_records = search_in_dag(
                 vec![c1],
                 vec!["b_body"],
                 vec![],
                 0,
                 false);
+            println!("bbbbbbbbbb {} {:?}", level, block_records);
             if block_records.len() != cutils::array_unique(&ref_block_hashes).len()
             {
                 msg = format!("{}.SCUUCM, some of the blocks({:?}) do not exist in DAG ({})",
@@ -407,15 +409,21 @@ pub fn tracking_back_the_coins_recursive(
 
                 return (false, msg);
             }
+            println!("bbbbbbbbbb ccc");
             for a_block_record in block_records
             {
+                println!("bbbbbbbbbb c1 {:?}", a_block_record);
                 let (_status, _sf_ver, content) = unwrap_safed_content_for_db(&a_block_record["b_body"]);
+                println!("bbbbbbbbbb c2");
                 let (_status, ref_block) = cutils::controlled_str_to_json(&content);
-                if
-                (block["bType"] != constants::block_types::REPAYMENT_BLOCK)
-                    && (application().time_diff(
+                println!("bbbbbbbbbb c3 {}", ref_block);
+                let cycle_by_minutes = application().get_cycle_by_minutes();
+                let time_diff = application().time_diff(
                     remove_quotes(&ref_block["bCDate"]),
-                    remove_quotes(&block["bCDate"])).as_minutes < application().get_cycle_by_minutes())
+                    remove_quotes(&block["bCDate"])).as_minutes;
+                println!("bbbbbbbbbb c4 timedif {}", time_diff);
+                if (block["bType"] != constants::block_types::REPAYMENT_BLOCK)
+                    && (time_diff < cycle_by_minutes)
                 {
                     msg = format!(
                         "{}.SCUUCM, block({} {}) uses an output of block({}) {}) before being maturated",
@@ -434,18 +442,23 @@ pub fn tracking_back_the_coins_recursive(
 
                 // looking for refBlock.output = block.input
                 #[allow(unused_assignments)]
-                let mut input_exist_in_referred_block = false;
+                    let mut input_exist_in_referred_block = false;
+                println!("bbbbbbbbbb 111");
                 for a_ref_doc in ref_block["bDocs"].as_array().unwrap()
                 {
-                    if a_ref_doc["dHash"].to_string() == coin_creator_doc_hash
+                    println!("bbbbbbbbbb 222");
+                    if remove_quotes(&a_ref_doc["dHash"]) == coin_creator_doc_hash
                     {
+                        println!("bbbbbbbbbb 333");
                         input_exist_in_referred_block |= true;
 
                         if constants::SUPER_CONTROL_SHOULD_CONTROL_SIGNATURES_AS_WELL
                         {
+                            println!("bbbbbbbbbb 444");
                             if !trx_has_not_input(&remove_quotes(&a_ref_doc["dType"]))
                             {
                                 // also output address of ref controls!
+                                println!("bbbbbbbbbb 555");
                                 let is_valid_unlock = validate_sig_struct(
                                     &doc_ext_infos[input_index as usize].m_unlock_set,
                                     &a_ref_doc["outputs"][coin_creator_doc_output_index as usize][0].to_string(),
@@ -465,7 +478,9 @@ pub fn tracking_back_the_coins_recursive(
                                 }
                             }
                         }
+                        println!("bbbbbbbbbb 666");
                         let mature_cycles_count = application().get_mature_cycles_count(&remove_quotes(&a_ref_doc["dType"]));
+                        println!("bbbbbbbbbb 777");
                         if mature_cycles_count > 1
                         {
                             // control maturity
@@ -498,6 +513,7 @@ pub fn tracking_back_the_coins_recursive(
                         }
 
                         // controlling the ref of ref
+                        println!("bbbbbbbbbb 999");
                         return tracking_back_the_coins_recursive(
                             coin_track,
                             &ref_block,
@@ -508,6 +524,7 @@ pub fn tracking_back_the_coins_recursive(
                     }
                 }
 
+                println!("cccccccc 111");
                 if !input_exist_in_referred_block
                 {
                     msg = format!(
@@ -523,6 +540,7 @@ pub fn tracking_back_the_coins_recursive(
                     return (false, msg);
                 }
             }
+            println!("bbbbbbbbbb dd");
         }
     }
     return (true, msg);

@@ -149,6 +149,7 @@ impl Document
 
         if !obj["dExtInfo"].is_null()
         {
+            println!("wwwwwww {}", obj["dExtInfo"]);
             self.m_doc_ext_info = convert_json_to_doc_ext(obj["dExtInfo"].as_array().unwrap());
         }
 

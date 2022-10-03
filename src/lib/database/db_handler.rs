@@ -160,17 +160,20 @@ std::tuple<bool, String, QSqlDatabase> DbHandler::IconnectToSQLITE(String databa
 //old_name_was emptyDB
 pub fn empty_db() -> bool
 {
-    for a_table in psql_tables_list()
-    {
-        let query_string = format!("DELETE FROM {}", a_table);
-        dlog(
-            &format!("Cleaning table: {}", a_table),
-            constants::Modules::Sql,
-            constants::SecLevel::Info);
-        let q_err_num: u64 = dbhandler().m_db.execute(&query_string, &[]).unwrap();
-        if q_err_num > 0
-        { return false; }
-    }
+    let q_err_num: u64 = dbhandler().m_db.execute(&format!("SELECT empty_db();"), &[]).unwrap();
+    if q_err_num > 0
+    { return false; }
+    // for a_table in psql_tables_list()
+    // {
+    //     let query_string = format!("DELETE FROM {}", a_table);
+    //     dlog(
+    //         &format!("Cleaning table: {}", a_table),
+    //         constants::Modules::Sql,
+    //         constants::SecLevel::Info);
+    //     let q_err_num: u64 = dbhandler().m_db.execute(&query_string, &[]).unwrap();
+    //     if q_err_num > 0
+    //     { return false; }
+    // }
     return true;
 }
 
