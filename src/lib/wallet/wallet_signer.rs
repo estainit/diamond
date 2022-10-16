@@ -3,7 +3,7 @@ use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog, machine};
 use crate::cutils::unpack_coin_code;
 use crate::lib::block::document_types::document::Document;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CInputIndexT, ClausesT, CMPAIValueT, CSigIndexT, JSonObject, LimitT, OrderT, QV2DicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CInputIndexT, ClausesT, CMPAIValueT, CSigIndexT, LimitT, OrderT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_MACHINE_USED_COINS;
 use crate::lib::machine::machine_buffer::block_buffer::push_to_block_buffer;
@@ -373,7 +373,7 @@ pub fn sign_by_an_address(
     sign_message: &String,
     unlocker_index: CSigIndexT) -> (bool, String, VString, UnlockSet)
 {
-    let mut message: String = "".to_string();
+    let message;
 
     let addresses_details = get_addresses_info(
         &vec![signer_address.clone()],
@@ -404,8 +404,8 @@ pub fn sign_by_an_address(
     for inx in 0..the_unlock_set.m_signature_sets.len()
     {
         // get_unlock_set_by_salt()
-        let (status, private_keys) = address_details.get_private_keys_by_salt(&the_unlock_set.m_salt);
-        let (status, signature_hex, signature) = ccrypto::ecdsa_sign_message(
+        let (_status, private_keys) = address_details.get_private_keys_by_salt(&the_unlock_set.m_salt);
+        let (status, signature_hex, _signature) = ccrypto::ecdsa_sign_message(
             // addrDtl["the_private_keys"].toObject()[unlock_set["salt"].to_string()].toArray()[inx].to_string(),
             &private_keys[inx],
             sign_message);

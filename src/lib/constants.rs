@@ -439,7 +439,9 @@ pub mod float_blocks_categories
 {
     // collision on spending a coin in some transactions
     pub const TRANSACTION: &str = "Trx";
+
     // collision on registering an iName
+    #[allow(unused, dead_code)]
     pub const FLEXIBLE_NAME_SERVICE: &str = "FleNS";
 }
 

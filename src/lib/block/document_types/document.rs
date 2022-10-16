@@ -404,6 +404,7 @@ impl Document
         //return json!({});
     }
 
+    #[allow(unused, dead_code)]
     pub fn doc_has_ext_info(&self) -> bool
     {
         if self.m_doc_type == constants::document_types::BASIC_TX

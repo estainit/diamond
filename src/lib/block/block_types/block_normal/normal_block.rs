@@ -81,7 +81,7 @@ impl NormalBlock
          SpendCoinsList // double_spends
      )
     {
-        let mut msg: String = "".to_string();
+        let msg: String;
         dlog(
             &format!(
                 "xxxxxxxxxxxx validate Normal Block xxxxxxxxxxxxxxxxxxxx{}, {:?}",
@@ -121,13 +121,13 @@ impl NormalBlock
             constants::Modules::App,
             constants::SecLevel::Debug);
 
-        let mut dTyps: VString = transient_block_info.m_grouped_documents.keys().cloned().collect();
-        dTyps.sort();
+        let mut d_types: VString = transient_block_info.m_grouped_documents.keys().cloned().collect();
+        d_types.sort();
         dlog(
             &format!(
                 "Block{} contains these doc types: {:?}",
                 block_super.get_block_identifier(),
-                dTyps),
+                d_types),
             constants::Modules::App,
             constants::SecLevel::Debug);
 
@@ -245,7 +245,7 @@ impl NormalBlock
     // old name was handleReceivedBlock
     pub fn handle_received_block(&self, block_super: &Block) -> EntryParsingResult
     {
-        let mut msg: String;
+        let msg: String;
         dlog(
             &format!("******** handle Received Normal Block{}", block_super.get_block_identifier()),
             constants::Modules::App,

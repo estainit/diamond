@@ -921,7 +921,7 @@ impl CMachine {
             VString /* signatures */)
     {
         let signer = self.get_backer_address();
-        let (sign_status, res_msg, sign_signatures, sign_unlock_set) =
+        let (sign_status, _res_msg, sign_signatures, sign_unlock_set) =
             sign_by_an_address(
                 &signer,
                 sign_message,

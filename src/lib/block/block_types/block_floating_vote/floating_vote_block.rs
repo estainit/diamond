@@ -188,14 +188,14 @@ impl FloatingVoteBlock {
         uplink: &String,  // the block which we are voting for
         block_category: &String,
         vote_data: &JSonObject,
-        cDate: &String) -> (bool, Block)
+        c_date: &String) -> (bool, Block)
     {
         dlog(
             &format!(
                 "Create Floating Vote Block uplink({}) block Cat({}) cDate({}) vote Data: {:?}",
                 cutils::hash8c(uplink),
                 block_category,
-                cDate,
+                c_date,
                 vote_data
             ),
             constants::Modules::App,
@@ -203,7 +203,7 @@ impl FloatingVoteBlock {
 
         let now_ = application().now();
         let (_backer_address, _shares, percentage) = get_machine_shares(&now_);
-        let min_share: SharesPercentT = get_min_share_to_allowed_issue_f_vote(cDate);
+        let min_share: SharesPercentT = get_min_share_to_allowed_issue_f_vote(c_date);
         if percentage < min_share
         {
             dlog(
@@ -214,7 +214,7 @@ impl FloatingVoteBlock {
                     min_share,
                     cutils::hash8c(uplink),
                     block_category,
-                    cDate,
+                    c_date,
                     vote_data),
                 constants::Modules::App,
                 constants::SecLevel::TmpDebug);
@@ -235,21 +235,21 @@ impl FloatingVoteBlock {
             "bSignals": get_machine_signals(),
             "bVoteData": vote_data});
 
-        let (status, mut block) = Block::load_block(&j_block);
+        let (_status, mut block) = Block::load_block(&j_block);
 
         // create floating vote block
         let tobe_signed = block.m_if_floating_vote_block.get_sign_msg_b_f_vote(&block);
-        let (status, backer, uSet, signatures) =
+        let (_status, backer, unlock_set, signatures) =
             machine().sign_by_machine_key(&tobe_signed, 0);
         let mut ext_info = DocExtInfo::new();
-        ext_info.m_unlock_set = uSet;
+        ext_info.m_unlock_set = unlock_set;
         ext_info.m_signatures = vec![signatures];
 
         block.m_block_ext_info = vec![vec![ext_info]];
 
         block.m_block_backer = backer;
 
-        let (status_ext, fv_b_ext_hash) = block.calc_block_ext_root_hash();
+        let (_status_ext, fv_b_ext_hash) = block.calc_block_ext_root_hash();
         block.m_block_ext_root_hash = fv_b_ext_hash;
         block.set_block_hash(&block.calc_block_hash());
 

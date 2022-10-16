@@ -241,7 +241,7 @@ impl SpentCoinsHandler
         the_coin: &CCoinCodeT,
         spend_loc: &String,
         spend_date: &CDateT,
-        cDate: &CDateT) -> bool
+        c_date: &CDateT) -> bool
     {
         // * remove old records
         // * TODO: infact we should not remove history(at least for some resonably percent of nodes)
@@ -258,7 +258,7 @@ impl SpentCoinsHandler
         // * obviously these LoteDbs will be payed by pledge contract based on repayments longth
         // * TODO: must be implemented
         let cycle_by_minutes = application().get_cycle_by_minutes();
-        let spend_date = application().minutes_before(cycle_by_minutes * constants::KEEP_SPENT_COINS_BY_CYCLE as u64, cDate);
+        let spend_date = application().minutes_before(cycle_by_minutes * constants::KEEP_SPENT_COINS_BY_CYCLE as u64, c_date);
         q_delete(
             C_TRX_SPEND,
             vec![

@@ -66,6 +66,7 @@ impl ProposalDocument {
         return true;
     }
 
+    #[allow(unused, dead_code)]
     pub fn doc_has_ext_info(&self) -> bool
     {
         return true;

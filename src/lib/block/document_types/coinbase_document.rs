@@ -132,7 +132,7 @@ impl CoinbaseDocument {
         return false;
     }
 
-    pub fn custom_validate_doc(&self, doc: &Document, _block: &Block) -> (bool, String)
+    pub fn custom_validate_doc(&self, _doc: &Document, _block: &Block) -> (bool, String)
     {
         return (true, "".to_string());
     }
@@ -143,6 +143,7 @@ impl CoinbaseDocument {
         return true;
     }
 
+    #[allow(unused, dead_code)]
     pub fn doc_has_ext_info(&self) -> bool
     {
         return false;

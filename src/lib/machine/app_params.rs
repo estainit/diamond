@@ -745,11 +745,11 @@ impl AppParams {
     }
 
     // old name was isYoungerThan2Cycle
-    pub fn is_younger_than_2_cycle(&self, cDate: &CDateT) -> bool
+    pub fn is_younger_than_2_cycle(&self, c_date: &CDateT) -> bool
     {
         let now_ = self.now();
         let range_start = self.get_a_cycle_range(&now_, 1, 0).from;
-        return cDate.to_string() >= range_start;
+        return c_date.to_string() >= range_start;
     }
 }
 
