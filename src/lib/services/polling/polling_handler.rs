@@ -850,7 +850,7 @@ std::tuple<bool, String, PollingDocument*> prepareNewPolling(
   polling_doc.m_potential_voters_count = voters_count;
 
   String sign_message = polling_doc->getDocSignMsg();
-  auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = Wallet::signByAnAddress(
+  auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = sign_by_an_address(
     document_creator,
     sign_message);
   if (!sign_status)
@@ -940,7 +940,7 @@ std::tuple<bool, String> makeReqForAdmPolling(
   AdministrativePollingDocument* adm_polling_doc = new AdministrativePollingDocument(adm_polling_json);
 
   String sign_message = adm_polling_doc->getDocSignMsg();
-  auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = Wallet::signByAnAddress(
+  auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = sign_by_an_address(
     the_creator,
     sign_message);
   if (!sign_status)

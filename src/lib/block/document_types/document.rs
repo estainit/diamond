@@ -374,10 +374,11 @@ impl Document
             js_doc["dExtHash"] = self.m_doc_ext_hash.clone().into();
         }
 
-        if ext_info_in_document {
+        if ext_info_in_document
+            //&& self.doc_has_ext_info()
+        {
             let d_ext_info = export_doc_ext_to_json(&self.m_doc_ext_info);
             js_doc["dExtInfo"] = d_ext_info;
-            // js_doc["dExtInfo"] = Value::from(d_ext_info);
         }
 
         return js_doc;
@@ -397,6 +398,26 @@ impl Document
         } else if self.m_doc_type == constants::document_types::PROPOSAL
         {
             return self.m_if_proposal_doc.export_doc_to_json(self, ext_info_in_document);
+        }
+
+        panic!("should not reach here");
+        //return json!({});
+    }
+
+    pub fn doc_has_ext_info(&self) -> bool
+    {
+        if self.m_doc_type == constants::document_types::BASIC_TX
+        {
+            return self.m_if_basic_tx_doc.doc_has_ext_info();
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {
+            return self.m_if_dp_cost_payment.doc_has_ext_info();
+        } else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.doc_has_ext_info();
+        } else if self.m_doc_type == constants::document_types::PROPOSAL
+        {
+            return self.m_if_proposal_doc.doc_has_ext_info();
         }
 
         panic!("should not reach here");
@@ -666,6 +687,9 @@ impl Document
         if self.m_doc_type == constants::document_types::BASIC_TX
         {
             return self.m_if_basic_tx_doc.calc_doc_ext_info_hash(self);
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {
+            return self.m_if_dp_cost_payment.calc_doc_ext_info_hash(self);
         } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.calc_doc_ext_info_hash(self);
@@ -685,6 +709,9 @@ impl Document
         if self.m_doc_type == constants::document_types::BASIC_TX
         {
             return self.m_if_basic_tx_doc.has_sign_ables(self);
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {
+            return self.m_if_dp_cost_payment.has_sign_ables(self);
         } else if self.m_doc_type == constants::document_types::COINBASE
         {
             return self.m_if_coinbase_doc.has_sign_ables(self);
@@ -711,12 +738,15 @@ impl Document
     // customValidateDoc
     pub fn custom_validate_doc(&self, block: &Block) -> (bool, String)
     {
-        if self.m_doc_type == constants::document_types::COINBASE
-        {
-            return (true, "".to_string());
-        } else if self.m_doc_type == constants::document_types::BASIC_TX
+        if self.m_doc_type == constants::document_types::BASIC_TX
         {
             return self.m_if_basic_tx_doc.custom_validate_doc(self, block);
+        } else if self.m_doc_type == constants::document_types::COINBASE
+        {
+            return self.m_if_coinbase_doc.custom_validate_doc(self, block);
+        } else if self.m_doc_type == constants::document_types::DATA_AND_PROCESS_COST_PAYMENT
+        {
+            return self.m_if_dp_cost_payment.custom_validate_doc(self, block);
         }
 
         panic!("Invalid document for 'custom Validate Doc' {}", self.get_doc_identifier());

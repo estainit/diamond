@@ -1,4 +1,5 @@
 use crate::{application, constants, cutils, dlog};
+use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::QVDicT;
@@ -105,7 +106,7 @@ pub fn handle_pulled_packet(pulled_record: &QVDicT) -> EntryParsingResult
     let mut block_type = "".to_string();
     if !json_payload["bType"].is_null()
     {
-        block_type = json_payload["bType"].to_string();
+        block_type = remove_quotes(&json_payload["bType"]);
     }
 
     if block_type == constants::block_types::REPAYMENT_BLOCK

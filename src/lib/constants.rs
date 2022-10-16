@@ -97,15 +97,15 @@ pub const CONTRIBUTION_APPRECIATING_PERIOD: u16 = 100;
   // in order to put a proposal on voting process, requester has to pay one month income * 3 to treasury
   const uint PROPOSAL_APPLY_COST_SCALE = 3;
 
-  /**
-   * hopefully after 10 cycle(5 days) all DAG branches are merged and
-   * ALL transactions from 5 days ago are visible by leaves,
-   * so we do not need to mantain spend coins in DB
-   */
-  const uint KEEP_SPENT_COINS_BY_CYCLE = 10;
-
   const uint32_t ONE_MINUTE_BY_MILISECOND = 60000;
+
 */
+
+//  * hopefully after 10 cycle(5 days) all DAG branches are merged and
+//  * ALL transactions from 5 days ago are visible by leaves,
+//  * so we do not need to mantain spend coins in DB
+pub const KEEP_SPENT_COINS_BY_CYCLE: u8 = 10;
+
 pub mod sig_hashes
 {
     pub const ALL: &str = "ALL";
@@ -127,7 +127,7 @@ pub const SUPER_CONTROL_COINS_DOUBLE_SPENDING: bool = true;
 pub const SUPER_CONTROL_COINS_BACK_TO_COINBASE_MINTING: bool = true;
 pub const SUPER_CONTROL_SHOULD_CONTROL_SIGNATURES_AS_WELL: bool = true;
 // can be disabled for the sake of performance
-pub const LOG_SUPER_VALIDATE_DEBUG :bool = true;
+pub const LOG_SUPER_VALIDATE_DEBUG: bool = true;
 /*
 
 
@@ -433,16 +433,16 @@ pub mod document_types
 // message parsing settings
 pub const MAX_PARSE_ATTEMPTS_COUNT: i32 = 5; // parse message tentative
 
-/*
-pub const NO_EXT_HASH = "NEH";
 
 // floating blocks like floating signature, floating votes, collision logs...
-namespace FLOAT_BLOCKS_CATEGORIES
+pub mod float_blocks_categories
 {
-pub const Trx = "Trx";     // collision on spending a coin in some transactions
-pub const FleNS = "FleNS"; // collision on registring an iName
+    // collision on spending a coin in some transactions
+    pub const TRANSACTION: &str = "Trx";
+    // collision on registering an iName
+    pub const FLEXIBLE_NAME_SERVICE: &str = "FleNS";
 }
-*/
+
 
 pub mod free_post_classes
 {

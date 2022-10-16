@@ -54,7 +54,7 @@ struct TmpData{
 
   auto[code, body] = GraphQLHandler::makeAPacket({card});
 
-  SendingQHandler::pushIntoSendingQ(
+  push_into_sending_q(
     constants::GQL, //sqType
     code,
     body,

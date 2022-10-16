@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, ccrypto, constants, cutils, dlog};
-use crate::lib::custom_types::{BlockLenT, CDateT, CMPAIValueT, DocLenT};
+use crate::lib::custom_types::{BlockLenT, CDateT, CMPAIValueT, DocLenT, SharesPercentT};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_ADMINISTRATIVE_REFINES_HISTORY;
 
@@ -373,49 +373,65 @@ pub fn get_max_block_size(block_type: &String) -> BlockLenT
     return 0 as BlockLenT;
 }
 
-/*
-
-double SocietyRules::getSingleFloatValue(
-  const String& pollingKey,
-  cDate: &CDateT)
+//old_name_was getSingleFloatValue
+pub fn get_single_float_value(
+    polling_key: &String,
+    c_date: &CDateT) -> f64
 {
-  if (!cutils::is_a_valid_date_format(cDate))
-    cutils::exiter("invalid cDate for get Single Float Value for pollingKey(" + pollingKey + ") cDate:(" + cDate + ") ", 812);
+    if !cutils::is_a_valid_date_format(c_date)
+    {
+        panic!(
+            "Invalid c-date for get Single Float Value for pollingKey({}) cDate:({}) ",
+            polling_key,
+            c_date
+        );
+    }
+    // fetch from DB the price for calculation Date
+    let value_ = get_administrative_value(
+        polling_key,
+        c_date);
 
-  // fetch from DB the price for calculation Date
-  QVariant value_ = getAdmValue(
-    pollingKey,
-    cDate);
+    let value_ = cutils::i_floor_float(value_.parse::<f64>().unwrap());
+    dlog(
+        &format!("RFRf(float) for pollingKey({}) cDate:({}) => value({})",
+                 polling_key,
+                 c_date,
+                 value_
+        ),
+        constants::Modules::Sec,
+        constants::SecLevel::Error);
 
-  double value = cutils::iFloorFloat(value_.toDouble());
-  CLog::log("RFRf(float) for pollingKey(" + pollingKey + ") cDate:(" + cDate + ") => value(" + String::number(value) + ")", "app", "trace");
-  return value;
+    return value_;
 }
 
 //  -  -  -  shares parameters settings
-SharesPercentT SocietyRules::getMinShareToAllowedIssueFVote(cDate: &CDateT)
+//old_name_was getMinShareToAllowedIssueFVote
+pub fn get_min_share_to_allowed_issue_f_vote(c_date: &CDateT) -> SharesPercentT
 {
-  return getSingleFloatValue(polling_types::RFRfMinFVote, cDate);
+    return get_single_float_value(
+        &polling_types::REQUEST_FOR_REFINE_MIN_SHARES_TO_FLOATING_VOTES.to_string(),
+        c_date);
 }
 
+/*
 SharesPercentT SocietyRules::getMinShareToAllowedVoting(cDate: &CDateT)
 {
-  return getSingleFloatValue(polling_types::RFRfMinS2V, cDate);
+  return get_single_float_value(polling_types::RFRfMinS2V, cDate);
 }
 
 SharesPercentT SocietyRules::getMinShareToAllowedSignCoinbase(cDate: &CDateT)
 {
-  return getSingleFloatValue(polling_types::RFRfMinFSign, cDate);
+  return get_single_float_value(polling_types::RFRfMinFSign, cDate);
 }
 
 SharesPercentT SocietyRules::getMinShareToAllowedWiki(cDate: &CDateT)
 {
-  return getSingleFloatValue(polling_types::RFRfMinS2Wk, cDate);
+  return get_single_float_value(polling_types::RFRfMinS2Wk, cDate);
 }
 
 SharesPercentT SocietyRules::getMinShareToAllowedDemos(cDate: &CDateT)
 {
-  return getSingleFloatValue(polling_types::RFRfMinS2DA, cDate);
+  return get_single_float_value(polling_types::RFRfMinS2DA, cDate);
 }
 
 bool SocietyRules::logRefineDetail(
@@ -625,7 +641,7 @@ QVDicT SocietyRules::readAdministrativeCurrentValues()
     {"docExpenseDict", prepareDocExpenseDict(cDate, constants::TRANSACTION_MINIMUM_LENGTH)},
     {"basePricePerChar", QVariant::fromValue(getBasePricePerChar(cDate))},
     {"blockFixCost", QVariant::fromValue(get_block_fix_cost(cDate))},
-    {"minShareToAllowedIssueFVote", getMinShareToAllowedIssueFVote(cDate)},
+    {"minShareToAllowedIssueFVote", get_min_share_to_allowed_issue_f_vote(cDate)},
     {"minShareToAllowedVoting", getMinShareToAllowedVoting(cDate)},
     {"minShareToAllowedSignCoinbase", getMinShareToAllowedSignCoinbase(cDate)}
   };
@@ -769,9 +785,9 @@ JSonArray SocietyRules::loadAdmPollings(
     },
     JSonObject {
       {"key", polling_types::RFRfMinFVote},
-      {"label", "Request for Refine Minimum Shares to be Allowed to Issue a Floating Vote (either a block or an entry), currently is " + String::number(getMinShareToAllowedIssueFVote(cDate)) + " Percent"},
+      {"label", "Request for Refine Minimum Shares to be Allowed to Issue a Floating Vote (either a block or an entry), currently is " + String::number(get_min_share_to_allowed_issue_f_vote(cDate)) + " Percent"},
       {"pValues", JSonObject {
-        {"pShare", QVariant::fromValue(getMinShareToAllowedIssueFVote(cDate)).toDouble()},
+        {"pShare", QVariant::fromValue(get_min_share_to_allowed_issue_f_vote(cDate)).toDouble()},
         {"pTimeframe", QVariant::fromValue(CMachine::getMinPollingTimeframeByHour()).toDouble()}}
       }
     },

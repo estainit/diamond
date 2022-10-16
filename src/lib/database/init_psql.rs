@@ -68,6 +68,7 @@ Vec<std::string> psql_init_query_delete = {
 
 */
 
+#[allow(unused, dead_code)]
 pub fn psql_tables_list<'l>() -> Vec<&'l str> {
     return vec![
         "c_administrative_pollings",
@@ -126,7 +127,7 @@ pub fn psql_tables_list<'l>() -> Vec<&'l str> {
         "cdev_inbox_logs",
         "cdev_logs_trx_coins",
         "cdev_parsing_q",
-        "cdev_sending_q"
+        "cdev_sending_q",
     ];
 }
 
@@ -552,11 +553,11 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     CREATE TABLE IF NOT EXISTS c_missed_blocks
     (
     mb_block_hash varchar(256) NOT NULL,
-    mb_insert_date varchar(32) NOT NULL,    -- the datein which machine discovered she missed this block
+    mb_insert_date varchar(32) NOT NULL,    -- the date in which machine discovered she missed this block
     mb_invoke_attempts INT4 NULL,    -- invoke attempts, to avoid blocking on one block
     mb_last_invoke_date varchar(32) NOT NULL,
-    mb_descendants_count INT4 NULL,    -- number of blocks whom need this block (potential descendents)
-    mb_descendants text    -- potentially descendents hash
+    mb_descendants_count INT4 NULL,    -- number of blocks whom need this block (potential descendants)
+    mb_descendants text NULL  -- potentially descendants hash
     );
 ",
         "

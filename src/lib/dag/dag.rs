@@ -54,7 +54,12 @@ pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<Stri
 //old_name_was getBlockHashesByDocHashes
 pub fn get_block_hashes_by_doc_hashes(
     doc_hashes: &VString,
-    hashes_type: &String) -> (VString /* block_hashes */, GRecordsT /* map_doc_to_block */)
+    hashes_type: &String,
+) ->
+    (
+        VString, // block_hashes
+        GRecordsT // map_doc_to_block
+    )
 {
     let mut clauses: ClausesT = vec![];
     let empty_string = "".to_string();
@@ -492,25 +497,33 @@ pub fn set_coins_import_status(
     // CMachine::cachedBlocks("update", {QVDicT{{"b_hash", block_hash}}}, status);
 }
 
-/*
-bool DAG::isDAGUptodated(String c_date)
+//old_name_was isDAGUptodated
+pub fn is_dag_updated(c_date: &CDateT) -> bool
 {
-  if (c_date == "")
-    c_date = application().now();
+    let mut c_date = c_date.clone();
+    if c_date == ""
+    {
+        c_date = application().now();
+    }
 
-  QVDRecordsT latestBlockDate = searchInDAG(
-    {},
-    {"b_creation_date"},
-    {{"b_creation_date", "DESC"}},
-    1);
-  if (latestBlockDate.len() == 0)
-      return false;
-
-  String latest_block_date = latestBlockDate[0]["b_creation_date"].to_string();
-  return cutils::isYoungerThan2Cycle(latest_block_date);
-  // FIXME: it must be more sophisticated such as missed blocks count, last received blocks which are in parsingQ...
+    let latest_block_date = search_in_dag(
+        vec![],
+        vec!["b_creation_date"],
+        vec![
+            &OrderModifier { m_field: "b_creation_date", m_order: "DESC" },
+        ],
+        1,
+        true);
+    if latest_block_date.len() == 0
+    {
+        return false;
+    }
+    let latest_block_date = latest_block_date[0]["b_creation_date"].to_string();
+    return application().is_younger_than_2_cycle(&latest_block_date);
+    // FIXME: it must be more sophisticated such as missed blocks count, last received blocks which are in parsingQ...
 }
 
+/*
 bool DAG::loopPrerequisitiesRemover()
 {
   String thread_prefix = "prerequisities_remover_";

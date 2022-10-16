@@ -6,6 +6,7 @@ use crate::{application, ccrypto, constants, cutils, dlog};
 use crate::cmerkle::{generate_m, MERKLE_VERSION};
 use crate::cutils::{controlled_str_to_json, remove_quotes};
 use crate::lib::block::block_types::block_coinbase::coinbase_block::CoinbaseBlock;
+use crate::lib::block::block_types::block_floating_vote::floating_vote_block::FloatingVoteBlock;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::{genesis_calc_block_hash};
 use crate::lib::block::block_types::block_normal::normal_block::NormalBlock;
 use crate::lib::block::block_types::block_repayback::repayback_block::RepaybackBlock;
@@ -114,6 +115,7 @@ pub struct Block
     pub m_if_coinbase_block: CoinbaseBlock,
     pub m_if_normal_block: NormalBlock,
     pub m_if_repayback_block: RepaybackBlock,
+    pub m_if_floating_vote_block: FloatingVoteBlock,
 }
 
 impl Block {
@@ -122,7 +124,7 @@ impl Block {
             m_block_net: constants::SOCIETY_NAME.to_string(),
             m_block_descriptions: "".to_string(),
             m_block_length: 0,
-            m_block_hash: "".to_string(),
+            m_block_hash: constants::HASH_ZEROS_PLACEHOLDER.to_string(),
             m_block_type: "".to_string(),
             m_block_version: constants::DEFAULT_BLOCK_VERSION.to_string(),
             m_block_ancestors: vec![],
@@ -134,14 +136,15 @@ impl Block {
             m_block_receive_date: "".to_string(),
             m_block_confirm_date: "".to_string(),
             m_block_documents: vec![],
-            m_block_documents_root_hash: "".to_string(),
+            m_block_documents_root_hash: constants::HASH_ZEROS_PLACEHOLDER.to_string(),
             m_block_ext_info: vec![],
-            m_block_ext_root_hash: "".to_string(),
+            m_block_ext_root_hash: constants::HASH_ZEROS_PLACEHOLDER.to_string(),
             m_block_floating_votes: vec![],
 
             m_if_coinbase_block: CoinbaseBlock::new(),
             m_if_normal_block: NormalBlock::new(),
             m_if_repayback_block: RepaybackBlock::new(),
+            m_if_floating_vote_block: FloatingVoteBlock::new(),
         }
     }
 
@@ -285,7 +288,9 @@ impl Block {
         dlog(
             &format!(
                 "Safe stringified block(Base class) Block({}) length({}) the block: {}",
-                cutils::hash8c(&self.m_block_hash), out.len(), out),
+                cutils::hash8c(&self.m_block_hash),
+                out.len(),
+                out),
             constants::Modules::App,
             constants::SecLevel::TmpDebug);
 
@@ -432,6 +437,9 @@ impl Block {
         } else if self.m_block_type == constants::block_types::COINBASE
         {
             return self.m_if_coinbase_block.calc_block_ext_root_hash(self);
+        } else if self.m_block_type == constants::block_types::FLOATING_VOTE
+        {
+            return self.m_if_floating_vote_block.calc_block_ext_root_hash(self);
         }
 
         panic!("Missed 'calc Block Ext Root Hash method in {}", self.get_block_identifier());
@@ -440,8 +448,7 @@ impl Block {
     // old_name_was calcAndSetBlockLength
     pub fn calc_and_set_block_length(&mut self)
     {
-        let stringyfied_block: String = self.safe_stringify_block(false);
-        self.m_block_length = stringyfied_block.len() as BlockLenT;
+        self.m_block_length = self.calc_block_length();
     }
 
     // old_name_was calcBlockLength
@@ -478,7 +485,10 @@ impl Block {
 
     pub fn handle_received_block(&self) -> EntryParsingResult
     {
-        if self.m_block_type == constants::block_types::COINBASE
+        if self.m_block_type == constants::block_types::NORMAL
+        {
+            return self.m_if_normal_block.handle_received_block(&self);
+        } else if self.m_block_type == constants::block_types::COINBASE
         {
             return self.m_if_coinbase_block.handle_received_block(&self);
         }
@@ -515,15 +525,19 @@ impl Block {
     {
         let stringifyed_block: String = self.safe_stringify_block(true);
         if stringifyed_block.len() != self.m_block_length
-
         {
             dlog(
-                &format!("Mismatch (Base class)block length Block({}) local length({}) remote length({}) stringyfied block: {}",
-                         cutils::hash8c(&self.m_block_hash), stringifyed_block.len(), self.m_block_length, stringifyed_block),
+                &format!(
+                    "Mismatch (Base class)block length Block({}) local length({}) remote length({}) stringyfied block: {}",
+                    cutils::hash8c(&self.m_block_hash),
+                    stringifyed_block.len(),
+                    self.m_block_length,
+                    stringifyed_block),
                 constants::Modules::Sec,
                 constants::SecLevel::Error);
+            panic!("22222222");
 
-            return false;
+            // return false;
         }
         return true;
     }
@@ -545,11 +559,14 @@ impl Block {
     }
 
     //old_name_was calcBlockHash
-    pub fn calc_block_hash(&self) -> CBlockHashT {
+    pub fn calc_block_hash(&self) -> CBlockHashT
+    {
         if self.m_block_type == constants::block_types::NORMAL {
             return self.m_if_normal_block.calc_block_hash(self);
         } else if self.m_block_type == constants::block_types::COINBASE {
             return self.m_if_coinbase_block.calc_block_hash(self);
+        } else if self.m_block_type == constants::block_types::FLOATING_VOTE {
+            return self.m_if_floating_vote_block.calc_block_hash(self);
         } else if self.m_block_type == constants::block_types::GENESIS {
             return genesis_calc_block_hash(self);
         }
@@ -612,9 +629,10 @@ impl Block {
     #[allow(unused, dead_code)]
     pub fn get_block_exts_infos(&self) ->
     (
-        bool/* status */,
-        bool/* block_has_ext_info */,
-        Vec<Vec<DocExtInfo>>/* block_ext_info */)
+        bool,// status
+        bool,// block_has_ext_info
+        Vec<Vec<DocExtInfo>>,// block_ext_info
+    )
     {
         if self.m_block_ext_info.len() > 0
         {
@@ -623,6 +641,7 @@ impl Block {
 
         return get_block_exts_infos(&self.m_block_hash);
     }
+
     /*
            bool Block::appendToDocuments(Document* doc)
            {
@@ -662,14 +681,14 @@ impl Block {
     }
 
 
-    // * do a groupping and some general validations on entire documents of a Block
+    // * do a grouping and some general validations on entire documents of a Block
     // old name was groupDocsOfBlock
-    pub fn group_docs_of_block(&self, stage: &String) -> TransientBlockInfo
+    pub fn group_docs_of_block(&self, stage: &str) -> TransientBlockInfo
     {
         let mut transient_block_info = TransientBlockInfo::new();
         transient_block_info.m_status = false;
         transient_block_info.m_block = self.clone();
-        transient_block_info.m_stage = stage.clone();
+        transient_block_info.m_stage = stage.to_string();
 
 
         if self.get_docs_count() == 0

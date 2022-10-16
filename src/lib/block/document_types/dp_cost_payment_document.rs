@@ -3,6 +3,7 @@ use crate::lib::custom_types::JSonObject;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{stringify_outputs, TOutput};
 use serde::{Serialize, Deserialize};
 use crate::{ccrypto, constants, dlog};
+use crate::lib::block::block_types::block::Block;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DPCostPaymentDocument
@@ -62,6 +63,11 @@ impl DPCostPaymentDocument {
         return &self.m_outputs;
     }
 
+    pub fn doc_has_ext_info(&self) -> bool
+    {
+        return false;
+    }
+
     //old_name_was exportDocToJson
     pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject
     {
@@ -73,6 +79,20 @@ impl DPCostPaymentDocument {
         return js_doc;
     }
 
+    pub fn calc_doc_ext_info_hash(&self, _doc: &Document) -> String
+    {
+        return "".to_string();
+    }
+
+    pub fn has_sign_ables(&self, _doc: &Document) -> bool
+    {
+        return false;
+    }
+
+    pub fn custom_validate_doc(&self, doc: &Document, _block: &Block) -> (bool, String)
+    {
+        return (true, "".to_string());
+    }
 }
 
 /*
@@ -81,13 +101,13 @@ impl DPCostPaymentDocument {
 class DPCostPayDocument : public Document
 {
 public:
-  DPCostPayDocument(const QJsonObject& obj);
+  DPCostPayDocument(const JSonObject& obj);
 
 
 };
 
 
-DPCostPayDocument::DPCostPayDocument(const QJsonObject& obj)
+DPCostPayDocument::DPCostPayDocument(const JSonObject& obj)
 {
   setByJsonObj(obj);
 
@@ -133,7 +153,7 @@ std::tuple<bool, QJsonArray> DPCostPayDocument::exportOutputsToJson() const
 
 
 
-QString DPCostPayDocument::getRef() const
+String DPCostPayDocument::getRef() const
 {
   return "";
 }
@@ -149,7 +169,7 @@ bool DPCostPayDocument::setDocumentOutputs(const QJsonValue& obj)
   for(QJsonValueRef an_output: outputs)
   {
     QJsonArray oo = an_output.toArray();
-    TOutput *o  = new TOutput({oo[0].toString(), static_cast<CMPAIValueT>(oo[1].toDouble())});
+    TOutput *o  = new TOutput({oo[0]to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
     m_outputs.push_back(o);
   }
   return true;
@@ -157,7 +177,7 @@ bool DPCostPayDocument::setDocumentOutputs(const QJsonValue& obj)
 
 
 
-QString DPCostPayDocument::calcDocExtInfoHash() const
+String DPCostPayDocument::calcDocExtInfoHash() const
 {
   return CConsts::NO_EXT_HASH;
 }

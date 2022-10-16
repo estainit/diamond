@@ -1,4 +1,4 @@
-use crate::lib::custom_types::{CDocHashT, JSonObject};
+use crate::lib::custom_types::{CBlockHashT, CDocHashT, JSonObject};
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use crate::{application, ccrypto, constants, cutils, dlog};
@@ -129,7 +129,7 @@ impl CoinbaseBlock {
         return block_hashables;
     }
 
-    pub fn calc_block_hash(&self, block: &Block) -> String
+    pub fn calc_block_hash(&self, block: &Block) -> CBlockHashT
     {
         let block_hash_ables: String = self.get_block_hashable_string(block);
 
@@ -178,9 +178,9 @@ impl CoinbaseBlock {
             parent_json_obj["signals"] = "".into();
         }
 
-        if !parent_json_obj["backer"].is_null()
+        if !parent_json_obj["bBacker"].is_null()
         {
-            parent_json_obj["backer"] = "".into();
+            parent_json_obj["bBacker"] = "".into();
         }
 
         parent_json_obj["bLen"] = constants::LEN_PROP_PLACEHOLDER.into();

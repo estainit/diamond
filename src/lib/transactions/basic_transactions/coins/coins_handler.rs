@@ -6,7 +6,8 @@ use crate::lib::constants;
 use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT, VString};
 use crate::lib::dlog::dlog;
 use crate::{application, cutils, machine};
-use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_insert, q_select, simple_eq_clause};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_delete, q_insert, q_select, simple_eq_clause};
 use crate::lib::database::tables::C_TRX_COINS;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -194,7 +195,7 @@ bool UTXOHandler::refreshVisibility(CDateT c_date)
         true,
         false);
 
-      removeCoinFromCachedSpendableCoins(to_be_deleted_blcok, "");
+      remove_coin_from_cached_spendable_coins(to_be_deleted_blcok, "");
     }
 
   }
@@ -524,7 +525,7 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const VString& block_hashes, cons
           true,
           false);
 
-        removeCoinFromCachedSpendableCoins(a_block, "");
+        remove_coin_from_cached_spendable_coins(a_block, "");
       }
 
     }
@@ -539,43 +540,57 @@ bool UTXOHandler::removeVisibleOutputsByBlocks(const VString& block_hashes, cons
   }
   return true;
 }
+*/
 
 // TODO: remove this function after solving database lock problem
-void UTXOHandler::removeCoinFromCachedSpendableCoins(
-  const CBlockHashT& visible_by,
-  const CCoinCodeT& the_coin)
+//old_name_was removeCoinFromCachedSpendableCoins
+pub fn remove_coin_from_cached_spendable_coins(
+    visible_by: &CBlockHashT,
+    the_coin: &CCoinCodeT)
 {
-  if ((visible_by == "") && (the_coin==""))
-    return;
-
-  QVDRecordsT remined_coins = {};
-  auto [status, current_cache] = CMachine::cached_spendable_coins("remove", {}, visible_by, the_coin);
+    if (visible_by == "")
+        && (the_coin == "")
+    {
+        return;
+    }
+    let (_status, _current_cache) = machine().cached_spendable_coins(
+        "remove",
+        &vec![],
+        visible_by,
+        the_coin);
 }
 
-bool UTXOHandler::removeCoin(const CCoinCodeT& the_coin)
+//old_name_was removeCoin
+pub fn remove_coin(the_coin: &CCoinCodeT) -> bool
 {
-//  CLog::log("remove an spent coin(" + cutils::short_coin_code(the_coin) + ")", "trx", "trace");
-  DbModel::dDelete(
-    C_TRX_COINS,
-    {{"ut_coin", the_coin}},
-    true,
-    false);
+    q_delete(
+        C_TRX_COINS,
+        vec![simple_eq_clause("ut_coin", the_coin)],
+        false);
 
-  removeCoinFromCachedSpendableCoins("", the_coin);
+    remove_coin_from_cached_spendable_coins(&"".to_string(), the_coin);
 
-  return true;
+    return true;
 }
 
-
-bool UTXOHandler::removeUsedCoinsByBlock(const Block* block)
+//old_name_was removeUsedCoinsByBlock
+pub fn remove_used_coins_by_block(block: &Block) -> bool
 {
-  CLog::log("remove spent UXTOs of Block(" + cutils::hash8c(block->getBlockHash()) + ")", "trx", "trace");
-  for (Document* doc: block->getDocuments())
-    for (TInput* input: doc->get_inputs())
-      removeCoin(input.get_coin_code());
-  return true;
+    dlog(
+        &format!("Removing spent coins of Block {}", block.get_block_identifier()),
+        constants::Modules::App,
+        constants::SecLevel::Debug);
+    for doc in block.get_documents()
+    {
+        for input in doc.get_inputs()
+        {
+            remove_coin(&input.get_coin_code());
+        }
+    }
+    return true;
 }
 
+/*
 std::tuple<CMPAIValueT, QVDRecordsT, QV2DicT> UTXOHandler::getSpendablesInfo()
 {
   QueryRes res = DbModel::select(

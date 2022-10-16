@@ -30,6 +30,16 @@ impl UnlockSet {
         };
     }
 
+    pub fn extract_signers_pub_keys(&self) -> VString
+    {
+        let mut pub_keys: VString = vec![];
+        for a_signature_set in &self.m_signature_sets
+        {
+            pub_keys.push(a_signature_set.m_signature_key.clone());
+        }
+        pub_keys
+    }
+
     pub fn export_to_json(&self) -> JSonObject
     {
         let mut signature_sets: Vec<JSonObject> = vec![];
@@ -56,7 +66,7 @@ impl UnlockSet {
             let (status, inv_set) = IndividualSignature::load_from_json(a_set);
             if !status
             {
-                return (false, Self::new())
+                return (false, Self::new());
             }
             signature_sets.push(inv_set);
         }

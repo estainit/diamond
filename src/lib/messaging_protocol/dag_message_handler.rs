@@ -130,7 +130,7 @@ bool DAGMessageHandler::doInvokeDescendents(
       {"bHash", block_hash}
     };
     String payload_ = cutils::serializeJson(payload);
-    SendingQHandler::pushIntoSendingQ(
+    SendingQHandler::push_into_sending_q(
       constants::card_types::DAG_INVOKE_DESCENDENTS,
       block_hash, // sqCode
       payload_,
@@ -382,16 +382,18 @@ pub fn set_maybe_ask_for_latest_blocks_flag(value: &str)
         constants::Modules::App,
         constants::SecLevel::TmpDebug);
 
-    if value == constants::YES {
+    if value == constants::YES
+    {
         // control last_received_leaves_info_timestamp flag
         // if we currently asked for leave information, so do not flood the network with multiple asking
         let last_leave_invoke_response_str: String = get_value("last_received_leaves_info_timestamp");
-        if last_leave_invoke_response_str != "" {
+        if last_leave_invoke_response_str != ""
+        {
             let (_status, last_leave_invoke_response) = cutils::controlled_str_to_json(&last_leave_invoke_response_str);
             // TODO: tune the gap time
             let now_ = application().now();
             if application().time_diff(
-                last_leave_invoke_response["receiveDate"].to_string(),
+                remove_quotes(&last_leave_invoke_response["receiveDate"]),
                 now_).as_seconds
                 < machine().get_invoke_leaves_gap() {
                 return;
@@ -611,10 +613,10 @@ pub fn handle_received_leave_info(
     message: &JSonObject,
     _connection_type: &String) -> PacketParsingResult
 {
-    dlog(
-        &format!("FIX ME: What part of message must be recorded in db? {:?}", message),
-        constants::Modules::App,
-        constants::SecLevel::Error);
+    // dlog(
+    //     &format!("FIX ME: What part of message must be recorded in db? {:?}", message),
+    //     constants::Modules::App,
+    //     constants::SecLevel::Error);
 
     let mut leaves: Vec<Value> = vec![]; // = message.clone();
     if message["leaves"].is_array()
@@ -631,10 +633,10 @@ pub fn handle_received_leave_info(
         };
         leaves = the_leaves.clone();
     }
-    dlog(
-        &format!("FIX ME: the leaves {:?}", leaves),
-        constants::Modules::App,
-        constants::SecLevel::Error);
+    // dlog(
+    //     &format!("FIX ME: the leaves {:?}", leaves),
+    //     constants::Modules::App,
+    //     constants::SecLevel::Error);
 
     // update last_received_leaves_info_timestamp
     let now_ = application().now();
@@ -644,7 +646,7 @@ pub fn handle_received_leave_info(
     let mut missed_hashes: Vec<String> = vec![];
     for a_leave in &leaves
     {
-        let a_leave_hash = a_leave["bHash"].to_string();
+        let a_leave_hash = remove_quotes(&a_leave["bHash"]);
         let already_recorded_in_dag = search_in_dag(
             vec![simple_eq_clause("b_hash", &a_leave_hash)],
             vec!["b_hash"],

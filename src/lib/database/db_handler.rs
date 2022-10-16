@@ -4,7 +4,7 @@ use postgres::{Client, NoTls};
 use crate::lib::{constants};
 use crate::lib::dlog::dlog;
 use crate::{application, dbhandler};
-use crate::lib::database::init_psql::{psql_init_query, psql_tables_list};
+use crate::lib::database::init_psql::{psql_init_query};
 use crate::lib::database::init_psql_dev::psql_init_query_dev;
 
 pub struct DBHandler {

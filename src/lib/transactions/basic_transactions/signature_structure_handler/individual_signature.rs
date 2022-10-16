@@ -10,7 +10,7 @@ pub struct IndividualSignature
 {
     // a dummy handler id
     pub m_signer_id: String,
-    // sKey
+    // sKey, pubKey
     pub m_signature_key: String,
     // pPledge
     pub m_permitted_to_pledge: String,

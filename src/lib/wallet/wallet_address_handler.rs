@@ -40,7 +40,7 @@ impl WalletAddress
 
 //old_name_was searchWalletAdress
 pub fn search_wallet_addresses(
-    addresses: Vec<String>,
+    addresses: &Vec<String>,
     mp_code: String,
     fields: Vec<&str>) -> (bool, QVDRecordsT)
 {
@@ -57,7 +57,7 @@ pub fn search_wallet_addresses(
         m_clause_operand: "IN",
         m_field_multi_values: vec![],
     };
-    for an_add in &addresses {
+    for an_add in addresses {
         c1.m_field_multi_values.push(an_add as &(dyn ToSql + Sync));
     }
     clauses.push(c1);
@@ -142,7 +142,7 @@ pub fn create_and_insert_new_address_in_wallet<'a>(
 pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
 {
     let (status, addresses) = search_wallet_addresses(
-        vec![w_address.m_address.clone()],
+        &vec![w_address.m_address.clone()],
         w_address.m_mp_code.clone(),
         vec!["wa_address"]);
     if !status
@@ -198,7 +198,7 @@ pub fn insert_address(w_address: &WalletAddress) -> (bool, String)
 
 //old_name_was getAddressesInfo
 pub fn get_addresses_info(
-    addresses: VString,
+    addresses: &VString,
     fields: Vec<&str>) -> QVDRecordsT
 {
     let mp_code = machine().get_selected_m_profile();

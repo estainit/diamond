@@ -213,6 +213,12 @@ impl BasicTxDocument {
         }
 
         */
+
+    pub fn doc_has_ext_info(&self) -> bool
+    {
+        return true;
+    }
+
     //old_name_was exportDocToJson
     pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject
     {
@@ -389,6 +395,7 @@ impl BasicTxDocument {
                 m_owner: "".to_string(),
                 m_amount: 0,
                 m_private_keys: vec![],
+                m_public_keys: vec![],
                 m_unlock_set: UnlockSet::new(),
             };
             // ({io[0].to_string(), static_cast< COutputIndexT > (io[1].toVariant().toDouble())});
@@ -529,6 +536,7 @@ impl BasicTxDocument {
     //old_name_was signingInputOutputs
     pub fn signing_inputs_and_outputs(
         private_key: &String,
+        public_key: &String,    // if pub keys exist, verify the signature as well
         inputs: &VVString,
         outputs: &VVString,
         sig_hash: &String,
@@ -544,20 +552,22 @@ impl BasicTxDocument {
             sig_hash,
             document_ref);
         let the_hash = ccrypto::keccak256_dbl(&sign_ables); // because of securiy, MUST use double hash
+        let tobe_signed_msg = the_hash
+            .substring(
+                0,
+                constants::SIGN_MSG_LENGTH as usize)
+            .to_string();
         dlog(
             &format!(
-                "trx sign_ables: {} {}",
-                sign_ables, the_hash),
+                "trx sign_ables: {} tobe_signed_msg{}",
+                sign_ables,
+                tobe_signed_msg),
             constants::Modules::Trx,
             constants::SecLevel::TmpDebug);
         let (status, signature_hex, _signature) =
             ccrypto::ecdsa_sign_message(
                 private_key,
-                &the_hash
-                    .substring(
-                        0,
-                        constants::SIGN_MSG_LENGTH as usize)
-                    .to_string());
+                &tobe_signed_msg);
         if !status
         {
             dlog(
@@ -568,6 +578,26 @@ impl BasicTxDocument {
                 constants::SecLevel::Error);
             return (false, "Failed in sign trx sign_ables".to_string());
         }
+
+        // validate signature
+        if public_key != ""
+        {
+            let status = ccrypto::ecdsa_verify_signature(
+                public_key,
+                &tobe_signed_msg,
+                &signature_hex);
+            if !status
+            {
+                dlog(
+                    &format!(
+                        "Failed in verify trx signature: {}",
+                        sign_ables),
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return (false, "Failed in verify trx signature!".to_string());
+            }
+        }
+
         dlog(
             &format!(
                 "YYY-The transaction has been signed. signature({}) sign-ables-hash({}) sign-ables-clear: {}",

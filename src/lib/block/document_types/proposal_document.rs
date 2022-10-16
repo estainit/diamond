@@ -66,6 +66,11 @@ impl ProposalDocument {
         return true;
     }
 
+    pub fn doc_has_ext_info(&self) -> bool
+    {
+        return true;
+    }
+
     pub fn export_doc_to_json(&self, doc: &Document, ext_info_in_document: bool) -> JSonObject {
         let mut document: JSonObject = doc.export_doc_to_json_super(ext_info_in_document);
 

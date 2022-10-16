@@ -22,7 +22,7 @@ pub struct AppParams {
     m_app_config_source: String,
     m_app_hard_root_path: String,
 
-    m_app_forced_launch_date:bool,
+    m_app_forced_launch_date: bool,
     m_app_launch_date: String,
 
     m_app_db_host: String,
@@ -742,6 +742,14 @@ impl AppParams {
         }
 
         return true;
+    }
+
+    // old name was isYoungerThan2Cycle
+    pub fn is_younger_than_2_cycle(&self, cDate: &CDateT) -> bool
+    {
+        let now_ = self.now();
+        let range_start = self.get_a_cycle_range(&now_, 1, 0).from;
+        return cDate.to_string() >= range_start;
     }
 }
 

@@ -132,10 +132,20 @@ impl CoinbaseDocument {
         return false;
     }
 
+    pub fn custom_validate_doc(&self, doc: &Document, _block: &Block) -> (bool, String)
+    {
+        return (true, "".to_string());
+    }
+
     // old name was veridfyDocSignature
     pub fn verify_doc_signature(&self, _doc: &Document) -> bool
     {
         return true;
+    }
+
+    pub fn doc_has_ext_info(&self) -> bool
+    {
+        return false;
     }
 
     //old_name_was exportDocToJson

@@ -382,9 +382,12 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
         }
 
         dlog(
-            &format!("Failed in DPCost calc: trx_dp_cost2({}) {}",
-                     cutils::nano_pai_to_pai(trx_dp_cost2 as CMPAISValueT),
-                     document.safe_stringify_doc(true)),
+            &format!(
+                "Failed in DPCost calc: trx_dp_cost2({}) is bigger than the_dp_cost({}), regen-doc-length: {} {}",
+                cutils::nano_pai_to_pai(trx_dp_cost2 as CMPAISValueT),
+                cutils::nano_pai_to_pai(the_dp_cost as CMPAISValueT),
+                document.get_doc_length(),
+                document.safe_stringify_doc(true)),
             constants::Modules::Trx,
             constants::SecLevel::Error);
 

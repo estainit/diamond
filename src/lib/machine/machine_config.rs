@@ -41,7 +41,7 @@ impl CMachine {
         }
 
         // config: config file
-        config_file = "/Users/silver/Documents/Diamond_files/config.txt".to_string();
+        config_file = "/Users/silver/Documents/Diamond_files/config1.txt".to_string();
         if std::env::consts::OS == "windows"
         {
             config_file = "c:\\Documents\\config.ini".to_string();

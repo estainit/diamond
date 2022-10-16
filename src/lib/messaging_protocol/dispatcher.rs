@@ -278,7 +278,7 @@ if (alreadyRecordedInDAG.len()> 0)
   if (status)
   {
     set_last_received_block_timestamp(block["bType"].to_string(), block_hash);
-    if (!CMachine::isInSyncProcess())
+    if (!machine().is_in_sync_process())
       CGUI::signalUpdateParsingQ();
   }
 }

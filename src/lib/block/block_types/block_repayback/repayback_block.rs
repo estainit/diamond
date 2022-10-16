@@ -144,7 +144,7 @@ JSonObject RepaybackBlock::export_block_to_json(const bool ext_info_in_document)
 //  out.insert("bCycle", m_cycle);
 
   // maybe remove add some item in object
-  block.remove("backer");
+  block.remove("bBacker");
   block.remove("bExtHash");
   block.remove("fVotes");
   block.remove("signals");

@@ -144,6 +144,7 @@ pub fn calc_repayment_details(
             m_owner: "".to_string(),
             m_amount: 0,
             m_private_keys: vec![],
+            m_public_keys: vec![],
             m_unlock_set: UnlockSet::new(),
         },
         m_outputs: vec![],

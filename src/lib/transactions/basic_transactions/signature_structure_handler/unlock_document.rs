@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use crate::{constants};
-use crate::lib::custom_types::CAddressT;
+use crate::lib::custom_types::{CAddressT, VString};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -22,6 +22,27 @@ impl UnlockDocument {
             m_merkle_version: "0.0.0".to_string(),
             m_private_keys: Default::default(),
         };
+    }
+
+    pub fn get_private_keys_by_salt(&self, salt: &String) -> (bool, VString)
+    {
+        if self.m_private_keys.contains_key(salt)
+        {
+            return (true, self.m_private_keys[salt].clone());
+        }
+        return (false, vec![]);
+    }
+
+    pub fn get_unlock_set_by_salt(&self, salt: &String) -> (bool, UnlockSet)
+    {
+        for an_unlock_set in &self.m_unlock_sets
+        {
+            if an_unlock_set.m_salt.to_string() == salt.to_string()
+            {
+                return (true, an_unlock_set.clone());
+            }
+        }
+        return (false, UnlockSet::new());
     }
 
     pub fn dump(&self) -> String {

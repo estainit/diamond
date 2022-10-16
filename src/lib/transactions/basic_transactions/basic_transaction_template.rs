@@ -202,10 +202,18 @@ impl BasicTransactionTemplate {
         for a_coin in &self.get_input_coins_codes()
         {
             let mut signatures: VVString = vec![];
-            for a_private_key in &self.m_tpl_inputs[a_coin].m_private_keys
+            for the_key_index in 0..self.m_tpl_inputs[a_coin].m_private_keys.len() as u16
+            // for a_private_key in &self.m_tpl_inputs[a_coin].m_private_keys
             {
+                let a_private_key = &self.m_tpl_inputs[a_coin].m_private_keys[the_key_index as usize];
+                let mut a_public_key = &"".to_string();
+                if self.m_tpl_inputs[a_coin].m_public_keys.len() as u16 > the_key_index
+                {
+                    a_public_key = &self.m_tpl_inputs[a_coin].m_public_keys[the_key_index as usize];
+                }
                 let (status, signature) = BasicTxDocument::signing_inputs_and_outputs(
                     a_private_key,
+                    a_public_key,
                     &input_tuples,
                     &output_tuples,
                     &self.m_tpl_sig_hash,
@@ -217,7 +225,7 @@ impl BasicTransactionTemplate {
                 }
                 signatures.push(vec![signature.clone(), self.m_tpl_sig_hash.clone()]);
                 println!("sssssssss asv2 {}", signature);
-                panic!("5555555");
+                // panic!("5555555");
             }
             let d_ext = DocExtInfo {
                 m_unlock_set: self.m_tpl_inputs[a_coin].m_unlock_set.clone(),

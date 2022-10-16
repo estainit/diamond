@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{application, constants, cutils, dlog, machine};
+use crate::{application, ccrypto, constants, cutils, dlog, machine};
 use crate::cutils::unpack_coin_code;
 use crate::lib::block::document_types::document::Document;
-use crate::lib::custom_types::{CAddressT, CCoinCodeT, CInputIndexT, ClausesT, CMPAIValueT, LimitT, OrderT, QV2DicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CCoinCodeT, CInputIndexT, ClausesT, CMPAIValueT, CSigIndexT, JSonObject, LimitT, OrderT, QV2DicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, q_insert, q_select};
 use crate::lib::database::tables::C_MACHINE_USED_COINS;
 use crate::lib::machine::machine_buffer::block_buffer::push_to_block_buffer;
@@ -111,6 +111,7 @@ pub fn wallet_signer(
                 m_owner: coin_owner,
                 m_amount: coin_value,
                 m_private_keys: vec![],
+                m_public_keys: vec![],
                 m_unlock_set: UnlockSet::new(),
             });
     }
@@ -186,7 +187,7 @@ pub fn wallet_signer(
     }
 
     let wallet_controlled_addresses = get_addresses_info(
-        envolved_spending_addresses,
+        &envolved_spending_addresses,
         vec!["wa_address", "wa_detail"]);
     dlog(
         &format!("wallet controlled addresses records: {:#?}", wallet_controlled_addresses),
@@ -221,6 +222,20 @@ pub fn wallet_signer(
         an_input.m_unlock_set = address_details.m_unlock_sets[un_locker_index].clone();
         let salt = &an_input.m_unlock_set.m_salt;
         // let private_keys: VString = address_details.m_private_keys[salt];
+        let (status, proper_unlock_set) = address_details.get_unlock_set_by_salt(salt);
+        if !status
+        {
+            message = format!(
+                "The input coin has not propre (salt) pub key! coin: {:#?}, ",
+                an_input, );
+            dlog(
+                &format!("{}, address_details: {:?}", message, address_details),
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return (false, message);
+        }
+
+        an_input.m_public_keys = proper_unlock_set.extract_signers_pub_keys();
         an_input.m_private_keys = address_details.m_private_keys[salt].clone();
         dlog(
             &format!("Coin to be spend: {:#?}", an_input.clone()),
@@ -352,49 +367,72 @@ pub fn search_in_locally_marked_coins(
     return records;
 }
 
-/*
-std::tuple<bool, String, VString, JSonObject> Wallet::signByAnAddress(
-  const CAddressT& signer_address,
-  const String& sign_message,
-  CSigIndexT unlocker_index)
+//old_name_was signByAnAddress
+pub fn sign_by_an_address(
+    signer_address: &CAddressT,
+    sign_message: &String,
+    unlocker_index: CSigIndexT) -> (bool, String, VString, UnlockSet)
 {
-  String msg;
+    let mut message: String = "".to_string();
 
-  QVDRecordsT addresses_details = Wallet::getAddressesInfo({signer_address});
-  if (addresses_details.len() != 1)
-  {
-    msg = "The address " + cutils::short_bech16(signer_address) + " is not controlled by current wallet/profile!";
-    CLog::log(msg, "app", "error");
-    return {false, msg, {}, {}};
-  }
-
-  JSonObject addrDtl = cutils::parseToJsonObj(addresses_details[0]["wa_detail"].to_string());
-  VString signatures {};
-  JSonObject dExtInfo {};
-  JSonObject unlock_set = addrDtl["uSets"].toArray()[unlocker_index].toObject();
-  JSonArray sSets = unlock_set["sSets"].toArray();
-
-  for (CSigIndexT inx = 0; inx < sSets.len(); inx++)
-  {
-    auto[signing_res, signature_hex, signature] = CCrypto::ECDSAsignMessage(
-      addrDtl["the_private_keys"].toObject()[unlock_set["salt"].to_string()].toArray()[inx].to_string(),
-      sign_message);
-    if (!signing_res)
+    let addresses_details = get_addresses_info(
+        &vec![signer_address.clone()],
+        vec!["wa_address", "wa_detail"]);
+    if addresses_details.len() != 1
     {
-      msg = "Failed in sign of Salt(" + unlock_set["salt"].to_string() + ")";
-      CLog::log(msg, "app", "error");
-      return {false, msg, {}, {}};
+        message = format!(
+            "The address {} is not controlled by current wallet/profile!",
+            cutils::short_bech16(signer_address)
+        );
+        dlog(
+            &message,
+            constants::Modules::App,
+            constants::SecLevel::Error);
+
+        return (false, message, vec![], UnlockSet::new());
     }
-    signatures.push(String::fromStdString(signature_hex));
-  }
-  if (signatures.len() == 0)
-  {
-    msg = "The message couldn't be signed";
-    CLog::log(msg, "app", "error");
-    return {false, msg, {}, {}};
-  }
+    let address_details: UnlockDocument = serde_json::from_str(
+        &addresses_details[0]["wa_detail"]).unwrap();
 
-  return {true, "", signatures, unlock_set};
+    // let (status, addrDtl) = cutils::controlled_str_to_json(&addresses_details[0]["wa_detail"]);
+    let mut signatures: VString = vec![];
+    // let dExtInfo:JSonObject;
+    // JSonObject unlock_set = addrDtl["uSets"].toArray()[unlocker_index].toObject();
+    // JSonArray sSets = unlock_set["sSets"].toArray();
+
+    let the_unlock_set: UnlockSet = address_details.m_unlock_sets[unlocker_index as usize].clone();
+    for inx in 0..the_unlock_set.m_signature_sets.len()
+    {
+        // get_unlock_set_by_salt()
+        let (status, private_keys) = address_details.get_private_keys_by_salt(&the_unlock_set.m_salt);
+        let (status, signature_hex, signature) = ccrypto::ecdsa_sign_message(
+            // addrDtl["the_private_keys"].toObject()[unlock_set["salt"].to_string()].toArray()[inx].to_string(),
+            &private_keys[inx],
+            sign_message);
+        if !status
+        {
+            message = format!(
+                "Failed in sign of Salt({})",
+                the_unlock_set.m_salt
+            );
+            dlog(
+                &message,
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return (false, message, vec![], UnlockSet::new());
+        }
+        signatures.push(signature_hex);
+    }
+    if signatures.len() == 0
+    {
+        message = format!(
+            "The message couldn't be signed"
+        );
+        dlog(
+            &message,
+            constants::Modules::App,
+            constants::SecLevel::Error);
+        return (false, message, vec![], UnlockSet::new());
+    }
+    return (true, "".to_string(), vec![], the_unlock_set);
 }
-
-*/

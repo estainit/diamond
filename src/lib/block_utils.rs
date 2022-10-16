@@ -234,7 +234,7 @@ const VString to_double_fields = {
 
 "tr_value",
 
-"getMinShareToAllowedIssueFVote", "getMinShareToAllowedVoting", "getMinShareToAllowedSignCoinbase",
+"get_min_share_to_allowed_issue_f_vote", "getMinShareToAllowedVoting", "getMinShareToAllowedSignCoinbase",
 "get_transaction_minimum_fee", "getBasePricePerChar", "get_block_fix_cost"
 
 

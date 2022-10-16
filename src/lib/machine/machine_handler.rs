@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::{application, ccrypto, cutils};
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, DocLenT, JSonObject, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CSigIndexT, DocLenT, JSonObject, QVDRecordsT, VString};
 use crate::lib::database::db_handler::{empty_db, maybe_initialize_db};
 use postgres::types::ToSql;
 use serde_json::json;
@@ -16,7 +16,9 @@ use crate::lib::k_v_handler::{get_value, set_value, upsert_kvalue};
 use crate::lib::machine::machine_profile::{EmailSettings, get_profile_from_db, MachineProfile};
 use crate::lib::services::initialize_node::maybe_init_dag;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_document::UnlockDocument;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::lib::wallet::wallet_address_handler::{insert_address, WalletAddress};
+use crate::lib::wallet::wallet_signer::sign_by_an_address;
 
 #[allow(unused, dead_code)]
 pub struct CoinsVisibilityRes {
@@ -906,35 +908,32 @@ impl CMachine {
             &cutils::controlled_json_stringify(&last_sync_status),
             true);
     }
-    /*
 
-
-        /**
-         * @brief CMachine::signByMachineKey
-         * @param sign_message
-         * @param unlock_index
-         * @return {status, signer address, unlock set, signatures}
-         */
-        std::tuple<bool, String, UnlockSet, VString> CMachine::signByMachineKey(
-          const String& sign_message,
-          const CSigIndexT& unlock_index)
+    // old name was signByMachineKey
+    pub fn sign_by_machine_key(
+        &self,
+        sign_message: &String,
+        unlock_index: CSigIndexT)
+        -> (
+            bool /* status */,
+            String /* signer address */,
+            UnlockSet /* unlock set */,
+            VString /* signatures */)
+    {
+        let signer = self.get_backer_address();
+        let (sign_status, res_msg, sign_signatures, sign_unlock_set) =
+            sign_by_an_address(
+                &signer,
+                sign_message,
+                unlock_index);
+        if !sign_status
         {
-          String signer = getBackerAddress();
-          auto[sign_status, res_msg, sign_signatures, sign_unlock_set] = Wallet::signByAnAddress(
-            signer,
-            sign_message,
-            unlock_index);
-          if (!sign_status)
-          {
-            return {false, "", {}, {}};
-          }
-
-          UnlockSet uSet {};
-          uSet.importJson(sign_unlock_set);
-          return {true, signer, uSet, sign_signatures};
-
+            return (false, "".to_string(), UnlockSet::new(), vec![]);
         }
-    */
+
+        return (true, signer, sign_unlock_set, sign_signatures);
+    }
+
 
     /*
 

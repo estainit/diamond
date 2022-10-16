@@ -128,7 +128,7 @@ std::tuple<bool, bool> FloatingSignatureBlock::handle_received_block() const
   // broadcast to neighbors
   if (cutils::isInCurrentCycle(m_block_creation_date))
   {
-    bool pushRes = SendingQHandler::pushIntoSendingQ(
+    bool pushRes = SendingQHandler::push_into_sending_q(
       m_block_type,
       m_block_hash,
       safe_stringify_block(false),

@@ -37,10 +37,12 @@ pub fn smart_pull_q() -> bool
     if !en_pa_res.m_should_purge_record
     {
         dlog(
-            &format!("Why not purge record! pq_type({}) block({}) from({})",
-                     packet["pq_type"],
-                     cutils::hash8c(&packet["pq_code"]),
-                     packet["pq_sender"]),
+            &format!(
+                "Why not purge record! pq_type({}) block({}) from({}) {}",
+                packet["pq_type"],
+                cutils::hash8c(&packet["pq_code"]),
+                packet["pq_sender"],
+                en_pa_res.m_message),
             constants::Modules::App,
             constants::SecLevel::Error);
     } else {

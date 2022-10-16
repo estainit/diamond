@@ -1,3 +1,4 @@
+use crate::{constants, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::ancestors_controls::ancestors_controls;
 use crate::lib::custom_types::{ClausesT};
@@ -65,12 +66,20 @@ pub fn parse_pure_block(
     let en_pa_res = block.block_general_controls();
     if !en_pa_res.m_status
     { return en_pa_res; }
+    dlog(
+        &format!("block-general-controls done. {}", block.get_block_identifier()),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-    // general ancestors controlls
+    // general ancestors controls
     let en_pa_res = ancestors_controls(pq_type, block);
     // (status, should_purge_record)
     if !en_pa_res.m_status
     { return en_pa_res; }
+    dlog(
+        &format!("ancestors-controls done. {}", block.get_block_identifier()),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
     return block.handle_received_block();
 

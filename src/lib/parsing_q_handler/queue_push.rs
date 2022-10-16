@@ -147,7 +147,7 @@ pub fn push_to_parsing_q(
         && remove_quotes(&card_j_obj["block_type"]) == constants::block_types::FLOATING_VOTE
     {
         /*
-        if (message["bCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
+        if (message["bVCat"].to_string() == constants::FLOAT_BLOCKS_CATEGORIES::Trx)
         {
             /**
              * if the machine get an FVote, so insert uplink block in SUS BLOCKS WHICH NEEDED VOTES TO BE IMPORTED AHAED(SusBlockWNVTBIA)

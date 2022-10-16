@@ -124,12 +124,14 @@ pub fn add_missed_blocks_to_invoke(hashes: &VString) -> bool
 
         let zero_i32: i32 = 0;
         let insert_date = application().now();
+        let empty_string = "".to_string();
         let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
             ("mb_block_hash", &hash as &(dyn ToSql + Sync)),
             ("mb_insert_date", &insert_date as &(dyn ToSql + Sync)),
             ("mb_last_invoke_date", &insert_date as &(dyn ToSql + Sync)),
             ("mb_invoke_attempts", &zero_i32 as &(dyn ToSql + Sync)),
             ("mb_descendants_count", &zero_i32 as &(dyn ToSql + Sync)),
+            ("mb_descendants", &empty_string as &(dyn ToSql + Sync)),
         ]);
         q_insert(
             C_MISSED_BLOCKS,
@@ -156,7 +158,7 @@ pub fn list_missed_blocks(
         clauses,
         order,
         limit,
-        false);
+        true);
 
     return records;
 }

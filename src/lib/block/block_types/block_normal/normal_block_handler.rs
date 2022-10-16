@@ -27,7 +27,7 @@ pub fn create_a_normal_block(
         creation_date = application().now();
     }
 
-    if !has_fresh_leaves()
+    if !has_fresh_leaves() && false
     {
         msg = format!("Machine hasn't fresh leaves, so it can not broadcast new block(Normal block)");
         dlog(
@@ -37,6 +37,7 @@ pub fn create_a_normal_block(
         set_maybe_ask_for_latest_blocks_flag(constants::YES);
         return (false, Block::new(), false, msg);
     }
+    println!("333333333 ");
 
     let (status, mut block) = Block::load_block(&json!({
     "bType": constants::block_types::NORMAL,
@@ -50,6 +51,7 @@ pub fn create_a_normal_block(
         return (false, Block::new(), false, msg);
     }
 
+    block.m_block_hash = constants::HASH_ZEROS_PLACEHOLDER.to_string();
     block.m_block_creation_date = creation_date;
     block.m_block_signals = get_machine_signals();
     block.m_block_documents = vec![];
@@ -278,10 +280,17 @@ pub fn create_a_normal_block(
     // fill in the bloc.m_block_ext_info
     block.fill_in_block_ext_info();
 
+    println!("qqqqqq len a: {}", block.m_block_length);
     block.calc_and_set_block_length();
-    block.set_block_hash(&block.calc_block_hash());
+    println!("qqqqqq len b: {}", block.m_block_length);
+    println!("qqqqqq len h1: {}", block.get_block_hash());
+    let block_hash = block.calc_block_hash();
+    println!("qqqqqq len h1: {}", block_hash);
+    block.set_block_hash(&block_hash);
+    println!("qqqqqq len h2: {}", block.get_block_hash());
 
-    let transient_block_info2: TransientBlockInfo = block.group_docs_of_block(&constants::stages::CREATING.to_string());
+    let transient_block_info2: TransientBlockInfo =
+        block.group_docs_of_block(&constants::stages::CREATING.to_string());
     if !transient_block_info2.m_status
     { return (false, block, false, "Failed in group Docs Of Block".to_string()); }
 
@@ -307,6 +316,9 @@ pub fn create_a_normal_block(
 
     let b_id = block.get_block_identifier();
     println!("kkkkk  k 15");
+
+    // block.set_block_hash(&block.calc_block_hash());
+
     return (
         true,
         block,

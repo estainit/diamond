@@ -54,11 +54,15 @@ pub fn broadcast_block(
             return (false, format!("Failed in generating normal block! {}", msg));
         }
         block = block_;
+        dlog(
+            &format!("Normal block, done. {}", block.get_block_identifier()),
+            constants::Modules::App,
+            constants::SecLevel::Debug);
     }
 
 
     // write file on hard output/send email
-    let mut block_body = block.safe_stringify_block(true);
+    let mut block_body = block.safe_stringify_block(false);
     dlog(
         &format!("About to sending a normal block to network block: {} {}", block.get_block_identifier(), block_body),
         constants::Modules::App,

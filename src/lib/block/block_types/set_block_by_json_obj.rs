@@ -2,6 +2,7 @@ use crate::cutils::remove_quotes;
 use crate::{constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::block_types::block_genesis::genesis_block::b_genesis::genesis_set_by_json_obj;
+use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::document_types::floating_vote_document::FloatingVoteDocument;
 use crate::lib::custom_types::{BlockLenT, JSonObject, VString};
 
@@ -126,9 +127,34 @@ impl Block {
             self.m_block_ext_root_hash = remove_quotes(&obj["bExtHash"]);
         }
 
-        if !obj["bExtInfo"].is_null() {
-            // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);if !obj["bDocs"].is_null() {
-            // createDocuments(obj["bDocs"]);
+        // if !obj["bExtInfo"].is_null() {
+        //     // self.m_block_ext_info = remove_quotes(&obj["bExtInfo"].to_);if !obj["bDocs"].is_null() {
+        //     // createDocuments(obj["bDocs"]);
+        // }
+        if !obj["bExtInfo"].is_null()
+        {
+            for a_doc_exts_infos in obj["bExtInfo"].as_array().unwrap()
+            {
+                let mut the_doc_exts_infos: Vec<DocExtInfo> = vec![];
+                for a_doc_ext_info in a_doc_exts_infos.as_array().unwrap()
+                {
+                    let (status, an_ext) = DocExtInfo::load_from_json(&a_doc_ext_info);
+                    if !status
+                    {
+                        return false;
+                    }
+                    the_doc_exts_infos.push(an_ext);
+                }
+                self.m_block_ext_info.push(the_doc_exts_infos);
+            }
+        }
+
+        if !obj["bSignals"].is_null()
+        {
+            for a_signal in obj["bSignals"].as_array().unwrap()
+            {
+                self.m_block_signals.push(a_signal.clone());
+            }
         }
 
         if !obj["bBacker"].is_null() {
@@ -146,7 +172,9 @@ impl Block {
         } else if self.m_block_type == constants::block_types::REPAYMENT_BLOCK
         {} else if self.m_block_type == constants::block_types::FLOATING_SIGNATURE
         {} else if self.m_block_type == constants::block_types::FLOATING_VOTE
-        {} else if self.m_block_type == constants::block_types::POW
+        {
+            return self.m_if_floating_vote_block.set_block_by_json_obj(obj);
+        } else if self.m_block_type == constants::block_types::POW
         {} else if self.m_block_type == constants::block_types::GENESIS
         {
             return genesis_set_by_json_obj(self, obj);

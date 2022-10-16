@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 use postgres::types::ToSql;
-use crate::{constants, cutils, dlog};
-use crate::cutils::remove_quotes;
+use serde_json::json;
+use crate::{application, constants, cutils, dlog};
+use crate::cutils::{json_array_push, remove_quotes};
+use crate::lib::block::block_types::block::Block;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
-use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CInputIndexT, ClausesT, COutputIndexT, GRecordsT, LimitT, OrderT, QVDicT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, ClausesT, COutputIndexT, GRecordsT, JSonArray, JSonObject, LimitT, OrderT, QVDicT, QVDRecordsT, VString};
 use crate::lib::dag::dag::get_wrap_blocks_by_doc_hash;
-use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select};
+use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_delete, q_insert, q_select};
 use crate::lib::database::tables::{C_TRX_SPEND, C_TRX_SPEND_FIELDS};
 
 #[derive(Clone, Debug)]
@@ -234,87 +236,94 @@ impl SpentCoinsHandler
         return spend_coins;
     }
 
-    /*
-        bool SpentCoinsHandler::markSpentAnInput(
-          const String& the_coin,
-          const String& spend_loc,
-          const String& spend_date,
-          const String& cDate)
-        {
-          /**
-           *
-           * remove old records
-           * TODO: infact we should not remove history(at least for some resonably percent of nodes)
-           * they have to keep ALL data, specially for long-term loans, to un-pledge the account, nodes needed this information.
-           * wherase repayments took place in RpBlocks.RpDocs and most of time are sufficient to close a pledge,
-           * but sometimes pledger can pay all the loan in one transaction to get ride of loan
-           * or pays a big part of loan to reduce interest rate.
-           * in all of these case, the nodes which are engaged in loan(e.g. the arbiters nodes) must have these information.
-           * although all trx info are reachable via blocks, but this table provides a faster & easier crawling
-           * so in pledge time, the pledgee (can or must) add a bunch of long-term-data-backers(LTDB or LoTeDB)
-           * as evidence of repayments.
-           * in such a way, to unpledge an account either pledgee signature or these LoTeDB signatures will be sufficient,
-           * so, there is not obligue to mantain all data by all nodes
-           * obviously these LoteDbs will be payed by pledge contract based on repayments longth
-           * TODO: must be implemented
-           */
-          DbModel::dDelete(
-            stbl_trx_spend,
-            {{"sp_spend_date", cutils::minutesBefore(CMachine::getCycleByMinutes() * CConsts::KEEP_SPENT_COINS_BY_CYCLE, cDate),"<"}},
-            true,
+    // old name was markSpentAnInput
+    pub fn mark_spent_an_input(
+        the_coin: &CCoinCodeT,
+        spend_loc: &String,
+        spend_date: &CDateT,
+        cDate: &CDateT) -> bool
+    {
+        // * remove old records
+        // * TODO: infact we should not remove history(at least for some resonably percent of nodes)
+        // * they have to keep ALL data, specially for long-term loans, to un-pledge the account, nodes needed this information.
+        // * wherase repayments took place in RpBlocks.RpDocs and most of time are sufficient to close a pledge,
+        // * but sometimes pledger can pay all the loan in one transaction to get ride of loan
+        // * or pays a big part of loan to reduce interest rate.
+        // * in all of these case, the nodes which are engaged in loan(e.g. the arbiters nodes) must have these information.
+        // * although all trx info are reachable via blocks, but this table provides a faster & easier crawling
+        // * so in pledge time, the pledgee (can or must) add a bunch of long-term-data-backers(LTDB or LoTeDB)
+        // * as evidence of repayments.
+        // * in such a way, to unpledge an account either pledgee signature or these LoTeDB signatures will be sufficient,
+        // * so, there is not obligue to mantain all data by all nodes
+        // * obviously these LoteDbs will be payed by pledge contract based on repayments longth
+        // * TODO: must be implemented
+        let cycle_by_minutes = application().get_cycle_by_minutes();
+        let spend_date = application().minutes_before(cycle_by_minutes * constants::KEEP_SPENT_COINS_BY_CYCLE as u64, cDate);
+        q_delete(
+            C_TRX_SPEND,
+            vec![
+                ModelClause {
+                    m_field_name: "sp_spend_date",
+                    m_field_single_str_value: &spend_date as &(dyn ToSql + Sync),
+                    m_clause_operand: "<",
+                    m_field_multi_values: vec![],
+                }
+            ],
+            true);
+
+        let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("sp_coin", &the_coin as &(dyn ToSql + Sync)),
+            ("sp_spend_loc", &spend_loc as &(dyn ToSql + Sync)),
+            ("sp_spend_date", &spend_date as &(dyn ToSql + Sync)),
+        ]);
+        q_insert(
+            C_TRX_SPEND,
+            &values,
             false);
 
-          DbModel::insert(
-            stbl_trx_spend,
-            {{"sp_coin", the_coin},
-            {"sp_spend_loc", spend_loc},
-            {"sp_spend_date", spend_date}},
-            true,
-            false);
+        return true;
+    }
 
-          return true;
-        }
-
-        bool SpentCoinsHandler::markAsSpentAllBlockInputs(
-          const Block* block,
-          const String& cDate)
+    // old name was markAsSpentAllBlockInputs
+    pub fn mark_as_spent_all_block_inputs(
+        block: &Block,
+        c_date: &CDateT) -> bool
+    {
+        for doc in block.get_documents()
         {
-          for (Document* doc: block->getDocuments())
-          {
             // TODO FIXME: discover cloned transactions and mark them too
-            for (TInput* input: doc->getInputs())
+            for input in doc.get_inputs()
             {
-              markSpentAnInput(
-                input->getCoinCode(),  // the spent coin
-                cutils::packCoinSpendLoc(block->getBlockHash(), doc->getDocHash()),  // spending location
-                block->m_block_creation_date,
-                cDate);
+                SpentCoinsHandler::mark_spent_an_input(
+                    &input.get_coin_code(),  // the spent coin
+                    &cutils::pack_coin_spend_loc(&block.get_block_hash(), &doc.get_doc_hash()),  // spending location
+                    &block.get_creation_date(),
+                    c_date);
             }
-          }
-
-          return true;
         }
 
-        JSonObject SpentCoinsHandler::convertSpendsToJsonObject(const SpendCoinsList* sp)
+        return true;
+    }
+
+    // old name was convertSpendsToJsonObject
+    pub fn convert_spends_to_json_object(sp: &SpendCoinsList) -> JSonObject
+    {
+        let mut json_out: JSonObject = json!({});
+        for a_group_key in sp.m_coins_dict.keys().cloned().collect::<VString>()
         {
-          JSonObject Jout {};
-          for (String a_group_key: sp->m_coins_dict.keys())
-          {
-            QJsonArray Jgroup {};
-            for (SpendCoinInfo* a_row: sp->m_coins_dict[a_group_key])
+            let mut j_groups: JSonArray = json!([]);
+            for a_row in &sp.m_coins_dict[&a_group_key]
             {
-              JSonObject Jrow{
-                {"spendDate", a_row->m_spend_date},
-                {"spendBlockHash", a_row->m_spend_block},
-                {"spendDocHash", a_row->m_spend_document},
-                {"spendOrder", QVariant::fromValue(a_row->m_spend_order).toDouble()},
-              };
-              Jgroup.push(Jrow);
+                let j_row = json!({
+                    "spendDate": a_row.m_spend_date,
+                    "spendBlockHash": a_row.m_spend_block,
+                    "spendDocHash": a_row.m_spend_document,
+                    "spendOrder": a_row.m_spend_order
+                  });
+                json_array_push(&mut j_groups, &j_row);
             }
-            Jout.insert(a_group_key, Jgroup);
-          }
-          return Jout;
+            json_out[a_group_key] = j_groups;
         }
-
-        */
+        return json_out;
+    }
 }

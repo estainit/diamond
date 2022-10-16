@@ -429,7 +429,7 @@ pub fn consider_invalid_coins(
 }
 
 //old_name_was validateTransactions
-pub fn validate_transactions(block: &Block, stage: &String) ->
+pub fn validate_transactions(block: &Block, stage: &str) ->
 (bool /* status */, bool /* is_sus_block */, String/* msg */, SpendCoinsList /* double_spends */)
 {
     let msg: String;

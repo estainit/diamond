@@ -18,6 +18,7 @@ pub struct TInput
     pub m_owner: CAddressT,
     pub m_amount: CMPAIValueT,
     pub m_private_keys: VString,
+    pub m_public_keys: VString,
     // they are need to sign the coin in order to spend it
     pub m_unlock_set: UnlockSet,
 }
@@ -31,9 +32,11 @@ impl TInput {
             m_owner: "".to_string(),
             m_amount: 0,
             m_private_keys: vec![],
+            m_public_keys: vec![],
             m_unlock_set: UnlockSet::new(),
         }
     }
+
     //old_name_was getCoinCode
     pub fn get_coin_code(&self) -> CCoinCodeT
     {

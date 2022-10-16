@@ -6,7 +6,7 @@ use regex::{Regex};
 use serde_json::json;
 use crate::{application, constants, dlog};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonObject, VString, VVString};
+use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CMPAISValueT, COutputIndexT, JSonArray, JSonObject, VString, VVString};
 
 #[allow(unreachable_code)]
 pub fn remove_quotes(input_value: &JSonObject) -> String
@@ -401,6 +401,15 @@ pub fn short_coin_code(coin: &CCoinCodeT) -> CCoinCodeT
     return [hash16c(&coins_segments[0]), coins_segments[1].to_string()].join(":");
 }
 
+//old_name_was packCoinSpendLoc
+pub fn pack_coin_spend_loc(
+    block_hash: &String,
+    transaction_hash: &String) -> String
+{
+    return vec![block_hash.clone(), transaction_hash.clone()].join(":").to_string();
+}
+
+
 //old_name_was unpackCoinSpendLoc
 pub fn unpack_coin_spend_loc(spend_location: &String) -> (String, String)
 {
@@ -495,7 +504,7 @@ pub fn i_floor_float(number: f64) -> f64
 //     return out;
 // }
 
-//old_name_was convertJSonArrayToQStringList
+//old_name_was convertJSonArrayToStringList
 pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
 {
     let vec_val = s
@@ -506,6 +515,11 @@ pub fn convert_comma_separated_string_to_string_vector(s: &String) -> VString
         .map(|x| x.to_string())
         .collect::<VString>();
     return vec_val;
+}
+
+pub fn json_array_push(inpup_array: &mut JSonArray, elm: &JSonObject)
+{
+    inpup_array.as_array_mut().unwrap().push(elm.clone());
 }
 
 //old_name_was arrayDiff
