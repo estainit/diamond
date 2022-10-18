@@ -491,6 +491,9 @@ impl Block {
         } else if self.m_block_type == constants::block_types::COINBASE
         {
             return self.m_if_coinbase_block.handle_received_block(&self);
+        } else if self.m_block_type == constants::block_types::FLOATING_VOTE
+        {
+            return self.m_if_floating_vote_block.handle_received_block(&self);
         }
 
         return self.handle_received_block_super();
@@ -561,6 +564,11 @@ impl Block {
     pub fn get_block_backer(&self) -> String
     {
         return self.m_block_backer.clone();
+    }
+
+    pub fn get_block_confidence(&self) -> f64
+    {
+        return self.m_block_confidence;
     }
 
     //old_name_was calcBlockHash

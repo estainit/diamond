@@ -1,15 +1,19 @@
+use std::collections::HashMap;
 use serde_json::json;
 use serde::{Serialize, Deserialize};
 use substring::Substring;
 use crate::{application, ccrypto, constants, cutils, dlog, machine};
+use crate::ccrypto::ecdsa_verify_signature;
 use crate::cutils::remove_quotes;
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::block::node_signals_handler::get_machine_signals;
 use crate::lib::custom_types::{CBlockHashT, JSonObject, SharesPercentT};
-use crate::lib::services::dna::dna_handler::get_machine_shares;
+use crate::lib::parsing_q_handler::queue_pars::EntryParsingResult;
+use crate::lib::services::dna::dna_handler::{get_an_address_shares, get_machine_shares};
 use crate::lib::services::society_rules::society_rules::get_min_share_to_allowed_issue_f_vote;
-use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::safe_stringify_unlock_set;
+use crate::lib::transactions::basic_transactions::coins::suspect_trx_handler::add_suspect_transaction;
+use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{safe_stringify_unlock_set, validate_sig_struct};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct FloatingVoteBlock
@@ -94,6 +98,192 @@ impl FloatingVoteBlock {
         return the_hash;
     }
 
+    // old name was validateFVoteBlock
+    pub fn validate_f_vote_block(&self, block_super: &Block) -> EntryParsingResult
+    {
+        let validate_msg: String;
+
+        // control shares/confidence
+        let (_shares_count, issuer_shares_percentage) = get_an_address_shares(
+            &block_super.get_block_backer(),
+            &block_super.get_creation_date());
+        if block_super.get_block_confidence() != issuer_shares_percentage
+        {
+            validate_msg = format!(
+                "fVote({}) was rejected! because of wrong confidence({})!=local({})",
+                cutils::hash6c(&block_super.get_block_hash()),
+                block_super.get_block_confidence(),
+                issuer_shares_percentage);
+            dlog(
+                &validate_msg,
+                constants::Modules::App,
+                constants::SecLevel::Error);
+            return EntryParsingResult {
+                m_status: false,
+                m_should_purge_record: true,
+                m_message: validate_msg,
+            };
+        }
+
+        // control signature
+        let is_valid_unlock = validate_sig_struct(
+            &block_super.m_block_ext_info[0][0].m_unlock_set,
+            &block_super.get_block_backer(),
+            &HashMap::new());
+        if is_valid_unlock != true
+        {
+            validate_msg = format!("Invalid given unlock structure for bVote({})", cutils::hash6c(&block_super.get_block_hash()));
+            dlog(
+                &validate_msg,
+                constants::Modules::Sec,
+                constants::SecLevel::Error);
+            dlog(
+                &validate_msg,
+                constants::Modules::Trx,
+                constants::SecLevel::Error);
+            return EntryParsingResult {
+                m_status: false,
+                m_should_purge_record: true,
+                m_message: validate_msg,
+            };
+        }
+
+        let sign_msg = self.get_sign_msg_b_f_vote(block_super);
+        for signature_inx in 0..block_super.m_block_ext_info[0][0].m_unlock_set.m_signature_sets.len()
+        {
+            let verify_res = ecdsa_verify_signature(
+                &block_super.m_block_ext_info[0][0].m_unlock_set.m_signature_sets[signature_inx].m_signature_key,
+                &sign_msg,
+                &block_super.m_block_ext_info[0][0].m_signatures[signature_inx][0],
+            );
+            if verify_res != true
+            {
+                validate_msg = format!("Invalid given signature for bVote({})", cutils::hash6c(&block_super.get_block_hash()));
+                dlog(
+                    &validate_msg,
+                    constants::Modules::Trx,
+                    constants::SecLevel::Error);
+                return EntryParsingResult {
+                    m_status: false,
+                    m_should_purge_record: true,
+                    m_message: validate_msg,
+                };
+            }
+        }
+
+        validate_msg = format!("Received fVote({}) is valid", cutils::hash6c(&block_super.get_block_hash()));
+        dlog(
+            &validate_msg,
+            constants::Modules::Trx,
+            constants::SecLevel::Info);
+        return EntryParsingResult {
+            m_status: true,
+            m_should_purge_record: true,
+            m_message: validate_msg,
+        };
+    }
+
+
+    // old name was handleReceivedBlock
+    pub fn handle_received_block(&self, block_super: &Block) -> EntryParsingResult
+    {
+
+
+// static handleReceivedFVoteBlock(args) {
+//         let msg;
+//         let block = args.payload;
+//         let receive_date = _.has(args, 'receive_date') ? args.receive_date : utils.getNow()
+
+        dlog(
+            &format!(
+                "******** handle Received floating Vote block{} {}",
+                block_super.get_block_identifier(),
+                block_super.safe_stringify_block(true)),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+
+        let validate_res = self.validate_f_vote_block(block_super);
+        if !validate_res.m_status
+        {
+            // do something
+            return validate_res;
+        }
+
+        // record in dag
+        dlog(
+            &format!(
+                "Add a valid FloatingVote{} to DAG )",
+                block_super.get_block_identifier()),
+            constants::Modules::App,
+            constants::SecLevel::TmpDebug);
+
+
+        block_super.add_block_to_dag();
+        block_super.post_add_block_to_dag();
+
+
+        // special treatment based on fVote Category
+        if self.m_vote_category == constants::float_blocks_categories::TRANSACTION
+        {
+            // also insert suspicious transactions
+            let double_spends = &self.m_block_vote_data["doubleSpends"];
+            dlog(
+                &format!("Inserting double-Spends in db: {:?}", double_spends),
+                constants::Modules::Trx,
+                constants::SecLevel::Info);
+
+            for a_coin in double_spends["coinsCodes"].as_array().unwrap()
+            {
+                let coin_code = remove_quotes(a_coin);
+                for a_dbl_spend_trx in double_spends[coin_code.clone()].as_array().unwrap()
+                {
+                    // console.log(aTx);
+                    add_suspect_transaction(
+                        &block_super.get_block_backer(),
+                        &block_super.get_creation_date(),
+                        &coin_code,
+                        &block_super.get_block_hash(),
+                        &remove_quotes(&a_dbl_spend_trx["spendBlockHash"]),
+                        &remove_quotes(&a_dbl_spend_trx["spendDocHash"]),
+                        &remove_quotes(&a_dbl_spend_trx["spendDate"]),
+                        remove_quotes(&a_dbl_spend_trx["spendOrder"]).parse::<i32>().unwrap(),
+                    );
+                }
+            }
+        } else if self.m_vote_category == constants::float_blocks_categories::FLEXIBLE_NAME_SERVICE
+        {
+            // const flensHandler = require('../../contracts/flens-contract/flens-handler');
+            // collisionsHandler.handleReceivedFloatingVote({ block })
+        }
+
+        /*
+
+                // broadcast to neighbors
+                if (iutils.isInCurrentCycle(block_super.creationDate)) {
+                    let pushRes = sendingQ.pushIntoSendingQ({
+                        sqType: block_super.bType,
+                        sqCode: block_super.blockHash,
+                        sqPayload: utils.stringify(block),
+                        sqTitle: "Broadcasting the confirmed bVote block(${utils.hash6c(block_super.blockHash)}) ${block_super.cycle}"
+                    })
+                    clog.app.info("bVote pushRes: ${pushRes}");
+                }
+
+                return { err: true, msg, shouldPurgeMessage: true };
+            }
+
+
+                */
+
+
+        let validate_msg: String = "".to_string();
+        return EntryParsingResult {
+            m_status: false,
+            m_should_purge_record: true,
+            m_message: validate_msg,
+        };
+    }
+
     /*
     bool FloatingVoteBlock::controlBlockLength() const
     {
@@ -137,30 +327,10 @@ impl FloatingVoteBlock {
       return out;
     }
 
-    /**
-    * @brief NormalBlock::handleReceivedBlock
-    * @return <status, should_purge_record>
-    */
-    std::tuple<bool, bool> FloatingVoteBlock::handleReceivedBlock() const
-    {
-      return {false, true};
-    }
-
-    String FloatingVoteBlock::dumpBlock() const
-    {
-      // firsdt call parent dump
-      String out = Block::dumpBlock();
-
-      // then child dumpping
-      out += "\n in child";
-      return out;
-    }
-
-
     */
 
     // old name was getSignMsgBFVote
-    pub fn get_sign_msg_b_f_vote(&self,block: &Block) -> String
+    pub fn get_sign_msg_b_f_vote(&self, block: &Block) -> String
     {
         let fv_block_sign_ables: String = format!(
             "bAncestors:{:?},bCDate:{},bConfidence:{},bNet:{},bType:{},bVer:{},bVoteData:{}",

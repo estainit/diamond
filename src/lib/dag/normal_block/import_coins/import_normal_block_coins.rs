@@ -5,7 +5,7 @@ use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::{CDateT, CMPAISValueT, CMPAIValueT, JSonArray, VString};
 use crate::lib::dag::dag::set_coins_import_status;
 use crate::lib::dag::dag_walk_through::get_all_descendants;
-use crate::lib::dag::normal_block::import_coins::coin_analyzer::analyze_block_used_coins;
+use crate::lib::dag::normal_block::import_coins::analyze_block_used_coins::analyze_block_used_coins;
 use crate::lib::dag::normal_block::import_coins::coin_import_data_container::CoinImportDataContainer;
 use crate::lib::dag::normal_block::normal_coins_handler::retrieve_proper_blocks;
 use crate::lib::k_v_handler::upsert_kvalue;

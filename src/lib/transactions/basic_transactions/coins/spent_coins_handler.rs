@@ -309,10 +309,12 @@ impl SpentCoinsHandler
     pub fn convert_spends_to_json_object(sp: &SpendCoinsList) -> JSonObject
     {
         let mut json_out: JSonObject = json!({});
-        for a_group_key in sp.m_coins_dict.keys().cloned().collect::<VString>()
+        let mut coins_codes:VString=vec![];
+        for a_coin_code in sp.m_coins_dict.keys().cloned().collect::<VString>()
         {
+            coins_codes.push(a_coin_code.clone());
             let mut j_groups: JSonArray = json!([]);
-            for a_row in &sp.m_coins_dict[&a_group_key]
+            for a_row in &sp.m_coins_dict[&a_coin_code]
             {
                 let j_row = json!({
                     "spendDate": a_row.m_spend_date,
@@ -322,8 +324,9 @@ impl SpentCoinsHandler
                   });
                 json_array_push(&mut j_groups, &j_row);
             }
-            json_out[a_group_key] = j_groups;
+            json_out[a_coin_code] = j_groups;
         }
+        json_out["coinsCodes"] = coins_codes.into();
         return json_out;
     }
 }

@@ -643,7 +643,7 @@ pub fn psql_init_query<'l>() -> Vec<&'l str> {
     st_logger_block varchar(256) NOT NULL,
     st_spender_block varchar(256) NOT NULL,
     st_spender_doc varchar(256) NOT NULL,    -- for each invalid ref MUST insert a row (even in same block)
-    st_receive_order INT DEFAULT 0,
+    st_receive_order INT4 DEFAULT 0,
     st_spend_date varchar(32) NOT NULL    -- suspect block's creation date
     );
 ",

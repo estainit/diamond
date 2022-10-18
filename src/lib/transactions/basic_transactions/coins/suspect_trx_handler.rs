@@ -1,8 +1,9 @@
 use std::collections::HashMap;
+use postgres::types::ToSql;
 use crate::{constants, cutils, dlog};
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CDocHashT, SharesPercentT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CDocHashT, SharesPercentT, VString};
 use crate::lib::dag::normal_block::import_coins::coin_import_data_container::{CoinImportDataContainer, RawVote, TheVote, TheVotes};
-use crate::lib::database::abs_psql::q_custom_query;
+use crate::lib::database::abs_psql::{q_custom_query, q_insert};
 use crate::lib::database::tables::{C_TRX_SUSPECT_TRANSACTIONS, C_TRX_SUSPECT_TRANSACTIONS_FIELDS};
 use crate::lib::services::dna::dna_handler::get_an_address_shares;
 use crate::lib::transactions::basic_transactions::coins::votes_arranger::do_group_by_coin_and_voter;
@@ -94,7 +95,7 @@ pub fn get_sus_info_by_block_hash(block_hash: &CDocHashT) -> (
         tmp.m_sum_percent = cutils::i_floor_float(tmp.m_sum_percent);
         votes_dict.insert(blk_hash.clone(), tmp);
     };
-    return (true, votes_dict); //cloneStatus
+    return (true, votes_dict);
 }
 
 //old_name_was getSusInfoByDocHash
@@ -287,6 +288,38 @@ pub fn check_doc_validity(
     return;
 
 //  return { , cvRes.m_coinsAndVotersDict, coinsAndPositionsDict, };
+}
+
+//old_name_was addSuspectTransaction
+pub fn add_suspect_transaction(
+    st_voter:&CAddressT,
+    st_vote_date:&CDateT,
+    st_coin:&CCoinCodeT,
+    st_logger_block:&CBlockHashT,
+    st_spender_block:&CBlockHashT,
+    st_spender_doc:&CDocHashT,
+    st_spend_date:&CDateT,// the date in which spender-block is created. it stated by block backer and is not trust-worthy
+    st_receive_order:i32,
+)
+{
+
+    // clog.app.info(`addSuspectTransaction: ${utils.stringify(values)}`);
+
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("st_voter", &st_voter as &(dyn ToSql + Sync)),
+        ("st_vote_date", &st_vote_date as &(dyn ToSql + Sync)),
+        ("st_coin", &st_coin as &(dyn ToSql + Sync)),
+        ("st_logger_block", &st_logger_block as &(dyn ToSql + Sync)),
+        ("st_spender_block", &st_spender_block as &(dyn ToSql + Sync)),
+        ("st_spender_doc", &st_spender_doc as &(dyn ToSql + Sync)),
+        ("st_spend_date", &st_spend_date as &(dyn ToSql + Sync)),
+        ("st_receive_order", &st_receive_order as &(dyn ToSql + Sync)),
+    ]);
+    q_insert(
+        C_TRX_SUSPECT_TRANSACTIONS,
+        &values,
+    true);
+    return;
 }
 
 
