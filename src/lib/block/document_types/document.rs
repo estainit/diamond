@@ -375,7 +375,7 @@ impl Document
         }
 
         if ext_info_in_document
-            //&& self.doc_has_ext_info()
+        //&& self.doc_has_ext_info()
         {
             let d_ext_info = export_doc_ext_to_json(&self.m_doc_ext_info);
             js_doc["dExtInfo"] = d_ext_info;
@@ -1008,6 +1008,11 @@ false
             constants::document_types::REPAYMENT_DOCUMENT.to_string()].contains(d_type);
     }
 
+    pub fn doc_has_output(&self) -> bool
+    {
+        return doc_has_output(&self.m_doc_type);
+    }
+
     /*
 
         String Document::stringify_outputs() const
@@ -1015,20 +1020,7 @@ false
         return SignatureStructureHandler::stringify_outputs(get_outputs());
         }
 
-        // old name was trxHasOutput
-        bool Document::docHasOutput(const String& document_type)
-        {
-        return VString {
-        constants::document_types::COINBASE,
-        constants::document_types::BASIC_TX,
-        constants::document_types::RpDoc,
-        constants::document_types::RlDoc,}.contains(document_type);
-        }
 
-        bool Document::docHasOutput()
-        {
-        return docHasOutput(m_doc_type);
-        }
 
         void Document::importCostsToTreasury(
         const Block* block,
@@ -1079,6 +1071,16 @@ pub fn map_doc_to_block(
         true);
 }
 
+
+// old name was trxHasOutput
+// old name was docHasOutput
+pub fn doc_has_output(document_type: &String) -> bool
+{
+    return vec![
+        constants::document_types::COINBASE,
+        constants::document_types::BASIC_TX,
+        constants::document_types::REPAYMENT_DOCUMENT].contains(&document_type.as_str());
+}
 
 //old_name_was setDocumentOutputs
 pub fn set_document_outputs(obj: &Vec<JSonObject>) -> Vec<TOutput>

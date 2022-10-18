@@ -50,7 +50,7 @@ bool DAGMessageHandler::invokeDescendents(
   auto[status, block_hash, block_creation_date] = DAG::getLatestBlock();
   Q_UNUSED(status);
 
-  if (cutils::time_diff(block_creation_date).asMinutes > machine().getAcceptableBlocksGap())
+  if (application().time_diff(block_creation_date).asMinutes > machine().getAcceptableBlocksGap())
   {
     // control if block's potentially descendent(s) exist in parsing q
     QVDRecordsT likeHashRes = ParsingQHandler::searchParsingQ(
@@ -110,7 +110,7 @@ bool DAGMessageHandler::doInvokeDescendents(
       KVHandler::upsertKValue("LAST_FULL_DAG_DOWNLOAD_RESPONSE", cutils::minutes_before(cutils::get_cycle_by_minutes()));
 
     } else {
-      if (cutils::time_diff(LastFullDAGDownloadResponse).asMinutes < 5)
+      if (application().time_diff(LastFullDAGDownloadResponse).asMinutes < 5)
       {
         CLog::log("less than 5 minutes ago invoked for full DAG", "app", "trace");
         return true;

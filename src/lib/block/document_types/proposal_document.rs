@@ -418,7 +418,7 @@ impl ProposalDocument {
             CLog::log("Successfully TP_PROPOSAL Block(" + cutils::hash8c(block->getBlockHash()) + ") Coin(" + cutils::short_coin_code(a_treasury_entry.m_coin) + ") importing(TP_PROPOSAL)", "app", "trace");
 
             cost_payment_status[proposal_hash].m_message = "Proposal Cost imported to treasury succsessfully.";
-            TreasuryHandler::insertIncome(
+            insert_income(
               income_title,
               "TP_PROPOSAL",
               income_title,

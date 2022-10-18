@@ -5,7 +5,7 @@ use crate::{application, constants, cutils, dlog, machine};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{BasicTransactionTemplate, export_doc_ext_to_json, generate_bip69_input_tuples, generate_bip69_output_tuples};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::Coin;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::CoinInfo;
 use crate::lib::transactions::basic_transactions::pre_validate_transaction_params::pre_validate_transaction_params;
 
 // * @return {status, err_msg, transaction, transaction_dp_cost}
@@ -279,19 +279,19 @@ pub fn make_a_transaction_document(mut tpl: BasicTransactionTemplate)
     }
 
     // signatures control
-    let mut used_coins_dict: HashMap<CCoinCodeT, Coin> = HashMap::new();
+    let mut used_coins_dict: HashMap<CCoinCodeT, CoinInfo> = HashMap::new();
     for (coin_code, an_inp) in &tpl.m_tpl_inputs
     {
         // let vv: QVDicT = HashMap::from([
         //     ("coin_owner".to_string(), an_inp.m_owner.clone()),
         //     ("coin_value".to_string(), an_inp.m_amount.to_string())]);
-        let a_coin = Coin {
+        let a_coin = CoinInfo {
             m_coin_owner: an_inp.m_owner.clone(),
             m_coin_value: an_inp.m_amount,
             m_coin_code: coin_code.clone(),
             m_creation_date: "".to_string(),
             m_ref_creation_date: "".to_string(),
-            ut_visible_by: "".to_string(),
+            m_visible_by: "".to_string(),
         };
         used_coins_dict.insert(coin_code.clone(), a_coin);
     }

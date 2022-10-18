@@ -925,7 +925,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
   }
   CAddressT change_back_address = changeback_res.msg;
 
-  std::vector<TOutput> outputs1 {
+  Vec<TOutput> outputs1 {
     TOutput{change_back_address, 1, constants::OUTPUT_CHANGEBACK},
     TOutput{"TP_PROPOSAL", pledge->m_redeem_principal, constants::OUTPUT_TREASURY}};
 
@@ -988,7 +988,7 @@ std::tuple<bool, String> GeneralPledgeHandler::pledgeeSignsProposalLoanRequestBu
 
 
   // pay for pledge doc too
-  std::vector<TOutput> outputs2 {
+  Vec<TOutput> outputs2 {
     TOutput{change_back_address, 1, constants::OUTPUT_CHANGEBACK},
     TOutput{"TP_PLEDGE", pledge_dp_cost, constants::OUTPUT_TREASURY}};
 

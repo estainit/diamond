@@ -6,7 +6,7 @@ use crate::lib::block::document_types::basic_tx_document::basic_tx_document::Bas
 use crate::lib::block::document_types::document::Document;
 use crate::lib::block::document_types::document_ext_info::DocExtInfo;
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CInputIndexT, CSigIndexT, VString};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::{Coin, extract_coins_owner};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::{CoinInfo, extract_coins_owner};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::validate_sig_struct;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 
@@ -30,7 +30,7 @@ impl BasicTxDocument {
             extract_coins_owner(&coins_codes);
 
 
-        let mut used_coins_dict: HashMap<CCoinCodeT, Coin> = HashMap::new();
+        let mut used_coins_dict: HashMap<CCoinCodeT, CoinInfo> = HashMap::new();
         for an_inp in &self.m_inputs
         {
             let the_coin_owner = coins_owner_dict[&an_inp.get_coin_code()].clone();
@@ -52,12 +52,12 @@ impl BasicTxDocument {
                 }
             }
 
-            let the_coin: Coin = Coin {
+            let the_coin: CoinInfo = CoinInfo {
                 m_coin_code: "".to_string(),
                 m_creation_date: "".to_string(),
                 m_ref_creation_date: "".to_string(),
                 m_coin_owner: the_coin_owner,
-                ut_visible_by: "".to_string(),
+                m_visible_by: "".to_string(),
                 m_coin_value: an_inp.m_amount,
             };
             used_coins_dict.insert(an_inp.get_coin_code(), the_coin);
@@ -76,7 +76,7 @@ impl BasicTxDocument {
     pub fn validate_tx_signatures(
         &self,
         doc: &Document,
-        used_coins_dict: &HashMap<CCoinCodeT, Coin>,
+        used_coins_dict: &HashMap<CCoinCodeT, CoinInfo>,
         exclude_coins: &VString,
         block_hash: &CBlockHashT) -> bool
     {

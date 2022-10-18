@@ -222,7 +222,7 @@ impl SpentCoinsHandler
                 // * later it will be used to vote about transactions priority.
                 // * it is totally possible in this step machine can not retrieve very old spending
                 // * (because the spent table periodicly truncated), in this case machine will vote a doublespended doc as a first document
-                // * later in "doGroupByCoinAndVoter" method we add second index(vote date) to securing the spend order
+                // * later in "do_group_by_coin_and_voter" method we add second index(vote date) to securing the spend order
                 // if (!_.has(spendsOrder, the_coin))
                 //     spendsOrder[the_coin] = [];
                 // spendsOrder[the_coin].push({
@@ -258,13 +258,13 @@ impl SpentCoinsHandler
         // * obviously these LoteDbs will be payed by pledge contract based on repayments longth
         // * TODO: must be implemented
         let cycle_by_minutes = application().get_cycle_by_minutes();
-        let spend_date = application().minutes_before(cycle_by_minutes * constants::KEEP_SPENT_COINS_BY_CYCLE as u64, c_date);
+        let spend_date_ = application().minutes_before(cycle_by_minutes * constants::KEEP_SPENT_COINS_BY_CYCLE as u64, c_date);
         q_delete(
             C_TRX_SPEND,
             vec![
                 ModelClause {
                     m_field_name: "sp_spend_date",
-                    m_field_single_str_value: &spend_date as &(dyn ToSql + Sync),
+                    m_field_single_str_value: &spend_date_ as &(dyn ToSql + Sync),
                     m_clause_operand: "<",
                     m_field_multi_values: vec![],
                 }

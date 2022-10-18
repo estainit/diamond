@@ -1,6 +1,8 @@
-use crate::{application, constants, dlog};
-use crate::lib::custom_types::{CDateT, CMPAIValueT};
-use crate::lib::database::abs_psql::q_custom_query;
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::{application, constants, cutils, dlog};
+use crate::lib::custom_types::{CCoinCodeT, CDateT, CMPAISValueT, CMPAIValueT};
+use crate::lib::database::abs_psql::{OrderModifier, q_custom_query, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::C_TREASURY;
 use crate::lib::machine::app_params::TimeRange;
 
@@ -51,89 +53,120 @@ pub fn calc_treasury_incomes(c_date: &CDateT) -> (String, String, CMPAIValueT)
         income_value
     );
 }
-/*
 
-void TreasuryHandler::insertIncome(
-  String title,
-  String category,
-  String descriptions,
-  String creation_date,
-  CMPAIValueT value,
-  String block_hash,
-  CCoinCodeT coin)
+//old_name_was insertIncome
+pub fn insert_income(
+    title: &String,
+    category: &String,
+    descriptions: &String,
+    creation_date: &String,
+    income_amount: CMPAIValueT,
+    block_hash: &String,
+    coin: &CCoinCodeT)
 {
-  QueryRes dbl = DbModel::select(
-    C_TREASURY,
-    {"tr_coin"},
-    {{"tr_coin", coin}},
-    {{"tr_id", "ASC"}});
-  if (dbl.records.len() > 0)
-  {
-    CLog::log("duplicated treasury insertion: block(" + cutils::hash8c(block_hash)+ ") title(" + title + ")", "trx", "warning");
-    // update the descriptions
-    DbModel::update(
-      C_TREASURY,
-      {{"tr_descriptions", dbl.records[0].value("tr_descriptions").to_string() + " " + descriptions}},
-      {{"tr_coin", coin}});
+    let (_status, dbl) = q_select(
+        C_TREASURY,
+        vec!["tr_coin"],
+        vec![simple_eq_clause("tr_coin", coin)],
+        vec![
+            &OrderModifier { m_field: "tr_id", m_order: "ASC" },
+        ],
+        0,
+        true);
+    if dbl.len() > 0
+    {
+        dlog(
+            &format!(
+                "Duplicated treasury insertion: block({}) title({})",
+                cutils::hash8c(block_hash),
+                title),
+            constants::Modules::Trx,
+            constants::SecLevel::Warning);
+        // update the descriptions
+        let tr_descriptions = dbl[0]["tr_descriptions"].to_string() + " " + descriptions;
+        let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+            ("tr_descriptions", &tr_descriptions as &(dyn ToSql + Sync))
+        ]);
+        q_update(
+            C_TREASURY,
+            &update_values,
+            vec![simple_eq_clause("tr_coin", coin)],
+            true);
+        return;
+    }
+    let income_amount = income_amount as CMPAISValueT;
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("tr_cat", &category as &(dyn ToSql + Sync)),
+        ("tr_title", &title as &(dyn ToSql + Sync)),
+        ("tr_descriptions", &descriptions as &(dyn ToSql + Sync)),
+        ("tr_creation_date", &creation_date as &(dyn ToSql + Sync)),
+        ("tr_block_hash", &block_hash as &(dyn ToSql + Sync)),
+        ("tr_coin", &coin as &(dyn ToSql + Sync)),
+        ("tr_value", &income_amount as &(dyn ToSql + Sync)),
+    ]);
+
+    dlog(
+        &format!(
+            "Treasury income({} Ray) because of block({}) title({}) values: {:?}",
+            cutils::nano_pai_to_pai(income_amount),
+            cutils::hash8c(&block_hash),
+            title,
+            values
+        ),
+        constants::Modules::Trx,
+        constants::SecLevel::Info);
+    q_insert(
+        C_TREASURY,
+        &values,
+        true);
+
     return;
-  }
-
-  QVDicT values {
-    {"tr_cat", category},
-    {"tr_title", title},
-    {"tr_descriptions", descriptions},
-    {"tr_creation_date", creation_date},
-    {"tr_block_hash", block_hash},
-    {"tr_coin", coin},
-    {"tr_value", QVariant::fromValue(value)}};
-
-  CLog::log("Treasury income(" + cutils::microPAIToPAI6(value) + " PAIs) because of block(" + cutils::hash8c(block_hash)+ ") title(" + title + ") values :" + cutils::dumpIt(values ), "trx", "info");
-
-  DbModel::insert(
-    C_TREASURY,
-    values);
-
-  return;
 }
 
-void TreasuryHandler::donateTransactionInput(
-  String title,
-  String category,
-  String descriptions,
-  String creation_date,
-  CMPAIValueT value,
-  String block_hash,
-  CCoinCodeT coin)
+//old_name_was donateTransactionInput
+pub fn donate_transaction_input(
+    title: &String,
+    category: &String,
+    descriptions: &String,
+    creation_date: &String,
+    value: CMPAIValueT,
+    block_hash: &String,
+    coin: &CCoinCodeT)
 {
+    let mut title = title.clone();
+    let mut category = category.clone();
+    let mut descriptions = descriptions.clone();
+    let mut creation_date = creation_date.clone();
 
-  if (title == "")
-    title = "No Title!";
+    if title == ""
+    { title = "No Title!".to_string(); }
 
-  if (category == "")
-    category = "No category!";
+    if category == ""
+    { category = "No category!".to_string(); }
 
-  if (descriptions == "")
-    descriptions = "No descriptions!";
+    if descriptions == ""
+    { descriptions = "No descriptions!".to_string(); }
 
-  if (creation_date == "")
-    creation_date = "No creation_date!";
+    if creation_date == ""
+    { creation_date = "No creation_date!".to_string(); }
 
-  // retrieve location refLoc is generated
-  // let blocks = dagHandler.retrieveBlocksInWhichARefLocHaveBeenProduced(args.refLoc);
-  // clog.trx.info(`donate Transaction Input. blocks by refLoc: ${JSON.stringify(blocks)}`);
-  // let block = blocks[0];
+    // retrieve location refLoc is generated
+    // let blocks = retrieve_blocks_in_which_a_coin_have_been_produced(args.refLoc);
+    // clog.trx.info(`donate Transaction Input. blocks by refLoc: ${JSON.stringify(blocks)}`);
+    // let block = blocks[0];
 
-  // big FIXME: for cloning transactions issue
-  insertIncome(
-    title,
-    category,
-    descriptions,
-    creation_date,
-    value,
-    block_hash,
-    coin);
+    // big FIXME: for cloning transactions issue
+    insert_income(
+        &title,
+        &category,
+        &descriptions,
+        &creation_date,
+        value,
+        block_hash,
+        coin);
 }
 
+/*
 CMPAIValueT TreasuryHandler::getWaitedIncomes(CDateT cDate)
 {
   if (cDate == "")
@@ -148,7 +181,7 @@ CMPAIValueT TreasuryHandler::getWaitedIncomes(CDateT cDate)
 
   CMPAIValueT sum = 0;
   for (QVDicT income: res.records)
-    sum += income.value("tr_value").toDouble();
+    sum += income["tr_value"].toDouble();
 
   return sum;
 }

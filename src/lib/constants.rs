@@ -278,9 +278,10 @@ pub const TO_NETWORK: &str = "ToNetwork";
   pub const receivedPLR = "receivedPLR";  // received Pledge Loan Request
   pub const BundlePPT = "BundlePPT";  // Bundle of Proposal+Pledge+Transactions
 
-  const float MINIMUM_SUS_VOTES_TO_ALLOW_CONSIDERING_SUS_BLOCK = 51.0;
 */
+pub const MINIMUM_SUS_VOTES_TO_ALLOW_CONSIDERING_SUS_BLOCK: f64 = 51.0;
 
+pub const OUTPUT_TIME_LOCK_IS_ENABLED: bool = false;
 // 71 % of block incomes goes to backer
 pub const BACKER_PERCENT_OF_BLOCK_FEE: SharesPercentT = 71.0;
 pub const TREASURY_PAYMENTS: [&str; 13] =

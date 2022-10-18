@@ -2,10 +2,13 @@ use std::collections::HashMap;
 use postgres::types::ToSql;
 use crate::{application, constants, cutils, dlog};
 use crate::cutils::{array_add, array_unique, remove_quotes};
+use crate::lib::block::block_types::block::Block;
+use crate::lib::block::document_types::document::Document;
 use crate::lib::block_utils::unwrap_safed_content_for_db;
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, ClausesT, COutputIndexT, GRecordsT, OrderT, QV2DicT, QVDicT, QVDRecordsT, VString};
 use crate::lib::database::abs_psql::{ModelClause, OrderModifier, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::{C_BLOCKS, C_BLOCKS_FIELDS, C_DOCS_BLOCKS_MAP};
+use crate::lib::transactions::basic_transactions::coins::coins_handler::{CoinDetails};
 
 //old_name_was appendDescendents
 pub fn append_descendants(block_hashes: &Vec<String>, new_descendents: &Vec<String>)
@@ -498,14 +501,8 @@ pub fn set_coins_import_status(
 }
 
 //old_name_was isDAGUptodated
-pub fn is_dag_updated(c_date: &CDateT) -> bool
+pub fn is_dag_updated() -> bool
 {
-    let mut c_date = c_date.clone();
-    if c_date == ""
-    {
-        c_date = application().now();
-    }
-
     let latest_block_date = search_in_dag(
         vec![],
         vec!["b_creation_date"],
@@ -600,67 +597,93 @@ pub fn dag_has_blocks_which_are_created_in_current_cycle(c_date_: &CDateT) -> bo
     return application().time_diff(latest_block_date, c_date).as_minutes < application().get_cycle_by_minutes() as u64;
 }
 
-/*
 
 // need to be fixed because of array response of get BlockHashByDocHash
-Vec<CCoin> DAG::retrieveBlocksInWhichARefLocHaveBeenProduced(const CCoinCodeT& the_coin)
+//old_name_was retrieveBlocksInWhichARefLocHaveBeenProduced
+pub fn retrieve_blocks_in_which_a_coin_have_been_produced(the_coin: &CCoinCodeT) -> Vec<CoinDetails>
 {
-  Vec<CCoin> results {};
-  CLog::log("retrieve Blocks In which the coin: (" + the_coin + ") is created", "app", "trace");
+    let mut results: Vec<CoinDetails> = vec![];
+    dlog(
+        &format!("Retrieve Blocks In which the coin: ({}) is created", the_coin),
+        constants::Modules::App,
+        constants::SecLevel::TmpDebug);
 
-  auto[doc_hash, output_index_] = cutils::unpack_coin_code(the_coin);
-  Q_UNUSED(output_index_);
+    let (doc_hash, _output_index) = cutils::unpack_coin_code(&the_coin);
 
-  auto[block_hashes, map_doc_to_block_] = get_block_hashes_by_doc_hashes({doc_hash});
-  Q_UNUSED(map_doc_to_block_);
+    let (block_hashes, _map_doc_to_block) =
+        get_block_hashes_by_doc_hashes(&vec![doc_hash.clone()], &constants::COMPLETE.to_string());
 
-  QVDRecordsT wBlocks = DAG::searchInDAG(
-    {{"b_hash", block_hashes, "IN"}},
-    {"b_hash"});
-
-  if (wBlocks.len() == 0)
-  {
-    CLog::log("Retrieve Blocks In Which A Ref Loc Produced for the coin(" + the_coin + ") not exist!", "trx", "error");
-    return results;
-  }
-
-  // it could be possible some docHash exactly exist in more than one block
-  // e.g multiplicated coinbase blocks which are created in same cycle
-  // e.g cloned transactions(the same transaction which takes part in different blocks by diferent backers)
-  // therfore we return list of blocks
-
-  for (QVDicT wBlock: wBlocks)
-  {
-    Block* block = BlockFactory::create(cutils::parseToJsonObj(BlockUtils::unwrapSafeContentForDB(wBlock["b_body"]).content));
-
-    for (CDocIndexT doc_index = 0; doc_index < block.m_documents.len(); doc_index++)
-    {
-      Document* doc = block.m_documents[doc_index];
-      if (doc->docHasOutput())
-      {
-        for (COutputIndexT output_index = 0; output_index < doc->get_outputs().len(); output_index++)
-        {
-          CCoinCodeT tmp_coin = cutils::packCoinCode(doc->get_doc_hash(), output_index);
-          if (tmp_coin == the_coin)
-            results.push(CCoin(
-              the_coin,
-              doc->get_outputs()[output_index].m_address,
-              doc->get_outputs()[output_index].m_amount,
-
-              block.m_block_creation_date,
-
-              block->getBlockHash(),
-              doc_index,
-              doc_hash,
-              output_index));
-
-        }
-      }
+    let empty_string = "".to_string();
+    let mut c1 = ModelClause {
+        m_field_name: "b_hash",
+        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+        m_clause_operand: "IN",
+        m_field_multi_values: vec![],
+    };
+    for an_hash in &block_hashes {
+        c1.m_field_multi_values.push(an_hash as &(dyn ToSql + Sync));
     }
-  }
+    let w_blocks = search_in_dag(
+        vec![c1],
+        vec!["b_hash"],
+        vec![],
+        0,
+        true,
+    );
 
-  return results;
+    if w_blocks.len() == 0
+    {
+        dlog(
+            &format!(
+                "Retrieve Blocks In Which A Ref Loc Produced for the coin({}) not exist!",
+                the_coin
+            ),
+            constants::Modules::Trx,
+            constants::SecLevel::Error);
+        return results;
+    }
+
+    // it could be possible some docHash exactly exist in more than one block
+    // e.g multiplication coinbase blocks which are created in same cycle
+    // e.g cloned transactions(the same transaction which takes part in different blocks by different backers)
+    // therefore we return list of blocks
+
+    for w_block in w_blocks
+    {
+        let (_status, _sf_ver, content) = unwrap_safed_content_for_db(&w_block["b_body"]);
+        let (_status, block) = Block::load_block_by_serialized_content(&content);
+
+        for doc_index in 0..block.get_docs_count()
+        {
+            let doc: &Document = &block.get_documents()[doc_index as usize];
+            if doc.doc_has_output()
+            {
+                for output_index in 0..doc.get_outputs().len()
+                {
+                    let tmp_coin = cutils::pack_coin_code(&doc.get_doc_hash(), output_index as COutputIndexT);
+                    if tmp_coin == *the_coin
+                    {
+                        results.push(CoinDetails {
+                            m_cd_code: the_coin.clone(),
+                            m_cd_owner: doc.get_outputs()[output_index].m_address.clone(),
+                            m_cd_amount: doc.get_outputs()[output_index].m_amount,
+                            m_cd_creation_date: block.m_block_creation_date.clone(),
+                            m_cd_block_hash: block.get_block_hash(),
+                            m_cd_doc_index: doc_index,
+                            m_cd_doc_hash: doc_hash.clone(),
+                            m_cd_output_index: output_index as COutputIndexT,
+                            m_cd_cycle: "".to_string(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    return results;
 }
+
+/*
 
 std::tuple<CMPAIValueT, QVDRecordsT, CMPAIValueT> DAG::getNotImportedCoinbaseBlocks()
 {

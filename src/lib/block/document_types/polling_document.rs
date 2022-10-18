@@ -305,7 +305,7 @@ impl PollingDocument
 
             cost_payment_status[polling_hash].m_message = "Ballot Cost imported to treasury succsessfully.";
             String title = "TP_POLLING Polling(" + cutils::hash6c(polling_hash) + ")";
-            TreasuryHandler::insertIncome(
+            insert_income(
               title,
               "TP_POLLING",
               title,

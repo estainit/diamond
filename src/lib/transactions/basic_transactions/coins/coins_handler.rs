@@ -3,25 +3,27 @@ use std::thread;
 use serde::{Serialize, Deserialize};
 use postgres::types::ToSql;
 use crate::lib::constants;
-use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, ClausesT, CMPAIValueT, LimitT, OrderT, QVDRecordsT, VString};
+use crate::lib::custom_types::{CAddressT, CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CDocIndexT, ClausesT, CMPAIValueT, COutputIndexT, LimitT, OrderT, QVDRecordsT, VString};
 use crate::lib::dlog::dlog;
 use crate::{application, cutils, machine};
 use crate::lib::block::block_types::block::Block;
-use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_delete, q_insert, q_select, simple_eq_clause};
+use crate::lib::dag::dag::exclude_floating_blocks;
+use crate::lib::dag::dag_walk_through::get_descendants;
+use crate::lib::database::abs_psql::{clauses_query_generator, ModelClause, q_custom_query, q_delete, q_insert, q_select, q_update, simple_eq_clause};
 use crate::lib::database::tables::C_TRX_COINS;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Coin
+pub struct CoinInfo
 {
     pub m_coin_code: CCoinCodeT,
     pub m_creation_date: CDateT,
     pub m_ref_creation_date: CDateT,
     pub m_coin_owner: CAddressT,
-    pub ut_visible_by: CBlockHashT,
+    pub m_visible_by: CBlockHashT,
     pub m_coin_value: CMPAIValueT,
 }
 
-impl Coin {
+impl CoinInfo {
     #[allow(unused, dead_code)]
     pub fn new() -> Self
     {
@@ -31,10 +33,26 @@ impl Coin {
             m_ref_creation_date: "".to_string(),
             m_coin_code: "".to_string(),
             m_coin_owner: "".to_string(),
-            ut_visible_by: "".to_string(),
+            m_visible_by: "".to_string(),
             m_coin_value: 0,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CoinDetails
+{
+    pub m_cd_code: CCoinCodeT,
+    pub m_cd_owner: CAddressT,
+    pub m_cd_amount: CMPAIValueT,
+
+    pub m_cd_creation_date: CDateT,
+
+    pub m_cd_block_hash: CBlockHashT,
+    pub m_cd_doc_index: CDocIndexT,
+    pub m_cd_doc_hash: CDocHashT,
+    pub m_cd_output_index: COutputIndexT,
+    pub m_cd_cycle: String,
 }
 
 
@@ -105,104 +123,123 @@ pub fn do_coin_clean(_c_date: &CDateT)
 */
 }
 
-/*
-/**
- * method, takes coins visibility and replace them with new blocks in future of block
- */
-bool UTXOHandler::refreshVisibility(CDateT c_date)
+//old_name_was refreshVisibility
+pub fn refresh_visibility(c_date: &CDateT) -> bool
 {
-  if (c_date == "")
-    c_date = application().now();
+    let mut c_date = c_date.clone();
+    if c_date == ""
+    { c_date = application().now(); }
 
-  String full_query = "SELECT DISTINCT ut_visible_by, ut_creation_date FROM " + C_TRX_COINS +
-  " WHERE ut_creation_date < :ut_creation_date order by ut_creation_date ";
-  QueryRes distinct_blocks = DbModel::customQuery(
-    "db_comen_spendable_coins",
-    full_query,
-    {"ut_visible_by", "ut_creation_date"},
-    0,
-    {{"ut_creation_date", cutils::minutes_before(cutils::get_cycle_by_minutes() * 4, c_date)}},
-    true,
-    true);
-
-  for (QVDicT a_visibility_entry: distinct_blocks.records)
-  {
-    CBlockHashT to_be_deleted_blcok = a_visibility_entry["ut_visible_by"].to_string();
-    if (!cutils::isValidHash(to_be_deleted_blcok))
-    {
-      CLog::log("Invalid block hash as to_be_deleted_blcok code! " + to_be_deleted_blcok, "sec", "fatal");
-      return false;
-    }
-    VString block_hashes = get_descendants(VString{to_be_deleted_blcok});  // first generation of descendents
-    block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // second generation
-    block_hashes = cutils::arrayAdd(block_hashes, get_descendants(block_hashes));  // third generation
-    block_hashes = cutils::array_unique(block_hashes);
-    QVDRecordsT descendent_blocks = exclude_floating_blocks(block_hashes); // exclude floating blocks
-    CLog::log("visible_bys after exclude floating signature blocks: " + cutils::dumpIt(descendent_blocks), "trx", "trace");
-
-    // avoid duplicate constraint error
-    QueryRes candid_res = DbModel::select(
-      C_TRX_COINS,
-      {"ut_coin"},
-      {{"ut_visible_by", to_be_deleted_blcok}},
-      {},
-      0,
-      false,
-      false);
-    VString candid_coins = {};
-    for(QVDicT a_coin: candid_res.records)
-      candid_coins.push(a_coin["ut_coin"].to_string());
-
-    for (QVDicT a_descendent_block: descendent_blocks)
-    {
-
-      QueryRes existed_res = DbModel::select(
+    let tm = application().get_cycle_by_minutes() * 4;
+    let tm = application().minutes_before(tm, &c_date);
+    let full_query = format!(
+        "SELECT DISTINCT ut_visible_by, ut_creation_date FROM {} WHERE ut_creation_date < '{}' order by ut_creation_date ASC",
         C_TRX_COINS,
-        {"ut_coin"},
-        {{"ut_visible_by", a_descendent_block["b_hash"].to_string()}},
-        {},
-        0,
-        false,
-        false);
+        tm);
+    let (_status, distinct_blocks) = q_custom_query(
+        &full_query,
+        &vec![],
+        true);
 
-      VString existed_coins {};
-      for(QVDicT elm: existed_res.records)
-        existed_coins.push(elm["ut_coin"].to_string());
-
-      VString updateables = cutils::array_diff(candid_coins, existed_coins);
-      if (updateables.len() > 0)
-      {
-        // TODO: improve it
-        auto updateable_chunks = cutils::chunkStringList(updateables, 100);
-        for (VString a_chunk: updateable_chunks)
+    for a_visibility_entry in distinct_blocks
+    {
+        let to_be_deleted_blcok: CBlockHashT = a_visibility_entry["ut_visible_by"].to_string();
+        if !cutils::is_valid_hash(&to_be_deleted_blcok)
         {
-          DbModel::update(
-            C_TRX_COINS,
-            {{"ut_visible_by", a_descendent_block["b_hash"].to_string()}},
-            {{"ut_visible_by", to_be_deleted_blcok},
-            {"ut_coin", a_chunk, "IN"}},
-            true,
-            false);
+            dlog(
+                &format!("Invalid block hash as to_be_deleted_blcok code! {}", to_be_deleted_blcok),
+                constants::Modules::Sec,
+                constants::SecLevel::Fatal);
+            return false;
         }
-      }
+        let mut block_hashes: VString = get_descendants(&vec![to_be_deleted_blcok.clone()], 1);  // first generation of descendents
+        block_hashes = cutils::array_add(&block_hashes, &get_descendants(&block_hashes, 1));  // second generation
+        block_hashes = cutils::array_add(&block_hashes, &get_descendants(&block_hashes, 1));  // third generation
+        block_hashes = cutils::array_unique(&block_hashes);
+        let fields: Vec<&str> = vec!["b_hash", "b_cycle", "b_creation_date"];
+        let descendent_blocks: QVDRecordsT = exclude_floating_blocks(&block_hashes, fields); // exclude floating blocks
+        dlog(
+            &format!("Visible_bys after exclude floating signature blocks: {:?}", descendent_blocks),
+            constants::Modules::Trx,
+            constants::SecLevel::TmpDebug);
+
+        // avoid duplicate constraint error
+        let (_status, records) = q_select(
+            C_TRX_COINS,
+            vec!["ut_coin"],
+            vec![simple_eq_clause("ut_visible_by", &to_be_deleted_blcok)],
+            vec![],
+            0,
+            true);
+        let mut candid_coins: VString = vec![];
+        for a_coin in records
+        { candid_coins.push(a_coin["ut_coin"].to_string()); }
+
+        for a_descendant_block in &descendent_blocks
+        {
+            let (_status, existed_res) = q_select(
+                C_TRX_COINS,
+                vec!["ut_coin"],
+                vec![simple_eq_clause("ut_visible_by", &a_descendant_block["b_hash"])],
+                vec![],
+                0,
+                true);
+
+            let mut existed_coins: VString = vec![];
+            for elm in existed_res
+            {
+                existed_coins.push(elm["ut_coin"].to_string());
+            }
+
+            let updateables: VString = cutils::array_diff(&candid_coins, &existed_coins);
+            if updateables.len() > 0
+            {
+                // TODO: improve it
+                let updatable_chunks = cutils::chunk_to_vvstring(updateables, 100);
+                for a_chunk in updatable_chunks
+                {
+                    let tmp_b_hash = a_descendant_block["b_hash"].clone();
+                    let update_values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+                        ("ut_visible_by", &tmp_b_hash as &(dyn ToSql + Sync))
+                    ]);
+                    let empty_string = "".to_string();
+                    let mut c1 = ModelClause {
+                        m_field_name: "ut_coin",
+                        m_field_single_str_value: &empty_string as &(dyn ToSql + Sync),
+                        m_clause_operand: "IN",
+                        m_field_multi_values: vec![],
+                    };
+                    for a_hash in &a_chunk {
+                        c1.m_field_multi_values.push(a_hash as &(dyn ToSql + Sync));
+                    }
+                    q_update(
+                        C_TRX_COINS,
+                        &update_values,
+                        vec![
+                            simple_eq_clause("ut_visible_by", &to_be_deleted_blcok),
+                            c1,
+                        ],
+                        true);
+                }
+            }
+        }
+
+        if descendent_blocks.len() > 0
+        {
+            q_delete(
+                C_TRX_COINS,
+                vec![simple_eq_clause("ut_visible_by", &to_be_deleted_blcok)],
+                true);
+
+            remove_coin_from_cached_spendable_coins(&to_be_deleted_blcok, &"".to_string());
+        }
     }
 
-    if (descendent_blocks.len() > 0)
-    {
-      DbModel::dDelete(
-        C_TRX_COINS,
-        {{"ut_visible_by", to_be_deleted_blcok}},
-        true,
-        false);
-
-      remove_coin_from_cached_spendable_coins(to_be_deleted_blcok, "");
-    }
-
-  }
-
-  return true;
+    return true;
 }
 
+
+/*
 
 ClausesT UTXOHandler::prepareUTXOQuery(
   const VString& coins,

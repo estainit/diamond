@@ -876,7 +876,7 @@ HashMap<uint32_t, QVDicT> SocietyRules::getOnchainSocietyPollings(
     // calc potentiasl voter gains
     if (voter != "")
     {
-      uint64_t diff = cutils::time_diff(a_society_polling["pll_start_date"].to_string()).asMinutes;
+      uint64_t diff = application().time_diff(a_society_polling["pll_start_date"].to_string()).asMinutes;
       auto[yes_gain, no_abstain_gain, latenancy_] = PollingHandler::calculateVoteGain(
         diff,
         diff,

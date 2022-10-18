@@ -141,11 +141,11 @@ std::tuple<bool, QJsonArray> DPCostPayDocument::exportInputsToJson() const
 std::tuple<bool, QJsonArray> DPCostPayDocument::exportOutputsToJson() const
 {
   QJsonArray outputs {};
-  if (m_outputs.size() ==0)
+  if (m_outputs.len() ==0)
     return {false, outputs};
 
   for(auto an_output: m_outputs)
-    outputs.push_back(QJsonArray {
+    outputs.push(QJsonArray {
       an_output->m_address,
       QVariant::fromValue(an_output->m_amount).toDouble()});
 
@@ -171,7 +171,7 @@ bool DPCostPayDocument::setDocumentOutputs(const QJsonValue& obj)
   {
     QJsonArray oo = an_output.toArray();
     TOutput *o  = new TOutput({oo[0]to_string(), static_cast<CMPAIValueT>(oo[1].toDouble())});
-    m_outputs.push_back(o);
+    m_outputs.push(o);
   }
   return true;
 }
@@ -180,7 +180,7 @@ bool DPCostPayDocument::setDocumentOutputs(const QJsonValue& obj)
 
 String DPCostPayDocument::calcDocExtInfoHash() const
 {
-  return CConsts::NO_EXT_HASH;
+  return constants::NO_EXT_HASH;
 }
 
 bool DPCostPayDocument::applyDocFirstImpact(const Block &block) const
@@ -190,12 +190,12 @@ bool DPCostPayDocument::applyDocFirstImpact(const Block &block) const
   return true;
 }
 
-std::vector<TInput*> DPCostPayDocument::getInputs() const
+Vec<TInput*> DPCostPayDocument::getInputs() const
 {
   return {};
 }
 
-std::vector<TOutput*> DPCostPayDocument::getOutputs() const
+Vec<TOutput*> DPCostPayDocument::getOutputs() const
 {
   return m_outputs;
 }

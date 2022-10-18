@@ -558,6 +558,11 @@ impl Block {
         return self.m_block_type.clone();
     }
 
+    pub fn get_block_backer(&self) -> String
+    {
+        return self.m_block_backer.clone();
+    }
+
     //old_name_was calcBlockHash
     pub fn calc_block_hash(&self) -> CBlockHashT
     {

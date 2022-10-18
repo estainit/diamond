@@ -3,12 +3,12 @@ use crate::{constants, cutils, dlog};
 use crate::lib::block::block_types::block::Block;
 use crate::lib::block::document_types::document::Document;
 use crate::lib::custom_types::{CCoinCodeT, CDocHashT, CDocIndexT, CMPAISValueT, CMPAIValueT, QV2DicT};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::Coin;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::CoinInfo;
 
 //old_name_was validateEquation
 pub fn validate_equation(
     block: &Block,
-    used_coins_dict: &HashMap<CCoinCodeT, Coin>,
+    used_coins_dict: &HashMap<CCoinCodeT, CoinInfo>,
     invalid_coins_dict: &QV2DicT) -> bool
 {
     let mut validate_res: bool;

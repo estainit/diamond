@@ -1,5 +1,8 @@
-use crate::lib::custom_types::{ClausesT, LimitT, OrderT, QVDRecordsT};
-use crate::lib::database::abs_psql::q_select;
+use std::collections::HashMap;
+use postgres::types::ToSql;
+use crate::{application, constants, dlog};
+use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDocHashT, ClausesT, LimitT, OrderT, QVDRecordsT};
+use crate::lib::database::abs_psql::{q_insert, q_select};
 use crate::lib::database::tables::{C_TRX_REJECTED_TRANSACTIONS, C_TRX_REJECTED_TRANSACTIONS_FIELDS};
 
 //old_name_was searchInRejectedTrx
@@ -26,26 +29,28 @@ pub fn search_in_rejected_trx(
     return records;
 }
 
-/*
-
-bool RejectedTransactionsHandler::addTransaction(
-  const CBlockHashT& block_hash,
-  const CDocHashT& doc_hash,
-  const CCoinCodeT& coin)
+//old_name_was addTransaction
+pub fn add_to_rejected_transactions(
+    block_hash: &CBlockHashT,
+    doc_hash: &CDocHashT,
+    coin: &CCoinCodeT) -> bool
 {
-  QVDicT values {
-    {"rt_block_hash", block_hash},
-    {"rt_doc_hash", doc_hash},
-    {"rt_coin", coin},
-    {"rt_insert_date", cutils::getNow()}};
+    let now_ = application().now();
+    let values: HashMap<&str, &(dyn ToSql + Sync)> = HashMap::from([
+        ("rt_block_hash", &block_hash as &(dyn ToSql + Sync)),
+        ("rt_doc_hash", &doc_hash as &(dyn ToSql + Sync)),
+        ("rt_coin", &coin as &(dyn ToSql + Sync)),
+        ("rt_insert_date", &now_ as &(dyn ToSql + Sync)),
+    ]);
+    dlog(
+        &format!("Add a new rejected coin: {:?}", values),
+        constants::Modules::Trx,
+        constants::SecLevel::Warning);
 
-  CLog::log("Add a new rejected coin: " + cutils::dumpIt(values), "trx", "warning");
+    q_insert(
+        C_TRX_REJECTED_TRANSACTIONS,
+        &values,
+        true);
 
-  DbModel::insert(
-    stbl_trx_rejected_transactions,
-    values);
-
-  return true;
+    return true;
 }
-
-*/

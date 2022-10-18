@@ -295,7 +295,7 @@ impl NormalBlock
         SpentCoinsHandler::mark_as_spent_all_block_inputs(block_super, &c_date);
 
         // broadcast block to neighbors
-        if is_dag_updated(&"".to_string())
+        if is_dag_updated()
         {
             let mut block_body = block_super.safe_stringify_block(false);
             dlog(

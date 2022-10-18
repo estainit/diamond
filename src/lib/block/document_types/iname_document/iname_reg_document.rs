@@ -258,7 +258,7 @@ void INameRegDocument::importCostsToTreasury(
 
         String title =  "TP_INAME_REG iName(" + cutils::hash8c(iName_hash) + ") Trx(" + cutils::hash8c(a_treasury_entry.m_trx_hash) + ") ";
         cost_payment_status[iName_hash].m_message = "iName reg Cost imported to treasury succsessfully.";
-        TreasuryHandler::insertIncome(
+        insert_income(
           title,
           "TP_INAME_REG",
           title,

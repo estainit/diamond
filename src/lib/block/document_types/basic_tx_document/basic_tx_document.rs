@@ -10,7 +10,7 @@ use crate::lib::block::document_types::document::{Document, set_document_outputs
 use crate::lib::custom_types::{CBlockHashT, CCoinCodeT, CDateT, CDocHashT, CMPAISValueT, CMPAIValueT, COutputIndexT, DocLenT, JSonArray, JSonObject, QV2DicT, VString, VVString};
 use crate::lib::services::society_rules::society_rules::{get_base_price_per_char, get_doc_expense};
 use crate::lib::transactions::basic_transactions::basic_transaction_template::{generate_bip69_input_tuples, generate_bip69_output_tuples};
-use crate::lib::transactions::basic_transactions::coins::coins_handler::Coin;
+use crate::lib::transactions::basic_transactions::coins::coins_handler::CoinInfo;
 use crate::lib::transactions::basic_transactions::signature_structure_handler::general_structure::{safe_stringify_unlock_set, stringify_inputs, stringify_outputs, TInput, TOutput};
 use crate::lib::transactions::basic_transactions::signature_structure_handler::unlock_set::UnlockSet;
 use crate::lib::transactions::trx_utils::{normalize_inputs, normalize_outputs};
@@ -671,7 +671,7 @@ impl BasicTxDocument {
     pub fn equation_check(
         &self,
         doc: &Document,
-        used_coins_dict: &HashMap<CCoinCodeT, Coin>,
+        used_coins_dict: &HashMap<CCoinCodeT, CoinInfo>,
         invalid_coins_dict: &QV2DicT,
         block_hash: &CBlockHashT) -> (bool, String, CMPAIValueT, CMPAIValueT)
     {

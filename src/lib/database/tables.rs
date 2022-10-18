@@ -150,7 +150,8 @@ pub const C_TRX_SPEND: &str = "c_trx_spend";
 pub const C_TRX_SPEND_FIELDS: [&str; 3] = ["sp_coin", "sp_spend_loc", "sp_spend_date"];
 
 
-
+pub const C_TRX_SUSPECT_TRANSACTIONS: &str = "c_trx_suspect_transactions";
+pub const C_TRX_SUSPECT_TRANSACTIONS_FIELDS: [&str; 8] = ["st_id", "st_vote_date", "st_coin", "st_logger_block", "st_spender_block", "st_spender_doc", "st_receive_order", "st_spend_date"];
 
 
 

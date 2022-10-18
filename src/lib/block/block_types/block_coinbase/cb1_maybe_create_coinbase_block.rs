@@ -138,7 +138,7 @@ sum_shares = current_total_sahres;
 if (due > prevDue)
 {
 // add potentially contributes in next days
-uint64_t futureDays = cutils::time_diff(prevDue, due).asDays;
+uint64_t futureDays = application().time_diff(prevDue, due).asDays;
 DNAShareCountT newShares = sum_shares * (((annualContributeGrowthRate) / 100) / 365) * futureDays;
 sum_shares += newShares;
 uint8_t releseablePercentage = calculateReleasableCoinsBasedOnContributesVolume(sum_shares) / 100;
